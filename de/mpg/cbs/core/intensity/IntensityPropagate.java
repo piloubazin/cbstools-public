@@ -84,7 +84,7 @@ public class IntensityPropagate {
 	protected void execute(CalculationMonitor monitor){
 **/
 	// set inputs
-	public final void setInImage(float[] val) { inImage = val; }
+	public final void setInputImage(float[] val) { inputImage = val; }
 	public final void setMaskImage(byte[] val) { maskImage = val; }
 	public final void setPropogationDistance(float val) { distParam = val; }
 	
