@@ -29,6 +29,7 @@ import de.mpg.cbs.utilities.*;
 /*
  * @author Pierre-Louis Bazin
  */
+ 
 public class IntensityPropagate {
 
 	// parameters
@@ -84,7 +85,7 @@ public class IntensityPropagate {
 **/
 	// set inputs
 	public final void setInImage(float[] val) { inImage = val; }
-	public final void setMaskImage(float[] val) { maskImage = val; }
+	public final void setMaskImage(byte[] val) { maskImage = val; }
 	public final void setPropogationDistance(float val) { distParam = val; }
 	
 	// set generic inputs	
