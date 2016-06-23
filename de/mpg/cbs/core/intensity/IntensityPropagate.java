@@ -103,7 +103,7 @@ public class IntensityPropagate {
 
 	public final String[] getAlgorithmAuthors() { return new String[]{"Pierre-Louis Bazin"}; }
 	public final String getAffiliation() { return "Max Planck Institute for Human Cognitive and Brain Sciences"; }
-	public final String getDescription() { return "Propagates the values inside the mask (or non-zero) into the neighboring voxels");
+	public final String getDescription() { return "Propagates the values inside the mask (or non-zero) into the neighboring voxels";
 	public final String getLongDescription() { return getDescription(); }
 		
 	public final String getVersion() { return "3.1.0"; };

@@ -94,7 +94,7 @@ public class IntensityHistogramMatching extends ProcessingAlgorithm{
 	
 		public final String[] getAlgorithmAuthors() { return new String[]{"Pierre-Louis Bazin"}; }
 		public final String getAffiliation() { return "Max Planck Institute for Human Cognitive and Brain Sciences"; }
-		public final String getDescription() { return "Normalizes the intensity histogram of an image to a template histogram");
+		public final String getDescription() { return "Normalizes the intensity histogram of an image to a template histogram";
 		public final String getLongDescription() { return getDescription(); }
 			
 		public final String getVersion() { return "3.1.0"; };

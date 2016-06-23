@@ -98,7 +98,25 @@ public class JistFilterRidgeStructures {
 	public final void setStructureIntensity(String val) { pvParam = val;} //XXX should this be of type pvtypes?
 	public final void setOutputType(String val) { outtype = val;}
 	public final void setUseStrictMinMaxFilter(boolean val) {strictParam = val;}
+
+	// set generic inputs	
+	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
+	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
+	public final void setResolutions(float x, float y, float z) { rx=x; ry=y; rz=z; }
+	public final void setResolutions(float[] res) { rx=res[0]; ry=res[1]; rz=res[2]; }
 	
+	//set JIST definitions
+	//to be used for JIST definitions, generic info / help
+	public final String getPackage() { return "CBS Tools"; }
+	public final String getCategory() { return "Filter"; }
+	public final String getLabel() { return "Filter Ridge Structures"; }
+	public final String getName() { return "FilterRidgeStructures"; }
+
+	public final String[] getAlgorithmAuthors() { return new String[]{"Pierre-Louis Bazin"}; }
+	public final String getAffiliation() { return "Max Planck Institute for Human Cognitive and Brain Sciences"; }
+	public final String getDescription() { return "Filters an image for 3D ridge-like structures.";
+	public final String getLongDescription() { return getDescription(); }
+
 	//set outputs
 	public final void getRidgeStructureImage() { return resultImage;}
 	
