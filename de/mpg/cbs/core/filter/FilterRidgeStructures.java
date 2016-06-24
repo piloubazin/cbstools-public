@@ -28,7 +28,7 @@ import org.apache.commons.math3.util.FastMath;
 /*
  * @author Pierre-Louis Bazin
  */
-public class JistFilterRidgeStructures {
+public class FilterRidgeStructures {
 /**
 	// parameters
 	private		static final String[]	pvtypes = {"bright","dark","both"};

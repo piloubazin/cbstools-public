@@ -26,7 +26,7 @@ import de.mpg.cbs.utilities.*;
  */
  
 
-public class IntensityHistogramMatching extends ProcessingAlgorithm{
+public class IntensityHistogramMatching {
 /**
 	ParamVolume subParam;
 	ParamVolume tmpParam;
