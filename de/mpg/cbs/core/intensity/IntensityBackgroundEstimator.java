@@ -40,16 +40,16 @@ public class IntensityBackgroundEstimator {
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
 	
-	public static final String getPackage() { return "CBS Tools"; }
-	public static final String getCategory() { return "Intensity"; } 
-	public static final String getLabel() { return "Background Estimator"; }
-	public static final String getName() { return "BackgroundEstimator"; }
+	public final String getPackage() { return "CBS Tools"; }
+	public final String getCategory() { return "Intensity"; } 
+	public final String getLabel() { return "Background Estimator"; }
+	public final String getName() { return "BackgroundEstimator"; }
 
-	public static final String[] getAlgorithmAuthors() { return new String[]{"Pierre-Louis Bazin"}; }
-	public static final String getAffiliation() { return "Max Planck Institute for Human Cognitive and Brain Sciences"; }
-	public static final String getDescription() { return "Estimate the background data region."; }
+	public final String[] getAlgorithmAuthors() { return new String[]{"Pierre-Louis Bazin"}; }
+	public final String getAffiliation() { return "Max Planck Institute for Human Cognitive and Brain Sciences"; }
+	public final String getDescription() { return "Estimate the background data region."; }
 		
-	public static final String getVersion() { return "3.1"; }
+	public final String getVersion() { return "3.1"; }
 
 		// get outputs
 	public float[] getMaskedImage() { return masked; }

@@ -27,95 +27,71 @@ import de.mpg.cbs.utilities.*;
  
 
 public class IntensityHistogramMatching {
-/**
-	ParamVolume subParam;
-	ParamVolume tmpParam;
-	ParamVolume resultVolParam;
-	ParamBoolean zeroParam;
-	ParamBoolean projectParam;
 
-	private static final String shortDescription = "Normalizes the intensity histogram of an image to a template histogram";
-	private static final String longDescription = "";
+	//inputs
+	private float[] subParam;
+	private float[] tmpParam;
+	private float[] resultVolParam;
+	private boolean zeroParam;
+	private boolean projectParam;
 
-
-	protected void createInputParameters(ParamCollection inputParams) {
-		inputParams.add(subParam=new ParamVolume("Image to normalize"));
-		inputParams.add(tmpParam=new ParamVolume("Template to match"));
-		inputParams.add(zeroParam=new ParamBoolean("Skip zero values?", true));
-		inputParams.add(projectParam=new ParamBoolean("Output in template range?", true));
+	private int nsx, nsy, nsz, nsxyz;
+	private float rsx, rsy, rsz;
+	private int ntx, nty, ntz, ntxyz;
+	private float rtx, rty, rtz;
 		
-		inputParams.setPackage("CBS Tools");
-		inputParams.setCategory("Intensity");
-		inputParams.setLabel("Histogram Matching");
-		inputParams.setName("HistogramMatching");
-
-		AlgorithmInformation info = getAlgorithmInformation();
-		info.setWebsite("http://www.cbs.mpg.de/");
-		info.setDescription(shortDescription);
-		info.setLongDescription(shortDescription + longDescription);
-		info.setVersion("3.0.7");
-		info.setEditable(false);
-		info.setStatus(DevelopmentStatus.RC);
-	}
-
-
-	protected void createOutputParameters(ParamCollection outputParams) {
-		outputParams.add(resultVolParam=new ParamVolume("Matched Image",null,-1,-1,-1,-1));
-	}
-
-
-	protected void execute(CalculationMonitor monitor) throws AlgorithmRuntimeException {
-**/
-		//JIST containers
-		private float[] subParam;
-		private float[] tmpParam;
-		private float[] resultVolParam;
-		private boolean zeroParam;
-		private boolean projectParam;
-		
-		// set inputs
-		public final void setImageToNormalize(float[] val) { subParam = val; }
-		public final void setTemplateToMatch(float[] val) { tmpParam = val; }
-		public final void setSkipZeroValues(boolean val) { zeroParam = val; }
-		public final void setOutputInTemplateRange(boolean val) { projectParam = val; }
-		
-		// set generic inputs	
-		public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
-		public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
-		public final void setResolutions(float x, float y, float z) { rx=x; ry=y; rz=z; }
-		public final void setResolutions(float[] res) { rx=res[0]; ry=res[1]; rz=res[2]; }
-		
-		//set JIST definitions
-		//to be used for JIST definitions, generic info / help
-		public final String getPackage() { return "CBS Tools"; }
-		public final String getCategory() { return "Intensity"; }
-		public final String getLabel() { return "Histogram Matching"; }
-		public final String getName() { return "HistogramMatching"; }
+	// set inputs
+	public final void setImageToNormalize(float[] val) { subParam = val; }
+	public final void setTemplateToMatch(float[] val) { tmpParam = val; }
+	public final void setSkipZeroValues(boolean val) { zeroParam = val; }
+	public final void setOutputInTemplateRange(boolean val) { projectParam = val; }
 	
-		public final String[] getAlgorithmAuthors() { return new String[]{"Pierre-Louis Bazin"}; }
-		public final String getAffiliation() { return "Max Planck Institute for Human Cognitive and Brain Sciences"; }
-		public final String getDescription() { return "Normalizes the intensity histogram of an image to a template histogram";
-		public final String getLongDescription() { return getDescription(); }
-			
-		public final String getVersion() { return "3.1.0"; };
-		
-		// set outputs
-		public float[] getMatchedImage() { return resultVolParam;}
-		
-		ImageDataFloat	tmpImg = new ImageDataFloat(tmpParam.getImageData());
-		int ntx = tmpImg.getRows();
-		int nty = tmpImg.getCols();
-		int ntz = tmpImg.getSlices();
-		float[][][] tmp = tmpImg.toArray3d();
+	// set generic inputs	
+	public final void setDimensions(int x, int y, int z) { nsx=x; nsy=y; nsz=z; nsxyz=nsx*nsy*nsz; ntx=x; nty=y; ntz=z; ntxyz=ntx*nty*ntz; }
+	public final void setDimensions(int[] dim) { nsx=dim[0]; nsy=dim[1]; nsz=dim[2]; nsxyz=nsx*nsy*nsz; ntx=dim[0]; nty=dim[1]; ntz=dim[2]; ntxyz=ntx*nty*ntz; }
+	public final void setResolutions(float x, float y, float z) { rsx=x; rsy=y; rsz=z; rtx=x; rty=y; rtz=z; }
+	public final void setResolutions(float[] res) { rsx=res[0]; rsy=res[1]; rsz=res[2]; rtx=res[0]; rty=res[1]; rtz=res[2]; }
+	
+	public final void setImageDimensions(int x, int y, int z) { nsx=x; nsy=y; nsz=z; nsxyz=nsx*nsy*nsz; }
+	public final void setImageDimensions(int[] dim) { nsx=dim[0]; nsy=dim[1]; nsz=dim[2]; nsxyz=nsx*nsy*nsz; }
+	public final void setImageResolutions(float x, float y, float z) { rsx=x; rsy=y; rsz=z; }
+	public final void setImageResolutions(float[] res) { rsx=res[0]; rsy=res[1]; rsz=res[2]; }
+	
+	public final void setTemplateDimensions(int x, int y, int z) { ntx=x; nty=y; ntz=z; ntxyz=ntx*nty*ntz; }
+	public final void setTemplateDimensions(int[] dim) { ntx=dim[0]; nty=dim[1]; ntz=dim[2]; ntxyz=ntx*nty*ntz; }
+	public final void setTemplateResolutions(float x, float y, float z) { rtx=x; rty=y; rtz=z; }
+	public final void setTemplateResolutions(float[] res) { rtx=res[0]; rty=res[1]; rtz=res[2]; }
+	
+	//set JIST definitions
+	//to be used for JIST definitions, generic info / help
+	public final String getPackage() { return "CBS Tools"; }
+	public final String getCategory() { return "Intensity"; }
+	public final String getLabel() { return "Histogram Matching"; }
+	public final String getName() { return "HistogramMatching"; }
 
-		ImageDataFloat	subImg = new ImageDataFloat(subParam.getImageData());
-		int nsx = subImg.getRows();
-		int nsy = subImg.getCols();
-		int nsz = subImg.getSlices();
-		float[][][] sub = subImg.toArray3d();
+	public final String[] getAlgorithmAuthors() { return new String[]{"Pierre-Louis Bazin"}; }
+	public final String getAffiliation() { return "Max Planck Institute for Human Cognitive and Brain Sciences"; }
+	public final String getDescription() { return "Normalizes the intensity histogram of an image to a template histogram"; }
+	public final String getLongDescription() { return getDescription(); }
 		
+	public final String getVersion() { return "3.1.0"; };
+		
+	// set outputs
+	public float[] getMatchedImage() { return resultVolParam;}
+		
+	public void execute() {
+	
+		float[][][] tmp = new float[ntx][nty][ntz];
+		for (int x=0;x<ntx;x++) for (int y=0;y<nty;y++) for (int z=0;z<ntz;z++) {
+			tmp[x][y][z] = tmpParam[x+ntx*y+ntx*nty*z];
+		}
+		
+		float[][][] sub = new float[nsx][nsy][nsz];
+		for (int x=0;x<nsx;x++) for (int y=0;y<nsy;y++) for (int z=0;z<nsz;z++) {
+			sub[x][y][z] = subParam[x+nsx*y+nsx*nsy*z];
+		}
 		// build a cumulative mapping
-		boolean skip = zeroParam.getValue().booleanValue();
+		boolean skip = zeroParam;
 		
 		int ntsample=0;
 		float tmin = 1e12f;
@@ -155,7 +131,7 @@ public class IntensityHistogramMatching {
 		for (int n=1;n<tres;n++) tmphist[n] += tmphist[n-1];
 		
 		// find the correspondences
-		boolean project = projectParam.getValue().booleanValue();
+		boolean project = projectParam;
 		
 		int nt=0;
 		for (int n=0;n<sres;n++) {
@@ -183,9 +159,9 @@ public class IntensityHistogramMatching {
 				res[x][y][z] = 0.0f;	
 			}
 		}
-		ImageDataFloat resultVol = new ImageDataFloat(res);		
-		resultVol.setHeader(subImg.getHeader());
-		resultVol.setName(subImg.getName()+"_histm");
-		resultVolParam.setValue(resultVol);
+		resultVolParam = new float[nsxyz];
+		for (int x=0;x<nsx;x++) for (int y=0;y<nsy;y++) for (int z=0;z<nsz;z++) {
+			resultVolParam[x+nsx*y+nsx*nsy*z] = res[x][y][z];
+		}
 	}
 }

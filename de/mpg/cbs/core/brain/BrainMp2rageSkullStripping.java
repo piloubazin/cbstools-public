@@ -45,16 +45,16 @@ public class BrainMp2rageSkullStripping {
 	public final void setTopologyLUTdirectory(String val) { lutdir = val; }
 
 	// to be used for JIST definitions, generic info / help
-	public static final String getPackage() { return "CBS Tools"; }
-	public static final String getCategory() { return "Brain Processing"; }
-	public static final String getLabel() { return "MP2RAGE Skull Stripping"; }
-	public static final String getName() { return "Mp2rageSkullStripping"; }
+	public final String getPackage() { return "CBS Tools"; }
+	public final String getCategory() { return "Brain Processing"; }
+	public final String getLabel() { return "MP2RAGE Skull Stripping"; }
+	public final String getName() { return "Mp2rageSkullStripping"; }
 
 	public final String[] getAlgorithmAuthors() {return new String[] {"Pierre-Louis Bazin"}; }
 	public final String getAffiliation() { return "Max Planck Institute for Human Cognitive and Brain Sciences"; }
 	public final String getDescription() { return "Estimate a brain mask for a MP2RAGE dataset. At least a T1-weighted or a T1 map image is required."; }
 		
-	public static final String getVersion() { return "3.1"; }
+	public final String getVersion() { return "3.1"; }
 
 	// create outputs
 	public final byte[] getBrainMaskImage() { return brainmaskImage; }

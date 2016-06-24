@@ -55,6 +55,7 @@ public class LaminarVolumetricLayering {
 	private static final String[] dirTypes = {"outward", "inward"};
 	
 	private static final String[] topoTypes = {"26/6", "6/26", "18/6", "6/18", "6/6", "wcs", "wco", "no"};
+	private String	lutdir = null;
 	
 	private float[] layeringImage;
 	private byte[] labelsImage;
@@ -81,7 +82,10 @@ public class LaminarVolumetricLayering {
 	public final void setCurvatureApproximationScale(int val) { kernelParam = val; }
 	public final void setRatioSmoothingKernelSize(float val) { ratioKernelParam = val; }
 	public final void setPresmoothCorticalSurfaces(boolean val) { presmoothParam = val; }
+
 	public final void setTopology(String val) { topologyParam = val; }
+	public final void setTopologyLUTdirectory(String val) { lutdir = val; }
+
 			
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
@@ -90,19 +94,19 @@ public class LaminarVolumetricLayering {
 	public final void setResolutions(float[] res) { rx=res[0]; ry=res[1]; rz=res[2]; }
 
 	// to be used for JIST definitions, generic info / help
-	public static final String getPackage() { return "CBS Tools"; }
-	public static final String getCategory() { return "Laminar Analysis"; }
-	public static final String getLabel() { return "Volumetric Layering"; }
-	public static final String getName() { return "VolumetricLayering"; }
-	public static final String getVersion() { return "3.1"; }
+	public  final String getPackage() { return "CBS Tools"; }
+	public  final String getCategory() { return "Laminar Analysis"; }
+	public  final String getLabel() { return "Volumetric Layering"; }
+	public  final String getName() { return "VolumetricLayering"; }
+	public  final String getVersion() { return "3.1"; }
 
-	public final String[] getAlgorithmAuthors() {return new String[] {"Miriam Waehnert","Pierre-Louis Bazin","Juliane Dinse"}; }
-	public final String getCitation() { return "Waehnert MD, Dinse J, Weiss M, Streicher MN, Waehnert P, Geyer S, Turner R, Bazin PL, "
+	public  final String[] getAlgorithmAuthors() {return new String[] {"Miriam Waehnert","Pierre-Louis Bazin","Juliane Dinse"}; }
+	public  final String getCitation() { return "Waehnert MD, Dinse J, Weiss M, Streicher MN, Waehnert P, Geyer S, Turner R, Bazin PL, "
 												+"Anatomically motivated modeling of cortical laminae, "
 												+"Neuroimage, 2013."; }
-	public final String getAffiliation() { return "Max Planck Institute for Human Cognitive and Brain Sciences"; }
-	public final String getDescription() { return "Builds a continuous layering of the cortex following distance-preserving or volume-preserving models of cortical folding."; }
-	public final String getLongDescription() { return getDescription(); }
+	public  final String getAffiliation() { return "Max Planck Institute for Human Cognitive and Brain Sciences"; }
+	public  final String getDescription() { return "Builds a continuous layering of the cortex following distance-preserving or volume-preserving models of cortical folding."; }
+	public  final String getLongDescription() { return getDescription(); }
 
 	// create outputs
 	public final float[] getContinuousDepthMeasurement() { return layeringImage; }
@@ -166,7 +170,7 @@ public class LaminarVolumetricLayering {
 			
 			// smooth the levelsets by default (remove stitching artefact at the boundary)
 			SmoothGdm gdmin = new SmoothGdm(inner, nx, ny, nz, rx, ry, rz,
-												mask, 0.9f, 0.1f, topologyParam);
+												mask, 0.9f, 0.1f, topologyParam, lutdir);
 			
 			gdmin.evolveNarrowBand(iterationParamNarrowBand, minimumParamNarrowBand);
 			inner = gdmin.exportLevelset();
@@ -174,7 +178,7 @@ public class LaminarVolumetricLayering {
 			gdmin = null;
 			
 			SmoothGdm gdmout = new SmoothGdm(outer, nx, ny, nz, rx, ry, rz,
-												mask, 0.9f, 0.1f, topologyParam);
+												mask, 0.9f, 0.1f, topologyParam, lutdir);
 			
 			gdmout.evolveNarrowBand(iterationParamNarrowBand, minimumParamNarrowBand);
 			outer = gdmout.exportLevelset();
@@ -207,7 +211,7 @@ public class LaminarVolumetricLayering {
 		VolumetricLayeringGdm gdm = new VolumetricLayeringGdm(inner, outer, "distance-preserving", dirParam, 
 																0.5f, null, null, 1.0f,
 																nx, ny, nz, rx, ry, rz,
-																mask, 0.9f, 0.1f, topologyParam);
+																mask, 0.9f, 0.1f, topologyParam, lutdir);
 		
 		if (dirParam.equals("outward")) {
 			for (int t=1;t<Nlayers;t++) {
@@ -409,7 +413,7 @@ public class LaminarVolumetricLayering {
 			gdm = new VolumetricLayeringGdm(inner, outer, "volume-preserving", dirParam, 0.5f, 
 										volumein, volumeout, 1.0f,
 										nx, ny, nz, rx, ry, rz,
-										mask, 0.9f, 0.1f, topologyParam);
+										mask, 0.9f, 0.1f, topologyParam, lutdir);
 			
 			if (dirParam.equals("outward")) {
 				for (int t=1;t<Nlayers;t++) {
@@ -439,7 +443,7 @@ public class LaminarVolumetricLayering {
 			gdm = new VolumetricLayeringGdm(inner, outer, "volume-preserving2", dirParam, 0.5f, 
 										volumein, volumeout, 1.0f,
 										nx, ny, nz, rx, ry, rz,
-										mask, 0.9f, 0.1f, topologyParam);
+										mask, 0.9f, 0.1f, topologyParam, lutdir);
 			
 			if (dirParam.equals("outward")) {
 				for (int t=1;t<Nlayers;t++) {
