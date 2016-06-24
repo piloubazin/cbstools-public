@@ -57,6 +57,8 @@ public class JistIntensityBackgroundEstimator extends ProcessingAlgorithm {
 		inputParams.add(ratioParam = new ParamFloat("Robust min, max thresholding", 0.0f, 1.0f, 0.0f));
 		inputParams.add(skip0Param = new ParamBoolean("Skip zero values", true));
 		
+		algorithm = new IntensityBackgroundEstimator();
+		
 		inputParams.setPackage(algorithm.getPackage());
 		inputParams.setCategory(algorithm.getCategory());
 		inputParams.setLabel(algorithm.getCategory());

@@ -11,6 +11,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
+import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.VoxelType;
 
 import edu.jhu.ece.iacl.jist.pipeline.DevelopmentStatus;
@@ -23,7 +24,7 @@ import de.mpg.cbs.utilities.*;
 import de.mpg.cbs.structures.*;
 import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.methods.*;
-
+import de.mpg.cbs.core.laminar.*;
 
 /*
  * @author Pierre-Louis Bazin
@@ -46,7 +47,8 @@ public class JistLaminarProfileSampling extends ProcessingAlgorithm {
 	private static final byte Y = 1;
 	private static final byte Z = 2;
 
-	
+	private LaminarProfileSampling algorithm;
+		
 	protected void createInputParameters(ParamCollection inputParams) {
 		
 		imageParams=new ParamCollection("Images");
@@ -57,18 +59,19 @@ public class JistLaminarProfileSampling extends ProcessingAlgorithm {
 		
 		inputParams.add(imageParams);
 			
-		inputParams.setPackage("CBS Tools");
-		inputParams.setCategory("Laminar Analysis");
-		inputParams.setLabel("Profile Sampling");
-		inputParams.setName("ProfileSampling");
+		algorithm = new LaminarProfileSampling();
+		
+		inputParams.setPackage(algorithm.getPackage());
+		inputParams.setCategory(algorithm.getCategory());
+		inputParams.setLabel(algorithm.getCategory());
+		inputParams.setName(algorithm.getCategory());
 
 		AlgorithmInformation info = getAlgorithmInformation();
-		info.add(new AlgorithmAuthor("Pierre-Louis Bazin", "bazin@cbs.mpg.de","http://www.cbs.mpg.de/"));
-		info.add(new AlgorithmAuthor("Juliane Dinse", "dinse@cbs.mpg.de","http://www.cbs.mpg.de/"));
-		info.setAffiliation("Max Planck Institute for Human Cognitive and Brain Sciences");
-		info.setDescription("Sample some intensity image along a cortical profile across layer surfaces.");
+		info.add(References.getAuthor(algorithm.getAlgorithmAuthors()[0]));
+		info.setAffiliation(algorithm.getAffiliation());
+		info.setDescription(algorithm.getDescription());
 		
-		info.setVersion("3.0");
+		info.setVersion(algorithm.getVersion());
 		info.setStatus(DevelopmentStatus.RC);
 		info.setEditable(false);
 	}
@@ -86,97 +89,30 @@ public class JistLaminarProfileSampling extends ProcessingAlgorithm {
 	@Override
 	protected void execute(CalculationMonitor monitor){
 		
-		// import the image data into 1D arrays : TO DO
+		// i/o variables
+		String name = Interface.commonNameBase(Interface.getName(layersImage),Interface.getName(intensityImage));
+		ImageHeader header = Interface.getHeader(layersImage);
+		int[] dims = Interface.getDimensions(layersImage);
+		float[] res = Interface.getResolutions(layersImage);
 		
-		ImageDataFloat	layersImg = new ImageDataFloat(layersImage.getImageData());
-		ImageDataFloat	intensImg = new ImageDataFloat(intensityImage.getImageData());
-		
-		int nx = layersImg.getRows();
-		int ny = layersImg.getCols();
-		int nz = layersImg.getSlices();
-		int nlayers = layersImg.getComponents()-1;
-		int nxyz = nx*ny*nz;
-		float rx = layersImg.getHeader().getDimResolutions()[0];
-		float ry = layersImg.getHeader().getDimResolutions()[1];
-		float rz = layersImg.getHeader().getDimResolutions()[2];
-		
-		float[][] layers = new float[nlayers+1][nxyz];
-		float[][][][] buffer4 = layersImg.toArray4d();
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int l=0;l<=nlayers;l++) {
-			int xyz = x+nx*y+nx*ny*z;
-			layers[l][xyz] = buffer4[x][y][z][l];
-		}
-		buffer4 = null;
-		layersImg = null;
-		
-		float[] intensity = new float[nxyz];
-		float[][][] buffer3 = intensImg.toArray3d();
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			int xyz = x+nx*y+nx*ny*z;
-			intensity[xyz] = buffer3[x][y][z];
-		}
-		buffer3 = null;
-		intensImg = null;
-		
-		// create a mask for all the regions outside of the area where layer 1 is > 0 and layer 2 is < 0
-		boolean[] ctxmask = new boolean[nxyz];
-		if (maskImage.getImageData()!=null) {
-			ImageDataUByte	maskImg = new ImageDataUByte(maskImage.getImageData());
-			byte[][][] bufferbyte = maskImg.toArray3d();
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-				int xyz = x+nx*y+nx*ny*z;
-				ctxmask[xyz] = (layers[0][xyz]>=0.0 && layers[nlayers][xyz]<=0.0 && bufferbyte[x][y][z]>0);
-			}
-			bufferbyte = null;
-			maskImg = null;
-		} else {
-			for (int xyz=0;xyz<nxyz;xyz++) {
-				ctxmask[xyz] = (layers[0][xyz]>=0.0 && layers[nlayers][xyz]<=0.0);
-			}
-		}
-				
 		// main algorithm
-		CorticalProfile profile = new CorticalProfile(nlayers, nx, ny, nz, rx, ry, rz);
+		algorithm = new LaminarProfileSampling();
 		
-		float maskval = 1e13f;
-		float[][][][] mapping = new float[nx][ny][nz][nlayers+1];
-		byte[][][][] mappingmask = new byte[nx][ny][nz][nlayers+1];
-		for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
-			int xyz = x + nx*y + nx*ny*z;
-			if (ctxmask[xyz]) {
-				profile.computeTrajectory(layers, x, y, z);
-				
-				for (int l=0;l<=nlayers;l++) {
-					// interpolate the contrast
-					mapping[x][y][z][l] = ImageInterpolation.linearInterpolation(intensity, ctxmask, maskval, 
-																					profile.getPt(l)[X], profile.getPt(l)[Y], profile.getPt(l)[Z], 
-																					nx, ny, nz);
-					if (mapping[x][y][z][l]==maskval) {
-						mappingmask[x][y][z][l] = (byte)0;
-						mapping[x][y][z][l] = 0.0f;
-					} else {
-						mappingmask[x][y][z][l] = (byte)1;
-					}
-				}
-			}
-		}
+		algorithm.setProfileSurfaceImage(Interface.getFloatImage4D(layersImage));
+		algorithm.setIntensityImage(Interface.getFloatImage3D(intensityImage));
+		algorithm.setCortexMask(Interface.getUByteImage3D(maskImage));
+		
+		algorithm.setDimensions(dims);
+		algorithm.setResolutions(res);
+
+		algorithm.execute();
 		
 		// output
 		String imgname = intensityImage.getImageData().getName();
 		
-		ImageDataFloat mapData = new ImageDataFloat(mapping);		
-		mapData.setHeader(layersImage.getImageData().getHeader());
-		mapData.setName(imgname+"_profiles");
-		mappedImage.setValue(mapData);
-		mapData = null;
-		mapping = null;
+		Interface.setFloatImage4D(algorithm.getProfileMappedIntensityImage(), dims, dims[3], mappedImage, name+"_profiles", header);
 		
-		ImageDataUByte mapmaskData = new ImageDataUByte(mappingmask);		
-		mapmaskData.setHeader(layersImage.getImageData().getHeader());
-		mapmaskData.setName(imgname+"_4dmask");
-		mappedmaskImage.setValue(mapmaskData);
-		mapmaskData = null;
-		mappingmask = null;
+		Interface.setUByteImage4D(algorithm.getProfile4Dmask(), dims, dims[3], mappedmaskImage, name+"_4dmask", header);
 	}
 
 

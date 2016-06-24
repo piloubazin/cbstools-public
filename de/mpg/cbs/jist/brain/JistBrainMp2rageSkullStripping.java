@@ -61,6 +61,8 @@ public class JistBrainMp2rageSkullStripping extends ProcessingAlgorithm {
 		*/
 		inputParams.add(skip0Param = new ParamBoolean("Skip zero values", false));
 
+		algorithm = new BrainMp2rageSkullStripping();
+		
 		inputParams.setPackage(algorithm.getPackage());
 		inputParams.setCategory(algorithm.getCategory());
 		inputParams.setLabel(algorithm.getCategory());

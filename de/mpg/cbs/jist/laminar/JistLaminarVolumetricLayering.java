@@ -108,7 +108,9 @@ public class JistLaminarVolumetricLayering extends ProcessingAlgorithm {
 		//mainParams.add(curvscaleParam=new ParamDouble("Curvature scale", 0.0, 2.0, 1.0));
 		
 		inputParams.add(mainParams);
-			
+		
+		algorithm = new LaminarVolumetricLayering();
+		
 		inputParams.setPackage(algorithm.getPackage());
 		inputParams.setCategory(algorithm.getCategory());
 		inputParams.setLabel(algorithm.getCategory());

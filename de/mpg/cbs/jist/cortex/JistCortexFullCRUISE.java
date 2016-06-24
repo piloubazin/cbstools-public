@@ -427,7 +427,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		// main algorithm
 		SmoothGdm gdm2 = new SmoothGdm(gwb2, ctr2, nx, ny, nz, rx, ry, rz,
 										bgmask, balloonParam.getValue().floatValue(), 
-										curvParam.getValue().floatValue(), topologyParam.getValue());
+										curvParam.getValue().floatValue(), topologyParam.getValue(), null);
 
 		Interface.displayMessage("average estimation...\n");
 		gdm2.evolveNarrowBand(iterationParam.getValue().intValue(), 0.001f);

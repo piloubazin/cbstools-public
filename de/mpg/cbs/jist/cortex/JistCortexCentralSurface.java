@@ -135,7 +135,7 @@ public class JistCortexCentralSurface extends ProcessingAlgorithm {
 		
 		// main algorithm
 		SmoothGdm gdm = new SmoothGdm(lv1, ctr, nx, ny, nz, rx, ry, rz,
-											bgmask, balloon, curv, 	topologyParam.getValue());
+											bgmask, balloon, curv, 	topologyParam.getValue(), null);
 		//CorticalLayersGdm gdm = new CorticalLayersGdm(lv1, lv2, 0.5f, nx, ny, nz, rx, ry, rz,
 		//												bgmask, balloon, curv, topologyParam.getValue());
 			

@@ -408,20 +408,24 @@ public class Interface {
 	}
 
     public static final byte[] getUByteImage3D(ParamVolume input) {
-		// import the image data into 1D arrays
-		ImageDataUByte inImg = new ImageDataUByte(input.getImageData());
-		byte[][][] buffer = inImg.toArray3d();
-		int nx = inImg.getRows();
-		int ny = inImg.getCols();
-		int nz = inImg.getSlices();
-		int nxyz = nx*ny*nz;
-		
-		byte[] image = new byte[nxyz];
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			int xyz = x+nx*y+nx*ny*z;
-			image[xyz] = buffer[x][y][z];
+		if (input.getImageData()!=null) {  	
+			// import the image data into 1D arrays
+			ImageDataUByte inImg = new ImageDataUByte(input.getImageData());
+			byte[][][] buffer = inImg.toArray3d();
+			int nx = inImg.getRows();
+			int ny = inImg.getCols();
+			int nz = inImg.getSlices();
+			int nxyz = nx*ny*nz;
+			
+			byte[] image = new byte[nxyz];
+			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+				int xyz = x+nx*y+nx*ny*z;
+				image[xyz] = buffer[x][y][z];
+			}
+			return image;
+		} else {
+			return null;
 		}
-		return image;
 	}
 
     public static final int[] getIntegerImage3D(ParamVolume input) {

@@ -195,7 +195,7 @@ public class VolumetricLayeringGdm {
 	public VolumetricLayeringGdm(float[] lvlsetin_, float[] lvlsetout_, String modelType_, String dirType_,
 								float frac_, float[][] cin_, float[][] cout_, float cvsc_,
 								int nx_, int ny_, int nz_, float rx_, float ry_, float rz_,
-								boolean[] mask_, float bw_, float sw_, String connectivityType_) {
+								boolean[] mask_, float bw_, float sw_, String connectivityType_, String lutdir_) {
 		
 		inlevelset = lvlsetin_;
 		outlevelset = lvlsetout_;
@@ -259,13 +259,13 @@ public class VolumetricLayeringGdm {
 			// topology luts
 			checkTopology=true;
 			checkComposed=false;
-				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT("critical266LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT("critical626LUT.raw.gz",200);
-			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT("critical186LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT("critical618LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT(lutdir_, "critical266LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT(lutdir_, "critical626LUT.raw.gz",200);
+			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT(lutdir_, "critical186LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(lutdir_, "critical618LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(lutdir_, "critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				lut = new CriticalPointLUT(lutdir_, "critical66LUT.raw.gz",200);
 				checkComposed=true;
 			}
 			else if (connectivityType_.equals("wco")) {

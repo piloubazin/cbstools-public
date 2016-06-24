@@ -89,6 +89,8 @@ public class JistBrainExtractBrainRegion extends ProcessingAlgorithm {
 		inputParams.add(densityParam = new ParamBoolean("Estimate tissue densities", false));
 		inputParams.add(scalingParam = new ParamFloat("Partial voluming distance (voxels)", 0.0f, 10.0f, 1.0f));
 		
+		algorithm = new BrainExtractBrainRegion();
+		
 		inputParams.setPackage(algorithm.getPackage());
 		inputParams.setCategory(algorithm.getCategory());
 		inputParams.setLabel(algorithm.getCategory());

@@ -163,6 +163,8 @@ public class JistBrainMgdmMultiSegmentation2 extends ProcessingAlgorithm {
 		
 		inputParams.add(mainParams);
 		
+		algorithm = new BrainMgdmMultiSegmentation2();
+		
 		inputParams.setPackage(algorithm.getPackage());
 		inputParams.setCategory(algorithm.getCategory());
 		inputParams.setLabel(algorithm.getCategory());
