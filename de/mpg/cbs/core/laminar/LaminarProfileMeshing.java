@@ -13,8 +13,10 @@ public class LaminarProfileMeshing {
 
 	private float[] layersImage;
 
-	private float[] surfacePoints;
-	private int[] surfaceTriangles;
+	private float[] inputPoints;
+	private int[] inputTriangles;
+	private String surfaceConvention = "mipav";
+	private static final String[] conventionTypes = {"mipav","voxel"};
 
 	private int nx, ny, nz, nt, nxyz;
 	private float rx, ry, rz;
@@ -29,8 +31,10 @@ public class LaminarProfileMeshing {
 
 	// create inputs
 	public final void setProfileSurfaceImage(float[] val) { layersImage = val; }
-	public final void setSurfacePoints(float[] val) { surfacePoints = val; }
-	public final void setSurfaceTriangles(int[] val) { surfaceTriangles = val; }
+	public final void setInputSurfacePoints(float[] val) { inputPoints = val; }
+	public final void setInputSurfaceTriangles(int[] val) { inputTriangles = val; }
+	
+	public final void setSurfaceConvention(String val) { surfaceConvention = val; }
 	
 	public final void setDimensions(int x, int y, int z, int t) { nx=x; ny=y; nz=z; nt=t; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nt=dim[3]; nxyz=nx*ny*nz; }
@@ -66,15 +70,22 @@ public class LaminarProfileMeshing {
 		}
 		layersImage = null;
 		
-		int npt = surfacePoints.length/3;
-		int ntr = surfaceTriangles.length/3;
+		int npt = inputPoints.length/3;
+		int ntr = inputTriangles.length/3;
 		
 		// main algorithm
+		if (surfaceConvention.equals("mipav")) {
+			for (int p=0; p<npt; p++) {
+				inputPoints[3*p+X] = inputPoints[3*p+X]/rx;
+				inputPoints[3*p+Y] = (ny-1)-inputPoints[3*p+Y]/ry;
+				inputPoints[3*p+Z] = (nz-1)-inputPoints[3*p+Z]/rz;
+			}
+		}
 		CorticalProfile profile = new CorticalProfile(nlayers, nx, ny, nz, rx, ry, rz);
 		
 		sampledPoints = new float[nlayers+1][3*npt];
 		for (int p=0; p<npt; p++) {
-			profile.computeTrajectory(layers, surfacePoints[3*p+X], surfacePoints[3*p+Y], surfacePoints[3*p+Z]);
+			profile.computeTrajectory(layers, inputPoints[3*p+X], inputPoints[3*p+Y], inputPoints[3*p+Z]);
 			
 			for (int l=0;l<nlayers+1;l++) {
 				sampledPoints[l][3*p+X] = profile.getPt(l)[X];
@@ -82,12 +93,22 @@ public class LaminarProfileMeshing {
 				sampledPoints[l][3*p+Z] = profile.getPt(l)[Z];
 			}
 		}
+		if (surfaceConvention.equals("mipav")) {
+			for (int p=0; p<npt; p++) {
+				for (int l=0;l<nlayers+1;l++) {
+					sampledPoints[l][3*p+X] = sampledPoints[l][3*p+X]*rx;
+					sampledPoints[l][3*p+Y] = ((ny-1)-sampledPoints[l][3*p+Y])*ry;
+					sampledPoints[l][3*p+Z] = ((nz-1)-sampledPoints[l][3*p+Z])*rz;
+				}
+			}
+		}
+
 		sampledTriangles = new int[nlayers+1][3*ntr];
 		for (int t=0;t<ntr;t++) {
 			for (int l=0;l<nlayers+1;l++) {
-				sampledTriangles[l][3*t+0] = surfaceTriangles[3*t+0];
-				sampledTriangles[l][3*t+1] = surfaceTriangles[3*t+1];
-				sampledTriangles[l][3*t+2] = surfaceTriangles[3*t+2];
+				sampledTriangles[l][3*t+0] = inputTriangles[3*t+0];
+				sampledTriangles[l][3*t+1] = inputTriangles[3*t+1];
+				sampledTriangles[l][3*t+2] = inputTriangles[3*t+2];
 			}
 		}
 
