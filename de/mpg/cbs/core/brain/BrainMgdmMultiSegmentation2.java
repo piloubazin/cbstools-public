@@ -17,6 +17,7 @@ public class BrainMgdmMultiSegmentation2 {
 	private float[] input2Image = null;
 	private float[] input3Image = null;
 	private float[] input4Image = null;
+	private float[] input5Image = null;
 	
 	private int nx, ny, nz, nxyz;
 	private float rx, ry, rz;
@@ -40,15 +41,17 @@ public class BrainMgdmMultiSegmentation2 {
 	private String type2Param = "none";
 	private String type3Param = "none";
 	private String type4Param = "none";
-	private static final String[] inputTypes = {"-- 3T --", "MPRAGE3T", "T1MAP3T", "MP2RAGE3T", 
+	private String type5Param = "none";
+	public static final String[] inputTypes = {"-- 3T --", "MPRAGE3T", "T1MAP3T", "MP2RAGE3T", 
 													"HCPT1w", "HCPT2w", "NormMPRAGE", "FLAIR3T",
 													"DWIFA3T", "DWIMD3T",
 													"-- 7T --", "T1MAP7T", "MP2RAGE7T", "T2SW7T", "QSM7T", 
 													"-- 9.4T --", "T1MAP9T", "MP2RAGE9T",
 													"-- MPM --", "mpmPD3T", "mpmMT3T", "mpmR13T", "mpmR2s3T",
+													"-- custom --", "Custom1", "Custom2", "Custom3", "Custom4", "Custom5",
 													"-- misc --", "Filters", "WMLesions", "PVDURA", "Labeling","none"};
 	
-	private static final String inputTypeInfo = "Currently available contrasts:\n"
+	public static final String inputTypeInfo = "Currently available contrasts:\n"
 			+"T1MAP7T: a 7T quantitative T1 map, \n"
 			+"MP2RAGE7T: a T1-weighted image from 7T MP2RAGE (UNI), \n"
 			+"T2SW7T: a 7T T2*-weighted image (devel), \n"
@@ -111,6 +114,8 @@ public class BrainMgdmMultiSegmentation2 {
 	public final void setContrastType3(String val) { type3Param = val; }
 	public final void setContrastImage4(float[] val) { input4Image = val; }
 	public final void setContrastType4(String val) { type4Param = val; }
+	public final void setContrastImage5(float[] val) { input5Image = val; }
+	public final void setContrastType5(String val) { type5Param = val; }
 	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
@@ -171,6 +176,7 @@ public class BrainMgdmMultiSegmentation2 {
 		if (input2Image != null) nimg++;
 		if (input3Image != null) nimg++;
 		if (input4Image != null) nimg++;
+		if (input5Image != null) nimg++;
 		
 		String[] modality = new String[nimg];
 		int n=0;
@@ -178,6 +184,7 @@ public class BrainMgdmMultiSegmentation2 {
 		if (input2Image != null) { n++; modality[n] = type2Param; }
 		if (input3Image != null) { n++; modality[n] = type3Param; }
 		if (input4Image != null) { n++; modality[n] = type4Param; }
+		if (input5Image != null) { n++; modality[n] = type5Param; }
 		
 		float[][] image = new float[nimg][nxyz];
 		n = 0;
@@ -210,6 +217,14 @@ public class BrainMgdmMultiSegmentation2 {
 			}
 		}	
 		input4Image = null;		
+		if (input5Image != null) {
+			n++;
+			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+				int xyz = x+nx*y+nx*ny*z;
+				image[n][xyz] = input5Image[xyz];
+			}
+		}	
+		input5Image = null;		
 		
 		// main algorithm
 		BasicInfo.displayMessage("Load atlas\n");
