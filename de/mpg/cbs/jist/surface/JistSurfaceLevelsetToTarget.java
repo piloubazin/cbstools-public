@@ -128,7 +128,7 @@ public class JistSurfaceLevelsetToTarget extends ProcessingAlgorithm {
 		SmoothGdm evolve = new SmoothGdm(initgdm, targetgdm, nx, ny, nz, rx, ry, rz,
 											mask, balloonParam.getValue().floatValue(), 
 											curvParam.getValue().floatValue(), 
-											topologyParam.getValue());
+											topologyParam.getValue(),null);
 		
 		evolve.fastMarchingReinitialization(true);
 		if (iterationParam.getValue().intValue()>0) {

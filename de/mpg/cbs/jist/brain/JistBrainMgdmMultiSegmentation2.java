@@ -45,34 +45,9 @@ public class JistBrainMgdmMultiSegmentation2 extends ProcessingAlgorithm {
 	private ParamOption type2Param;
 	private ParamOption type3Param;
 	private ParamOption type4Param;
-	private static final String[] inputTypes = {"-- 3T --", "MPRAGE3T", "T1MAP3T", "MP2RAGE3T", 
-													"HCPT1w", "HCPT2w", "NormMPRAGE", "FLAIR3T",
-													"DWIFA3T", "DWIMD3T",
-													"-- 7T --", "T1MAP7T", "MP2RAGE7T", "T2SW7T", "QSM7T", 
-													"-- 9.4T --", "T1MAP9T", "MP2RAGE9T",
-													"-- MPM --", "mpmPD3T", "mpmMT3T", "mpmR13T", "mpmR2s3T",
-													"-- misc --", "Filters", "WMLesions", "PVDURA", "Labeling","none"};
+	private static final String[] inputTypes = BrainMgdmMultiSegmentation2.inputTypes;
 	
-	private static final String inputTypeInfo = "Currently available contrasts:\n"
-			+"T1MAP7T: a 7T quantitative T1 map, \n"
-			+"MP2RAGE7T: a T1-weighted image from 7T MP2RAGE (UNI), \n"
-			+"T2SW7T: a 7T T2*-weighted image (devel), \n"
-			+"SQSM7T: a 7T quantitative susceptibility map (devel), \n"
-			+"T1MAP9T: a 9.4T quantitative T1 map (devel), \n"
-			+"MP2RAGE9T: a T1-weighted image from 9.4T MP2RAGE (UNI) (devel), \n"
-			+"MPRAGE3T: a 3T T1-weighted MPRAGE image, \n"
-			+"T1MAP3T: a 3T quantitative T1 map, \n"
-			+"MP2RAGE3T: a T1-weighted image from MP2RAGE (UNI), \n"
-			+"HCPT1w: a T1-weighted image using the HCP sequence, \n"
-			+"HCPT2w: a T2-weighted image using the HCP sequence, \n"
-			+"NormMPRAGE: a 3T MPRAGE normalised for B1 shading, \n"
-			+"FLAIR3T: a 3T FLAIR image, \n"
-			+"dwiFA: a DWI fractional anisotropy image, \n"
-			+"dwiMD: a DWI mean diffusivity image, \n"
-			+"MPM: maps from the multi parameter mapping (MPM) sequence, \n"
-			+"Filters: a composite image of outputs from dura, pv and arteries pre-processing, \n"
-			+"WMLesions: a (probabilistic or binary) mask of detected white matter lesions, \n"
-			+"PVDURA: a composite image of outputs from dura and pv (obsolete).\n";												
+	private static final String inputTypeInfo = BrainMgdmMultiSegmentation2.inputTypeInfo;									
 													
 	private ParamFile atlasParam;
 

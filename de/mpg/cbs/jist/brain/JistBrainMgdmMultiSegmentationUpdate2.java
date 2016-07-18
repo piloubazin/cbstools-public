@@ -419,7 +419,7 @@ public class JistBrainMgdmMultiSegmentationUpdate2 extends ProcessingAlgorithm {
 																		curvParam.getValue().floatValue(),
 																		0.0f, 0.0f,
 																		distanceScale,
-																		"wcs");
+																		"wcs",null);
 				
 		Interface.displayMessage("gain...\n");
 		
@@ -498,7 +498,7 @@ public class JistBrainMgdmMultiSegmentationUpdate2 extends ProcessingAlgorithm {
 																curvParam.getValue().floatValue(),
 																0.0f,
 																distanceScale,
-																topologyParam.getValue());
+																topologyParam.getValue(),null);
 		
 		// clean-up
 		classif.finalize();
