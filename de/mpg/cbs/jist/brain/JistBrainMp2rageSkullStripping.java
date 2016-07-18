@@ -65,8 +65,8 @@ public class JistBrainMp2rageSkullStripping extends ProcessingAlgorithm {
 		
 		inputParams.setPackage(algorithm.getPackage());
 		inputParams.setCategory(algorithm.getCategory());
-		inputParams.setLabel(algorithm.getCategory());
-		inputParams.setName(algorithm.getCategory());
+		inputParams.setLabel(algorithm.getLabel());
+		inputParams.setName(algorithm.getName());
 
 		AlgorithmInformation info = getAlgorithmInformation();
 		info.add(References.getAuthor(algorithm.getAlgorithmAuthors()[0]));
