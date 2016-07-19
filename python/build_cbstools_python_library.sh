@@ -6,7 +6,7 @@
 # jar cvf intensity.jar de/mpg/cbs/python/IntensityBackgroundEstimator.class de/mpg/cbs/utilities/Numerics.class de/mpg/cbs/libraries/ImageStatistics.class
 
 # hard-coded path for safety
-cd /home/pilou/Code/github/cbstools/
+cd /scr/armstrong1/bazin/Code/github/cbstools-public/
 
 # include ONLY the classes to manipulate via python (the other ones are handled within Java, which simplifies the dependencies
 rm -f cbstools.jar
