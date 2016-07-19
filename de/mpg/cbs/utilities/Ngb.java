@@ -1,9 +1,6 @@
 package de.mpg.cbs.utilities;
 
-<<<<<<< HEAD
 import org.apache.commons.math3.util.FastMath;
-=======
->>>>>>> c16c0c24a490588947b54579d96e228ef80a329a
 
 /**
  *
@@ -47,12 +44,9 @@ public class Ngb {
 	public static final byte[] y = { 0, +1,  0,  0, -1,  0, +1, +1,  0, -1, +1,  0, +1, -1,  0, -1, -1,  0, +1, -1, -1, +1, +1, -1, -1, +1};
 	public static final byte[] z = { 0,  0, +1,  0,  0, -1,  0, +1, +1,  0, -1, +1,  0, +1, -1,  0, -1, -1, +1, -1, +1, -1, +1, -1, +1, -1};
 	
-<<<<<<< HEAD
 	private static final	float	INVSQRT2 = (float)(1.0/FastMath.sqrt(2.0));
 	private static final	float	INVSQRT3 = (float)(1.0/FastMath.sqrt(3.0));
 
-=======
->>>>>>> c16c0c24a490588947b54579d96e228ef80a329a
 	public static final int neighborIndex(byte d, int id, int nx, int ny, int nz) {
 		switch (d) {
 			case pX		: 	return id+1; 		
@@ -155,7 +149,6 @@ public class Ngb {
 		}	
 		return n;	
 	}
-<<<<<<< HEAD
 	
 	public static final float[] directionVector(int d) {
 		if (d==pX) return new float[]{1.0f, 0.0f, 0.0f};
@@ -215,7 +208,4 @@ public class Ngb {
 		else if (d==mXpYmZ) return new byte[]{-1, 1, -1};
 		else return new byte[]{0, 0, 0};
 	}
-
-=======
->>>>>>> c16c0c24a490588947b54579d96e228ef80a329a
 }

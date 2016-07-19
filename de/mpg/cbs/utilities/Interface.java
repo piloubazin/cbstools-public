@@ -7,6 +7,8 @@ import java.net.URL;
 
 import javax.swing.*;
 
+import javax.vecmath.*;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -26,7 +28,10 @@ import edu.jhu.ece.iacl.jist.structures.image.ImageDataInt;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
 import edu.jhu.ece.iacl.jist.structures.image.VoxelType;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
+import edu.jhu.ece.iacl.jist.structures.geom.EmbeddedSurface;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurface;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurfaceCollection;
 
 
 // TODO: Auto-generated Javadoc
@@ -370,6 +375,45 @@ public class Interface {
 		ori[2] = input.getImageData().getHeader().getAxisOrientation()[1].ordinal();
 		ori[3] = input.getImageData().getHeader().getAxisOrientation()[2].ordinal();
 		return ori;
+	}
+	
+	public static final String getName(ParamSurface input) {
+    	return input.getSurface().getName();
+    }
+    
+    public static final float[] getSurfacePoints(ParamSurface surface) {
+		int npt = surface.getSurface().getVertexCount();
+		float[] points = new float[3*npt];
+		for(int i=0; i<npt; i++){
+			Point3f p = surface.getSurface().getVertex(i);
+			points[3*i+0] = p.x;
+			points[3*i+1] = p.y;
+			points[3*i+2] = p.z;
+		}
+		return points;
+	}
+	
+	public static final int[] getSurfaceTriangles(ParamSurface surface) {
+		int ntr = surface.getSurface().getFaceCount();
+		int[] triangles = new int[3*ntr];
+		for(int i=0; i<ntr; i++){
+			int[] tri = surface.getSurface().getFaceVertexIds(i);
+			triangles[3*i+0] = tri[0];
+			triangles[3*i+1] = tri[1];
+			triangles[3*i+2] = tri[2];
+		}
+		return triangles;
+	}
+	
+	public static final void setSurface(float[] points, int[] triangles, ParamSurface container, String name) {
+		int npt = points.length;
+		Point3f[] pts = new Point3f[npt];
+		for(int i=0; i<npt; i++){
+			pts[i] = new Point3f(points[3*i],points[3*i+1],points[3*i+2]);
+		}
+		EmbeddedSurface surf = new EmbeddedSurface(pts, triangles);
+		surf.setName(name);
+		container.setValue(surf);
 	}
 	
     public static final float[] getFloatImage3D(ParamVolume input) {
