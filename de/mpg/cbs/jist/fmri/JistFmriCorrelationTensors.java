@@ -46,7 +46,7 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 	private ParamFloat 		extentParam;
 	
 	private ParamOption ngbParam;
-	private static final String[] ngbTypes = {"26C_neighbors","distance_based"}; 
+	private static final String[] ngbTypes = {"26C_neighbors","distance_based","debug"}; 
 	
 	private static final byte X=0;
 	private static final byte Y=1;
@@ -128,13 +128,18 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 			for (int t=0;t<nt;t++) data[x][y][z][t] -= center[x][y][z];
 			double var = 0.0;
 			for (int t=0;t<nt;t++) var += data[x][y][z][t]*data[x][y][z][t];
-			norm[x][y][z] = (float)FastMath.sqrt(var/nt);
+			norm[x][y][z] = (float)FastMath.sqrt(var/(nt-1.0));
 		}
 		
 		// mask from zero norm
 		boolean[][][] mask = new boolean[nx][ny][nz];
+		/*
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			mask[x][y][z] = (norm[x][y][z]>0);
+		}
+		*/
+		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
+			mask[x][y][z] = true;	
 		}
 		
 		float[][][][] tensor = new float[nx][ny][nz][6];
@@ -147,14 +152,69 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 					if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]]) {
 						double correlation = 0.0;
 						for (int t=0;t<nt;t++) correlation += data[x][y][z][t]*data[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]][t];
-						correlation /= norm[x][y][z]*norm[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]];
-						float[] v = Ngb.directionVector(n);
+						correlation /= nt*norm[x][y][z]*norm[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]];
+						// debug
+						float[] v = new float[3];
+						float vn = 0.0f;
+						v[X] = Ngb.x[n];
+						v[Y] = Ngb.y[n];
+						v[Z] = Ngb.z[n];
+						vn = (float)FastMath.sqrt(v[X]*v[X]+v[Y]*v[Y]+v[Z]*v[Z]);
+						v[X] /= vn;
+						v[Y] /= vn;
+						v[Z] /= vn;
+						
+						//float[] v = Ngb.directionVector(n);
 						tens[XX]	+= correlation*v[X]*v[X];
 						tens[XY]	+= correlation*v[X]*v[Y];
 						tens[XZ]	+= correlation*v[X]*v[Z];
 						tens[YY]	+= correlation*v[Y]*v[Y];
 						tens[YZ]	+= correlation*v[Y]*v[Z];
 						tens[ZZ]+= correlation*v[Z]*v[Z];
+					} else {
+						boundary=true;
+					}
+				}
+				if (!boundary) {
+					tensor[x][y][z][XX] = (float)(tens[XX]/26.0);
+					tensor[x][y][z][XY] = (float)(tens[XY]/26.0);
+					tensor[x][y][z][XZ] = (float)(tens[XZ]/26.0);
+					tensor[x][y][z][YY] = (float)(tens[YY]/26.0);
+					tensor[x][y][z][YZ] = (float)(tens[YZ]/26.0);
+					tensor[x][y][z][ZZ] = (float)(tens[ZZ]/26.0);
+				}
+			}
+		} else if (ngbParam.getValue().equals("debug")) {
+			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]) {
+				// for now, skip all voxels on the boundary
+				boolean boundary=false;
+				double[] tens = new double[6];
+				for (int n=0;n<6 && !boundary;n++) {
+					if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]]) {
+						double correlation = 0.0;
+						for (int t=0;t<nt;t++) correlation += data[x][y][z][t]*data[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]][t]/nt;
+						//correlation /= nt*norm[x][y][z]*norm[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]];
+						// debug
+						float[] v = new float[3];
+						float vn = 0.0f;
+						v[X] = Ngb.x[n];
+						v[Y] = Ngb.y[n];
+						v[Z] = Ngb.z[n];
+						vn = (float)FastMath.sqrt(v[X]*v[X]+v[Y]*v[Y]+v[Z]*v[Z]);
+						v[X] /= vn;
+						v[Y] /= vn;
+						v[Z] /= vn;
+						
+						//float[] v = Ngb.directionVector(n);
+						/*
+						tens[XX]	+= correlation*v[X]*v[X];
+						tens[XY]	+= correlation*v[X]*v[Y];
+						tens[XZ]	+= correlation*v[X]*v[Z];
+						tens[YY]	+= correlation*v[Y]*v[Y];
+						tens[YZ]	+= correlation*v[Y]*v[Z];
+						tens[ZZ]+= correlation*v[Z]*v[Z];
+						*/
+						tens[n]	= correlation;
 					} else {
 						boundary=true;
 					}
@@ -183,7 +243,7 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 						if (dist<=maxdist) {
 							double correlation = 0.0;
 							for (int t=0;t<nt;t++) correlation += data[x][y][z][t]*data[x+i][y+j][z+l][t];
-							correlation /= norm[x][y][z]*norm[x+i][y+j][z+l];
+							correlation /= nt*norm[x][y][z]*norm[x+i][y+j][z+l];
 							double[] v = new double[]{i/dist,j/dist,l/dist};
 							tens[XX]	+= correlation*v[X]*v[X];
 							tens[XY]	+= correlation*v[X]*v[Y];
