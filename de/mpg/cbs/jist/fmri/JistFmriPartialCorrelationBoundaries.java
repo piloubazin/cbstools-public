@@ -119,7 +119,7 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 			for (int t=0;t<nt;t++) data[x][y][z][t] -= center[x][y][z];
 			double var = 0.0;
 			for (int t=0;t<nt;t++) var += data[x][y][z][t]*data[x][y][z][t];
-			norm[x][y][z] = (float)FastMath.sqrt(var/nt);
+			norm[x][y][z] = (float)FastMath.sqrt(var/(nt-1));
 		}
 		
 		// mask from zero norm
@@ -133,19 +133,19 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 			for (int n=0;n<26;n++) {
 				if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]] && mask[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]]) {
 					// partial correlation formula?
-					double partial = 0.0;
-					for (int t=0;t<nt;t++) partial += data[x][y][z][t]*data[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]][t];
-					partial /= norm[x][y][z]*norm[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]];
-					
-					double partialnorm = 0.0;
-					for (int t=0;t<nt;t++) partialnorm += Numerics.square(data[x][y][z][t]-partial*data[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]][t]);
-					partialnorm = FastMath.sqrt(partialnorm/nt);
-					
-					double correlation = 0.0;
-					for (int t=0;t<nt;t++) correlation += (data[x][y][z][t]-partial*data[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]][t])*data[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]][t];
-					correlation /= partialnorm*norm[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]];
+					double corrXY = 0.0;
+					for (int t=0;t<nt;t++) corrXY += data[x][y][z][t]*data[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]][t];
+					corrXY /= nt*norm[x][y][z]*norm[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]];
 
-					boundaries[x][y][z][n] = (float)correlation;
+					double corrXZ = 0.0;
+					for (int t=0;t<nt;t++) corrXZ += data[x][y][z][t]*data[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]][t];
+					corrXZ /= nt*norm[x][y][z]*norm[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]];
+					
+					double corrYZ = 0.0;
+					for (int t=0;t<nt;t++) corrYZ += data[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]][t]*data[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]][t];
+					corrYZ /= nt*norm[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]]*norm[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]];
+					
+					boundaries[x][y][z][n] = (float)((corrXY-corrXZ*corrYZ)/(FastMath.sqrt((1.0-corrXZ*corrXZ)*(1.0-corrYZ*corrYZ))));
 				}
 			}
 		}
