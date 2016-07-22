@@ -63,6 +63,8 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 
 	// ouput
 	private ParamVolume tensorImage;
+	private ParamVolume meanImage;
+	private ParamVolume normImage;
 		
 	protected void createInputParameters(ParamCollection inputParams) {
 		
@@ -90,6 +92,9 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
 		outputParams.add(tensorImage = new ParamVolume("Tensor Map",VoxelType.FLOAT,-1,-1,-1,-1));
+		
+		outputParams.add(meanImage = new ParamVolume("Mean Map",VoxelType.FLOAT,-1,-1,-1,-1));
+		outputParams.add(normImage = new ParamVolume("Norm Map",VoxelType.FLOAT,-1,-1,-1,-1));
 		
 		outputParams.setLabel("fMRI Correlation Tensor");
 		outputParams.setName("fMRICorrelationTensor");
@@ -276,6 +281,15 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 		tensorImg.setHeader(dataHeader);
 		tensorImg.setName(dataName + "_tensor");
 		tensorImage.setValue(tensorImg);
+		
+		ImageDataFloat meanImg = new ImageDataFloat(center);		
+		meanImg.setHeader(dataHeader);
+		meanImg.setName(dataName + "_mean");
+		meanImage.setValue(meanImg);
+		ImageDataFloat normImg = new ImageDataFloat(norm);		
+		normImg.setHeader(dataHeader);
+		normImg.setName(dataName + "_norm");
+		normImage.setValue(normImg);
 	}
 
 }
