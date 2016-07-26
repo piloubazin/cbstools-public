@@ -10,7 +10,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataMipav;
-import edu.jhu.ece.iacl.jist.structures.image.ImageDataByte;
+import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.VoxelType;
@@ -94,7 +94,7 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 	protected void createOutputParameters(ParamCollection outputParams) {
 		outputParams.add(tensorImage = new ParamVolume("Tensor Map",VoxelType.FLOAT,-1,-1,-1,-1));
 		
-		outputParams.add(histImage = new ParamVolume("Histograms",VoxelType.FLOAT,-1,-1,-1,-1));
+		outputParams.add(histImage = new ParamVolume("Histograms",VoxelType.UBYTE,-1,-1,-1,-1));
 		outputParams.add(meanImage = new ParamVolume("Mean Map",VoxelType.FLOAT,-1,-1,-1,-1));
 		outputParams.add(normImage = new ParamVolume("Norm Map",VoxelType.FLOAT,-1,-1,-1,-1));
 		
@@ -145,31 +145,31 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 
 		// how to deal with artefactual correlations in different directions??
 		int ncx=0, ncy=0, ncz=0;
-		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]){
-			if (mask[x+1][y][z]) ncx++;
-			if (mask[x][y+1][z]) ncy++;
-			if (mask[x][y][z+1]) ncz++;
+		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) if (mask[x][y][z]){
+			if (mask[x+2][y][z]) ncx++;
+			if (mask[x][y+2][z]) ncy++;
+			if (mask[x][y][z+2]) ncz++;
 		}
 		double[] corrX = new double[ncx];
 		double[] corrY = new double[ncy];
 		double[] corrZ = new double[ncz];
 		
 		int xc=0, yc=0, zc=0;
-		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]){
-			if (mask[x+1][y][z]) {
+		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) if (mask[x][y][z]){
+			if (mask[x+2][y][z]) {
 				corrX[xc] = 0.0;
-				for (int t=0;t<nt;t++) corrX[xc] += data[x][y][z][t]*data[x+1][y][z][t];
-				corrX[xc] /= nt*norm[x][y][z]*norm[x+1][y][z];
+				for (int t=0;t<nt;t++) corrX[xc] += data[x][y][z][t]*data[x+2][y][z][t];
+				corrX[xc] /= nt*norm[x][y][z]*norm[x+2][y][z];
 			}
-			if (mask[x][y+1][z]) {
+			if (mask[x][y+2][z]) {
 				corrY[yc] = 0.0;
-				for (int t=0;t<nt;t++) corrY[yc] += data[x][y][z][t]*data[x][y+1][z][t];
-				corrY[yc] /= nt*norm[x][y][z]*norm[x][y+1][z];
+				for (int t=0;t<nt;t++) corrY[yc] += data[x][y][z][t]*data[x][y+2][z][t];
+				corrY[yc] /= nt*norm[x][y][z]*norm[x][y+2][z];
 			}
-			if (mask[x][y][z+1]) {
+			if (mask[x][y][z+2]) {
 				corrZ[zc] = 0.0;
-				for (int t=0;t<nt;t++) corrZ[zc] += data[x][y][z][t]*data[x][y][z+1][t];
-				corrZ[zc] /= nt*norm[x][y][z]*norm[x][y][z+1];
+				for (int t=0;t<nt;t++) corrZ[zc] += data[x][y][z][t]*data[x][y][z+2][t];
+				corrZ[zc] /= nt*norm[x][y][z]*norm[x][y][z+2];
 			}
 		}
 		Histogram histX = new Histogram(corrX, 1000, ncx);
@@ -185,15 +185,16 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 		
 		float[][][][] tensor = new float[nx][ny][nz][6];
 		if (ngbParam.getValue().equals("26C_neighbors")) {
-			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]) {
+			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) if (mask[x][y][z]){
+			//for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]) {
 				// for now, skip all voxels on the boundary
 				boolean boundary=false;
 				double[] tens = new double[6];
 				for (int n=0;n<26 && !boundary;n++) {
 					if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]]) {
 						double correlation = 0.0;
-						for (int t=0;t<nt;t++) correlation += data[x][y][z][t]*data[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]][t];
-						correlation /= nt*norm[x][y][z]*norm[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]];
+						for (int t=0;t<nt;t++) correlation += data[x][y][z][t]*data[x+2*Ngb.x[n]][y+2*Ngb.y[n]][z+2*Ngb.z[n]][t];
+						correlation /= nt*norm[x][y][z]*norm[x+2*Ngb.x[n]][y+2*Ngb.y[n]][z+2*Ngb.z[n]];
 						
 						float[] v = Ngb.directionVector(n);
 						tens[XX]	+= correlation*v[X]*v[X];
@@ -216,15 +217,16 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 				}
 			}
 		} else if (ngbParam.getValue().equals("debug")) {
-			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]) {
+			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) if (mask[x][y][z]){
+			//for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]) {
 				// for now, skip all voxels on the boundary
 				boolean boundary=false;
 				double[] tens = new double[6];
 				for (int n=0;n<6 && !boundary;n++) {
-					if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]]) {
+					if (mask[x+2*Ngb.x[n]][y+2*Ngb.y[n]][z+2*Ngb.z[n]]) {
 						double corrXY = 0.0;
-						for (int t=0;t<nt;t++) corrXY += data[x][y][z][t]*data[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]][t];
-						corrXY /= nt*norm[x][y][z]*norm[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]];
+						for (int t=0;t<nt;t++) corrXY += data[x][y][z][t]*data[x+2*Ngb.x[n]][y+2*Ngb.y[n]][z+2*Ngb.z[n]][t];
+						corrXY /= nt*norm[x][y][z]*norm[x+2*Ngb.x[n]][y+2*Ngb.y[n]][z+2*Ngb.z[n]];
 						// debug
 						float[] v = new float[3];
 						float vn = 0.0f;
@@ -245,9 +247,11 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 						tens[YZ]	+= correlation*v[Y]*v[Z];
 						tens[ZZ]+= correlation*v[Z]*v[Z];
 						*/
+						/*
 						if (n==0 || n==3) corrXY = (corrXY-offsetx)/(maxx-offsetx);
 						if (n==1 || n==4) corrXY = (corrXY-offsety)/(maxy-offsety);
 						if (n==2 || n==5) corrXY = (corrXY-offsetz)/(maxz-offsetz);
+						*/
 						tens[n] = corrXY;
 					} else {
 						boundary=true;
@@ -311,11 +315,15 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 		tensorImg.setName(dataName + "_tensor");
 		tensorImage.setValue(tensorImg);
 		
-		histo = new byte[1000][1000][3];
+		byte[][][] histo = new byte[1000][1000][3];
 		byte[][] tmp = histX.plotLogHistogram();
-		for (int n=0;n<1000;n++) for (int m=0;m<1000;m++) histo[n][m][0] = tmp HERE
+		for (int n=0;n<1000;n++) for (int m=0;m<1000;m++) histo[n][m][0] = tmp[n][m];
+		tmp = histY.plotLogHistogram();
+		for (int n=0;n<1000;n++) for (int m=0;m<1000;m++) histo[n][m][1] = tmp[n][m];
+		tmp = histZ.plotLogHistogram();
+		for (int n=0;n<1000;n++) for (int m=0;m<1000;m++) histo[n][m][2] = tmp[n][m];
 		
-		ImageDataFloat histImg = new ImageDataFloat(histo);		
+		ImageDataUByte histImg = new ImageDataUByte(histo);		
 		histImg.setHeader(dataHeader);
 		histImg.setName(dataName + "_hist");
 		histImage.setValue(histImg);
