@@ -331,6 +331,14 @@ public class Histogram {
 		return (float)Math.sqrt(var/(total-1));
 	}
 	
+	public final float argmax() {
+		
+		int nmax = 0;
+		for (int n=0;n<bins;n++) if (hist[n]>hist[nmax]) nmax = n;
+		
+		return (min + (float)(nmax+0.5f)/(float)bins*(max-min));
+	}
+	
 	public final float rayleighParameter() {
 		
 		double total = 0.0f;
