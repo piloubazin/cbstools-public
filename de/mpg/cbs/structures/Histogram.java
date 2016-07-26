@@ -389,10 +389,11 @@ public class Histogram {
 		for (int n=0;n<bins;n++) hist[n] = 1.0 - cumul[n]/total;
 	}
 	
-	public final float getHistogramCount(float value) {
-		int level = Numerics.bounded(Numerics.round(bins*(value-min)/(max-min)), 0, bins-1);
+	public final float argmax() {
+		int nmax = 0;
+		for (int n=0;n<bins;n++) if (hist[n]>hist[nmax]) nmax = n;
 		
-		return (float)hist[level];
+		return (min + (float)(nmax+0.5f)/(float)bins*(max-min));
 	}
 	
 	public final String printHistogram() {

@@ -66,6 +66,10 @@ public class Numerics {
 		if (a < b) return a;
 		else return b;
 	}
+	public static final byte min( byte a, byte b) {
+		if (a < b) return a;
+		else return b;
+	}
 	public static final short min( short a, short b) {
 		if (a < b) return a;
 		else return b;
