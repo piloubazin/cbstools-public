@@ -149,3 +149,171 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
     print("Execution completed")
 
     #return (img,out_im)
+
+def seg_erode(seg_d, iterations=1, background_idx=1,
+                  structure=None, min_vox_count=5, seg_null_value=0,
+                  VERBOSE=False):
+# erode indices (integers) to identify "core" structure
+# XXX might need to limit erosion here and loop myself
+# default erosion structure is 3,1 (which is not super restrictive, and should work for most)
+# seg null value is int value that is assigned to voxels that were eroded from the segmentation
+    import scipy.ndimage as ndi
+    import numpy as np
+
+    if structure is None:
+        structure = ndi.morphology.generate_binary_structure(3, 1)
+    if seg_null_value == 0:
+        seg_shrunk_d = np.zeros_like(seg_d)
+        temp_d = np.zeros_like(seg_d)
+    else:
+        seg_shrunk_d = np.ones_like(seg_d) * seg_null_value
+        temp_d = np.ones_like(seg_d) * seg_null_value
+
+    seg_idxs = np.unique(seg_d)
+
+    if seg_null_value in seg_idxs:
+        print("Shit, your null value is also an index. This will not work.")
+        print("Set it to a suitably strange value that is not already an index. {0,999}")
+        return None
+
+    print("Indices:")
+    for seg_idx in seg_idxs:
+        print(seg_idx),
+        if (background_idx is not None) and (background_idx == seg_idx):
+            seg_shrunk_d[seg_d == seg_idx] = seg_idx  # just set the value to the bckgrnd value, and be done with it
+            if VERBOSE:
+                print("[bckg]"),
+        else:
+            temp_d[seg_d == seg_idx] = 1
+            for idx in range(0, iterations):  # messy, does not exit the loop when already gone too far.
+                temp_temp_d = ndi.binary_erosion(temp_d, iterations=1, structure=structure)
+                if np.sum(temp_temp_d) >= min_vox_count:
+                    temp_d = temp_temp_d
+                    if VERBOSE:
+                        print("[y]"),
+                else:
+                    if VERBOSE:
+                        print("[no]"),
+            seg_shrunk_d[temp_d == 1] = seg_idx
+            temp_d[:, :, :] = seg_null_value
+            if VERBOSE:
+                print(seg_idx)
+        print("")
+    return seg_shrunk_d
+
+
+def extract_metrics_from_seg(seg_d, metric_d, norm_data=True,
+                             background_idx=1, seg_null_value=0,
+                             percentile_top_bot=[75, 25],
+                             return_normed_metric_d=False):
+    # returns np matrix of indices, and one of median, and percentiles
+    # norm_data = true first zscores all of the data other than the background
+    import numpy as np
+    import scipy
+    seg_idxs = np.unique(seg_d)
+    res = np.zeros((len(seg_idxs), 3))
+
+    if norm_data:  # rescale the data to 0
+        if background_idx is not None:  # we need to exclude the background data from the norming
+            metric_d[seg_d != background_idx] = (metric_d[seg_d != background_idx] - np.min(
+                metric_d[seg_d != background_idx])) / (np.max(metric_d[seg_d != background_idx]) - np.min(
+                metric_d[seg_d != background_idx]))
+        else:
+            metric_d = (metric_d - np.min(metric_d)) / (np.max(metric_d) - np.min(metric_d))
+
+    for idx, seg_idx in enumerate(seg_idxs):
+        if (background_idx is not None) and ((seg_idx == background_idx) or (seg_idx == seg_null_value)):
+            res[idx, :] = [0, 0, 0]
+        else:
+            d_1d = np.ndarray.flatten(metric_d[seg_d == seg_idx])
+            res[idx, :] = [np.mean(d_1d),
+                           np.percentile(d_1d, np.max(percentile_top_bot)),
+                           np.percentile(d_1d, np.min(percentile_top_bot))]
+    if return_normed_metric_d:
+        return seg_idxs, res, metric_d
+    else:
+        return seg_idxs, res
+
+def extract_lut_priors_from_atlas(atlas_file,contrast_name):
+    # identify the start and stop locations for the LUT and the intensity priors of interest
+    import pandas as pd
+    import os
+
+    fp = open(os.path.join(ATLAS_DIR, atlas_file))
+    for i, line in enumerate(fp):
+        if "Structures:" in line:  # this is the beginning of the LUT
+            lut_idx = i
+            lut_rows = map(int, [line.split()[1]])[0]
+            #    if "Topology Atlas:" in line: #the end of the LUT #OR you could use the value in the line?
+            #        lut_idx[1] = i-2
+        if "Intensity Prior:" in line:
+            if contrast_name in line:
+                con_idx = i
+    fp.close()
+
+    # dump into pandas dataframe
+    lut = pd.read_csv(os.path.join(ATLAS_DIR, atlas_file), sep="\t+",
+                      skiprows=lut_idx + 1, nrows=lut_rows, engine='python',
+                      names=["Index", "Type"])
+
+    # con_idx[1] = len(lut) #total number is the same length as the lut
+    priors = pd.read_csv(os.path.join(ATLAS_DIR, atlas_file), sep="\t+",
+                         skiprows=con_idx + 1, nrows=lut_rows, engine='python',
+                         names=["Median", "Spread", "Weight"])
+    return lut,con_idx,lut_rows,lut,priors
+
+def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,metric_contrast_name,atlas_file,new_atlas_file_head,erosion_iterations=1,seg_iterations=1,output_dir=None):
+    # generates group intensity priors for metric_files based on orig_seg files (i.e., orig_seg could be Mprage3T and metric_files could be DWIFA3T)
+    # does not do the initial segmentation for you, that needs to be done first :-)
+    # we assume that you already did due-diligence and have matched lists of inputs (orig_seg_files and metric_files)
+
+    import os
+    import nibabel as nb
+
+    [seg_idx,con_idx,lut_rows,priors] = extract_lut_priors_from_atlas(atlas_file, metric_contrast_name)
+    all_Ss_priors_list_median = np.array(seg_idx)
+    all_Ss_priors_list_spread = np.array(seg_idx)
+    seg_null_value = 0 #value to fill in when we are NOT using the voxels at all (i.e., not background, not other index)
+    background_idx = 1
+    min_quart_diff = 0.10 #minimun spread allowed in priors atlas
+
+    # make a list if we only input one dataset
+    if len(orig_seg_files) == 1:
+        orig_seg_files = [orig_seg_files]
+    if len(metric_files) == 1:
+        metric_files = [metric_files]
+
+    if not(len(orig_seg_files) == len(metric_files)):
+        print("You do not have the same number of segmentation and metric files. Bad!")
+        print("Exiting")
+        return
+
+    for seg_iter in range(0,seg_iterations+1):
+        seg_iter_text = str(seg_iter+1).zfill(3) #text for naming files etc
+
+        for idx, seg_file in enumerate(orig_seg_files):
+            metric_file = metric_files[idx]
+            img=nb.load(metric_file)
+            d_metric = img.get_data()
+            a_metric = img.affine
+            a_header = img.header
+            d_seg = nb.load(seg_file).get_data()
+
+            #erode our data
+            if erosion_iterations>0:
+                d_seg_ero = seg_erode(d_seg,iterations=erosion_iterations,
+                                      background_idx=background_idx,
+                                      seg_null_value=seg_null_value)
+
+            #extract summary metrics (median, 75 and 25 percentile) from metric file
+            [seg_idxs, seg_stats] = extract_metrics_from_seg(d_seg_ero, d_metric,
+                                                                            seg_null_value=seg_null_value,
+                                                                            return_normed_metric_d=False)
+
+            prior_medians = seg_stats[:, 0]
+            prior_quart_diffs = np.squeeze(np.abs(np.diff(seg_stats[:, 1:3])))
+            prior_quart_diffs[prior_quart_diffs < min_quart_diff] = min_quart_diff
+
+            #now place this output into a growing array for use on the group level
+            all_Ss_priors_list_median = np.vstack((all_Ss_priors_list_median, priors_new.Median))
+            all_Ss_priors_list_spread = np.vstack((all_Ss_priors_list_spread, priors_new.Spread))
