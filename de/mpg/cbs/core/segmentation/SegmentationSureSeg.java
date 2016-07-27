@@ -25,8 +25,10 @@ public class SegmentationSureSeg {
 	private float rx, ry, rz;
 	
 	private float[] probaImage = null;
+	private int[] 	labelImage = null;
 	private byte 	nlabelsParam = 0;
 	private byte 	nbestParam	=	4;
+	private boolean	includeBgParam = false;
 	
 	private int 	iterationParam	=	500;
 	private float 	imgscaleParam		=	0.05f;
@@ -55,8 +57,9 @@ public class SegmentationSureSeg {
 	public final void setResolutions(float[] res) { rx=res[0]; ry=res[1]; rz=res[2]; }
 	
 	public final void setLabelProbabilities(float[] val) { probaImage = val; }
-	public final void setLabelNumber(byte val) { nlabelsParam = val; }
+	public final void setLabelSegmentation(int[] val) { labelImage = val; }
 	public final void setLabelDepth(byte val) { nbestParam = val; }
+	public final void setBackgroundIncluded(boolean val) { includeBgParam = val; }
 
 	public final void setMaxIterations(int val) { iterationParam = val; }
 	public final void setImageScale(float val) { imgscaleParam = val; }
@@ -117,19 +120,66 @@ public class SegmentationSureSeg {
 		}			
 		input3Image = null;		
 		
-		// create max proba, labels (assuming a background value with label zero)
-		MaxProbaRepresentation maxproba = new MaxProbaRepresentation(nbestParam, nlabelsParam, nx,ny,nz);
-		maxproba.buildFromCompetingProbabilitiesAndBackground(probaImage);
+		// two input options: a max proba + labels or a set of probabilities (incl. background or not)
+		byte nlabels = -1;
+		int[] objlb = null;
+		float[][] maxproba = null;
+		byte[][] maxlabel = null;
+		
+		if (labelImage==null) {
+			// create max proba, labels (assuming a background value with label zero)
+			nlabels = (byte)(probaImage.length/nxyz);
+			objlb = new int[nlabels];
+			for (int l=0;l<nlabels;l++) objlb[l] = l+1;
+
+			MaxProbaRepresentation maxprep = new MaxProbaRepresentation(nbestParam, nlabels, nx,ny,nz);
+			if (includeBgParam) maxprep.buildFromCompleteProbabilities(probaImage);
+			else maxprep.buildFromCompetingProbabilitiesAndBackground(probaImage);
+			maxproba = maxprep.getMaxProba();
+			maxlabel = maxprep.getMaxLabel();
+		} else {
+			objlb = ObjectLabeling.listOrderedLabels(labelImage,nx,ny,nz);
+			nlabels = (byte)objlb.length;
+			
+			// create a distance-based probability map
+			float[] boundary = new float[nxyz];
+			if (!includeBgParam) {
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					if (labelImage[xyz]==0) boundary[xyz] = 1.0f-probaImage[xyz];
+					else boundary[xyz] = probaImage[xyz];
+				}
+			} else {
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					boundary[xyz] = probaImage[xyz];
+				}
+			}
+			byte[] lbs = new byte[nlabels];
+			for (int l=0;l<nlabels;l++) lbs[l] = (byte)objlb[l];
+			MgdmRepresentation mgdm = new MgdmRepresentation(labelImage, boundary, nx,ny,nz, rx,ry,rz, lbs, nlabels, nbestParam-1, false, -1.0f);
+			
+			MaxProbaRepresentation maxprep = new MaxProbaRepresentation(nbestParam, nlabels, nx,ny,nz);
+			maxproba = new float[nlabels][nxyz];
+			maxlabel = mgdm.getLabels();
+			float[] distproba = new float[nbestParam-1];
+			for (int xyz=0;xyz<nxyz;xyz++) {
+				maxproba[0][xyz] = boundary[xyz];
+				distproba[nbestParam-1] = 0.0f;
+				for (int b=0;b<nbestParam-1;b++) {
+					distproba[b] = 1.0f/(1.0f+mgdm.getFunctions()[b][xyz]);
+					distproba[nbestParam-1] += distproba[b];
+				}
+				for (int b=0;b<nbestParam-1;b++) {
+					maxproba[b+1][xyz] = Numerics.min( boundary[xyz], (1.0f-boundary[xyz])*(distproba[b]/distproba[nbestParam-1]) );
+				}
+			}
+		}
 		
 		// main algorithm
 		boolean[] used = new boolean[nimg];
 		for (int i=0;i<nimg;i++) used[i] = true;
 		
 		StatisticalUncertaintyReduction sur = new StatisticalUncertaintyReduction(image, used, scaling, nimg, nx, ny, nz,  nbestParam);
-		
-		int[] objlb = new int[nlabelsParam];
-		for (int l=0;l<nlabelsParam;l++) objlb[l] = l+1;
-		sur.setBestProbabilities(maxproba.getMaxProba(), maxproba.getMaxLabel(), objlb);
+		sur.setBestProbabilities(maxproba, maxlabel, objlb);
 		
 		sur.diffuseCertainty(iterationParam, imgscaleParam, certainscaleParam, neighborParam, mincertaintyParam);
 					
