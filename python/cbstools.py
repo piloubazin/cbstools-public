@@ -153,10 +153,10 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
 def seg_erode(seg_d, iterations=1, background_idx=1,
                   structure=None, min_vox_count=5, seg_null_value=0,
                   VERBOSE=False):
-# erode indices (integers) to identify "core" structure
-# XXX might need to limit erosion here and loop myself
-# default erosion structure is 3,1 (which is not super restrictive, and should work for most)
-# seg null value is int value that is assigned to voxels that were eroded from the segmentation
+    # erode indices (integers) to identify "core" structure
+    # default erosion structure is 3,1 (which is not super restrictive, and should work for most)
+    # seg null value is int value that is assigned to voxels that were eroded from the segmentation
+
     import scipy.ndimage as ndi
     import numpy as np
 
@@ -262,20 +262,24 @@ def extract_lut_priors_from_atlas(atlas_file,contrast_name):
                          names=["Median", "Spread", "Weight"])
     return lut,con_idx,lut_rows,lut,priors
 
-def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,metric_contrast_name,atlas_file,new_atlas_file_head,erosion_iterations=1,seg_iterations=1,output_dir=None):
+def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,metric_contrast_name,
+                                    atlas_file,new_atlas_file_head,erosion_iterations=1,seg_iterations=1,
+                                    output_dir=None):
     # generates group intensity priors for metric_files based on orig_seg files (i.e., orig_seg could be Mprage3T and metric_files could be DWIFA3T)
     # does not do the initial segmentation for you, that needs to be done first :-)
     # we assume that you already did due-diligence and have matched lists of inputs (orig_seg_files and metric_files)
 
     import os
     import nibabel as nb
+    import numpy as np
 
     [seg_idx,con_idx,lut_rows,priors] = extract_lut_priors_from_atlas(atlas_file, metric_contrast_name)
     all_Ss_priors_list_median = np.array(seg_idx)
     all_Ss_priors_list_spread = np.array(seg_idx)
-    seg_null_value = 0 #value to fill in when we are NOT using the voxels at all (i.e., not background, not other index)
+    seg_null_value = 0 #value to fill in when we are NOT using the voxels at all (not background and not other index)
     background_idx = 1
     min_quart_diff = 0.10 #minimun spread allowed in priors atlas
+
 
     # make a list if we only input one dataset
     if len(orig_seg_files) == 1:
@@ -288,14 +292,14 @@ def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,me
         print("Exiting")
         return
 
-    for seg_iter in range(0,seg_iterations+1):
-        seg_iter_text = str(seg_iter+1).zfill(3) #text for naming files etc
-
+    for seg_iter in range(0,seg_iterations):
+        seg_iter_text = str(seg_iter+1).zfill(3) #text for naming files etc?
+        print("Running segmentation iteration: " + seg_iter_text)
         for idx, seg_file in enumerate(orig_seg_files):
             metric_file = metric_files[idx]
             img=nb.load(metric_file)
             d_metric = img.get_data()
-            a_metric = img.affine
+            a_metric = img.affine #not currently using the affine and header, but could also output the successive steps
             a_header = img.header
             d_seg = nb.load(seg_file).get_data()
 
@@ -317,3 +321,12 @@ def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,me
             #now place this output into a growing array for use on the group level
             all_Ss_priors_list_median = np.vstack((all_Ss_priors_list_median, priors_new.Median))
             all_Ss_priors_list_spread = np.vstack((all_Ss_priors_list_spread, priors_new.Spread))
+
+        #combine the output into a 3d image stack if we have more than one iteration to process
+        if seg_iter == 0:
+            iter_Ss_priors_median = all_Ss_priors_list_median
+            iter_Ss_priors_spread = all_Ss_priors_list_spread
+        else:
+            iter_Ss_priors_median = np.dstack((iter_Ss_priors_median, all_Ss_priors_list_median))
+            iter_Ss_priors_spread = np.dstack((iter_Ss_priors_spread, all_Ss_priors_list_spread))
+    return iter_Ss_priors_median, iter_Ss_priors_spread
