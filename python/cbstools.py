@@ -272,6 +272,7 @@ def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,me
     import os
     import nibabel as nb
     import numpy as np
+    import pandas as pd
 
     [seg_idx,con_idx,lut_rows,priors] = extract_lut_priors_from_atlas(atlas_file, metric_contrast_name)
     all_Ss_priors_list_median = np.array(seg_idx)
@@ -279,7 +280,7 @@ def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,me
     seg_null_value = 0 #value to fill in when we are NOT using the voxels at all (not background and not other index)
     background_idx = 1
     min_quart_diff = 0.10 #minimun spread allowed in priors atlas
-
+    new_atlas_files = []
 
     # make a list if we only input one dataset
     if len(orig_seg_files) == 1:
@@ -294,29 +295,34 @@ def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,me
 
     for seg_iter in range(0,seg_iterations):
         seg_iter_text = str(seg_iter+1).zfill(3) #text for naming files etc?
+        new_atlas_file = os.path.join(ATLAS_DIR,new_atlas_file_head+"_"+seg_iter_text)
         print("Running segmentation iteration: " + seg_iter_text)
         for idx, seg_file in enumerate(orig_seg_files):
-            metric_file = metric_files[idx]
-            img=nb.load(metric_file)
-            d_metric = img.get_data()
-            a_metric = img.affine #not currently using the affine and header, but could also output the successive steps
-            a_header = img.header
-            d_seg = nb.load(seg_file).get_data()
+            if seg_iter > 0: #TODO: this logic will need to be cleaned up when you have it iterating over segs
+                #TODO: call segmentation code, using the priors that we just created, good job!
 
-            #erode our data
-            if erosion_iterations>0:
-                d_seg_ero = seg_erode(d_seg,iterations=erosion_iterations,
-                                      background_idx=background_idx,
-                                      seg_null_value=seg_null_value)
+            else: #the first time, only extracting the metric, next time we actually do some segs on the file
+                metric_file = metric_files[idx]
+                img=nb.load(metric_file)
+                d_metric = img.get_data()
+                a_metric = img.affine #not currently using the affine and header, but could also output the successive steps
+                a_header = img.header
+                d_seg = nb.load(seg_file).get_data()
 
-            #extract summary metrics (median, 75 and 25 percentile) from metric file
-            [seg_idxs, seg_stats] = extract_metrics_from_seg(d_seg_ero, d_metric,
-                                                                            seg_null_value=seg_null_value,
-                                                                            return_normed_metric_d=False)
+                #erode our data
+                if erosion_iterations>0:
+                    d_seg_ero = seg_erode(d_seg,iterations=erosion_iterations,
+                                          background_idx=background_idx,
+                                          seg_null_value=seg_null_value)
 
-            prior_medians = seg_stats[:, 0]
-            prior_quart_diffs = np.squeeze(np.abs(np.diff(seg_stats[:, 1:3])))
-            prior_quart_diffs[prior_quart_diffs < min_quart_diff] = min_quart_diff
+                #extract summary metrics (median, 75 and 25 percentile) from metric file
+                [seg_idxs, seg_stats] = extract_metrics_from_seg(d_seg_ero, d_metric,
+                                                                                seg_null_value=seg_null_value,
+                                                                                return_normed_metric_d=False)
+
+                prior_medians = seg_stats[:, 0]
+                prior_quart_diffs = np.squeeze(np.abs(np.diff(seg_stats[:, 1:3])))
+                prior_quart_diffs[prior_quart_diffs < min_quart_diff] = min_quart_diff
 
             #now place this output into a growing array for use on the group level
             all_Ss_priors_list_median = np.vstack((all_Ss_priors_list_median, priors_new.Median))
@@ -326,7 +332,35 @@ def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,me
         if seg_iter == 0:
             iter_Ss_priors_median = all_Ss_priors_list_median
             iter_Ss_priors_spread = all_Ss_priors_list_spread
-        else:
+        elif seg_iter > 0:
+            # stack to 3d if we have more than one iteration
             iter_Ss_priors_median = np.dstack((iter_Ss_priors_median, all_Ss_priors_list_median))
             iter_Ss_priors_spread = np.dstack((iter_Ss_priors_spread, all_Ss_priors_list_spread))
-    return iter_Ss_priors_median, iter_Ss_priors_spread
+    #TODO: decide if you should do the looping over the segmentations here or in another function
+    # priors_new = pd.DataFrame.copy(priors)
+    # for idx in lut.Index:
+    #     priors_new[lut["Index"] == idx] = [prior_medians[seg_idxs == idx], prior_quart_diffs[seg_idxs == idx],
+    #                                        1]
+    # priors_new.head()
+    # priors_new_string = priors_new.to_csv(sep="\t", header=False, float_format="%.2f")
+    # priors_new_string_lines = priors_new_string.split("\n")[
+    #                           0:-1]  # convert to list of lines, cut the last empty '' line
+    #
+    # # write out the newly altered priors list to new_atlas_file
+    # #TODO: give option to have it not in the ATLAS_DIR
+    # fp = open(os.path.join(ATLAS_DIR, atlas_file))
+    # fp_new = open(os.path.join(ATLAS_DIR, new_atlas_file), "w")
+    # ii = 0
+    # # only replace the lines that we changed
+    # for i, line in enumerate(fp):
+    #     if i > con_idx and i < con_idx + lut_rows:
+    #         fp_new.write(priors_new_string_lines[ii] + "\n")
+    #         ii += 1
+    #     else:
+    #         fp_new.write(line)
+    # fp.close()
+    # fp_new.close()
+    # print("New atlas file written to: " + fp_new.name)
+
+    new_atlas_files.append(new_atlas_file)
+    return iter_Ss_priors_median, iter_Ss_priors_spread, new_atlas_files
