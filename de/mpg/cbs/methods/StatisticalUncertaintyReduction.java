@@ -27,7 +27,7 @@ public class StatisticalUncertaintyReduction {
 	// image data
 	private 	float[][]		image;  			// original images
 	private 	int				nix,niy,niz, nxyzi;   		// image dimensions
-	private 	float			rix,riy,riz;   		// image resolutions
+	//private 	float			rix,riy,riz;   		// image resolutions
 	private		boolean[]		imused;				// check if image modality / contrast is used
 	private		float[]			imscale;			// image intensity scaling
 	private		int				nc;					// number of channels
@@ -49,7 +49,8 @@ public class StatisticalUncertaintyReduction {
 	 *  constructors for different cases: with/out outliers, with/out selective constraints
 	 */
 	public StatisticalUncertaintyReduction(float[][] img_, boolean[] used_, float[] sca_, int nc_,
-									int nix_, int niy_, int niz_, float rix_, float riy_, float riz_,
+									int nix_, int niy_, int niz_, 
+									//float rix_, float riy_, float riz_,
 									byte nbest_) {
 	
 		image = img_;
@@ -60,9 +61,9 @@ public class StatisticalUncertaintyReduction {
 		niy = niy_;
 		niz = niz_;
 		nxyzi = nix*niy*niz;
-		rix = rix_;
-		riy = riy_;
-		riz = riz_;
+		//rix = rix_;
+		//riy = riy_;
+		//riz = riz_;
 		nbest = nbest_;
 		
 		// init all the arrays in atlas space

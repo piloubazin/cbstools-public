@@ -73,7 +73,7 @@ public class MaxProbaRepresentation {
 	}
 	public final void buildFromCompleteProbabilities(float[] proba) {
 	   	maxproba = new float[nmax][nxyz];
-    	maxlabel = new byte[nmax][nxyz];
+    		maxlabel = new byte[nmax][nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
     		boolean zero=true;
     		for (byte n=0;n<nobj && zero;n++) if (proba[xyz+nxyz*n]>0) zero=false;
@@ -129,14 +129,14 @@ public class MaxProbaRepresentation {
 					maxlabel[n][xyz] = -1;
 				}
 			}
-     	}
-     	// now the background is its own label
-     	nobj++;
+     		}
+		// now the background is its own label
+		nobj++;
 		proba = null;
 	}
 	public final void buildFromNormalizedProbabilitiesAndBackground(float[] proba) {
 	   	maxproba = new float[nmax][nx*ny*nz];
-    	maxlabel = new byte[nmax][nx*ny*nz];
+		maxlabel = new byte[nmax][nx*ny*nz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
     		float sum=0.0f;
     		for (byte n=0;n<nobj;n++) sum += proba[xyz+nxyz*n];
