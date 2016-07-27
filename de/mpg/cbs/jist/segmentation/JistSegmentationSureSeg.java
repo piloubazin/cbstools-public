@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.VoxelType;
@@ -45,8 +45,9 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 	private ParamFloat scale3Param;
 	
 	private ParamVolume 	probaImage;
-	private ParamInteger 	nlabelsParam;
+	private ParamVolume 	labelImage;
 	private ParamInteger 	nbestParam;
+	private ParamBoolean	includeBgParam;
 	
 	private ParamInteger 	iterationParam;
 	private ParamFloat 		imgscaleParam;
@@ -54,11 +55,6 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 	private ParamFloat 		mincertaintyParam;
 	private ParamFloat	 	scaleParam;
 	private ParamInteger 	neighborParam;
-	
-	private ParamBoolean	computePosteriors;
-	private ParamBoolean	adjustIntensPriors;
-	private ParamBoolean	diffuseProbabilities;
-	private ParamDouble		diffuseParam;
 	
 	private ParamVolume segmentImage;
 	private ParamVolume maxprobaImage;
@@ -87,6 +83,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		mainParams=new ParamCollection("Parameters");
 		
 		mainParams.add(nbestParam = new ParamInteger("Labeling depth",0,20,4));
+		mainParams.add(includeBgParam = new ParamBoolean("Background included",true));
 		
 		mainParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
 		mainParams.add(imgscaleParam = new ParamFloat("Image Scale", 0, 1, 0.05f));
@@ -148,11 +145,13 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		algorithm.setContrastScale3(scale3Param.getValue().floatValue());
 		
 		if (Interface.isValid(labelImage)) {
-			algorithm.setLabelSegmentation(Interface.getFloatImage3D(labelImage));
+			algorithm.setLabelSegmentation(Interface.getIntegerImage3D(labelImage));
 			algorithm.setLabelProbabilities(Interface.getFloatImage3D(probaImage));
 		} else {
 			algorithm.setLabelProbabilities(Interface.getFloatImage3D(probaImage));
 		}
+		algorithm.setLabelDepth(nbestParam.getValue().byteValue());
+		algorithm.setBackgroundIncluded(includeBgParam.getValue().booleanValue());
 		
 		algorithm.setMaxIterations(iterationParam.getValue().intValue());
 		algorithm.setImageScale(imgscaleParam.getValue().floatValue());
@@ -164,8 +163,8 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		
 		// outputs
 		Interface.setIntegerImage3D(algorithm.getSegmentationImage(), dims, segmentImage, name+"_seg", header);
-		Interface.setFloatImage4D(algorithm.getMaxProbabilityImage(), dims, algorithm.getOutput4Dlength(), membershipImage, name+"_mems", header);
-		Interface.setUByteImage4D(algorithm.getSegmentedIdsImage(), dims, algorithm.getOutput4Dlength(), labelImage, name+"_lbls", header);
+		Interface.setFloatImage4D(algorithm.getMaxProbabilityImage(), dims, nbestParam.getValue().byteValue(), maxprobaImage, name+"_mems", header);
+		Interface.setUByteImage4D(algorithm.getSegmentedIdsImage(), dims, nbestParam.getValue().byteValue(), maxidImage, name+"_lbls", header);
 		
 		return;
 	}
