@@ -207,12 +207,25 @@ def extract_metrics_from_seg(seg_d, metric_d, seg_idxs=None,norm_data=True,
                              background_idx=1, seg_null_value=0,
                              percentile_top_bot=[75, 25],
                              return_normed_metric_d=False):
-    # returns np matrix of indices, and one of median, and percentiles
-    # norm_data = true first zscores all of the data other than the background
+    """
+    Extract median and interquartile range from metric file given a co-registered segmentation
+    :param seg_d:                   segmentation data (integers)
+    :param metric_d:                metric data to extract seg-specific values from
+    :param seg_idxs:                indices of segmentation, usually taken from LUT but can be generated based on seg_d
+    :param norm_data:               perform data normalisation on metric_d prior to extracting values from metric
+    :param background_idx:          index for background data, currently treated as just another index (TODO: remove)
+    :param seg_null_value:          value to as null for binary erosion step, not included in metric extraction
+    :param percentile_top_bot:      top and bottom percentiles to extract from each seg region
+    :param return_normed_metric_d:  return the normalised metric as an np matrix, must also set norm_data=True
+    :return: seg_idxs, res          segmentation indices and results matrix of median, 75, 25 percentliles
+             (metric_d)             optional metric_d scaled between 0 and 1
+    """
     import numpy as np
     import scipy
     if seg_idxs is None:
         seg_idxs = np.unique(seg_d)
+    if (seg_null_value is not None) and (seg_null_value in seg_idxs): #remove the null value from the idxs so we don't look
+        np.delete(seg_idxs,np.where(seg_idxs==seg_null_value))
     res = np.zeros((len(seg_idxs), 3))
 
     if norm_data:  # rescale the data to 0
@@ -224,11 +237,12 @@ def extract_metrics_from_seg(seg_d, metric_d, seg_idxs=None,norm_data=True,
             metric_d = (metric_d - np.min(metric_d)) / (np.max(metric_d) - np.min(metric_d))
 
     for idx, seg_idx in enumerate(seg_idxs):
-        if (background_idx is not None) and ((seg_idx == background_idx) or (seg_idx == seg_null_value)):
-            res[idx, :] = [0, 0, 0]
-        else:
+        # no longer required, since we also want data from the background
+        # if (background_idx is not None) and ((seg_idx == background_idx) or (seg_idx == seg_null_value)):
+        #     res[idx, :] = [0, 0, 0]
+        # else:
             d_1d = np.ndarray.flatten(metric_d[seg_d == seg_idx])
-            res[idx, :] = [np.mean(d_1d),
+            res[idx, :] = [np.median(d_1d),
                            np.percentile(d_1d, np.max(percentile_top_bot)),
                            np.percentile(d_1d, np.min(percentile_top_bot))]
     if return_normed_metric_d:
@@ -320,7 +334,7 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
                                           seg_null_value=seg_null_value)
 
                 #extract summary metrics (median, 75 and 25 percentile) from metric file
-                [seg_idxs, seg_stats] = extract_metrics_from_seg(d_seg_ero, d_metric, seg_idxs,
+                [seg_idxs, seg_stats] = extract_metrics_from_seg(d_seg_ero, d_metric, seg_idxs=seg_idxs,
                                                                  seg_null_value=seg_null_value,
                                                                  return_normed_metric_d=False)
 
@@ -329,8 +343,8 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
                 prior_quart_diffs[prior_quart_diffs < min_quart_diff] = min_quart_diff
 
             #now place this output into a growing array for use on the group level
-            print(np.shape(all_Ss_priors_list_median))
-            print(np.shape(prior_medians))
+            #print(np.shape(all_Ss_priors_list_median))
+            #print(np.shape(prior_medians))
             all_Ss_priors_list_median = np.vstack((all_Ss_priors_list_median, prior_medians))
             all_Ss_priors_list_spread = np.vstack((all_Ss_priors_list_spread, prior_quart_diffs))
 
