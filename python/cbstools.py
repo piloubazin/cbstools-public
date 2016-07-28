@@ -276,7 +276,7 @@ def extract_lut_priors_from_atlas(atlas_file,contrast_name):
     import pandas as pd
     import os
 
-    fp = open(os.path.join(atlas_file))
+    fp = open(atlas_file)
     for i, line in enumerate(fp):
         if "Structures:" in line:  # this is the beginning of the LUT
             lut_idx = i
@@ -287,11 +287,11 @@ def extract_lut_priors_from_atlas(atlas_file,contrast_name):
     fp.close()
 
     # dump lut and priors values into pandas dataframes
-    lut = pd.read_csv(os.path.join(atlas_file), sep="\t+",
+    lut = pd.read_csv(atlas_file, sep="\t+",
                       skiprows=lut_idx + 1, nrows=lut_rows, engine='python',
                       names=["Index", "Type"])
 
-    priors = pd.read_csv(os.path.join(atlas_file), sep="\t+",
+    priors = pd.read_csv(atlas_file, sep="\t+",
                          skiprows=con_idx + 1, nrows=lut_rows, engine='python',
                          names=["Median", "Spread", "Weight"])
     return lut,con_idx,lut_rows,priors
