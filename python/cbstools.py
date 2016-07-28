@@ -156,6 +156,7 @@ def seg_erode(seg_d, iterations=1, background_idx=1,
                   VERBOSE=False):
     """
     Binary erosion of integer type segmentation data (np.array) with options
+
     :param seg_d:           np.array of segmentation, integers
     :param iterations:      number of erosion iterations
     :param background_idx:  value for background index, currently ignored (TODO: remove)
@@ -165,7 +166,7 @@ def seg_erode(seg_d, iterations=1, background_idx=1,
     :param VERBOSE:         spit out loads of text to stdout, because you can.
     :return: seg_shrunk_d   eroded version of segmentation
     """
-    
+
     import scipy.ndimage as ndi
     import numpy as np
 
@@ -218,12 +219,13 @@ def extract_metrics_from_seg(seg_d, metric_d, seg_idxs=None,norm_data=True,
                              return_normed_metric_d=False):
     """
     Extract median and interquartile range from metric file given a co-registered segmentation
+
     :param seg_d:                   segmentation data (integers)
     :param metric_d:                metric data to extract seg-specific values from
     :param seg_idxs:                indices of segmentation, usually taken from LUT but can be generated based on seg_d
     :param norm_data:               perform data normalisation on metric_d prior to extracting values from metric
     :param background_idx:          index for background data, currently treated as just another index (TODO: remove)
-    :param seg_null_value:          value to as null for binary erosion step, not included in metric extraction
+    :param seg_null_value:          value to set as null for binary erosion step, not included in metric extraction
     :param percentile_top_bot:      top and bottom percentiles to extract from each seg region
     :param return_normed_metric_d:  return the normalised metric as an np matrix, must also set norm_data=True
     :return: seg_idxs, res          segmentation indices and results matrix of median, 75, 25 percentliles
@@ -265,6 +267,7 @@ def extract_lut_priors_from_atlas(atlas_file,contrast_name):
     Given an MGDM segmentation priors atlas file, extract the lut and identify the start index (in the file) of the
     contrast of interest, and the number of rows of priors that it should have. Returns pandas dataframe of lut,
     contrast index, number of rows in prior definition, and pd.DataFrame of priors,
+
     :param atlas_file:      full path to atlas file for lut and metric index extraction
     :param contrast_name:   intensity prior contrast name as listed in the metric file
     :return: lut, con_idx, lut_rows, priors
