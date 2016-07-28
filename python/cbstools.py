@@ -78,7 +78,6 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
     if not any(isinstance(el, list) for el in input_filename_type_list): #make into list of lists
         input_filename_type_list = [input_filename_type_list]
 
-
     #now we setup the mgdm specfic settings
     mgdm = cj.BrainMgdmMultiSegmentation2()
     mgdm.setAtlasFile(atlas)
@@ -138,18 +137,18 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
 
         # save
         out_im = nb.Nifti1Image(seg_im, d_aff)
-        nb.save(out_im, os.path.join(output_dir, out_root_fname + '_seg_cjs.nii.gz'))
+        seg_file = os.path.join(output_dir, out_root_fname + '_seg_cjs.nii.gz')
+        nb.save(out_im, seg_file)
         out_im = nb.Nifti1Image(lbl_im, d_aff)
         nb.save(out_im, os.path.join(output_dir, out_root_fname + '_lbl_cjs.nii.gz'))
         out_im = nb.Nifti1Image(ids_im, d_aff)
         nb.save(out_im, os.path.join(output_dir, out_root_fname + '_ids_cjs.nii.gz'))
-
         print("Data stored in: " + output_dir)
     except:
         print("--- MGDM failed. Go cry. ---")
     print("Execution completed")
 
-    #return (img,out_im)
+    return seg_file
 
 
 def seg_erode(seg_d, iterations=1, background_idx=1,
@@ -249,14 +248,10 @@ def extract_metrics_from_seg(seg_d, metric_d, seg_idxs=None,norm_data=True,
             metric_d = (metric_d - np.min(metric_d)) / (np.max(metric_d) - np.min(metric_d))
 
     for idx, seg_idx in enumerate(seg_idxs):
-        # no longer required, since we also want data from the background
-        # if (background_idx is not None) and ((seg_idx == background_idx) or (seg_idx == seg_null_value)):
-        #     res[idx, :] = [0, 0, 0]
-        # else:
-            d_1d = np.ndarray.flatten(metric_d[seg_d == seg_idx])
-            res[idx, :] = [np.median(d_1d),
-                           np.percentile(d_1d, np.max(percentile_top_bot)),
-                           np.percentile(d_1d, np.min(percentile_top_bot))]
+        d_1d = np.ndarray.flatten(metric_d[seg_d == seg_idx])
+        res[idx, :] = [np.median(d_1d),
+                       np.percentile(d_1d, np.max(percentile_top_bot)),
+                       np.percentile(d_1d, np.min(percentile_top_bot))]
     if return_normed_metric_d:
         return seg_idxs, res, metric_d
     else:
@@ -274,7 +269,6 @@ def extract_lut_priors_from_atlas(atlas_file,contrast_name):
     :return: lut, con_idx, lut_rows, priors
     """
     import pandas as pd
-    import os
 
     fp = open(atlas_file)
     for i, line in enumerate(fp):
@@ -296,27 +290,91 @@ def extract_lut_priors_from_atlas(atlas_file,contrast_name):
                          names=["Median", "Spread", "Weight"])
     return lut,con_idx,lut_rows,priors
 
+
+def write_priors_to_atlas(prior_medians,prior_quart_diffs,atlas_file,new_atlas_file,metric_contrast_name):
+    """
+    Write modified priors of given metric contrast to new_atlas
+    Assumes that the ordering of indices and the ordering of the priors are the same
+    (could add prior_weights as well, in future)
+
+    :param prior_medians:           2xN list of prior medians
+    :param prior_quart_diffs:       2xN list of prior quartile differences
+    :param atlas_file:              full path to original atlas file
+    :param new_atlas_file:          full path to new atlas file to be written to
+    :param metric_contrast_name:    name of MGDM metric contrast from atlas_file
+    """
+
+    import pandas as pd
+
+    #get the relevant information from the old atlas file
+    [lut, con_idx, lut_rows, priors] = extract_lut_priors_from_atlas(atlas_file, metric_contrast_name)
+    seg_idxs = lut.Index
+    priors_new = pd.DataFrame.copy(priors)
+
+    #uppdate the priors with the new ones that were passed
+    #TODO: double-check this
+    for idx in lut.Index:
+        priors_new[lut["Index"] == idx] = [prior_medians[seg_idxs == idx], prior_quart_diffs[seg_idxs == idx],1]
+
+    priors_new_string = priors_new.to_csv(sep="\t", header=False, float_format="%.2f")
+    priors_new_string_lines = priors_new_string.split("\n")[0:-1]  # convert to list of lines, cut the last empty '' line
+
+    fp = open(atlas_file)
+    fp_new = open(new_atlas_file, "w")
+    ii = 0
+    # only replace the lines that we changed
+    for i, line in enumerate(fp):
+        if i > con_idx and i < con_idx + lut_rows:
+            fp_new.write(priors_new_string_lines[ii] + "\n")
+            ii += 1
+        else:
+            fp_new.write(line)
+    fp.close()
+    fp_new.close()
+    print('New atlas file written to: ' + fp_new.name)
+    return fp_new.name
+
+
+def get_MGDM_seg_contrast_names(atlas_file):
+    """
+    Return a list of contrast names that are available as intensity priors in the MGDM atlas that you are using
+    :param atlas_file:              atlas file
+    :return: seg_contrast_names     list of names of contrasts that have intensity priors available
+    """
+    seg_contrast_names = []
+    fp = open(atlas_file)
+    for i, line in enumerate(fp):
+        if "Structures:" in line:  # this is the beginning of the LUT
+            lut_idx = i
+            lut_rows = map(int, [line.split()[1]])[0]
+        if "Intensity Prior:" in line:
+            seg_contrast_names.append(line.split()[-1])
+    fp.close()
+    return seg_contrast_names
+
+
 def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_name,
-                                    atlas_file,new_atlas_file_head,erosion_iterations=1,seg_iterations=1,
+                                    atlas_file,erosion_iterations=1,seg_iterations=1,
                                     output_dir=None):
     # generates group intensity priors for metric_files based on orig_seg files (i.e., orig_seg could be Mprage3T and metric_files could be DWIFA3T)
     # does not do the initial segmentation for you, that needs to be done first :-)
     # we assume that you already did due-diligence and have matched lists of inputs (orig_seg_files and metric_files)
-    # TODO: standardise use of atlas_file here, to use FULL filename
-
-    import os
     import nibabel as nb
     import numpy as np
-    import pandas as pd
+
+    MGDM_contrast_names = get_MGDM_seg_contrast_names(atlas_file)
+    if metric_contrast_name not in MGDM_contrast_names:
+        print("You have not chosen a valid contrast for your metric_contrast_name, please choose from: ")
+        print(", ".join(MGDM_contrast_names))
+        return [None, None]
 
     [lut,con_idx,lut_rows,priors] = extract_lut_priors_from_atlas(atlas_file, metric_contrast_name)
     seg_idxs = lut.Index
-    all_Ss_priors_list_median = np.array(seg_idxs)
-    all_Ss_priors_list_spread = np.array(seg_idxs)
+    all_Ss_priors_median = np.array(seg_idxs) #always put the seg_idxs on top row!
+    all_Ss_priors_spread = np.array(seg_idxs)
     seg_null_value = 0 #value to fill in when we are NOT using the voxels at all (not background and not other index)
     background_idx = 1
     min_quart_diff = 0.10 #minimun spread allowed in priors atlas
-    new_atlas_files = []
 
     # make a list if we only input one dataset
     if len(orig_seg_files) == 1:
@@ -327,79 +385,130 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
     if not(len(orig_seg_files) == len(metric_files)):
         print("You do not have the same number of segmentation and metric files. Bad!")
         print("Exiting")
-        return
+        return [None, None]
 
-    for seg_iter in range(0,seg_iterations):
-        seg_iter_text = str(seg_iter+1).zfill(3) #text for naming files etc?
-        new_atlas_file = os.path.join(ATLAS_DIR,new_atlas_file_head+"_"+seg_iter_text)
+    for idx, seg_file in enumerate(orig_seg_files):
+        metric_file = metric_files[idx]
+        img=nb.load(metric_file)
+        d_metric = img.get_data()
+        a_metric = img.affine #not currently using the affine and header, but could also output the successive steps
+        a_header = img.header
+        print(seg_file)
+        d_seg = nb.load(seg_file).get_data()
+
+        #erode our data
+        if erosion_iterations>0:
+            d_seg_ero = seg_erode(d_seg,iterations=erosion_iterations,
+                                  background_idx=background_idx,
+                                  seg_null_value=seg_null_value)
+
+        #extract summary metrics (median, 75 and 25 percentile) from metric file
+        [seg_idxs, seg_stats] = extract_metrics_from_seg(d_seg_ero, d_metric, seg_idxs=seg_idxs,
+                                                         seg_null_value=seg_null_value,
+                                                         return_normed_metric_d=False)
+
+        prior_medians = seg_stats[:, 0]
+        prior_quart_diffs = np.squeeze(np.abs(np.diff(seg_stats[:, 1:3])))
+        prior_quart_diffs[prior_quart_diffs < min_quart_diff] = min_quart_diff
+
+        #now place this output into a growing array for use on the group level
+        all_Ss_priors_median = np.vstack((all_Ss_priors_median, prior_medians))
+        all_Ss_priors_spread = np.vstack((all_Ss_priors_spread, prior_quart_diffs))
+
+
+    return all_Ss_priors_median, all_Ss_priors_spread
+
+
+def recursively_generate_group_intensity_priors(input_filename_type_list, metric_contrast_names, orig_seg_files,
+                                                atlas_file, new_atlas_file_head, erosion_iterations=1, seg_iterations=1,
+                                                output_dir=None):
+    #inputs need to be lists!
+    # do stuff
+    #TODO: alter this so that you explicitly input up to 4 different contrasts. just makes life easier than lists of lists...?
+
+    import numpy as np
+    current_atlas_file = atlas_file
+    if not any(isinstance(el, list) for el in input_filename_type_list): #make into list of lists
+        input_filename_type_list = [input_filename_type_list]
+    if len(metric_contrast_names) ==1: #make iterable if only a single element
+        metric_contrast_names = [metric_contrast_names]
+
+
+    MGDM_contrast_names = get_MGDM_seg_contrast_names(atlas_file) #get contrast names from old atlas file
+    for metric_contrast_name in metric_contrast_names:
+        if metric_contrast_name not in MGDM_contrast_names:
+            print("You have not chosen a valid contrast for your metric_contrast_name, please choose from: ")
+            print(", ".join(MGDM_contrast_names))
+            return
+
+    # the first time, we just grab the metric data and update the priors atlas
+    seg_iter_text = str(0).zfill(3)  # text for naming files etc
+    print("First pass with no segmentation: " + seg_iter_text)
+    print("Calculating priors from input metric files.")
+
+    for metric_contrast_name in metric_contrast_names: #need to loop extractions and priors updating over metrics
+        print("Metric type: " + metric_contrast_name)
+        metric_files = []
+
+        #pull out the list of metric_files for extraction
+        for filename_type in input_filename_type_list:
+            if metric_contrast_name in filename_type:
+                metric_files.append(filename_type)
+
+        #new atlas file name changes with iteration AND with metric name, to make sure that we keep track of everything
+        new_atlas_file = os.path.join(new_atlas_file_head + "_" + seg_iter_text + "_" + metric_contrast_name + ".txt")
+        [priors_median, priors_spread] = generate_group_intensity_priors(orig_seg_files, metric_files,
+                                                                         metric_contrast_name,
+                                                                         atlas_file,
+                                                                         erosion_iterations=erosion_iterations,
+                                                                         output_dir=output_dir)
+        seg_idxs = priors_median[0,:]
+        grp_median = np.median(priors_median[1:,:],axis=0)
+        grp_spread = np.median(priors_spread[1:,:],axis=0)
+        write_priors_to_atlas(grp_median,grp_spread,current_atlas_file,new_atlas_file,metric_contrast_name)
+        current_atlas_file = new_atlas_file #update the current atlas file, so that we can use it for subsequent extractions
+
+        # combine the individual output into a 2d and then 3d stack (with iterations >0) so that we can keep track of changes
+        # it will be stacked for each metric if there are multiple metrics, so not easy to see :-/
+        iter_Ss_priors_median = priors_median
+        iter_Ss_priors_spread = priors_spread
+
+    for seg_iter in range(0, seg_iterations):
+        seg_iter_text = str(seg_iter+1).zfill(3)  # text for naming files etc?
         print("Running segmentation iteration: " + seg_iter_text)
-        for idx, seg_file in enumerate(orig_seg_files):
-            if seg_iter > 0: #TODO: this logic will need to be cleaned up when you have it iterating over segs
-                #TODO: call segmentation code, using the priors that we just created, good job!
-                pass
-            else: #the first time, only extracting the metric, next time we actually do some segs on the file
-                metric_file = metric_files[idx]
-                img=nb.load(metric_file)
-                d_metric = img.get_data()
-                a_metric = img.affine #not currently using the affine and header, but could also output the successive steps
-                a_header = img.header
-                print(seg_file)
-                d_seg = nb.load(seg_file).get_data()
 
-                #erode our data
-                if erosion_iterations>0:
-                    d_seg_ero = seg_erode(d_seg,iterations=erosion_iterations,
-                                          background_idx=background_idx,
-                                          seg_null_value=seg_null_value)
+        # RUN SEGMENTATION with current atlas file
+        # current_atlas_file already set from above
 
-                #extract summary metrics (median, 75 and 25 percentile) from metric file
-                [seg_idxs, seg_stats] = extract_metrics_from_seg(d_seg_ero, d_metric, seg_idxs=seg_idxs,
-                                                                 seg_null_value=seg_null_value,
-                                                                 return_normed_metric_d=False)
+        # TODO: set new seg files from output
+        # new_seg_files =
 
-                prior_medians = seg_stats[:, 0]
-                prior_quart_diffs = np.squeeze(np.abs(np.diff(seg_stats[:, 1:3])))
-                prior_quart_diffs[prior_quart_diffs < min_quart_diff] = min_quart_diff
+        # RUN EXTRACTION FOR EACH METRIC on output from segmentation, UPDATE atlas priors
+        print("Metric extraction from new segmentation")
+        for metric_contrast_name in metric_contrast_names:  # need to loop extractions and priors updating over metrics
+            print("Metric type: " + metric_contrast_name)
+            metric_files = []
 
-            #now place this output into a growing array for use on the group level
-            #print(np.shape(all_Ss_priors_list_median))
-            #print(np.shape(prior_medians))
-            all_Ss_priors_list_median = np.vstack((all_Ss_priors_list_median, prior_medians))
-            all_Ss_priors_list_spread = np.vstack((all_Ss_priors_list_spread, prior_quart_diffs))
+            # pull out the list of metric_files for extraction
+            for filename_type in input_filename_type_list:
+                if metric_contrast_name in filename_type:
+                    metric_files.append(filename_type)
 
-        #combine the output into a 3d image stack if we have more than one iteration to process
-        if seg_iter == 0:
-            iter_Ss_priors_median = all_Ss_priors_list_median
-            iter_Ss_priors_spread = all_Ss_priors_list_spread
-        elif seg_iter > 0:
-            # stack to 3d if we have more than one iteration
-            iter_Ss_priors_median = np.dstack((iter_Ss_priors_median, all_Ss_priors_list_median))
-            iter_Ss_priors_spread = np.dstack((iter_Ss_priors_spread, all_Ss_priors_list_spread))
-    #TODO: decide if you should do the looping over the segmentations here or in another function
-    # priors_new = pd.DataFrame.copy(priors)
-    # for idx in lut.Index:
-    #     priors_new[lut["Index"] == idx] = [prior_medians[seg_idxs == idx], prior_quart_diffs[seg_idxs == idx],
-    #                                        1]
-    # priors_new.head()
-    # priors_new_string = priors_new.to_csv(sep="\t", header=False, float_format="%.2f")
-    # priors_new_string_lines = priors_new_string.split("\n")[
-    #                           0:-1]  # convert to list of lines, cut the last empty '' line
-    #
-    # # write out the newly altered priors list to new_atlas_file
-    # #TODO: give option to have it not in the ATLAS_DIR
-    # fp = open(os.path.join(ATLAS_DIR, atlas_file))
-    # fp_new = open(os.path.join(ATLAS_DIR, new_atlas_file), "w")
-    # ii = 0
-    # # only replace the lines that we changed
-    # for i, line in enumerate(fp):
-    #     if i > con_idx and i < con_idx + lut_rows:
-    #         fp_new.write(priors_new_string_lines[ii] + "\n")
-    #         ii += 1
-    #     else:
-    #         fp_new.write(line)
-    # fp.close()
-    # fp_new.close()
-    # print("New atlas file written to: " + fp_new.name)
+            # new atlas file name changes with iteration AND with metric name, to make sure that we keep track of everything
+            new_atlas_file = os.path.join(
+                new_atlas_file_head + "_" + seg_iter_text + "_" + metric_contrast_name + ".txt")
+            [priors_median, priors_spread] = generate_group_intensity_priors(new_seg_files, metric_files,
+                                                                             metric_contrast_name,
+                                                                             atlas_file,
+                                                                             new_atlas_file_head,
+                                                                             erosion_iterations=erosion_iterations,
+                                                                             output_dir=output_dir)
+            seg_idxs = priors_median[0, :]
+            grp_median = np.median(priors_median[1:, :], axis=0)
+            grp_spread = np.median(priors_spread[1:, :], axis=0)
+            write_priors_to_atlas(grp_median, grp_spread, current_atlas_file, new_atlas_file, metric_contrast_name)
+            current_atlas_file = new_atlas_file  # update the current atlas file, so that we can use it for subsequent extractions
 
-    new_atlas_files.append(new_atlas_file)
-    return iter_Ss_priors_median, iter_Ss_priors_spread, new_atlas_files
+            # stack to 3d
+            iter_Ss_priors_median = np.dstack((iter_Ss_priors_median, priors_median))
+            iter_Ss_priors_spread = np.dstack((iter_Ss_priors_spread, priors_spread))
