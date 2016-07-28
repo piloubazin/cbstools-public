@@ -250,8 +250,16 @@ def extract_metrics_from_seg(seg_d, metric_d, seg_idxs=None,norm_data=True,
     else:
         return seg_idxs, res
 
+
 def extract_lut_priors_from_atlas(atlas_file,contrast_name):
-    # identify the start and stop locations for the LUT and the intensity priors of interest
+    """
+    Given an MGDM segmentation priors atlas file, extract the lut and identify the start index (in the file) of the
+    contrast of interest, and the number of rows of priors that it should have. Returns pandas dataframe of lut,
+    contrast index, number of rows in prior definition, and pd.DataFrame of priors,
+    :param atlas_file:      full path to atlas file for lut and metric index extraction
+    :param contrast_name:   intensity prior contrast name as listed in the metric file
+    :return: lut, con_idx, lut_rows, priors
+    """
     import pandas as pd
     import os
 
