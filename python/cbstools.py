@@ -175,8 +175,8 @@ def seg_erode(seg_d, iterations=1, background_idx=1,
         print("Shit, your null value is also an index. This will not work.")
         print("Set it to a suitably strange value that is not already an index. {0,999}")
         return None
-
-    print("Indices:")
+    if VERBOSE:
+        print("Indices:")
     for seg_idx in seg_idxs:
         print(seg_idx),
         if (background_idx is not None) and (background_idx == seg_idx):
@@ -198,11 +198,12 @@ def seg_erode(seg_d, iterations=1, background_idx=1,
             temp_d[:, :, :] = seg_null_value
             if VERBOSE:
                 print(seg_idx)
-        print("")
+        if VERBOSE:
+            print("")
     return seg_shrunk_d
 
 
-def extract_metrics_from_seg(seg_d, metric_d, norm_data=True,
+def extract_metrics_from_seg(seg_d, metric_d, seg_idxs=None,norm_data=True,
                              background_idx=1, seg_null_value=0,
                              percentile_top_bot=[75, 25],
                              return_normed_metric_d=False):
@@ -210,7 +211,8 @@ def extract_metrics_from_seg(seg_d, metric_d, norm_data=True,
     # norm_data = true first zscores all of the data other than the background
     import numpy as np
     import scipy
-    seg_idxs = np.unique(seg_d)
+    if seg_idxs is None:
+        seg_idxs = np.unique(seg_d)
     res = np.zeros((len(seg_idxs), 3))
 
     if norm_data:  # rescale the data to 0
@@ -260,9 +262,9 @@ def extract_lut_priors_from_atlas(atlas_file,contrast_name):
     priors = pd.read_csv(os.path.join(ATLAS_DIR, atlas_file), sep="\t+",
                          skiprows=con_idx + 1, nrows=lut_rows, engine='python',
                          names=["Median", "Spread", "Weight"])
-    return lut,con_idx,lut_rows,lut,priors
+    return lut,con_idx,lut_rows,priors
 
-def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,metric_contrast_name,
+def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_name,
                                     atlas_file,new_atlas_file_head,erosion_iterations=1,seg_iterations=1,
                                     output_dir=None):
     # generates group intensity priors for metric_files based on orig_seg files (i.e., orig_seg could be Mprage3T and metric_files could be DWIFA3T)
@@ -274,9 +276,10 @@ def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,me
     import numpy as np
     import pandas as pd
 
-    [seg_idx,con_idx,lut_rows,priors] = extract_lut_priors_from_atlas(atlas_file, metric_contrast_name)
-    all_Ss_priors_list_median = np.array(seg_idx)
-    all_Ss_priors_list_spread = np.array(seg_idx)
+    [lut,con_idx,lut_rows,priors] = extract_lut_priors_from_atlas(atlas_file, metric_contrast_name)
+    seg_idxs = lut.Index
+    all_Ss_priors_list_median = np.array(seg_idxs)
+    all_Ss_priors_list_spread = np.array(seg_idxs)
     seg_null_value = 0 #value to fill in when we are NOT using the voxels at all (not background and not other index)
     background_idx = 1
     min_quart_diff = 0.10 #minimun spread allowed in priors atlas
@@ -300,13 +303,14 @@ def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,me
         for idx, seg_file in enumerate(orig_seg_files):
             if seg_iter > 0: #TODO: this logic will need to be cleaned up when you have it iterating over segs
                 #TODO: call segmentation code, using the priors that we just created, good job!
-
+                pass
             else: #the first time, only extracting the metric, next time we actually do some segs on the file
                 metric_file = metric_files[idx]
                 img=nb.load(metric_file)
                 d_metric = img.get_data()
                 a_metric = img.affine #not currently using the affine and header, but could also output the successive steps
                 a_header = img.header
+                print(seg_file)
                 d_seg = nb.load(seg_file).get_data()
 
                 #erode our data
@@ -316,17 +320,19 @@ def generate_group_intensity_priors(orig_seg_files,contrast_name,metric_files,me
                                           seg_null_value=seg_null_value)
 
                 #extract summary metrics (median, 75 and 25 percentile) from metric file
-                [seg_idxs, seg_stats] = extract_metrics_from_seg(d_seg_ero, d_metric,
-                                                                                seg_null_value=seg_null_value,
-                                                                                return_normed_metric_d=False)
+                [seg_idxs, seg_stats] = extract_metrics_from_seg(d_seg_ero, d_metric, seg_idxs,
+                                                                 seg_null_value=seg_null_value,
+                                                                 return_normed_metric_d=False)
 
                 prior_medians = seg_stats[:, 0]
                 prior_quart_diffs = np.squeeze(np.abs(np.diff(seg_stats[:, 1:3])))
                 prior_quart_diffs[prior_quart_diffs < min_quart_diff] = min_quart_diff
 
             #now place this output into a growing array for use on the group level
-            all_Ss_priors_list_median = np.vstack((all_Ss_priors_list_median, priors_new.Median))
-            all_Ss_priors_list_spread = np.vstack((all_Ss_priors_list_spread, priors_new.Spread))
+            print(np.shape(all_Ss_priors_list_median))
+            print(np.shape(prior_medians))
+            all_Ss_priors_list_median = np.vstack((all_Ss_priors_list_median, prior_medians))
+            all_Ss_priors_list_spread = np.vstack((all_Ss_priors_list_spread, prior_quart_diffs))
 
         #combine the output into a 3d image stack if we have more than one iteration to process
         if seg_iter == 0:
