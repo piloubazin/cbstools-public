@@ -473,15 +473,21 @@ def recursively_generate_group_intensity_priors(input_filename_type_list, metric
         iter_Ss_priors_median = priors_median
         iter_Ss_priors_spread = priors_spread
 
+
+
+    #run the segmentation for each individual
+    #TODO: stupid parallelisatoin?
+    new_seg_files = []
     for seg_iter in range(0, seg_iterations):
         seg_iter_text = str(seg_iter+1).zfill(3)  # text for naming files etc?
         print("Running segmentation iteration: " + seg_iter_text)
 
         # RUN SEGMENTATION with current atlas file
         # current_atlas_file already set from above
-
-        # TODO: set new seg files from output
-        # new_seg_files =
+        for subject_files in input_filename_type_list:
+            new_seg_file = MGDMBrainSegmentation(subject_files,output_dir=output_dir,
+                                                 atlas_file=current_atlas_file,topology_lut_dir=None)
+            new_seg_files.append(new_seg_file)
 
         # RUN EXTRACTION FOR EACH METRIC on output from segmentation, UPDATE atlas priors
         print("Metric extraction from new segmentation")
@@ -495,8 +501,7 @@ def recursively_generate_group_intensity_priors(input_filename_type_list, metric
                     metric_files.append(filename_type)
 
             # new atlas file name changes with iteration AND with metric name, to make sure that we keep track of everything
-            new_atlas_file = os.path.join(
-                new_atlas_file_head + "_" + seg_iter_text + "_" + metric_contrast_name + ".txt")
+            new_atlas_file = os.path.join(new_atlas_file_head + "_" + seg_iter_text + "_" + metric_contrast_name + ".txt")
             [priors_median, priors_spread] = generate_group_intensity_priors(new_seg_files, metric_files,
                                                                              metric_contrast_name,
                                                                              atlas_file,
