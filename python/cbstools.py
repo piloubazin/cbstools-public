@@ -2,7 +2,8 @@
 """
 Created on Tue Feb  2 13:41:28 2016
 
-@author: chris
+@author: Christopher J. Steele
+steele{AT}cbs{dot}mpg{dot}de
 """
 
 import numpy as np
