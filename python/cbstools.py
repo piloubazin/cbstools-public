@@ -150,13 +150,22 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
 
     #return (img,out_im)
 
+
 def seg_erode(seg_d, iterations=1, background_idx=1,
                   structure=None, min_vox_count=5, seg_null_value=0,
                   VERBOSE=False):
-    # erode indices (integers) to identify "core" structure
-    # default erosion structure is 3,1 (which is not super restrictive, and should work for most)
-    # seg null value is int value that is assigned to voxels that were eroded from the segmentation
-
+    """
+    Binary erosion of integer type segmentation data (np.array) with options
+    :param seg_d:           np.array of segmentation, integers
+    :param iterations:      number of erosion iterations
+    :param background_idx:  value for background index, currently ignored (TODO: remove)
+    :param structure:       binary structure for erosion from scipy.ndimage (ndimage.morphology.generate_binary_structure(3,1))
+    :param min_vox_count:   minimun number of voxels to allow to be in a segmentation, if less, does not erode
+    :param seg_null_value:  value to set as null for binary erosion step (i.e., a value NOT in your segmentation index)
+    :param VERBOSE:         spit out loads of text to stdout, because you can.
+    :return: seg_shrunk_d   eroded version of segmentation
+    """
+    
     import scipy.ndimage as ndi
     import numpy as np
 
