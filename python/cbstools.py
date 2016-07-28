@@ -276,25 +276,22 @@ def extract_lut_priors_from_atlas(atlas_file,contrast_name):
     import pandas as pd
     import os
 
-    fp = open(os.path.join(ATLAS_DIR, atlas_file))
+    fp = open(os.path.join(atlas_file))
     for i, line in enumerate(fp):
         if "Structures:" in line:  # this is the beginning of the LUT
             lut_idx = i
             lut_rows = map(int, [line.split()[1]])[0]
-            #    if "Topology Atlas:" in line: #the end of the LUT #OR you could use the value in the line?
-            #        lut_idx[1] = i-2
         if "Intensity Prior:" in line:
             if contrast_name in line:
                 con_idx = i
     fp.close()
 
-    # dump into pandas dataframe
-    lut = pd.read_csv(os.path.join(ATLAS_DIR, atlas_file), sep="\t+",
+    # dump lut and priors values into pandas dataframes
+    lut = pd.read_csv(os.path.join(atlas_file), sep="\t+",
                       skiprows=lut_idx + 1, nrows=lut_rows, engine='python',
                       names=["Index", "Type"])
 
-    # con_idx[1] = len(lut) #total number is the same length as the lut
-    priors = pd.read_csv(os.path.join(ATLAS_DIR, atlas_file), sep="\t+",
+    priors = pd.read_csv(os.path.join(atlas_file), sep="\t+",
                          skiprows=con_idx + 1, nrows=lut_rows, engine='python',
                          names=["Median", "Spread", "Weight"])
     return lut,con_idx,lut_rows,priors
@@ -305,6 +302,7 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
     # generates group intensity priors for metric_files based on orig_seg files (i.e., orig_seg could be Mprage3T and metric_files could be DWIFA3T)
     # does not do the initial segmentation for you, that needs to be done first :-)
     # we assume that you already did due-diligence and have matched lists of inputs (orig_seg_files and metric_files)
+    # TODO: standardise use of atlas_file here, to use FULL filename
 
     import os
     import nibabel as nb
