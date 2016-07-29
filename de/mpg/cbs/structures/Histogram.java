@@ -397,13 +397,6 @@ public class Histogram {
 		for (int n=0;n<bins;n++) hist[n] = 1.0 - cumul[n]/total;
 	}
 	
-	public final float argmax() {
-		int nmax = 0;
-		for (int n=0;n<bins;n++) if (hist[n]>hist[nmax]) nmax = n;
-		
-		return (min + (float)(nmax+0.5f)/(float)bins*(max-min));
-	}
-	
 	public final String printHistogram() {
 		String output = "Histogram (min: "+min+", max: "+max+", nbins: "+bins+"):\n";
 		for (int n=0;n<bins;n++) output += "	"+hist[n];

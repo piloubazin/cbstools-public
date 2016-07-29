@@ -8,6 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataMipav;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
@@ -48,6 +49,11 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 	private ParamOption ngbParam;
 	private static final String[] ngbTypes = {"26C_neighbors","distance_based","debug"}; 
 	
+	private ParamOption corrParam;
+	private static final String[] corrTypes = {"positive","negative","shifted","absolute","raw"}; 
+	
+	private ParamBoolean renormParam;
+	
 	private static final byte X=0;
 	private static final byte Y=1;
 	private static final byte Z=2;
@@ -59,6 +65,12 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 	private static final byte YY=3;
 	private static final byte YZ=4;
 	private static final byte ZZ=5;
+	
+	private static final byte RAW=30;
+	private static final byte ABS=31;
+	private static final byte POS=32;
+	private static final byte NEG=33;
+	private static final byte SFT=34;
 	
 
 	// ouput
@@ -74,6 +86,8 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 		
 		inputParams.add(ngbParam = new ParamOption("Neighborhood type", ngbTypes));
 		inputParams.add(extentParam = new ParamFloat("Neighborhood distance (mm)", 0.0f, 30.0f, 2.0f));
+		inputParams.add(corrParam = new ParamOption("Correlation type", corrTypes));
+		inputParams.add(renormParam = new ParamBoolean("Normalize correlations", true));
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("fMRI");
@@ -123,6 +137,13 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 		
 		System.out.println("fmri data loaded");
 
+		byte corrtype;
+		if (corrParam.getValue().equals("absolute")) corrtype = ABS;
+		else if (corrParam.getValue().equals("positive")) corrtype = POS;
+		else if (corrParam.getValue().equals("negative")) corrtype = NEG;
+		else if (corrParam.getValue().equals("shifted")) corrtype = SFT;
+		else corrtype = RAW; 
+				
 		// center and norm
 		float[][][] center = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
@@ -142,67 +163,91 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			mask[x][y][z] = (norm[x][y][z]>0);
 		}
-
-		// how to deal with artefactual correlations in different directions??
-		int ncx=0, ncy=0, ncz=0;
-		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) if (mask[x][y][z]){
-			if (mask[x+2][y][z]) ncx++;
-			if (mask[x][y+2][z]) ncy++;
-			if (mask[x][y][z+2]) ncz++;
-		}
-		double[] corrX = new double[ncx];
-		double[] corrY = new double[ncy];
-		double[] corrZ = new double[ncz];
 		
-		int xc=0, yc=0, zc=0;
-		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) if (mask[x][y][z]){
-			if (mask[x+2][y][z]) {
-				corrX[xc] = 0.0;
-				for (int t=0;t<nt;t++) corrX[xc] += data[x][y][z][t]*data[x+2][y][z][t];
-				corrX[xc] /= nt*norm[x][y][z]*norm[x+2][y][z];
-			}
-			if (mask[x][y+2][z]) {
-				corrY[yc] = 0.0;
-				for (int t=0;t<nt;t++) corrY[yc] += data[x][y][z][t]*data[x][y+2][z][t];
-				corrY[yc] /= nt*norm[x][y][z]*norm[x][y+2][z];
-			}
-			if (mask[x][y][z+2]) {
-				corrZ[zc] = 0.0;
-				for (int t=0;t<nt;t++) corrZ[zc] += data[x][y][z][t]*data[x][y][z+2][t];
-				corrZ[zc] /= nt*norm[x][y][z]*norm[x][y][z+2];
+		// set the correlation distance step
+		int d = (int)extentParam.getValue().floatValue();
+		if (!ngbParam.getValue().equals("debug")) d = 1;
+		System.out.println("neighborhood distance: "+d);
+		
+		// how to deal with artefactual correlations in different directions??
+		int[] ncorr = new int[26];
+		for (int x=d;x<nx-d;x++) for (int y=d;y<ny-d;y++) for (int z=d;z<nz-d;z++) if (mask[x][y][z]){
+			for (int n=0;n<26;n++) {
+				if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]]) ncorr[n]++;
 			}
 		}
-		Histogram histX = new Histogram(corrX, 1000, ncx);
-		float offsetx = histX.argmax();
-		Histogram histY = new Histogram(corrY, 1000, ncy);
-		float offsety = histY.argmax();
-		Histogram histZ = new Histogram(corrZ, 1000, ncz);
-		float offsetz = histZ.argmax();
-		System.out.println("correlation offsets: "+offsetx+", "+offsety+", "+offsetz);
-		float maxx = histX.max();
-		float maxy = histY.max();
-		float maxz = histZ.max();
+		double[][] correlation = new double[26][];
+		for (int n=0;n<26;n++) correlation[n] = new double[ncorr[n]];
+			
+		int[] cid = new int[26];
+		for (int x=d;x<nx-d;x++) for (int y=d;y<ny-d;y++) for (int z=d;z<nz-d;z++) if (mask[x][y][z]){
+			for (int n=0;n<26;n++) {
+				if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]]) {
+					double corr = 0.0;
+					for (int t=0;t<nt;t++) corr += data[x][y][z][t]*data[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]][t];
+					corr /= nt*norm[x][y][z]*norm[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]];
+					
+					if (corrtype==ABS) corr = Numerics.abs(corr);
+					else if (corrtype==POS) corr = Numerics.max(corr,0.0);
+					else if (corrtype==NEG) corr = -Numerics.min(corr,0.0);
+					else if (corrtype==SFT) corr = 0.5*(1.0+corr);
+					
+					correlation[n][cid[n]] = corr; 
+					cid[n]++;
+				}
+			}
+		}
+		float[] coffset = new float[26];
+		float[] cmin = new float[26];
+		float[] cmax = new float[26];
+		for (int n=0;n<26;n++) {
+			Histogram hist = new Histogram(correlation[n], 2000, ncorr[n]);
+			cmin[n] = hist.min();
+			cmax[n] = hist.max();
+			coffset[n] = hist.argmax();
+			System.out.println("offset ("+n+"): "+coffset[n]);
+		}
+		byte[][][] histo = new byte[2000][2000][26];
+		for (int n=0;n<26;n++) {
+			Histogram hist = new Histogram(correlation[n], 2000, ncorr[n]);
+			byte[][] tmp = hist.plotLogHistogram();
+			for (int i=0;i<2000;i++) for (int j=0;j<2000;j++) histo[i][j][n] = tmp[i][j];
+		}
+
+		if (renormParam.getValue().booleanValue()) {
+			// re-normalize
+			for (int n=0;n<26;n++) cid[n] = 0;
+			for (int x=d;x<nx-d;x++) for (int y=d;y<ny-d;y++) for (int z=d;z<nz-d;z++) if (mask[x][y][z]){
+				for (int n=0;n<26;n++) {
+					if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]]) {
+						if (correlation[n][cid[n]]>coffset[n]) correlation[n][cid[n]] = (correlation[n][cid[n]]-coffset[n])/(cmax[n]-coffset[n]);
+						else correlation[n][cid[n]] = (correlation[n][cid[n]]-coffset[n])/(coffset[n]-cmin[n]);
+						cid[n]++;
+					}
+				}
+			}
+		}
 		
 		float[][][][] tensor = new float[nx][ny][nz][6];
 		if (ngbParam.getValue().equals("26C_neighbors")) {
-			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) if (mask[x][y][z]){
+			for (int n=0;n<26;n++) cid[n] = 0;
+			for (int x=d;x<nx-d;x++) for (int y=d;y<ny-d;y++) for (int z=d;z<nz-d;z++) if (mask[x][y][z]){
 			//for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]) {
 				// for now, skip all voxels on the boundary
 				boolean boundary=false;
 				double[] tens = new double[6];
-				for (int n=0;n<26 && !boundary;n++) {
-					if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]]) {
-						double correlation = 0.0;
-						for (int t=0;t<nt;t++) correlation += data[x][y][z][t]*data[x+2*Ngb.x[n]][y+2*Ngb.y[n]][z+2*Ngb.z[n]][t];
-						correlation /= nt*norm[x][y][z]*norm[x+2*Ngb.x[n]][y+2*Ngb.y[n]][z+2*Ngb.z[n]];
+				for (int n=0;n<26;n++) {
+					if (mask[x+d*Ngb.x[n]][y+d*Ngb.y[n]][z+d*Ngb.z[n]]) {
+						double corr = correlation[n][cid[n]]*correlation[n][cid[n]];
+						cid[n]++;
 						
 						float[] v = Ngb.directionVector(n);
-						tens[XX]	+= correlation*v[X]*v[X];
-						tens[XY]	+= correlation*v[X]*v[Y];
-						tens[XZ]	+= correlation*v[X]*v[Z];
-						tens[YY]	+= correlation*v[Y]*v[Y];
-						tens[YZ]	+= correlation*v[Y]*v[Z];
-						tens[ZZ]+= correlation*v[Z]*v[Z];
+						tens[XX]	+= corr*v[X]*v[X];
+						tens[XY]	+= corr*v[X]*v[Y];
+						tens[XZ]	+= corr*v[X]*v[Z];
+						tens[YY]	+= corr*v[Y]*v[Y];
+						tens[YZ]	+= corr*v[Y]*v[Z];
+						tens[ZZ]+= corr*v[Z]*v[Z];
 					} else {
 						boundary=true;
 					}
@@ -217,16 +262,17 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 				}
 			}
 		} else if (ngbParam.getValue().equals("debug")) {
-			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) if (mask[x][y][z]){
+			for (int n=0;n<26;n++) cid[n] = 0;
+			for (int x=d;x<nx-d;x++) for (int y=d;y<ny-d;y++) for (int z=d;z<nz-d;z++) if (mask[x][y][z]){
 			//for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]) {
 				// for now, skip all voxels on the boundary
 				boolean boundary=false;
 				double[] tens = new double[6];
-				for (int n=0;n<6 && !boundary;n++) {
-					if (mask[x+2*Ngb.x[n]][y+2*Ngb.y[n]][z+2*Ngb.z[n]]) {
-						double corrXY = 0.0;
-						for (int t=0;t<nt;t++) corrXY += data[x][y][z][t]*data[x+2*Ngb.x[n]][y+2*Ngb.y[n]][z+2*Ngb.z[n]][t];
-						corrXY /= nt*norm[x][y][z]*norm[x+2*Ngb.x[n]][y+2*Ngb.y[n]][z+2*Ngb.z[n]];
+				for (int n=0;n<6;n++) {
+					if (mask[x+d*Ngb.x[n]][y+d*Ngb.y[n]][z+d*Ngb.z[n]]) {
+						double corr = correlation[n][cid[n]]*correlation[n][cid[n]];
+						cid[n]++;
+						
 						// debug
 						float[] v = new float[3];
 						float vn = 0.0f;
@@ -238,21 +284,7 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 						v[Y] /= vn;
 						v[Z] /= vn;
 						
-						//float[] v = Ngb.directionVector(n);
-						/*
-						tens[XX]	+= correlation*v[X]*v[X];
-						tens[XY]	+= correlation*v[X]*v[Y];
-						tens[XZ]	+= correlation*v[X]*v[Z];
-						tens[YY]	+= correlation*v[Y]*v[Y];
-						tens[YZ]	+= correlation*v[Y]*v[Z];
-						tens[ZZ]+= correlation*v[Z]*v[Z];
-						*/
-						/*
-						if (n==0 || n==3) corrXY = (corrXY-offsetx)/(maxx-offsetx);
-						if (n==1 || n==4) corrXY = (corrXY-offsety)/(maxy-offsety);
-						if (n==2 || n==5) corrXY = (corrXY-offsetz)/(maxz-offsetz);
-						*/
-						tens[n] = corrXY;
+						tens[n] = corr;
 					} else {
 						boundary=true;
 					}
@@ -279,16 +311,16 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 					if (mask[x+i][y+j][z+l]) {
 						double dist = FastMath.sqrt(i*i+j*j+l*l);
 						if (dist<=maxdist) {
-							double correlation = 0.0;
-							for (int t=0;t<nt;t++) correlation += data[x][y][z][t]*data[x+i][y+j][z+l][t];
-							correlation /= nt*norm[x][y][z]*norm[x+i][y+j][z+l];
+							double corr = 0.0;
+							for (int t=0;t<nt;t++) corr += data[x][y][z][t]*data[x+i][y+j][z+l][t];
+							corr/= nt*norm[x][y][z]*norm[x+i][y+j][z+l];
 							double[] v = new double[]{i/dist,j/dist,l/dist};
-							tens[XX]	+= correlation*v[X]*v[X];
-							tens[XY]	+= correlation*v[X]*v[Y];
-							tens[XZ]	+= correlation*v[X]*v[Z];
-							tens[YY]	+= correlation*v[Y]*v[Y];
-							tens[YZ]	+= correlation*v[Y]*v[Z];
-							tens[ZZ]	+= correlation*v[Z]*v[Z];
+							tens[XX]	+= corr*v[X]*v[X];
+							tens[XY]	+= corr*v[X]*v[Y];
+							tens[XZ]	+= corr*v[X]*v[Z];
+							tens[YY]	+= corr*v[Y]*v[Y];
+							tens[YZ]	+= corr*v[Y]*v[Z];
+							tens[ZZ]	+= corr*v[Z]*v[Z];
 							nsample++;
 						}
 					} else {
@@ -314,14 +346,6 @@ public class JistFmriCorrelationTensors extends ProcessingAlgorithm {
 		tensorImg.setHeader(dataHeader);
 		tensorImg.setName(dataName + "_tensor");
 		tensorImage.setValue(tensorImg);
-		
-		byte[][][] histo = new byte[1000][1000][3];
-		byte[][] tmp = histX.plotLogHistogram();
-		for (int n=0;n<1000;n++) for (int m=0;m<1000;m++) histo[n][m][0] = tmp[n][m];
-		tmp = histY.plotLogHistogram();
-		for (int n=0;n<1000;n++) for (int m=0;m<1000;m++) histo[n][m][1] = tmp[n][m];
-		tmp = histZ.plotLogHistogram();
-		for (int n=0;n<1000;n++) for (int m=0;m<1000;m++) histo[n][m][2] = tmp[n][m];
 		
 		ImageDataUByte histImg = new ImageDataUByte(histo);		
 		histImg.setHeader(dataHeader);

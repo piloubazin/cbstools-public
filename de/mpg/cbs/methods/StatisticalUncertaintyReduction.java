@@ -38,7 +38,7 @@ public class StatisticalUncertaintyReduction {
 	private		float[][]		bestproba;			// best probability function
 	private		byte[][]		bestlabel;			// corresponding labels
 	private static	byte 	  	nbest;				// total number of probability functions
-	private 	byte[] 			segmentation;   	// MGDM's segmentation (object indices 1 to N)
+	//private 	byte[] 			segmentation;   	// MGDM's segmentation (object indices 1 to N)
 	private		boolean[]		mask;				// masking regions not used in computations
 	
 	// for debug and display
@@ -68,7 +68,7 @@ public class StatisticalUncertaintyReduction {
 		
 		// init all the arrays in atlas space
 		try {
-			segmentation = new byte[nix*niy*niz];	
+			//segmentation = new byte[nix*niy*niz];	
 			mask = new boolean[nix*niy*niz];	
 		} catch (OutOfMemoryError e){
 			 finalize();
@@ -88,7 +88,7 @@ public class StatisticalUncertaintyReduction {
 	}
 	
 	public void finalize() {
-		segmentation = null;
+		//segmentation = null;
 	}
 	
 	public final void setBestProbabilities(float[][] bestpb, byte[][] bestlb, int[] objlb) {
@@ -125,7 +125,7 @@ public class StatisticalUncertaintyReduction {
 	
 	public final byte[][] getLabels() { return bestlabel; }
 	
-	public final byte[] getSegmentation() { return segmentation; }
+	//public final byte[] getSegmentation() { return segmentation; }
     
 
     public final void diffuseCertainty(int iter, float scale, float factor, int ngbsize, float mincertainty) {
@@ -214,7 +214,7 @@ public class StatisticalUncertaintyReduction {
 			meandiff /= ndiff;
 			BasicInfo.displayMessage("mean diff. "+meandiff+", max diff. "+maxdiff+"\n");
 			// make a hard copy
-			for (int m=0;m<nbest+1;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+			for (int m=0;m<nbest;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
 				bestproba[m][xyzi] = newproba[m][xyzi];
 				bestlabel[m][xyzi] = newlabel[m][xyzi];
 			}

@@ -26,7 +26,6 @@ public class SegmentationSureSeg {
 	
 	private float[] probaImage = null;
 	private int[] 	labelImage = null;
-	private byte 	nlabelsParam = 0;
 	private byte 	nbestParam	=	4;
 	private boolean	includeBgParam = false;
 	
@@ -127,6 +126,7 @@ public class SegmentationSureSeg {
 		byte[][] maxlabel = null;
 		
 		if (labelImage==null) {
+			BasicInfo.displayMessage("build from probabilities...\n");
 			// create max proba, labels (assuming a background value with label zero)
 			nlabels = (byte)(probaImage.length/nxyz);
 			objlb = new int[nlabels];
@@ -138,9 +138,11 @@ public class SegmentationSureSeg {
 			maxproba = maxprep.getMaxProba();
 			maxlabel = maxprep.getMaxLabel();
 		} else {
+			BasicInfo.displayMessage("build from max labeling and max probability...\n");
 			objlb = ObjectLabeling.listOrderedLabels(labelImage,nx,ny,nz);
 			nlabels = (byte)objlb.length;
 			
+			BasicInfo.displayMessage("found "+nlabels+" labels\n");
 			// create a distance-based probability map
 			float[] boundary = new float[nxyz];
 			if (!includeBgParam) {
@@ -155,12 +157,13 @@ public class SegmentationSureSeg {
 			}
 			byte[] lbs = new byte[nlabels];
 			for (int l=0;l<nlabels;l++) lbs[l] = (byte)objlb[l];
-			MgdmRepresentation mgdm = new MgdmRepresentation(labelImage, boundary, nx,ny,nz, rx,ry,rz, lbs, nlabels, nbestParam-1, false, -1.0f);
+			BasicInfo.displayMessage("distance-based MGDM representation...\n");
+			MgdmRepresentation mgdm = new MgdmRepresentation(labelImage, boundary, nx,ny,nz, rx,ry,rz, lbs, nlabels, nbestParam-1, false, 9.0f);
 			
-			MaxProbaRepresentation maxprep = new MaxProbaRepresentation(nbestParam, nlabels, nx,ny,nz);
+			//MaxProbaRepresentation maxprep = new MaxProbaRepresentation(nbestParam, nlabels, nx,ny,nz);
 			maxproba = new float[nlabels][nxyz];
 			maxlabel = mgdm.getLabels();
-			float[] distproba = new float[nbestParam-1];
+			float[] distproba = new float[nbestParam];
 			for (int xyz=0;xyz<nxyz;xyz++) {
 				maxproba[0][xyz] = boundary[xyz];
 				distproba[nbestParam-1] = 0.0f;
@@ -182,14 +185,21 @@ public class SegmentationSureSeg {
 		sur.setBestProbabilities(maxproba, maxlabel, objlb);
 		
 		sur.diffuseCertainty(iterationParam, imgscaleParam, certainscaleParam, neighborParam, mincertaintyParam);
-					
+				
 		// outputs
 		BasicInfo.displayMessage("generating outputs...\n");
 		
 		// map to 1D arrays
-		segmentImage = sur.getSegmentation();
-		maxprobaImage = sur.getProbabilities();
-		maxidImage = sur.getLabels();
+		segmentImage = new int[nxyz];
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			segmentImage[xyz] = objlb[sur.getLabels()[0][xyz]];
+		}
+		maxprobaImage = new float[nxyz*nbestParam];
+		maxidImage = new byte[nxyz*nbestParam];
+		for (int l=0;l<nbestParam;l++) for (int xyz=0;xyz<nxyz;xyz++) {
+			maxprobaImage[xyz+nxyz*l] = sur.getProbabilities()[l][xyz];
+			maxidImage[xyz+nxyz*l] = sur.getLabels()[l][xyz];
+		}
 		
 		return;
 	}

@@ -71,12 +71,15 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		
 		imageParams.add(input2Image = new ParamVolume("Contrast Image 2 (opt)"));
 		imageParams.add(scale2Param = new ParamFloat("Contrast Scale 2",0.0f,1e15f,1.0f));
+		input2Image.setMandatory(false);
 		
 		imageParams.add(input3Image = new ParamVolume("Contrast Image 3 (opt)"));
 		imageParams.add(scale3Param = new ParamFloat("Contrast Scale 3",0.0f,1e15f,1.0f));
+		input3Image.setMandatory(false);
 		
 		imageParams.add(probaImage = new ParamVolume("Label Probabilities (3D or 4D)"));
 		imageParams.add(labelImage = new ParamVolume("Label Segmentation (opt)"));
+		labelImage.setMandatory(false);
 		
 		inputParams.add(imageParams);
 		
@@ -113,9 +116,9 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
-		outputParams.add(segmentImage = new ParamVolume("Segmented Image",VoxelType.BYTE));
+		outputParams.add(segmentImage = new ParamVolume("Segmented Image",VoxelType.INT));
 		outputParams.add(maxprobaImage = new ParamVolume("Maximum Probability Image (4D)",VoxelType.FLOAT,-1,-1,-1,-1));
-		outputParams.add(maxidImage = new ParamVolume("Segmentation Ids Image (4D)",VoxelType.INT,-1,-1,-1,-1));
+		outputParams.add(maxidImage = new ParamVolume("Segmentation Ids Image (4D)",VoxelType.UBYTE,-1,-1,-1,-1));
 		
 		outputParams.setName("sure segmentation images");
 		outputParams.setLabel("sure segmentation images");

@@ -9,6 +9,7 @@ import edu.jhu.ece.iacl.jist.pipeline.DevelopmentStatus;
 import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolumeCollection;
@@ -24,8 +25,9 @@ import de.mpg.cbs.utilities.*;
  *
  */
 public class JistSegmentationProbabilityCombination extends ProcessingAlgorithm{
-	ParamVolumeCollection volParam;
+	ParamVolumeCollection 	volParam;
 	ParamInteger			sizeParam;
+	ParamBoolean			includebgParam;
 
 	ParamVolume maxVolParam;
 	ParamVolume lbVolParam;
@@ -33,6 +35,7 @@ public class JistSegmentationProbabilityCombination extends ProcessingAlgorithm{
 	protected void createInputParameters(ParamCollection inputParams) {
 		inputParams.add(volParam=new ParamVolumeCollection("Probability Images"));
 		inputParams.add(sizeParam=new ParamInteger("Combined result size",1,10,3));
+		inputParams.add(includebgParam=new ParamBoolean("Background included",true));
 
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Segmentation");
@@ -61,24 +64,33 @@ public class JistSegmentationProbabilityCombination extends ProcessingAlgorithm{
 		
 		int N = volParam.getImageDataList().size();
 		int M = Numerics.min(N, sizeParam.getValue().intValue());
+		int NP = N;
+		boolean addbg = (!includebgParam.getValue().booleanValue());
+		if (addbg) NP++;
 		
 		ImageDataFloat maxVol=new ImageDataFloat(rows,cols,slices,M);
 		ImageDataUByte lbVol=new ImageDataUByte(rows,cols,slices,M);
 		
-		float[] val = new float[N];
+		float[] val = new float[NP];
 		float[] best = new float[M];
 		byte[] arg = new byte[M];
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < cols; j++) {
 				for (int k = 0; k < slices; k++) {
 					
-					for(byte l=0; l<N; l++) 
+					for(byte l=0; l<N; l++)
 						val[l]=volParam.getImageDataList().get(l).getFloat(i, j, k, l);
-					
+						
+					if (addbg) { 
+						val[N] = 1.0f;
+						for(byte l=0; l<N; l++) val[N] -= val[l];
+						val[N] = Numerics.max(val[N],0.0f);
+					}
 					Numerics.argmax(arg, best, val, M);
 					for(byte l=0; l<M; l++){
 						maxVol.set(i, j, k, l, best[l]);
-						lbVol.set(i, j, k, l, arg[l]);
+						if (arg[l]<N) lbVol.set(i, j, k, l, arg[l]+1);
+						else lbVol.set(i, j, k, l, 0);
 					}
 				}
 			}

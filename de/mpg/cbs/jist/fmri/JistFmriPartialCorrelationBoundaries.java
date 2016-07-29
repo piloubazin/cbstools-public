@@ -6,6 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -46,7 +47,8 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 	//private ParamFloat 		extentParam;
 	
 	private ParamOption corrParam;
-	private static final String[] corrTypes = {"absolute","positive","raw"}; 
+	private static final String[] corrTypes = {"positive","negative","shifted","absolute","raw"}; 
+	private ParamBoolean renormParam;
 	
 	private static final byte X=0;
 	private static final byte Y=1;
@@ -56,6 +58,7 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 	private static final byte ABS=31;
 	private static final byte POS=32;
 	private static final byte NEG=33;
+	private static final byte SFT=34;
 	
 	// ouput
 	private ParamVolume pboundaryImage;
@@ -69,6 +72,7 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 		
 		inputParams.add(corrParam = new ParamOption("Correlation type", corrTypes));
 		//inputParams.add(extentParam = new ParamFloat("Neighborhood distance (mm)", 0.0f, 30.0f, 2.0f));
+		inputParams.add(renormParam = new ParamBoolean("Normalize correlations", true));
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("fMRI");
@@ -120,6 +124,7 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 		if (corrParam.getValue().equals("absolute")) corrtype = ABS;
 		else if (corrParam.getValue().equals("positive")) corrtype = POS;
 		else if (corrParam.getValue().equals("negative")) corrtype = NEG;
+		else if (corrParam.getValue().equals("shifted")) corrtype = SFT;
 		else corrtype = RAW; 
 		
 		// center and norm
@@ -143,8 +148,104 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 			mask[x][y][z] = (norm[x][y][z]>0);
 		}
 		
+		// how to deal with artefactual correlations in different directions??
+		float[] coffset = new float[78];
+		float[] cmin = new float[78];
+		float[] cmax = new float[78];
+		boolean renormalize = (renormParam.getValue().booleanValue());
+		
+		if (renormalize) {
+			for (int n=0;n<26;n++) {
+				int ncorr = 0;
+				for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]){
+					if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]]) ncorr++;
+				}
+				double[] correlation = new double[ncorr];
+				
+				int cid = 0;
+				for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]){
+					if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]]) {
+						double corr = 0.0;
+						for (int t=0;t<nt;t++) corr += data[x][y][z][t]*data[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]][t];
+						corr /= nt*norm[x][y][z]*norm[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]];
+						
+						if (corrtype==ABS) corr = Numerics.abs(corr);
+						else if (corrtype==POS) corr = Numerics.max(corr,0.0);
+						else if (corrtype==NEG) corr = -Numerics.min(corr,0.0);
+						else if (corrtype==SFT) corr = 0.5*(1.0+corr);
+						
+						correlation[cid] = corr; 
+						cid++;
+					}
+				}
+				Histogram hist = new Histogram(correlation, 2000, ncorr);
+				cmin[n] = hist.min();
+				cmax[n] = hist.max();
+				coffset[n] = hist.argmax();
+				System.out.println("+ offset ("+n+"): "+coffset[n]);
+			}
+			for (int n=0;n<26;n++) {
+				int ncorr = 0;
+				for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]){
+					if (mask[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]]) ncorr++;
+				}
+				double[] correlation = new double[ncorr];
+				
+				int cid = 0;
+				for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]){
+					if (mask[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]]) {
+						double corr = 0.0;
+						for (int t=0;t<nt;t++) corr += data[x][y][z][t]*data[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]][t];
+						corr /= nt*norm[x][y][z]*norm[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]];
+						
+						if (corrtype==ABS) corr = Numerics.abs(corr);
+						else if (corrtype==POS) corr = Numerics.max(corr,0.0);
+						else if (corrtype==NEG) corr = -Numerics.min(corr,0.0);
+						else if (corrtype==SFT) corr = 0.5*(1.0+corr);
+						
+						correlation[cid] = corr; 
+						cid++;
+					}
+				}
+				Histogram hist = new Histogram(correlation, 2000, ncorr);
+				cmin[n+26] = hist.min();
+				cmax[n+26] = hist.max();
+				coffset[n+26] = hist.argmax();
+				System.out.println("- offset ("+n+"): "+coffset[n+26]);
+			}
+			for (int n=0;n<26;n++) {
+				int ncorr = 0;
+				for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]){
+					if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]] && mask[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]]) ncorr++;
+				}
+				double[] correlation = new double[ncorr];
+				
+				int cid = 0;
+				for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]){
+					if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]] && mask[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]]) {
+						double corr = 0.0;
+						for (int t=0;t<nt;t++) corr += data[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]][t]*data[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]][t];
+						corr /= nt*norm[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]]*norm[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]];
+						
+						if (corrtype==ABS) corr = Numerics.abs(corr);
+						else if (corrtype==POS) corr = Numerics.max(corr,0.0);
+						else if (corrtype==NEG) corr = -Numerics.min(corr,0.0);
+						else if (corrtype==SFT) corr = 0.5*(1.0+corr);
+						
+						correlation[cid] = corr; 
+						cid++;
+					}
+				}
+				Histogram hist = new Histogram(correlation, 2000, ncorr);
+				cmin[n+52] = hist.min();
+				cmax[n+52] = hist.max();
+				coffset[n+52] = hist.argmax();
+				System.out.println("+/- offset ("+n+"): "+coffset[n+52]);
+			}
+		}	
 		float[][][][] partialboundaries = new float[nx][ny][nz][26];
 		float[][][] superboundaries = new float[2*nx-1][2*ny-1][2*nz-1];
+		byte[][][] supercount = new byte[2*nx-1][2*ny-1][2*nz-1];
 		float[][][][] boundaryvector = new float[nx][ny][nz][3];
 		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]) {
 			for (int n=0;n<26;n++) {
@@ -157,6 +258,12 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 					if (corrtype==ABS) corrXY = Numerics.abs(corrXY);
 					else if (corrtype==POS) corrXY = Numerics.max(corrXY,0.0);
 					else if (corrtype==NEG) corrXY = -Numerics.min(corrXY,0.0);
+					else if (corrtype==SFT) corrXY = 0.5*(1.0+corrXY);
+					
+					if (renormalize) {
+						if (corrXY>coffset[n]) corrXY = (corrXY-coffset[n])/(cmax[n]-coffset[n]);
+						else corrXY = (corrXY-coffset[n])/(coffset[n]-cmin[n]);
+					}
 					
 					double corrYZ = 0.0;
 					for (int t=0;t<nt;t++) corrYZ += data[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]][t]*data[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]][t];
@@ -165,7 +272,13 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 					if (corrtype==ABS) corrYZ = Numerics.abs(corrYZ);
 					else if (corrtype==POS) corrYZ = Numerics.max(corrYZ,0.0);
 					else if (corrtype==NEG) corrYZ = -Numerics.min(corrYZ,0.0);
+					else if (corrtype==SFT) corrYZ = 0.5*(1.0+corrYZ);
 					
+					if (renormalize) {
+						if (corrYZ>coffset[n+52]) corrYZ = (corrYZ-coffset[n+52])/(cmax[n+52]-coffset[n+52]);
+						else corrYZ = (corrYZ-coffset[n+52])/(coffset[n+52]-cmin[n+52]);
+					}
+						
 					double corrZX = 0.0;
 					for (int t=0;t<nt;t++) corrZX += data[x][y][z][t]*data[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]][t];
 					corrZX /= nt*norm[x][y][z]*norm[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]];
@@ -173,11 +286,19 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 					if (corrtype==ABS) corrZX = Numerics.abs(corrZX);
 					else if (corrtype==POS) corrZX = Numerics.max(corrZX,0.0);
 					else if (corrtype==NEG) corrZX= -Numerics.min(corrZX,0.0);
+					else if (corrtype==SFT) corrZX = 0.5*(1.0+corrZX);
 					
+					if (renormalize) {
+						if (corrZX>coffset[n+26]) corrZX = (corrZX-coffset[n+26])/(cmax[n+26]-coffset[n+26]);
+						else corrZX = (corrZX-coffset[n+26])/(coffset[n+26]-cmin[n+26]);
+					}
+						
 					double pcorr = (corrXY-corrZX*corrYZ)/FastMath.sqrt((1.0-corrZX*corrZX)*(1.0-corrYZ*corrYZ));
 					partialboundaries[x][y][z][n] = (float)(pcorr);
 					
-					superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]] = Numerics.max(superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]], (float)pcorr);
+					//superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]] = Numerics.max(superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]], (float)pcorr);
+					superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]] += (float)pcorr;
+					supercount[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]] ++;
 					
 					float[] v = Ngb.directionVector(n);
 					boundaryvector[x][y][z][X] += (float)pcorr*v[X];
@@ -187,9 +308,17 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 			}
 		}
 		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]) {
-			superboundaries[2*x][2*y][2*z] = superboundaries[2*x-Ngb.x[0]][2*y-Ngb.y[0]][2*z-Ngb.z[0]];
-			for (int n=1;n<26;n++) {
-				superboundaries[2*x][2*y][2*z] = Numerics.min(superboundaries[2*x][2*y][2*z], superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]]);
+			//superboundaries[2*x][2*y][2*z] = superboundaries[2*x-Ngb.x[0]][2*y-Ngb.y[0]][2*z-Ngb.z[0]];
+			superboundaries[2*x][2*y][2*z] = 0.0f;
+			//for (int n=1;n<26;n++) {
+			for (int n=0;n<26;n++) {
+				//superboundaries[2*x][2*y][2*z] = Numerics.min(superboundaries[2*x][2*y][2*z], superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]]);
+				
+				superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]] /= Numerics.max(1.0f, supercount[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]]);
+				// needed to avoid multiple scalings
+				supercount[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]] = (byte)1;
+				
+				superboundaries[2*x][2*y][2*z] += superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]]/26.0f;
 			}
 		}
 		System.out.println("output..");
