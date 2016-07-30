@@ -335,6 +335,57 @@ def write_priors_to_atlas(prior_medians,prior_quart_diffs,atlas_file,new_atlas_f
     return fp_new.name
 
 
+def filter_sigmoid(d, x0=0.002, slope=0.0005):
+    """
+    Pass data through a sigmoid filter (scaled between 0 and 1). Defaults set for MD rescaling
+    :param d:
+    :param x0:
+    :param slope:
+    :return:
+    """
+    import numpy as np
+    return 1/(1 + np.exp(-1 * (d - x0) / slope))
+
+
+def niiLoad(nii_fname,return_header=False):
+    """
+    Load nii data into numpy array, along with aff and header as desired
+    :param nii_fname:
+    :param return_affine:
+    :param return_header:
+    :return:
+    """
+    import nibabel as nb
+    img=nb.load(nii_fname)
+    if return_affine and return_header:
+        return img.get_data(), img.affine, img.header
+    elif return_affine and not return_header:
+        return img.get_data(), img.affine,
+    else:
+        return img.get_data()
+
+
+def niiSave(nii_fname,d,affine,header=None,data_type=None):
+    """
+    Save nifti image to file
+
+    :param nii_fname:
+    :param d:
+    :param affine:
+    :param header:      text of numpy data_type (e.g. 'uint32','float32')
+    :param data_type:
+    :return:
+    """
+    import nibabel as nb
+    if data_type is not None:
+        d.as_type(data_type)
+    img=nb.Nifti1Image(d,affine,header=header)
+    if data_type is not None:
+        img.set_data_dtype(data_type)
+    img.to_filename(nii_fname)
+    return nii_fname
+
+
 def get_MGDM_seg_contrast_names(atlas_file):
     """
     Return a list of contrast names that are available as intensity priors in the MGDM atlas that you are using
