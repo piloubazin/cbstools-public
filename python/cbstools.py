@@ -86,7 +86,8 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
     """
 
     from nibabel.orientations import io_orientation, inv_ornt_aff, apply_orientation, ornt_transform
-
+    import os
+    
     print("Thank you for choosing the MGDM segmentation from the cbstools for your brain segmentation needs")
     print("Sit back and relax, let the magic of algorithms happen...")
     print("")
@@ -269,12 +270,12 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     """
 
     #from nibabel.orientations import io_orientation, inv_ornt_aff, apply_orientation, ornt_transform
-
+    import os
     print("Thank you for choosing the MGDM segmentation from the cbstools for your brain segmentation needs")
     print("Sit back and relax, let the magic of algorithms happen...")
     print("")
     if output_dir is None:
-        output_dir = os.path.dirname(input_filename_type_list[0][0])
+        output_dir = os.path.dirname(con1_files[0])
     if atlas_file is None:
         atlas = os.path.join(ATLAS_DIR,'brain-atlas-3.0.3.txt')
     else:
