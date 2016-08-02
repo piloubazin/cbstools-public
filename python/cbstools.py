@@ -143,8 +143,11 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
 
         # convert orientation information to mgdm slice and orientation info
         aff_orients,aff_slc = get_affine_orientation_slice(d_aff)
-        print("orientation: " + str(aff_orients)),
+        print("data orientation: " + str(aff_orients)),
         print("slice settings: " + aff_slc)
+        print("mgdm orientation: " + str(ornt_mgdm))
+        print("data orientation: " + str(ornt_orig))
+
         if aff_slc == "AXIAL":
             SLC=mgdm.AXIAL
         elif aff_slc == "SAGITTAL":
@@ -204,9 +207,10 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
         lbl_im = np.reshape(np.array(mgdm.getPosteriorMaximumLabels4D(), dtype=np.uint32), d_shape, 'F')
         ids_im = np.reshape(np.array(mgdm.getSegmentedIdsImage(), dtype=np.uint32), d_shape, 'F')
 
-        seg_im = apply_orientation(seg_im, ornt_chng) # this takes care of the orientations between mipav and input
-        lbl_im = apply_orientation(lbl_im, ornt_chng) # TODO: fix the origin point offset?, 2x check possible RL flip
-        ids_im = apply_orientation(ids_im, ornt_chng) # alternative: register? https://github.com/pyimreg
+        # fix orientation back to the input orientation :-/ not really working
+        # seg_im = apply_orientation(seg_im, ornt_chng) # this takes care of the orientations between mipav and input
+        # lbl_im = apply_orientation(lbl_im, ornt_chng) # TODO: fix the origin point offset?, 2x check possible RL flip
+        # ids_im = apply_orientation(ids_im, ornt_chng) # alternative: register? https://github.com/pyimreg
                                                       #
 
         # save
@@ -513,7 +517,7 @@ def get_MGDM_seg_contrast_names(atlas_file):
 def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_name,
                                     atlas_file,erosion_iterations=1, min_quart_diff=0.1,
                                     seg_null_value = 0, background_idx = 1,
-                                    VERBOSE=False):
+                                    VERBOSE=False, intermediate_output_dir=None):
     """
     generates group intensity priors for metric_files based on orig_seg files (i.e., orig_seg could be Mprage3T and metric_files could be DWIFA3T)
     does not do the initial segmentation for you, that needs to be done first :-)
@@ -565,7 +569,7 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
         img=nb.load(metric_file)
         d_metric = img.get_data()
         a_metric = img.affine #not currently using the affine and header, but could also output the successive steps
-        a_header = img.header
+        h_metric = img.header
         print(seg_file.split("/")[-1])
         d_seg = nb.load(seg_file).get_data()
 
@@ -590,6 +594,9 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
         all_Ss_priors_median = np.vstack((all_Ss_priors_median, prior_medians))
         all_Ss_priors_spread = np.vstack((all_Ss_priors_spread, prior_quart_diffs))
 
+        if intermediate_output_dir is not None:
+            img=nb.Nifti1Image(d_seg_ero,a_metric,header=h_metric)
+            img.to_filename(os.path.join(intermediate_output_dir,seg_file.split("/")[-1].split(".")[0]+"_ero"+str(erosion_iterations)+".nii.gz"))
 
     return all_Ss_priors_median, all_Ss_priors_spread
 
