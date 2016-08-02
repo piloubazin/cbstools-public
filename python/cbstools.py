@@ -271,7 +271,8 @@ def seg_erode(seg_d, iterations=1, background_idx=1,
     if VERBOSE:
         print("Indices:")
     for seg_idx in seg_idxs:
-        print(seg_idx),
+        if VERBOSE:
+            print(seg_idx),
         if (background_idx is not None) and (background_idx == seg_idx):
             seg_shrunk_d[seg_d == seg_idx] = seg_idx  # just set the value to the bckgrnd value, and be done with it
             if VERBOSE:
@@ -315,7 +316,6 @@ def extract_metrics_from_seg(seg_d, metric_d, seg_idxs=None,norm_data=True,
              (metric_d)             optional metric_d scaled between 0 and 1
     """
     import numpy as np
-    import scipy
     if seg_idxs is None:
         seg_idxs = np.unique(seg_d)
     if (seg_null_value is not None) and (seg_null_value in seg_idxs): #remove the null value from the idxs so we don't look
@@ -391,7 +391,7 @@ def write_priors_to_atlas(prior_medians,prior_quart_diffs,atlas_file,new_atlas_f
 
     #get the relevant information from the old atlas file
     [lut, con_idx, lut_rows, priors] = extract_lut_priors_from_atlas(atlas_file, metric_contrast_name)
-    seg_idxs = lut.Index
+    seg_idxs = lut.Index.get_values() #np vector of index values
     priors_new = pd.DataFrame.copy(priors)
 
     #uppdate the priors with the new ones that were passed
@@ -414,7 +414,7 @@ def write_priors_to_atlas(prior_medians,prior_quart_diffs,atlas_file,new_atlas_f
             fp_new.write(line)
     fp.close()
     fp_new.close()
-    print('New atlas file written to: ' + fp_new.name)
+    print('New atlas file written to: \n' + fp_new.name)
     return fp_new.name
 
 
@@ -511,11 +511,25 @@ def get_MGDM_seg_contrast_names(atlas_file):
 
 
 def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_name,
-                                    atlas_file,erosion_iterations=1,seg_iterations=1,
-                                    output_dir=None):
-    # generates group intensity priors for metric_files based on orig_seg files (i.e., orig_seg could be Mprage3T and metric_files could be DWIFA3T)
-    # does not do the initial segmentation for you, that needs to be done first :-)
-    # we assume that you already did due-diligence and have matched lists of inputs (orig_seg_files and metric_files)
+                                    atlas_file,erosion_iterations=1, min_quart_diff=0.1,
+                                    seg_null_value = 0, background_idx = 1,
+                                    VERBOSE=False):
+    """
+    generates group intensity priors for metric_files based on orig_seg files (i.e., orig_seg could be Mprage3T and metric_files could be DWIFA3T)
+    does not do the initial segmentation for you, that needs to be done first :-)
+    we assume that you already did due-diligence and have matched lists of inputs (orig_seg_files and metric_files)
+
+    :param orig_seg_files:          segmentation from other modality
+    :param metric_files:            metric files in same space as orig_seg_files
+    :param metric_contrast_name:    name of contrast from priors atlas file, not used currently
+    :param atlas_file:              prior atlas file (use os.path.join(ATLAS_DIR,DEFAULT_ATLAS))
+    :param erosion_iterations:      number of voxels to erode from each segmented region prior to metric extraction
+    :param min_quart_diff:          minimum difference between quartiles to accept, otherwise replace with this
+    :param seg_null_value:          null value for segmentation results (choose a value that is not in your seg, usually 0)
+    :param background_idx:          background index value (usually 1, to leave 0 as a seg_null_value)
+    :param VERBOSE:
+    :return: medians, spread        metric-specific prior medians and spread for atlas file
+    """
     import nibabel as nb
     import numpy as np
 
@@ -529,9 +543,9 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
     seg_idxs = lut.Index
     all_Ss_priors_median = np.array(seg_idxs) #always put the seg_idxs on top row!
     all_Ss_priors_spread = np.array(seg_idxs)
-    seg_null_value = 0 #value to fill in when we are NOT using the voxels at all (not background and not other index)
-    background_idx = 1
-    min_quart_diff = 0.10 #minimun spread allowed in priors atlas
+    #seg_null_value = 0 #value to fill in when we are NOT using the voxels at all (not background and not other index)
+    #background_idx = 1
+    #min_quart_diff = 0.10 #minimun spread allowed in priors atlas
 
     # make a list if we only input one dataset
     if len(orig_seg_files) == 1:
@@ -543,6 +557,8 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
         print("You do not have the same number of segmentation and metric files. Bad!")
         print("Exiting")
         return [None, None]
+    if erosion_iterations >0:
+        print("Performing segmentation erosion on each segmented region with %i step(s)" % erosion_iterations)
 
     for idx, seg_file in enumerate(orig_seg_files):
         metric_file = metric_files[idx]
@@ -550,7 +566,7 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
         d_metric = img.get_data()
         a_metric = img.affine #not currently using the affine and header, but could also output the successive steps
         a_header = img.header
-        print(seg_file)
+        print(seg_file.split("/")[-1])
         d_seg = nb.load(seg_file).get_data()
 
         #erode our data
@@ -558,6 +574,8 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
             d_seg_ero = seg_erode(d_seg,iterations=erosion_iterations,
                                   background_idx=background_idx,
                                   seg_null_value=seg_null_value)
+        else:
+            d_seg_ero = d_seg
 
         #extract summary metrics (median, 75 and 25 percentile) from metric file
         [seg_idxs, seg_stats] = extract_metrics_from_seg(d_seg_ero, d_metric, seg_idxs=seg_idxs,
@@ -576,7 +594,7 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
     return all_Ss_priors_median, all_Ss_priors_spread
 
 
-def recursively_generate_group_intensity_priors(input_filename_type_list, metric_contrast_names, orig_seg_files,
+def iteratively_generate_group_intensity_priors(input_filename_type_list, metric_contrast_names, orig_seg_files,
                                                 atlas_file, new_atlas_file_head=None, erosion_iterations=1, seg_iterations=1,
                                                 output_dir=None):
     #inputs need to be lists!
