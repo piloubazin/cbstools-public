@@ -7,8 +7,8 @@ steele{AT}cbs{dot}mpg{dot}de
 """
 
 import numpy as np
-import nibabel as nb
-import os
+#import nibabel as nb
+#import os
 import sys
 
 sys.path.append('/home/chris/Documents/code/python/cbstools-python/cbstoolsjcc-3.1.0.1-py2.7-linux-x86_64.egg')
@@ -242,20 +242,33 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
 def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=None,
                              con3_files=None, con3_type=None, con4_files=None, con4_type=None,
                              output_dir = None, num_steps = 5, atlas_file=None, topology_lut_dir = None,
-                             adjust_intensity_priors = True, compute_posterior = False, diffuse_probabilities = False,
+                             adjust_intensity_priors = False, compute_posterior = False, diffuse_probabilities = False,
                              file_suffix = None):
     """
     Perform MGDM segmentation
     simplified inputs
-    :param input_filename_type_list: list of [[fname1,type1],[fname2,type2],...] - for a maximum of 4 inputs
-    :param output_dir: full path to the output directory
-    :param num_steps: number of steps for (default 5, set to 0 for testing)
-    :param atlas_file: full path to the atlas file, default set in defaults.py
-    :param topology_lut_dir: full path to the directory with the topology files, default set in defaults.py
+    adjust_intensity_priors is supposed to be True??? totally screws up :-/
+
+    :param con1_files:
+    :param con1_type:
+    :param con2_files:
+    :param con2_type:
+    :param con3_files:
+    :param con3_type:
+    :param con4_files:
+    :param con4_type:
+    :param output_dir:
+    :param num_steps:
+    :param atlas_file:
+    :param topology_lut_dir:
+    :param adjust_intensity_priors:
+    :param compute_posterior:
+    :param diffuse_probabilities:
+    :param file_suffix:
     :return:
     """
 
-    from nibabel.orientations import io_orientation, inv_ornt_aff, apply_orientation, ornt_transform
+    #from nibabel.orientations import io_orientation, inv_ornt_aff, apply_orientation, ornt_transform
 
     print("Thank you for choosing the MGDM segmentation from the cbstools for your brain segmentation needs")
     print("Sit back and relax, let the magic of algorithms happen...")
@@ -277,7 +290,7 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     print("Topology LUT durectory: " + topology_lut_dir)
     print("")
 
-    if not isinstance(con1_files, list):  # make into list of lists
+    if not isinstance(con1_files, list):  # make into lists if they were not
         con1_files = [con1_files]
     if con2_files is not None and not isinstance(con2_files, list):  # make into list of lists
         con2_files = [con2_files]
@@ -309,31 +322,31 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
         d,d_aff,d_head = niiLoad(fname,return_header=True)
 
         # convert orientation information to mgdm slice and orientation info
-        aff_orients,aff_slc = get_affine_orientation_slice(d_aff)
-        print("data orientation: " + str(aff_orients)),
-        print("slice settings: " + aff_slc)
-        if aff_slc == "AXIAL":
-            SLC=mgdm.AXIAL
-        elif aff_slc == "SAGITTAL":
-            SLC=mgdm.SAGITTAL
-        else:
-            SLC=mgdm.CORONAL
-        for aff_orient in aff_orients: #TODO: if anything is different from the default MGDM settings, we need to flip axes of the data at the end
-            if aff_orient == "L":
-                LR=mgdm.R2L
-            elif aff_orient == "R":
-                LR = mgdm.L2R
-               # flipLR = True
-            elif aff_orient == "A":
-                AP = mgdm.P2A
-                #flipAP = True
-            elif aff_orient == "P":
-                AP = mgdm.A2P
-            elif aff_orient == "I":
-                IS = mgdm.S2I
-                #flipIS = True
-            elif aff_orient == "S":
-                IS = mgdm.I2S
+        # aff_orients,aff_slc = get_affine_orientation_slice(d_aff)
+        # print("data orientation: " + str(aff_orients)),
+        # print("slice settings: " + aff_slc)
+        # if aff_slc == "AXIAL":
+        #     SLC=mgdm.AXIAL
+        # elif aff_slc == "SAGITTAL":
+        #     SLC=mgdm.SAGITTAL
+        # else:
+        #     SLC=mgdm.CORONAL
+        # for aff_orient in aff_orients: #TODO: if anything is different from the default MGDM settings, we need to flip axes of the data at the end
+        #     if aff_orient == "L":
+        #         LR=mgdm.R2L
+        #     elif aff_orient == "R":
+        #         LR = mgdm.L2R
+        #        # flipLR = True
+        #     elif aff_orient == "A":
+        #         AP = mgdm.P2A
+        #         #flipAP = True
+        #     elif aff_orient == "P":
+        #         AP = mgdm.A2P
+        #     elif aff_orient == "I":
+        #         IS = mgdm.S2I
+        #         #flipIS = True
+        #     elif aff_orient == "S":
+        #         IS = mgdm.I2S
         #mgdm.setOrientations(SLC, LR, AP, IS)  #L2R,P2A,I2S is nibabel default (i.e., RAS)
 
         # we use the first image to set the dimensions and resolutions
