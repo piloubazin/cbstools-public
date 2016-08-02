@@ -46,6 +46,33 @@ def IntensityBackgroundEstimator():
 def SurfaceProbabilityToLevelset():
     pass
 
+
+def get_affine_orientation_slice(a):
+    # get the orientation of the affine, and the slice order
+    import nibabel as nb
+    ori=nb.aff2axcodes(a)
+    if ori[-1] == "I" or ori[-1] == "S":
+        slc = "AXIAL"
+    elif ori[-1] == "L" or ori[-1] == "R":
+        slc="SAGITTAL"
+    else:
+        slc="CORONAL"
+    return ori, slc
+
+def get_affine_orientation(a):
+    import nibabel.orientations as orient
+    return orient.io_orientation(a) #orientation of the x, y, z
+
+def flip_affine_data_orientation(d,a,flipLR = False,flipAP = False, flipIS = False):
+    if flipLR:
+        a[1,1]=a[1,1]*-1
+    if flipAP:
+        a[2,2] = a[2,2] * -1
+        #d=d[:,::-1,:]
+    if flipIS:
+        a[3,3] = a[3,3]*-1
+    return d,a
+
 def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps = 5, atlas_file=None, topology_lut_dir = None):
     """
     Perform MGDM segmentation
@@ -56,6 +83,9 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
     :param topology_lut_dir: full path to the directory with the topology files, default set in defaults.py
     :return:
     """
+
+    from nibabel.orientations import io_orientation, inv_ornt_aff, apply_orientation, ornt_transform
+
     print("Thank you for choosing the MGDM segmentation from the cbstools for your brain segmentation needs")
     print("Sit back and relax, let the magic of algorithms happen...")
     print("")
@@ -71,6 +101,7 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
     else:
         if not(topology_lut_dir[-1] == os.sep): #if we don't end in a path sep, we need to make sure that we add it
             topology_lut_dir += os.sep
+
     print("Atlas file: " + atlas)
     print("Topology LUT durectory: " + topology_lut_dir)
     print("")
@@ -84,31 +115,69 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
     mgdm.setTopologyLUTdirectory(topology_lut_dir)
 
     mgdm.setOutputImages('segmentation');
-    mgdm.setOrientations(mgdm.AXIAL, mgdm.R2L, mgdm.A2P, mgdm.I2S);
+    # --> mgdm.setOrientations(mgdm.AXIAL, mgdm.R2L, mgdm.A2P, mgdm.I2S) # this is the default for MGDM, <--
+    # mgdm.setOrientations(mgdm.AXIAL, mgdm.L2R, mgdm.P2A, mgdm.I2S)  #LR,PA,IS is always how they are returned from nibabel
     mgdm.setAdjustIntensityPriors(False)  # default is True
     mgdm.setComputePosterior(False)
     mgdm.setDiffuseProbabilities(False)
     mgdm.setSteps(num_steps)
     mgdm.setTopology('wcs')  # {'wcs','no'} no=off for testing, wcs=default
-
     for idx,con in enumerate(input_filename_type_list):
         print("Input files and filetypes:")
         print("  " + str(idx+1) + " "),
         print(con)
+        #flipLR = False
+        #flipAP = False
+        #flipIS = False
+
+
         fname = con[0]
         type = con[1]
-        img = nb.load(fname)
-        d = img.get_data()
+        d,d_aff,d_head = niiLoad(fname,return_header=True)
+
+        ## usage example in the proc_file function of : https://github.com/nipy/nibabel/blob/master/bin/parrec2nii
+        ornt_orig = io_orientation(d_aff)
+        ornt_mgdm = io_orientation(np.diag([-1, -1, 1, 1]).dot(d_aff))  # -1 -1 1 LPS (mgdm default); 1 1 1 is RAS
+        ornt_chng = ornt_transform(ornt_mgdm, ornt_orig)  # to get from MGDM to our original input
+
+
+        # convert orientation information to mgdm slice and orientation info
+        aff_orients,aff_slc = get_affine_orientation_slice(d_aff)
+        print("orientation: " + str(aff_orients)),
+        print("slice settings: " + aff_slc)
+        if aff_slc == "AXIAL":
+            SLC=mgdm.AXIAL
+        elif aff_slc == "SAGITTAL":
+            SLC=mgdm.SAGITTAL
+        else:
+            SLC=mgdm.CORONAL
+        for aff_orient in aff_orients: #TODO: if anything is different from the default MGDM settings, we need to flip axes of the data at the end
+            if aff_orient == "L":
+                LR=mgdm.R2L
+            elif aff_orient == "R":
+                LR = mgdm.L2R
+               # flipLR = True
+            elif aff_orient == "A":
+                AP = mgdm.P2A
+                #flipAP = True
+            elif aff_orient == "P":
+                AP = mgdm.A2P
+            elif aff_orient == "I":
+                IS = mgdm.S2I
+                #flipIS = True
+            elif aff_orient == "S":
+                IS = mgdm.I2S
+        mgdm.setOrientations(SLC, LR, AP, IS)  #L2R,P2A,I2S is nibabel default (i.e., RAS)
+
         if idx+1 == 1:
             # we use the first image to set the dimensions and resolutions
-            res = img.header.get_zooms()
+            res = d_head.get_zooms()
             res = [a1.item() for a1 in res]  # cast to regular python float type
             mgdm.setDimensions(d.shape[0], d.shape[1], d.shape[2])
             mgdm.setResolutions(res[0], res[1], res[2])
 
             # keep the shape and affine from the first image for saving
             d_shape = np.array(d.shape)
-            d_aff = img.affine
             out_root_fname = os.path.basename(fname)[0:os.path.basename(fname).find('.')] #assumes no periods in filename, :-/
 
             mgdm.setContrastImage1(cj.JArray('float')((d.flatten('F')).astype(float)))
@@ -135,20 +204,34 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
         lbl_im = np.reshape(np.array(mgdm.getPosteriorMaximumLabels4D(), dtype=np.uint32), d_shape, 'F')
         ids_im = np.reshape(np.array(mgdm.getSegmentedIdsImage(), dtype=np.uint32), d_shape, 'F')
 
+        seg_im = apply_orientation(seg_im, ornt_chng) # this takes care of the orientations between mipav and input
+        lbl_im = apply_orientation(lbl_im, ornt_chng) # TODO: fix the origin point offset?, 2x check possible RL flip
+        ids_im = apply_orientation(ids_im, ornt_chng) # alternative: register? https://github.com/pyimreg
+                                                      #
+
         # save
-        out_im = nb.Nifti1Image(seg_im, d_aff)
         seg_file = os.path.join(output_dir, out_root_fname + '_seg_cjs.nii.gz')
-        nb.save(out_im, seg_file)
-        out_im = nb.Nifti1Image(lbl_im, d_aff)
-        nb.save(out_im, os.path.join(output_dir, out_root_fname + '_lbl_cjs.nii.gz'))
-        out_im = nb.Nifti1Image(ids_im, d_aff)
-        nb.save(out_im, os.path.join(output_dir, out_root_fname + '_ids_cjs.nii.gz'))
+        lbl_file = os.path.join(output_dir, out_root_fname + '_lbl_cjs.nii.gz')
+        ids_file = os.path.join(output_dir, out_root_fname + '_ids_cjs.nii.gz')
+
+        ## this will work, but the solution with nibabel.orientations is much cleaner
+        # if our settings were not the same as MGDM likes, we need to flip the relevant settings:
+        #d_aff_new = flip_affine_orientation(d_aff, flipLR=flipLR, flipAP=flipAP, flipIS=flipIS)
+
+        d_head['data_type'] = np.array(32).astype('uint32') #convert the header as well
+        d_head['cal_max'] = np.max(seg_im)  #max for display
+        niiSave(seg_file, seg_im, d_aff, header=d_head, data_type='uint32')
+        d_head['cal_max'] = np.max(lbl_im)
+        niiSave(lbl_file, lbl_im, d_aff, header=d_head, data_type='uint32')
+        d_head['cal_max'] = np.max(ids_im)  # convert the header as well
+        niiSave(ids_file, ids_im, d_aff, header=d_head, data_type='uint32')
         print("Data stored in: " + output_dir)
     except:
         print("--- MGDM failed. Go cry. ---")
+        return
     print("Execution completed")
 
-    return seg_file
+    return seg_im,d_aff,d_head
 
 
 def seg_erode(seg_d, iterations=1, background_idx=1,
@@ -295,7 +378,7 @@ def write_priors_to_atlas(prior_medians,prior_quart_diffs,atlas_file,new_atlas_f
     """
     Write modified priors of given metric contrast to new_atlas
     Assumes that the ordering of indices and the ordering of the priors are the same
-    (could add prior_weights as well, in future)
+    (could add prior_weights as well, in future, and use something more structured than just line reading and writing)
 
     :param prior_medians:           2xN list of prior medians
     :param prior_quart_diffs:       2xN list of prior quartile differences
@@ -338,13 +421,37 @@ def write_priors_to_atlas(prior_medians,prior_quart_diffs,atlas_file,new_atlas_f
 def filter_sigmoid(d, x0=0.002, slope=0.0005):
     """
     Pass data through a sigmoid filter (scaled between 0 and 1). Defaults set for MD rescaling
+    If you are lazy and pass it a filename, it will pass you back the data with affine and header
     :param d:
     :param x0:
     :param slope:
     :return:
     """
     import numpy as np
-    return 1/(1 + np.exp(-1 * (d - x0) / slope))
+    from scipy.stats import linregress
+    return_nii_parts = False
+    if not isinstance(d, (np.ndarray, np.generic) ):
+        try:
+            [d,a,h]=niiLoad(d,return_header=True)
+            return_nii_parts = True
+        except:
+            print("niiLoad tried to load this is a file and failed, are you calling it properly?")
+            return
+    # if x0 is None: #we can see what we can do to generate the mean , not a great solution TODO: improve x0,slope calc
+    #     d_subset = d[d>0]
+    #     d_subset = d_subset[ np.where(np.logical_and(d_subset < np.percentile(d_subset, 95),d_subset > np.percentile(d_subset,75)))]
+    #     x0 = np.median(d_subset)
+    #     print("x0 calculated from the data: %.6F") %x0
+    # if slope is None:
+    #     x=d_subset[d_subset>x0]
+    #     y=d_subset[d_subset<x0]
+    #     print((linregress(x,y)))
+    #     slope = np.abs(linregress(x,y)[0])
+    #     print("Slope calculated from the data: %.6F") %slope
+    if return_nii_parts:
+        return 1 / (1 + np.exp(-1 * (d - x0) / slope)), a, h
+    else:
+        return 1/(1 + np.exp(-1 * (d - x0) / slope))
 
 
 def niiLoad(nii_fname,return_header=False):
@@ -357,12 +464,10 @@ def niiLoad(nii_fname,return_header=False):
     """
     import nibabel as nb
     img=nb.load(nii_fname)
-    if return_affine and return_header:
+    if return_header:
         return img.get_data(), img.affine, img.header
-    elif return_affine and not return_header:
-        return img.get_data(), img.affine,
     else:
-        return img.get_data()
+        return img.get_data(), img.affine
 
 
 def niiSave(nii_fname,d,affine,header=None,data_type=None):
@@ -377,8 +482,9 @@ def niiSave(nii_fname,d,affine,header=None,data_type=None):
     :return:
     """
     import nibabel as nb
+
     if data_type is not None:
-        d.as_type(data_type)
+        d.astype(data_type)
     img=nb.Nifti1Image(d,affine,header=header)
     if data_type is not None:
         img.set_data_dtype(data_type)
@@ -471,7 +577,7 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
 
 
 def recursively_generate_group_intensity_priors(input_filename_type_list, metric_contrast_names, orig_seg_files,
-                                                atlas_file, new_atlas_file_head, erosion_iterations=1, seg_iterations=1,
+                                                atlas_file, new_atlas_file_head=None, erosion_iterations=1, seg_iterations=1,
                                                 output_dir=None):
     #inputs need to be lists!
     # do stuff
@@ -479,6 +585,8 @@ def recursively_generate_group_intensity_priors(input_filename_type_list, metric
 
     import numpy as np
     current_atlas_file = atlas_file
+    if new_atlas_file_head is None:
+        new_atlas_file_head = atlas_file.split('.txt')[0] + "_mod" #we cut off the .txt, and add our mod txt, we don't check if it already exists
     if not any(isinstance(el, list) for el in input_filename_type_list): #make into list of lists
         input_filename_type_list = [input_filename_type_list]
     if len(metric_contrast_names) ==1: #make iterable if only a single element
