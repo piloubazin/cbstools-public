@@ -87,7 +87,7 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
 
     from nibabel.orientations import io_orientation, inv_ornt_aff, apply_orientation, ornt_transform
     import os
-    
+
     print("Thank you for choosing the MGDM segmentation from the cbstools for your brain segmentation needs")
     print("Sit back and relax, let the magic of algorithms happen...")
     print("")
@@ -315,8 +315,7 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     mgdm.setTopology('wcs')  # {'wcs','no'} no=off for testing, wcs=default
     for idx,con1 in enumerate(con1_files):
         print("Input files and filetypes:")
-        print("  " + str(idx+1) + " "),
-        print(con1)
+        print("\t" + con1.split("/")[-1])
 
         fname = con1
         type = con1_type
@@ -363,14 +362,17 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
             mgdm.setContrastImage1(cj.JArray('float')((d.flatten('F')).astype(float)))
             mgdm.setContrastType1(type)
         if con2_files is not None: #only bother with the other contrasts if something is in the one before it
+            print("\t" + con2_files[idx].split("/")[-1])
             d, a = niiLoad(con2_files[idx], return_header=False)
             mgdm.setContrastImage2(cj.JArray('float')((d.flatten('F')).astype(float)))
             mgdm.setContrastType2(con2_type)
             if con3_files is not None:
+                print("\t" + con3_files[idx].split("/")[-1])
                 d, a = niiLoad(con3_files[idx], return_header=False)
                 mgdm.setContrastImage3(cj.JArray('float')((d.flatten('F')).astype(float)))
                 mgdm.setContrastType3(con3_type)
                 if con4_files is not None:
+                    print("\t" + con4_files[idx].split("/")[-1])
                     d, a = niiLoad(con4_files[idx], return_header=False)
                     mgdm.setContrastImage4(cj.JArray('float')((d.flatten('F')).astype(float)))
                     mgdm.setContrastType4(con4_type)
@@ -714,7 +716,8 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
     """
     import nibabel as nb
     import numpy as np
-
+    import os
+    
     MGDM_contrast_names = get_MGDM_seg_contrast_names(atlas_file)
     if metric_contrast_name not in MGDM_contrast_names:
         print("You have not chosen a valid contrast for your metric_contrast_name, please choose from: ")
