@@ -7,12 +7,13 @@ steele{AT}cbs{dot}mpg{dot}de
 """
 
 import numpy as np
-#import nibabel as nb
-#import os
+from os.path import sep as pathsep
 import sys
 
+#TODO: hardcoded for now, make relative before release
 sys.path.append('/home/chris/Documents/code/python/cbstools-python/cbstoolsjcc-3.1.0.1-py2.7-linux-x86_64.egg')
 import cbstoolsjcc as cj
+
 
 from defaults import * #ATLAS_DIR and TOPOLOGY_LUT_DIR
 
@@ -116,7 +117,7 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
     mgdm.setAtlasFile(atlas)
     mgdm.setTopologyLUTdirectory(topology_lut_dir)
 
-    mgdm.setOutputImages('segmentation');
+    mgdm.setOutputImages('segmentation')
     # --> mgdm.setOrientations(mgdm.AXIAL, mgdm.R2L, mgdm.A2P, mgdm.I2S) # this is the default for MGDM, <--
     # mgdm.setOrientations(mgdm.AXIAL, mgdm.L2R, mgdm.P2A, mgdm.I2S)  #LR,PA,IS is always how they are returned from nibabel
     mgdm.setAdjustIntensityPriors(False)  # default is True
@@ -250,22 +251,22 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     simplified inputs
     adjust_intensity_priors is supposed to be True??? totally screws up :-/
 
-    :param con1_files:
-    :param con1_type:
-    :param con2_files:
-    :param con2_type:
-    :param con3_files:
-    :param con3_type:
-    :param con4_files:
-    :param con4_type:
-    :param output_dir:
-    :param num_steps:
-    :param atlas_file:
-    :param topology_lut_dir:
-    :param adjust_intensity_priors:
-    :param compute_posterior:
-    :param diffuse_probabilities:
-    :param file_suffix:
+    :param con1_files:              List of files for contrast 1, required
+    :param con1_type:               Contrast 1 type (from get_MGDM_seg_contrast_names(atlas_file))
+    :param con2_files:              List of files for contrast 2, optional
+    :param con2_type:               Contrast 2 type
+    :param con3_files:              List of files for contrast 3, optional
+    :param con3_type:               Contrast 3 type
+    :param con4_files:              List of files for contrast 4, optional
+    :param con4_type:               Contrast 4 type
+    :param output_dir:              Directory to place output, defaults to input directory if = None
+    :param num_steps:               Number of steps for MGDM
+    :param atlas_file:              Atlas file full path and filename
+    :param topology_lut_dir:        Directory for topology files
+    :param adjust_intensity_priors: Adjust intensity priors based on dataset: True/False
+    :param compute_posterior:       Copmute posterior: True/False
+    :param diffuse_probabilities:   Compute diffuse probabilities: True/False
+    :param file_suffix:             Distinguishing text to add to the end of the filename
     :return:
     """
 
@@ -284,8 +285,8 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     if topology_lut_dir is None:
         topology_lut_dir = TOPOLOGY_LUT_DIR  # grabbing this from the default settings in defaults.py
     else:
-        if not(topology_lut_dir[-1] == os.sep): #if we don't end in a path sep, we need to make sure that we add it
-            topology_lut_dir += os.sep
+        if not(topology_lut_dir[-1] == pathsep): #if we don't end in a path sep, we need to make sure that we add it
+            topology_lut_dir += pathsep
 
     print("Atlas file: " + atlas)
     print("Topology LUT durectory: " + topology_lut_dir)
@@ -305,7 +306,7 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     mgdm.setAtlasFile(atlas)
     mgdm.setTopologyLUTdirectory(topology_lut_dir)
 
-    mgdm.setOutputImages('segmentation');
+    mgdm.setOutputImages('segmentation')
     # --> mgdm.setOrientations(mgdm.AXIAL, mgdm.R2L, mgdm.A2P, mgdm.I2S) # this is the default for MGDM, <--
     # mgdm.setOrientations(mgdm.AXIAL, mgdm.L2R, mgdm.P2A, mgdm.I2S)  #LR,PA,IS is always how they are returned from nibabel
     mgdm.setAdjustIntensityPriors(adjust_intensity_priors)  # default is True
@@ -315,7 +316,7 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     mgdm.setTopology('wcs')  # {'wcs','no'} no=off for testing, wcs=default
     for idx,con1 in enumerate(con1_files):
         print("Input files and filetypes:")
-        print("\t" + con1.split("/")[-1])
+        print("\t" + con1.split(pathsep)[-1])
 
         fname = con1
         type = con1_type
@@ -362,17 +363,17 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
             mgdm.setContrastImage1(cj.JArray('float')((d.flatten('F')).astype(float)))
             mgdm.setContrastType1(type)
         if con2_files is not None: #only bother with the other contrasts if something is in the one before it
-            print("\t" + con2_files[idx].split("/")[-1])
+            print("\t" + con2_files[idx].split(pathsep)[-1])
             d, a = niiLoad(con2_files[idx], return_header=False)
             mgdm.setContrastImage2(cj.JArray('float')((d.flatten('F')).astype(float)))
             mgdm.setContrastType2(con2_type)
             if con3_files is not None:
-                print("\t" + con3_files[idx].split("/")[-1])
+                print("\t" + con3_files[idx].split(pathsep)[-1])
                 d, a = niiLoad(con3_files[idx], return_header=False)
                 mgdm.setContrastImage3(cj.JArray('float')((d.flatten('F')).astype(float)))
                 mgdm.setContrastType3(con3_type)
                 if con4_files is not None:
-                    print("\t" + con4_files[idx].split("/")[-1])
+                    print("\t" + con4_files[idx].split(pathsep)[-1])
                     d, a = niiLoad(con4_files[idx], return_header=False)
                     mgdm.setContrastImage4(cj.JArray('float')((d.flatten('F')).astype(float)))
                     mgdm.setContrastType4(con4_type)
@@ -751,8 +752,8 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
         d_metric = img.get_data()
         a_metric = img.affine #not currently using the affine and header, but could also output the successive steps
         h_metric = img.header
-        print(seg_file.split("/")[-1])
-        print(metric_file.split("/")[-1])
+        print(seg_file.split(pathsep)[-1])
+        print(metric_file.split(pathsep)[-1])
         d_seg = nb.load(seg_file).get_data()
 
         #erode our data
@@ -778,7 +779,7 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
 
         if intermediate_output_dir is not None:
             img=nb.Nifti1Image(d_seg_ero,a_metric,header=h_metric)
-            img.to_filename(os.path.join(intermediate_output_dir,seg_file.split("/")[-1].split(".")[0]+"_ero"+str(erosion_iterations)+".nii.gz"))
+            img.to_filename(os.path.join(intermediate_output_dir,seg_file.split(pathsep)[-1].split(".")[0]+"_ero"+str(erosion_iterations)+".nii.gz"))
         print("")
     return all_Ss_priors_median, all_Ss_priors_spread
 
@@ -791,6 +792,7 @@ def iteratively_generate_group_intensity_priors(input_filename_type_list, metric
     #TODO: alter this so that you explicitly input up to 4 different contrasts. just makes life easier than lists of lists...?
 
     import numpy as np
+    import os
     current_atlas_file = atlas_file
     if new_atlas_file_head is None:
         new_atlas_file_head = atlas_file.split('.txt')[0] + "_mod" #we cut off the .txt, and add our mod txt, we don't check if it already exists
