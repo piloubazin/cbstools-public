@@ -87,7 +87,7 @@ public class JistLaminarProfileMeshing extends ProcessingAlgorithm {
 		ImageHeader header = Interface.getHeader(layersImage);
 		int[] dims = Interface.getDimensions(layersImage);
 		float[] res = Interface.getResolutions(layersImage);
-		int nlayers = dims[3];
+		int nlayers = Interface.getComponents(layersImage);
 		
 		// main algorithm
 		algorithm = new LaminarProfileMeshing();
@@ -96,7 +96,7 @@ public class JistLaminarProfileMeshing extends ProcessingAlgorithm {
 		algorithm.setInputSurfacePoints(Interface.getSurfacePoints(inputSurface));
 		algorithm.setInputSurfaceTriangles(Interface.getSurfaceTriangles(inputSurface));
 		
-		algorithm.setDimensions(dims);
+		algorithm.setDimensions(dims[0],dims[1],dims[2],nlayers);
 		algorithm.setResolutions(res);
 
 		algorithm.execute();

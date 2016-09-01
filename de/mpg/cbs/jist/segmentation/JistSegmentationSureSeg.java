@@ -48,6 +48,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 	private ParamVolume 	labelImage;
 	private ParamInteger 	nbestParam;
 	private ParamBoolean	includeBgParam;
+	private ParamBoolean	rescaleProbaParam;
 	
 	private ParamInteger 	iterationParam;
 	private ParamFloat 		imgscaleParam;
@@ -78,7 +79,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		input3Image.setMandatory(false);
 		
 		imageParams.add(probaImage = new ParamVolume("Label Probabilities (3D or 4D)"));
-		imageParams.add(labelImage = new ParamVolume("Label Segmentation (opt)"));
+		imageParams.add(labelImage = new ParamVolume("Label Segmentation (only if 3D proba)"));
 		labelImage.setMandatory(false);
 		
 		inputParams.add(imageParams);
@@ -151,7 +152,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 			algorithm.setLabelSegmentation(Interface.getIntegerImage3D(labelImage));
 			algorithm.setLabelProbabilities(Interface.getFloatImage3D(probaImage));
 		} else {
-			algorithm.setLabelProbabilities(Interface.getFloatImage3D(probaImage));
+			algorithm.setLabelProbabilities(Interface.getFloatImage4D(probaImage));
 		}
 		algorithm.setLabelDepth(nbestParam.getValue().byteValue());
 		algorithm.setBackgroundIncluded(includeBgParam.getValue().booleanValue());

@@ -353,7 +353,7 @@ public class Interface {
 	}
 	
 	public static final boolean isImage4D(ParamVolume input) {
-		return (input.getImageData().getComponents()==1);
+		return (input.getImageData().getComponents()!=1);
 	}
 	
 	public static final boolean isValid(ParamVolume input) {
@@ -406,7 +406,7 @@ public class Interface {
 	}
 	
 	public static final void setSurface(float[] points, int[] triangles, ParamSurface container, String name) {
-		int npt = points.length;
+		int npt = points.length/3;
 		Point3f[] pts = new Point3f[npt];
 		for(int i=0; i<npt; i++){
 			pts[i] = new Point3f(points[3*i],points[3*i+1],points[3*i+2]);
@@ -441,7 +441,7 @@ public class Interface {
 		int ny = inImg.getCols();
 		int nz = inImg.getSlices();
 		int nc = inImg.getComponents();
-		int nxyz = nx*ny*nz;
+		int nxyz = nx*ny*nz*nc;
 		
 		float[] image = new float[nxyz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int c=0;c<nc;c++) {

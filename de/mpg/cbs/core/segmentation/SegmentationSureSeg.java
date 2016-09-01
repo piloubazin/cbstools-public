@@ -28,6 +28,7 @@ public class SegmentationSureSeg {
 	private int[] 	labelImage = null;
 	private byte 	nbestParam	=	4;
 	private boolean	includeBgParam = false;
+	private boolean	rescaleProbaParam = false;
 	
 	private int 	iterationParam	=	500;
 	private float 	imgscaleParam		=	0.05f;
@@ -129,14 +130,17 @@ public class SegmentationSureSeg {
 			BasicInfo.displayMessage("build from probabilities...\n");
 			// create max proba, labels (assuming a background value with label zero)
 			nlabels = (byte)(probaImage.length/nxyz);
-			objlb = new int[nlabels];
-			for (int l=0;l<nlabels;l++) objlb[l] = l+1;
-
+			
 			MaxProbaRepresentation maxprep = new MaxProbaRepresentation(nbestParam, nlabels, nx,ny,nz);
 			if (includeBgParam) maxprep.buildFromCompleteProbabilities(probaImage);
 			else maxprep.buildFromCompetingProbabilitiesAndBackground(probaImage);
 			maxproba = maxprep.getMaxProba();
 			maxlabel = maxprep.getMaxLabel();
+			
+			if (!includeBgParam) nlabels++;
+			objlb = new int[nlabels];
+			for (int l=0;l<nlabels;l++) objlb[l] = l+1;
+
 		} else {
 			BasicInfo.displayMessage("build from max labeling and max probability...\n");
 			objlb = ObjectLabeling.listOrderedLabels(labelImage,nx,ny,nz);
@@ -192,7 +196,15 @@ public class SegmentationSureSeg {
 		// map to 1D arrays
 		segmentImage = new int[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			segmentImage[xyz] = objlb[sur.getLabels()[0][xyz]];
+			if (sur.getLabels()[0][xyz]>=0) {
+				if (!includeBgParam && objlb[sur.getLabels()[0][xyz]]==nlabels) {
+					segmentImage[xyz] = 0;
+				} else {
+					segmentImage[xyz] = objlb[sur.getLabels()[0][xyz]];
+				}
+			} else {
+				segmentImage[xyz] = 0;
+			}
 		}
 		maxprobaImage = new float[nxyz*nbestParam];
 		maxidImage = new byte[nxyz*nbestParam];
