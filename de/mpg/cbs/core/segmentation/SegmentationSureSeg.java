@@ -60,6 +60,7 @@ public class SegmentationSureSeg {
 	public final void setLabelSegmentation(int[] val) { labelImage = val; }
 	public final void setLabelDepth(byte val) { nbestParam = val; }
 	public final void setBackgroundIncluded(boolean val) { includeBgParam = val; }
+	public final void setRescaleIndividualProbabilities(boolean val) { rescaleProbaParam = val; }
 
 	public final void setMaxIterations(int val) { iterationParam = val; }
 	public final void setImageScale(float val) { imgscaleParam = val; }
@@ -177,6 +178,22 @@ public class SegmentationSureSeg {
 				}
 				for (int b=0;b<nbestParam-1;b++) {
 					maxproba[b+1][xyz] = Numerics.min( boundary[xyz], (1.0f-boundary[xyz])*(distproba[b]/distproba[nbestParam-1]) );
+				}
+			}
+		}
+		// rescale highest values to 1 / lowest value to 0 for each label
+		if (rescaleProbaParam) {
+			float[] minpb = new float[nlabels];
+			float[] maxpb = new float[nlabels];
+			for (int xyz=0;xyz<nxyz;xyz++) {
+				for (int b=0;b<nbestParam;b++) {
+					if (maxproba[b][xyz]<minpb[maxlabel[b][xyz]]) minpb[maxlabel[b][xyz]] = maxproba[b][xyz];
+					if (maxproba[b][xyz]>maxpb[maxlabel[b][xyz]]) maxpb[maxlabel[b][xyz]] = maxproba[b][xyz];
+				}
+			}
+			for (int xyz=0;xyz<nxyz;xyz++) {
+				for (int b=0;b<nbestParam;b++) {
+					maxproba[b][xyz] = (maxproba[b][xyz]-minpb[maxlabel[b][xyz]])/(maxpb[maxlabel[b][xyz]]-minpb[maxlabel[b][xyz]]);
 				}
 			}
 		}

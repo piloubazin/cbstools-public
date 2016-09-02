@@ -10,6 +10,8 @@ import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.structures.*;
 import de.mpg.cbs.utilities.*;
 
+import org.apache.commons.math3.util.FastMath;
+
 /**
  *
  *  This algorithm uses an image-based diffusion technique to reduce uncertainty
@@ -138,8 +140,14 @@ public class StatisticalUncertaintyReduction {
 		float[][] imgweight = new float[nix*niy*niz][26];   	
 		byte[][] mapdepth = new byte[nobj][nix*niy*niz];	
 		
+		// compute the functional factor
+		float certaintyfactor = (float)(FastMath.log(0.5)/FastMath.log(factor));
+		//float certaintyfactor = factor;
+		BasicInfo.displayMessage("certainty exponent "+certaintyfactor+"\n");
+		
 		// rescale the certainty threshold so that it maps to the computed certainty values
-		mincertainty = certaintyFunction(mincertainty,factor);
+		mincertainty = certaintyFunction(mincertainty,certaintyfactor);
+		BasicInfo.displayMessage("minimum certainty threshold"+mincertainty+"\n");
 		
 		for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
 			int xyzi = x+nix*y+nix*niy*z;
@@ -152,6 +160,7 @@ public class StatisticalUncertaintyReduction {
 			newproba[m][xyzi] = bestproba[m][xyzi];
 			newlabel[m][xyzi] = bestlabel[m][xyzi];
 		}
+		/* redo every time?? 
 		for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
 			for (byte n=0;n<nobj;n++) {
 				mapdepth[n][xyzi] = nbest;
@@ -162,6 +171,8 @@ public class StatisticalUncertaintyReduction {
 				}
 			}
 		}
+		*/
+		
 		float maxdiff = 1.0f;
 		float meandiff = 1.0f;
 		for (int t=0;t<iter && meandiff>0.001f;t++) {
@@ -169,16 +180,34 @@ public class StatisticalUncertaintyReduction {
 			maxdiff = 0.0f;
 			meandiff = 0.0f;
 			float ndiff = 0.0f;
+			
+			// re-compute depth
+			for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+				for (byte n=0;n<nobj;n++) {
+					mapdepth[n][xyzi] = nbest;
+					for (byte m=0;m<nbest;m++) {
+						if (bestlabel[m][xyzi]==n) {
+							mapdepth[n][xyzi] = m;
+						}
+					}
+				}
+			}
+			
+			// main loop: label-per-label
 			for (byte n=0;n<nobj;n++) {
+				
+				// mapdepth only needed for obj n: single map, recomputed every time?
+				
 				//BasicInfo.displayMessage("propagate gain for label "+n+"\n");
 				BasicInfo.displayMessage(".");
+
 				// get the gain ; normalize
 				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
 					if (mapdepth[n][xyzi]<nbest) {
-						if (mapdepth[n][xyzi]==0) certainty[xyzi] = certaintyFunction(bestproba[0][xyzi]-bestproba[1][xyzi],factor);
-						else certainty[xyzi] = certaintyFunction(bestproba[0][xyzi]-bestproba[mapdepth[n][xyzi]][xyzi],factor);
+						if (mapdepth[n][xyzi]==0) certainty[xyzi] = certaintyFunction(bestproba[0][xyzi]-bestproba[1][xyzi],certaintyfactor);
+						else certainty[xyzi] = certaintyFunction(bestproba[0][xyzi]-bestproba[mapdepth[n][xyzi]][xyzi],certaintyfactor);
 					} else {
-						certainty[xyzi] = certaintyFunction(bestproba[0][xyzi]-bestproba[nbest-1][xyzi],factor);
+						certainty[xyzi] = certaintyFunction(bestproba[0][xyzi]-bestproba[nbest-1][xyzi],certaintyfactor);
 					}
 				}
 				// propagate the values : diffusion
@@ -201,7 +230,7 @@ public class StatisticalUncertaintyReduction {
 							else num += ngbweight[rank[l]]*bestproba[nbest-1][xyzl];
 							den += ngbweight[rank[l]];
 						}
-						num /= den;
+						if (den>1e-9f) num /= den;
 						
 						newproba[mapdepth[n][xyzi]][xyzi] = num;
 						
@@ -211,17 +240,37 @@ public class StatisticalUncertaintyReduction {
 					}
 				}
 			}
-			meandiff /= ndiff;
+			if (ndiff>0) meandiff /= ndiff;
 			BasicInfo.displayMessage("mean diff. "+meandiff+", max diff. "+maxdiff+"\n");
 			// make a hard copy
 			for (int m=0;m<nbest;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
 				bestproba[m][xyzi] = newproba[m][xyzi];
 				bestlabel[m][xyzi] = newlabel[m][xyzi];
 			}
+			
+			// re-sort the gain functions
+			for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+				for (int m=0;m<nbest-1;m++) {
+					boolean stop=true;
+					for (int l=nbest-1;l>m;l--) {
+						if (bestproba[l][xyzi]>bestproba[l-1][xyzi]) {
+							float swap = bestproba[l-1][xyzi];
+							bestproba[l-1][xyzi] = bestproba[l][xyzi];
+							bestproba[l][xyzi] = swap;
+							byte swaplb = bestlabel[l-1][xyzi];
+							bestlabel[l-1][xyzi] = bestlabel[l][xyzi];
+							bestlabel[l][xyzi] = swaplb;
+							stop=false;
+						}
+					}
+					if (stop) m=nbest;
+				}
+			}
+			
 		}
 		newproba = null;
 		newlabel = null;
-		
+		/* every time?
 		// re-sort the gain functions
 		for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
 			for (int m=0;m<nbest-1;m++) {
@@ -240,6 +289,7 @@ public class StatisticalUncertaintyReduction {
 				if (stop) m=nbest;
 			}
 		}
+		*/
     }
     
     private final float diffusionImageWeightFunction(int xyz, int ngb, float scale) {
@@ -252,7 +302,10 @@ public class StatisticalUncertaintyReduction {
     }
     
     private final float certaintyFunction(float delta, float scale) {
-    	return 1.0f - 1.0f/(1.0f+Numerics.square(delta/scale));	
+    	//return 1.0f - 1.0f/(1.0f+Numerics.square(delta/scale));	
+    	return (float)FastMath.pow(Numerics.abs(delta), scale);	
+    	//return Numerics.bounded(delta*delta*delta,0.0f,1.0f);
+    	//return Numerics.abs(delta*delta*delta);
     }
     
 }

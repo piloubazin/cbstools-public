@@ -88,6 +88,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		
 		mainParams.add(nbestParam = new ParamInteger("Labeling depth",0,20,4));
 		mainParams.add(includeBgParam = new ParamBoolean("Background included",true));
+		mainParams.add(rescaleProbaParam = new ParamBoolean("Rescale individual probabilities",true));
 		
 		mainParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
 		mainParams.add(imgscaleParam = new ParamFloat("Image Scale", 0, 1, 0.05f));
@@ -156,6 +157,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		}
 		algorithm.setLabelDepth(nbestParam.getValue().byteValue());
 		algorithm.setBackgroundIncluded(includeBgParam.getValue().booleanValue());
+		algorithm.setRescaleIndividualProbabilities(rescaleProbaParam.getValue().booleanValue());
 		
 		algorithm.setMaxIterations(iterationParam.getValue().intValue());
 		algorithm.setImageScale(imgscaleParam.getValue().floatValue());
