@@ -132,6 +132,25 @@ public class SegmentationSureSeg {
 			// create max proba, labels (assuming a background value with label zero)
 			nlabels = (byte)(probaImage.length/nxyz);
 			
+			if (rescaleProbaParam) {
+				float[] minpb = new float[nlabels];
+				float[] maxpb = new float[nlabels];
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int l=0;l<nlabels;l++)  {
+						if (probaImage[xyz+l*nxyz]<minpb[l]) minpb[l] = probaImage[xyz+l*nxyz];
+						if (probaImage[xyz+l*nxyz]>maxpb[l]) maxpb[l] = probaImage[xyz+l*nxyz];
+					}
+				}
+				BasicInfo.displayMessage("probability ranges ("+nlabels+" ):\n");
+				for (int l=0;l<nlabels;l++) BasicInfo.displayMessage("["+minpb[l]+", "+maxpb[l]+"] ");
+				BasicInfo.displayMessage("\n");
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int l=0;l<nlabels;l++)  {
+						probaImage[xyz+l*nxyz] = (probaImage[xyz+l*nxyz]-minpb[l])/(maxpb[l]-minpb[l]);
+					}
+				}
+			}
+			
 			MaxProbaRepresentation maxprep = new MaxProbaRepresentation(nbestParam, nlabels, nx,ny,nz);
 			if (includeBgParam) maxprep.buildFromCompleteProbabilities(probaImage);
 			else maxprep.buildFromCompetingProbabilitiesAndBackground(probaImage);
@@ -181,6 +200,7 @@ public class SegmentationSureSeg {
 				}
 			}
 		}
+		/*
 		// rescale highest values to 1 / lowest value to 0 for each label
 		if (rescaleProbaParam) {
 			float[] minpb = new float[nlabels];
@@ -191,12 +211,16 @@ public class SegmentationSureSeg {
 					if (maxproba[b][xyz]>maxpb[maxlabel[b][xyz]]) maxpb[maxlabel[b][xyz]] = maxproba[b][xyz];
 				}
 			}
+			BasicInfo.displayMessage("probability ranges ("+nlabels+" ):\n");
+			for (int l=0;l<nlabels;l++) BasicInfo.displayMessage("["+minpb[l]+", "+maxpb[l]+"] ");
+			BasicInfo.displayMessage("\n");
 			for (int xyz=0;xyz<nxyz;xyz++) {
 				for (int b=0;b<nbestParam;b++) {
 					maxproba[b][xyz] = (maxproba[b][xyz]-minpb[maxlabel[b][xyz]])/(maxpb[maxlabel[b][xyz]]-minpb[maxlabel[b][xyz]]);
 				}
 			}
 		}
+		*/
 		
 		// main algorithm
 		boolean[] used = new boolean[nimg];
