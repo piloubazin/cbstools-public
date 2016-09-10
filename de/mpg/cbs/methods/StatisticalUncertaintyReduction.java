@@ -129,8 +129,54 @@ public class StatisticalUncertaintyReduction {
 	
 	//public final byte[] getSegmentation() { return segmentation; }
     
-
-    public final void diffuseCertainty(int iter, float scale, float factor, int ngbsize, float mincertainty) {
+	public final float[] computeMaxImageWeight(float scale) {
+		float[] imgweight = new float[nix*niy*niz];   	
+		
+		for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+			int xyzi = x+nix*y+nix*niy*z;
+			imgweight[xyzi] = 0.0f;
+			for (byte j=0;j<26;j++) {
+				int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+				imgweight[xyzi] = Numerics.max(imgweight[xyzi], diffusionImageWeightFunction(xyzi,xyzj,scale));
+			}
+		}
+		return imgweight;
+	}
+	public final float[] computeMinImageWeight(float scale) {
+		float[] imgweight = new float[nix*niy*niz];   	
+		
+		for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+			int xyzi = x+nix*y+nix*niy*z;
+			imgweight[xyzi] = 1.0f;
+			for (byte j=0;j<26;j++) {
+				int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+				imgweight[xyzi] = Numerics.min(imgweight[xyzi], diffusionImageWeightFunction(xyzi,xyzj,scale));
+			}
+		}
+		return imgweight;
+	}
+	public final float[][] computeAllImageWeight(float scale) {
+		float[][] imgweight = new float[26][nix*niy*niz];   	
+		
+		for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+			int xyzi = x+nix*y+nix*niy*z;
+			for (byte j=0;j<26;j++) {
+				int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+				imgweight[j][xyzi] = diffusionImageWeightFunction(xyzi,xyzj,scale);
+			}
+		}
+		return imgweight;
+	}
+	public final float[] computeMaxCertainty(float factor) {
+		float[] certainty = new float[nix*niy*niz];   	
+		
+		for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
+			certainty[xyzi] = certaintyFunction(bestproba[0][xyzi]-bestproba[1][xyzi],factor);
+		}
+		return certainty;	
+	}
+	
+    public final void diffuseCertainty(int iter, float scale, float factor, int ngbsize, float mincertainty, boolean computeDistribution) {
     	
 		//mix with the neighbors?
 		float[] certainty = new float[nix*niy*niz];   	
@@ -140,6 +186,10 @@ public class StatisticalUncertaintyReduction {
 		float[][] imgweight = new float[nix*niy*niz][26];   	
 		//byte[][] mapdepth = new byte[nobj][nix*niy*niz];	
 		byte[] mapdepth = new byte[nix*niy*niz];	
+		
+		float[][] objmean = new float[nobj][nc];
+		float[][] objvar = new float[nobj][nc];
+		float[] objcount = new float[nobj];
 		
 		// compute the functional factor
 		//float certaintyfactor = (float)(FastMath.log(0.5)/FastMath.log(factor));
@@ -195,7 +245,75 @@ public class StatisticalUncertaintyReduction {
 				}
 			}
 			*/
-			
+			// estimate a gaussian intensity distribution for each region, and modulate the corresponding labels
+			if (computeDistribution) {
+				for (int n=0;n<nobj;n++) {
+					for (int c=0;c<nc;c++) if (imused[c]) {
+						objmean[n][c] = 0.0f;
+						objvar[n][c] = 0.0f;
+					}
+					objcount[n] = 0.0f;
+				}
+				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
+					int n = bestlabel[0][xyzi];
+					if (n>-1) {
+						for (int c=0;c<nc;c++) if (imused[c]) {
+							objmean[n][c] += bestproba[0][xyzi]*image[c][xyzi];
+						}
+						objcount[n]+=bestproba[0][xyzi];
+					}
+				}
+				for (int n=0;n<nobj;n++) if (objcount[n]>0) {
+					for (int c=0;c<nc;c++) if (imused[c]) {
+						objmean[n][c] /= objcount[n];
+					}
+				}
+				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
+					int n = bestlabel[0][xyzi];
+					if (n>-1) {
+						for (int c=0;c<nc;c++) if (imused[c]) {
+							objvar[n][c] += bestproba[0][xyzi]*(image[c][xyzi]-objmean[n][c])*(image[c][xyzi]-objmean[n][c]);
+						}
+					}
+				}
+				for (int n=0;n<nobj;n++) if (objcount[n]>0) {
+					for (int c=0;c<nc;c++) if (imused[c]) {
+						objvar[n][c] /= objcount[n];
+					}
+				}
+				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
+					for (int m=0;m<nbest;m++) {
+						int n = bestlabel[m][xyzi];
+						if (n>-1) {
+							float proba = 1.0f;
+							for (int c=0;c<nc;c++) if (imused[c]) {
+								float probac = (float)FastMath.exp(0.5*(image[c][xyzi]-objmean[n][c])*(image[c][xyzi]-objmean[n][c])/objvar[n][c]);
+								if (probac<proba) proba = probac;
+							}
+							bestproba[m][xyzi] *= proba;
+						}
+					}
+				}
+				// re-sort the gain functions
+				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+					for (int m=0;m<nbest-1;m++) {
+						boolean stop=true;
+						for (int l=nbest-1;l>m;l--) {
+							if (bestproba[l][xyzi]>bestproba[l-1][xyzi]) {
+								float swap = bestproba[l-1][xyzi];
+								bestproba[l-1][xyzi] = bestproba[l][xyzi];
+								bestproba[l][xyzi] = swap;
+								byte swaplb = bestlabel[l-1][xyzi];
+								bestlabel[l-1][xyzi] = bestlabel[l][xyzi];
+								bestlabel[l][xyzi] = swaplb;
+								stop=false;
+							}
+						}
+						if (stop) m=nbest;
+					}
+				}
+			}
+				
 			// main loop: label-per-label
 			for (byte n=0;n<nobj;n++) {
 				
@@ -254,6 +372,7 @@ public class StatisticalUncertaintyReduction {
 			}
 			if (ndiff>0) meandiff /= ndiff;
 			BasicInfo.displayMessage("mean diff. "+meandiff+", max diff. "+maxdiff+"\n");
+			
 			// make a hard copy
 			for (int m=0;m<nbest;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
 				bestproba[m][xyzi] = newproba[m][xyzi];
@@ -303,7 +422,7 @@ public class StatisticalUncertaintyReduction {
 		}
 		*/
     }
-    
+       
     private final float diffusionImageWeightFunction(int xyz, int ngb, float scale) {
     	float maxdiff = 0.0f;
     	for (int c=0;c<nc;c++) if (imused[c]) {

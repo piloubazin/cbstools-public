@@ -30,17 +30,20 @@ public class SegmentationSureSeg {
 	private boolean	includeBgParam = false;
 	private boolean	rescaleProbaParam = false;
 	
-	private int 	iterationParam	=	500;
-	private float 	imgscaleParam		=	0.05f;
-	private	float 	certainscaleParam		= 	0.1f;
-	private float 	mincertaintyParam		=	0.25f;
+	private int 	iterationParam	=	100;
+	private float 	imgscaleParam		=	1.0f;
+	private	float 	certainscaleParam		= 	1.0f;
+	private float 	mincertaintyParam		=	0.5f;
 	private int 	neighborParam	=	6;
+	
+	private boolean	computeDistributionParam = false;
 	
 	// outputs
 	private int[] segmentImage;
 	private float[] maxprobaImage;
 	private byte[] maxidImage;
-
+	private float[] debugImage;
+	
 	// create inputs
 	public final void setContrastImage1(float[] val) { input1Image = val; }
 	public final void setContrastImage2(float[] val) { input2Image = val; }
@@ -68,7 +71,8 @@ public class SegmentationSureSeg {
 	public final void setMinCertainty(float val) { mincertaintyParam = val; }
 	public final void setNeighborhoodSize(int val) { neighborParam = val; }
 	
-	
+	public final void setReestimateIntensityDistributions(boolean val) { computeDistributionParam = val; }
+
 	// to be used for JIST definitions, generic info / help
 	public static final String getPackage() { return "CBS Tools"; }
 	public static final String getCategory() { return "Segmentation.devel"; }
@@ -86,7 +90,8 @@ public class SegmentationSureSeg {
 	public final int[] getSegmentationImage() { return segmentImage; }
 	public final float[] getMaxProbabilityImage() { return maxprobaImage; }
 	public final byte[] getSegmentedIdsImage() { return maxidImage; }
-
+	public final float[] getDebugImage() { return debugImage; }
+	
 	public void execute(){
 		// import the image data into 1D arrays
 		int nimg = 1;
@@ -229,7 +234,7 @@ public class SegmentationSureSeg {
 		StatisticalUncertaintyReduction sur = new StatisticalUncertaintyReduction(image, used, scaling, nimg, nx, ny, nz,  nbestParam);
 		sur.setBestProbabilities(maxproba, maxlabel, objlb);
 		
-		sur.diffuseCertainty(iterationParam, imgscaleParam, certainscaleParam, neighborParam, mincertaintyParam);
+		sur.diffuseCertainty(iterationParam, imgscaleParam, certainscaleParam, neighborParam, mincertaintyParam, computeDistributionParam);
 				
 		// outputs
 		BasicInfo.displayMessage("generating outputs...\n");
@@ -253,6 +258,20 @@ public class SegmentationSureSeg {
 			maxprobaImage[xyz+nxyz*l] = sur.getProbabilities()[l][xyz];
 			maxidImage[xyz+nxyz*l] = sur.getLabels()[l][xyz];
 		}
+	
+		// for debug
+		debugImage = new float[nxyz*27];
+		float[] tmp = sur.computeMaxCertainty(certainscaleParam);
+		for (int xyz=0;xyz<nxyz;xyz++) debugImage[xyz] = tmp[xyz];
+		
+		tmp = sur.computeMaxImageWeight(imgscaleParam);
+		for (int xyz=0;xyz<nxyz;xyz++) debugImage[xyz+nxyz] = tmp[xyz];
+		tmp = sur.computeMinImageWeight(imgscaleParam);
+		for (int xyz=0;xyz<nxyz;xyz++) debugImage[xyz+2*nxyz] = tmp[xyz];
+		/*
+		float[][] imw = sur.computeAllImageWeight(imgscaleParam);
+		for (int xyz=0;xyz<nxyz;xyz++) for (int j=0;j<26;j++) debugImage[xyz+j*nxyz] = imw[j][xyz];
+		*/
 		
 		return;
 	}

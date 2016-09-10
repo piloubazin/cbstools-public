@@ -49,6 +49,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 	private ParamInteger 	nbestParam;
 	private ParamBoolean	includeBgParam;
 	private ParamBoolean	rescaleProbaParam;
+	private ParamBoolean	computeDistributionParam;
 	
 	private ParamInteger 	iterationParam;
 	private ParamFloat 		imgscaleParam;
@@ -60,6 +61,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 	private ParamVolume segmentImage;
 	private ParamVolume maxprobaImage;
 	private ParamVolume maxidImage;
+	private ParamVolume debugImage;
 	
 	private SegmentationSureSeg algorithm;
 	
@@ -91,11 +93,12 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		mainParams.add(rescaleProbaParam = new ParamBoolean("Rescale individual probabilities",true));
 		
 		mainParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
-		mainParams.add(imgscaleParam = new ParamFloat("Image Scale", 0, 1, 0.1f));
-		mainParams.add(certainscaleParam = new ParamFloat("Certainty Scale", 0, 10, 2.0f));
+		mainParams.add(imgscaleParam = new ParamFloat("Image Scale", 0.0f, 100.0f, 0.5f));
+		mainParams.add(certainscaleParam = new ParamFloat("Certainty Scale", 0.0f, 100.0f, 2.0f));
 		mainParams.add(mincertaintyParam = new ParamFloat("Min Certainty", 0, 1, 0.5f));
 		mainParams.add(neighborParam = new ParamInteger("Neighborhood size", 0, 26, 6));
 		
+		mainParams.add(computeDistributionParam = new ParamBoolean("Re-estimate intensity distributions",true));
 		
 		inputParams.add(mainParams);
 		
@@ -121,6 +124,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		outputParams.add(segmentImage = new ParamVolume("Segmented Image",VoxelType.INT));
 		outputParams.add(maxprobaImage = new ParamVolume("Maximum Probability Image (4D)",VoxelType.FLOAT,-1,-1,-1,-1));
 		outputParams.add(maxidImage = new ParamVolume("Segmentation Ids Image (4D)",VoxelType.UBYTE,-1,-1,-1,-1));
+		outputParams.add(debugImage = new ParamVolume("Debug Image (4D)",VoxelType.FLOAT,-1,-1,-1,-1));
 		
 		outputParams.setName("sure segmentation images");
 		outputParams.setLabel("sure segmentation images");
@@ -165,12 +169,16 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		algorithm.setMinCertainty(mincertaintyParam.getValue().floatValue());
 		algorithm.setNeighborhoodSize(neighborParam.getValue().intValue());
 		
+		algorithm.setReestimateIntensityDistributions(computeDistributionParam.getValue().booleanValue());
+		
 		algorithm.execute();
 		
 		// outputs
 		Interface.setIntegerImage3D(algorithm.getSegmentationImage(), dims, segmentImage, name+"_seg", header);
 		Interface.setFloatImage4D(algorithm.getMaxProbabilityImage(), dims, nbestParam.getValue().byteValue(), maxprobaImage, name+"_mems", header);
 		Interface.setUByteImage4D(algorithm.getSegmentedIdsImage(), dims, nbestParam.getValue().byteValue(), maxidImage, name+"_lbls", header);
+		
+		Interface.setFloatImage4D(algorithm.getDebugImage(), dims, 3, debugImage, name+"_debug", header);
 		
 		return;
 	}

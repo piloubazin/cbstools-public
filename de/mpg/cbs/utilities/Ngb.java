@@ -57,7 +57,7 @@ public class Ngb {
 			case mZ		:	return id-nx*ny;
 			case pXpY	:	return id+1+nx;
 			case mXpY	:	return id-1+nx;
-			case pYpZ	:	return id+nx+nx*nx;
+			case pYpZ	:	return id+nx+nx*ny;
 			case mYpZ	:	return id-nx+nx*ny;
 			case pZpX	:	return id+nx*ny+1;	
 			case mZpX	:	return id-nx*ny+1;
