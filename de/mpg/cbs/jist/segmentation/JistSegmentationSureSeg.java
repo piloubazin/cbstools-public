@@ -91,9 +91,9 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		mainParams.add(rescaleProbaParam = new ParamBoolean("Rescale individual probabilities",true));
 		
 		mainParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
-		mainParams.add(imgscaleParam = new ParamFloat("Image Scale", 0, 1, 0.05f));
-		mainParams.add(certainscaleParam = new ParamFloat("Certainty Scale", 0, 1, 0.1f));
-		mainParams.add(mincertaintyParam = new ParamFloat("Min Certainty", 0, 1, 0.25f));
+		mainParams.add(imgscaleParam = new ParamFloat("Image Scale", 0, 1, 0.1f));
+		mainParams.add(certainscaleParam = new ParamFloat("Certainty Scale", 0, 10, 2.0f));
+		mainParams.add(mincertaintyParam = new ParamFloat("Min Certainty", 0, 1, 0.5f));
 		mainParams.add(neighborParam = new ParamInteger("Neighborhood size", 0, 26, 6));
 		
 		

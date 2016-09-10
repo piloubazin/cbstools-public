@@ -138,11 +138,12 @@ public class StatisticalUncertaintyReduction {
 		byte[][] newlabel = new byte[nbest][nix*niy*niz];
 		float[] ngbweight = new float[26];
 		float[][] imgweight = new float[nix*niy*niz][26];   	
-		byte[][] mapdepth = new byte[nobj][nix*niy*niz];	
+		//byte[][] mapdepth = new byte[nobj][nix*niy*niz];	
+		byte[] mapdepth = new byte[nix*niy*niz];	
 		
 		// compute the functional factor
-		float certaintyfactor = (float)(FastMath.log(0.5)/FastMath.log(factor));
-		//float certaintyfactor = factor;
+		//float certaintyfactor = (float)(FastMath.log(0.5)/FastMath.log(factor));
+		float certaintyfactor = factor;
 		BasicInfo.displayMessage("certainty exponent "+certaintyfactor+"\n");
 		
 		// rescale the certainty threshold so that it maps to the computed certainty values
@@ -181,6 +182,7 @@ public class StatisticalUncertaintyReduction {
 			meandiff = 0.0f;
 			float ndiff = 0.0f;
 			
+			/*
 			// re-compute depth
 			for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
 				for (byte n=0;n<nobj;n++) {
@@ -192,20 +194,30 @@ public class StatisticalUncertaintyReduction {
 					}
 				}
 			}
+			*/
 			
 			// main loop: label-per-label
 			for (byte n=0;n<nobj;n++) {
 				
+				// re-compute depth
 				// mapdepth only needed for obj n: single map, recomputed every time?
+				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+					mapdepth[xyzi] = nbest;
+					for (byte m=0;m<nbest;m++) {
+						if (bestlabel[m][xyzi]==n) {
+							mapdepth[xyzi] = m;
+						}
+					}
+				}
 				
 				//BasicInfo.displayMessage("propagate gain for label "+n+"\n");
 				BasicInfo.displayMessage(".");
 
 				// get the gain ; normalize
 				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
-					if (mapdepth[n][xyzi]<nbest) {
-						if (mapdepth[n][xyzi]==0) certainty[xyzi] = certaintyFunction(bestproba[0][xyzi]-bestproba[1][xyzi],certaintyfactor);
-						else certainty[xyzi] = certaintyFunction(bestproba[0][xyzi]-bestproba[mapdepth[n][xyzi]][xyzi],certaintyfactor);
+					if (mapdepth[xyzi]<nbest) {
+						if (mapdepth[xyzi]==0) certainty[xyzi] = certaintyFunction(bestproba[0][xyzi]-bestproba[1][xyzi],certaintyfactor);
+						else certainty[xyzi] = certaintyFunction(bestproba[0][xyzi]-bestproba[mapdepth[xyzi]][xyzi],certaintyfactor);
 					} else {
 						certainty[xyzi] = certaintyFunction(bestproba[0][xyzi]-bestproba[nbest-1][xyzi],certaintyfactor);
 					}
@@ -214,10 +226,10 @@ public class StatisticalUncertaintyReduction {
 				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
 				//for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
 					//int xyzi = x+nix*y+nix*niy*z;
-					if (mapdepth[n][xyzi]<nbest && certainty[xyzi]<=mincertainty) {
+					if (mapdepth[xyzi]<nbest && certainty[xyzi]<=mincertainty) {
 						float den = certainty[xyzi];
-						float num = den*bestproba[mapdepth[n][xyzi]][xyzi];
-						float prev = bestproba[mapdepth[n][xyzi]][xyzi];
+						float num = den*bestproba[mapdepth[xyzi]][xyzi];
+						float prev = bestproba[mapdepth[xyzi]][xyzi];
 					
 						for (byte j=0;j<26;j++) {
 							int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
@@ -226,13 +238,13 @@ public class StatisticalUncertaintyReduction {
 						byte[] rank = Numerics.argmax(ngbweight, ngbsize);
 						for (int l=0;l<ngbsize;l++) {
 							int xyzl = Ngb.neighborIndex(rank[l], xyzi, nix, niy, niz);
-							if (mapdepth[n][xyzl]<nbest) num += ngbweight[rank[l]]*bestproba[mapdepth[n][xyzl]][xyzl];
+							if (mapdepth[xyzl]<nbest) num += ngbweight[rank[l]]*bestproba[mapdepth[xyzl]][xyzl];
 							else num += ngbweight[rank[l]]*bestproba[nbest-1][xyzl];
 							den += ngbweight[rank[l]];
 						}
 						if (den>1e-9f) num /= den;
 						
-						newproba[mapdepth[n][xyzi]][xyzi] = num;
+						newproba[mapdepth[xyzi]][xyzi] = num;
 						
 						meandiff += Numerics.abs(num-prev);
 						ndiff++;
@@ -304,8 +316,6 @@ public class StatisticalUncertaintyReduction {
     private final float certaintyFunction(float delta, float scale) {
     	//return 1.0f - 1.0f/(1.0f+Numerics.square(delta/scale));	
     	return (float)FastMath.pow(Numerics.abs(delta), scale);	
-    	//return Numerics.bounded(delta*delta*delta,0.0f,1.0f);
-    	//return Numerics.abs(delta*delta*delta);
     }
     
 }
