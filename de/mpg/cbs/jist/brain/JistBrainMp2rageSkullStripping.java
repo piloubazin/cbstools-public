@@ -109,6 +109,9 @@ public class JistBrainMp2rageSkullStripping extends ProcessingAlgorithm {
 		// import the image data into 1D arrays
 		algorithm = new BrainMp2rageSkullStripping();
 		
+		algorithm.setDimensions(dims);
+		algorithm.setResolutions(res);
+
 		algorithm.setSecondInversionImage(Interface.getFloatImage3D(inv2Image));
 		algorithm.setT1MapImage(Interface.getFloatImage3D(t1mapImage));
 		algorithm.setT1weightedImage(Interface.getFloatImage3D(isoImage));
