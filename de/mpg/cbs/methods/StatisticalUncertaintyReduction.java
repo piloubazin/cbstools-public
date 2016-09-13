@@ -167,6 +167,23 @@ public class StatisticalUncertaintyReduction {
 		}
 		return imgweight;
 	}
+	public final float[][] computeBestImageWeight(float scale, int ngbsize) {
+		float[][] imgweight = new float[ngbsize][nix*niy*niz];   	
+		
+		float[] w0 = new float[26];
+		for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+			int xyzi = x+nix*y+nix*niy*z;
+			for (byte j=0;j<26;j++) {
+				int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+				w0[j] = diffusionImageWeightFunction(xyzi,xyzj,scale);
+			}
+			byte[] rank = Numerics.argmax(ngbweight, ngbsize);
+			for (byte n=0;n<ngbsize;n++) {
+				imgweight[n][xyzi] = w0[rank[n]];
+			}
+		}
+		return imgweight;
+	}
 	public final float[] computeMaxCertainty(float factor) {
 		float[] certainty = new float[nix*niy*niz];   	
 		
@@ -191,6 +208,8 @@ public class StatisticalUncertaintyReduction {
 		float[][] objvar = new float[nobj][nc];
 		float[] objcount = new float[nobj];
 		
+		float sorfactor = 1.95f;
+		
 		// compute the functional factor
 		//float certaintyfactor = (float)(FastMath.log(0.5)/FastMath.log(factor));
 		float certaintyfactor = factor;
@@ -204,7 +223,7 @@ public class StatisticalUncertaintyReduction {
 			int xyzi = x+nix*y+nix*niy*z;
 			for (byte j=0;j<26;j++) {
 				int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
-				imgweight[xyzi][j] = diffusionImageWeightFunction(xyzi,xyzj,scale)/ngbsize;
+				imgweight[xyzi][j] = sorfactor*diffusionImageWeightFunction(xyzi,xyzj,scale)/ngbsize;
 			}
 		}
 		for (int m=0;m<nbest;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
