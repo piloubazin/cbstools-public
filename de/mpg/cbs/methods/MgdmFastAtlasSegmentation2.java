@@ -30,6 +30,7 @@ public class MgdmFastAtlasSegmentation2 {
 	private 	int				nix,niy,niz;   		// image dimensions
 	private 	float			rix,riy,riz;   		// image resolutions
 	private		String[]		modality;			// image modality / contrast
+	private		byte[]			modalityId;			// image modality / contrast ID
 	private		float[]			imrange;			// image intensity range (robust estimate)
 	private		int				nc;					// number of channels
 
@@ -178,16 +179,17 @@ public class MgdmFastAtlasSegmentation2 {
 									int nmgdm_, int ngain_,
 									float fw_, float sw_, float dw_, float k0_, float gd_, 
 									String connectivityType_) {
-	
 		this(img_, mod_, rng_, nc_, nix_, niy_, niz_, rix_, riy_, riz_, atlas_, nmgdm_, ngain_, fw_, sw_, dw_, k0_, gd_, connectivityType_, null);
 	}
-		
+	/**
+	 *  constructors for different cases: with/out outliers, with/out selective constraints
+	 */
 	public MgdmFastAtlasSegmentation2(float[][] img_, String[] mod_, float[] rng_, int nc_,
 									int nix_, int niy_, int niz_, float rix_, float riy_, float riz_,
 									SimpleShapeAtlas2 atlas_,
 									int nmgdm_, int ngain_,
 									float fw_, float sw_, float dw_, float k0_, float gd_, 
-									String connectivityType_, String connectivityPath_) {
+									String connectivityType_, String lutdir_) {
 	
 		image = img_;
 		imrange = rng_;
@@ -270,17 +272,17 @@ public class MgdmFastAtlasSegmentation2 {
 			// topology luts
 			checkTopology=true;
 			checkComposed=false;
-				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT(connectivityPath_, "critical266LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT(connectivityPath_, "critical626LUT.raw.gz",200);
-			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT(connectivityPath_, "critical186LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(connectivityPath_, "critical618LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(connectivityPath_, "critical66LUT.raw.gz",200);
+				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT(lutdir_,"critical266LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT(lutdir_,"critical626LUT.raw.gz",200);
+			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT(lutdir_,"critical186LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(lutdir_,"critical618LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(lutdir_,"critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT(connectivityPath_, "criticalWCLUT.raw.gz",200);
+				lut = new CriticalPointLUT(lutdir_,"criticalWCLUT.raw.gz",200);
 				checkComposed=false;
 			}
 			else if (connectivityType_.equals("wco")) {
-				lut = new CriticalPointLUT(connectivityPath_, "critical66LUT.raw.gz",200);
+				lut = new CriticalPointLUT(lutdir_,"critical66LUT.raw.gz",200);
 				checkComposed=true;
 			}
 			else if (connectivityType_.equals("no")) {
@@ -525,6 +527,7 @@ public class MgdmFastAtlasSegmentation2 {
     		for (byte id=0;id<atlas.getIntensityNumber();id++)
     			if (modality[n].equalsIgnoreCase(atlas.displayContrastName(id))) intensityId[n] = id;
     	}
+    	modalityId = intensityId;
 		if (verbose) {
 			System.out.println("Modalities used in segmentation: ");
 			for (byte n=0;n<nc;n++) System.out.println(atlas.displayContrastName(intensityId[n])+" ("+n+"|"+intensityId[n]+")");
@@ -880,6 +883,610 @@ public class MgdmFastAtlasSegmentation2 {
 		newgainHD = null;
 		newlabelHD = null;
     }
+ 
+    // probability diffusion
+    public final void diffuseBestImageGainFunctions(int iter, float scale, float factor) {
+    	
+    	//mix with the neighbors?
+    	float[] map = new float[nix*niy*niz];
+    	float[] orig = new float[nix*niy*niz];
+    	float[][] newgainHD = new float[ngain+1][nix*niy*niz];
+    	byte[][] newlabelHD = new byte[ngain+1][nix*niy*niz];
+    	boolean[] diffmask = new boolean[nix*niy*niz];
+		for (int m=0;m<ngain+1;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+			newlabelHD[m][xyzi] = EMPTY;
+		}
+    	
+    	for (byte n=0;n<nobj;n++) {	
+    		BasicInfo.displayMessage("propagate gain for label "+n+"\n");
+			// get the gain ; normalize
+			for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+				float sum = 0.0f;
+				map[xyzi] = 0.0f;
+				for (int m=0;m<ngain+1;m++) {
+					if (bestlabelHD[m][xyzi]==n) map[xyzi] = 0.5f+0.5f*bestgainHD[m][xyzi];
+					//sum += 0.5f+0.5f*bestgainHD[m][xyzi];
+				}
+				
+				// normalize over sum proba?
+				//map[xyzi] /= sum;
+				
+				orig[xyzi] = map[xyzi];
+				if (orig[xyzi]==0 || orig[xyzi]==1) diffmask[xyzi] = false;
+				else diffmask[xyzi] = true;
+			}
+			// propagate the values : diffusion
+			float maxdiff = 1.0f;
+			for (int t=0;t<iter && maxdiff>0.05f;t++) {
+				BasicInfo.displayMessage(".");
+				maxdiff = 0.0f;
+				for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+					int xyzi = x+nix*y+nix*niy*z;
+					if (diffmask[xyzi]) {
+						float den = 1.0f;
+						float num = den*orig[xyzi];
+						float weight;
+						float prev = map[xyzi];
+					
+						weight = factor/6.0f*diffusionImageWeightFunction(xyzi,xyzi-1,scale);
+						num += weight*map[xyzi-1];
+						den += weight;
+					
+						weight = factor/6.0f*diffusionImageWeightFunction(xyzi,xyzi+1,scale);
+						num += weight*map[xyzi+1];
+						den += weight;
+					
+						weight = factor/6.0f*diffusionImageWeightFunction(xyzi,xyzi-nix,scale);
+						num += weight*map[xyzi-nix];
+						den += weight;
+					
+						weight = factor/6.0f*diffusionImageWeightFunction(xyzi,xyzi+nix,scale);
+						num += weight*map[xyzi+nix];
+						den += weight;
+					
+						weight = factor/6.0f*diffusionImageWeightFunction(xyzi,xyzi-nix*niy,scale);
+						num += weight*map[xyzi-nix*niy];
+						den += weight;
+					
+						weight = factor/6.0f*diffusionImageWeightFunction(xyzi,xyzi+nix*niy,scale);
+						num += weight*map[xyzi+nix*niy];
+						den += weight;
+						
+						map[xyzi] = num/den;
+						
+						maxdiff = Numerics.max(maxdiff, Numerics.abs(map[xyzi]-prev));
+					} else {
+						map[xyzi] = orig[xyzi];
+					}
+				}
+				BasicInfo.displayMessage("max diff. "+maxdiff+"\n");
+			}
+			// store in the gain if large enough
+			for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+				for (int m=0;m<ngain+1;m++) {
+					if (newlabelHD[m][xyzi]==EMPTY) {
+						newgainHD[m][xyzi] = 2.0f*map[xyzi]-1.0f;
+						newlabelHD[m][xyzi] = n;
+						m = ngain+1;
+					} else if (2.0f*map[xyzi]-1.0f>newgainHD[m][xyzi]) {
+						for (int p=ngain;p>m;p--) {
+							newgainHD[p][xyzi] = newgainHD[p-1][xyzi];
+							newlabelHD[p][xyzi] = newlabelHD[p-1][xyzi];
+						}
+						newgainHD[m][xyzi] = 2.0f*map[xyzi]-1.0f;
+						newlabelHD[m][xyzi] = n;
+						m=ngain+1;
+					}
+				}
+			}
+		}
+		// make a hard copy
+		for (int m=0;m<ngain+1;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+			bestgainHD[m][xyzi] = newgainHD[m][xyzi];
+			bestlabelHD[m][xyzi] = newlabelHD[m][xyzi];
+		}
+		newgainHD = null;
+		newlabelHD = null;
+    }
+    // probability diffusion
+    public final void diffuseJointImageGainFunctions(int iter, float scale, float factor, int ngbsize, float mincertainty) {
+    	
+    	//mix with the neighbors?
+    	float[] map = new float[nix*niy*niz];
+    	float[] orig = new float[nix*niy*niz];
+    	float[] certainty = new float[nix*niy*niz];   	
+    	float[][] newgainHD = new float[ngain+1][nix*niy*niz];
+    	byte[][] newlabelHD = new byte[ngain+1][nix*niy*niz];
+    	boolean[] diffmask = new boolean[nix*niy*niz];
+    	float[] ngbweight = new float[26];
+    	
+    	mincertainty = certaintyFunction(mincertainty,factor);
+		
+	float maxdiff = 1.0f;
+	for (int t=0;t<iter && maxdiff>0.05f;t++) {
+		maxdiff = 0.0f;
+		for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+			//certainty[xyzi] = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[1][xyzi],factor);
+			for (int m=0;m<ngain+1;m++) {
+				newlabelHD[m][xyzi] = EMPTY;
+			}
+		}
+		for (byte n=0;n<nobj;n++) {
+			//BasicInfo.displayMessage("propagate gain for label "+n+"\n");
+			BasicInfo.displayMessage(".");
+			// get the gain ; normalize
+			for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+				float sum = 0.0f;
+				map[xyzi] = 0.0f;
+				for (int m=0;m<ngain+1;m++) {
+					if (bestlabelHD[m][xyzi]==n) {
+						map[xyzi] = 0.5f+0.5f*bestgainHD[m][xyzi];
+						if (m==0) certainty[xyzi] = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[1][xyzi],factor);
+						else certainty[xyzi] = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[m][xyzi],factor);
+					}
+					//sum += 0.5f+0.5f*bestgainHD[m][xyzi];
+				}
+				if (map[xyzi]==0.0f) certainty[xyzi] = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[ngain][xyzi],factor);
+				// normalize over sum proba?
+				//map[xyzi] /= sum;
+				
+				orig[xyzi] = map[xyzi];
+				if (certainty[xyzi]>mincertainty)  diffmask[xyzi] = false;
+				//else if (map[xyzi]==0 || map[xyzi]==1) diffmask[xyzi] = false;
+				else diffmask[xyzi] = true;
+			}
+			// propagate the values : diffusion
+			for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+				int xyzi = x+nix*y+nix*niy*z;
+				if (diffmask[xyzi]) {
+					float den = certainty[xyzi];
+					float num = den*orig[xyzi];
+					float weight;
+					float prev = map[xyzi];
+				
+					for (byte j=0;j<26;j++) {
+						int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+						//weight = 1.0f/26.0f*certainty[xyzj]*diffusionImageWeightFunction(xyzi,xyzj,scale);
+						ngbweight[j] = 1.0f/ngbsize*certainty[xyzj]*diffusionImageWeightFunction(xyzi,xyzj,scale);
+					}
+					byte[] rank = Numerics.argmax(ngbweight, ngbsize);
+					for (int l=0;l<ngbsize;l++) {
+						int xyzl = Ngb.neighborIndex(rank[l], xyzi, nix, niy, niz);
+						num += ngbweight[rank[l]]*orig[xyzl];
+						den += ngbweight[rank[l]];
+					}
+					
+					map[xyzi] = num/den;
+					
+					maxdiff = Numerics.max(maxdiff, Numerics.abs(map[xyzi]-prev));
+				} else {
+					map[xyzi] = orig[xyzi];
+				}
+			}
+			// store in the gain if large enough
+			for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+				for (int m=0;m<ngain+1;m++) {
+					if (newlabelHD[m][xyzi]==EMPTY) {
+						newgainHD[m][xyzi] = 2.0f*map[xyzi]-1.0f;
+						newlabelHD[m][xyzi] = n;
+						m = ngain+1;
+					} else if (2.0f*map[xyzi]-1.0f>newgainHD[m][xyzi]) {
+						for (int p=ngain;p>m;p--) {
+							newgainHD[p][xyzi] = newgainHD[p-1][xyzi];
+							newlabelHD[p][xyzi] = newlabelHD[p-1][xyzi];
+						}
+						newgainHD[m][xyzi] = 2.0f*map[xyzi]-1.0f;
+						newlabelHD[m][xyzi] = n;
+						m=ngain+1;
+					}
+				}
+			}		
+		}
+		BasicInfo.displayMessage("max diff. "+maxdiff+"\n");
+		// make a hard copy
+		for (int m=0;m<ngain+1;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+			bestgainHD[m][xyzi] = newgainHD[m][xyzi];
+			bestlabelHD[m][xyzi] = newlabelHD[m][xyzi];
+		}
+	}
+	newgainHD = null;
+	newlabelHD = null;
+    }
+    // probability diffusion
+    
+    public final void diffuseFasterJointImageGainFunctions(int iter, float scale, float factor, int ngbsize, float mincertainty) {
+    	
+	//mix with the neighbors?
+	float[] map = new float[nix*niy*niz];
+	float[] orig = new float[nix*niy*niz];
+	float[] certainty = new float[nix*niy*niz];   	
+	float[][] newgainHD = new float[ngain+1][nix*niy*niz];
+	byte[][] newlabelHD = new byte[ngain+1][nix*niy*niz];
+	boolean[] diffmask = new boolean[nix*niy*niz];
+	float[] ngbweight = new float[26];
+	float[][] imgweight = new float[nix*niy*niz][26];   	
+	byte[] mapdepth = new byte[nix*niy*niz];	
+	
+	// rescale the certainty threshold so that it maps to the computed certainty values
+	mincertainty = certaintyFunction(mincertainty,factor);
+	
+	for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+		int xyzi = x+nix*y+nix*niy*z;
+		for (byte j=0;j<26;j++) {
+			int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+			imgweight[xyzi][j] = diffusionImageWeightFunction(xyzi,xyzj,scale)/ngbsize;
+		}
+	}
+	for (int m=0;m<ngain+1;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+		newgainHD[m][xyzi] = bestgainHD[m][xyzi];
+		newlabelHD[m][xyzi] = bestlabelHD[m][xyzi];
+	}
+	
+	float maxdiff = 1.0f;
+	for (int t=0;t<iter && maxdiff>0.1f;t++) {
+		maxdiff = 0.0f;
+		/*
+		for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+			//certainty[xyzi] = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[1][xyzi],factor);
+			for (int m=0;m<ngain+1;m++) {
+				newlabelHD[m][xyzi] = EMPTY;
+			}
+		}*/
+		for (byte n=0;n<nobj;n++) {
+			//BasicInfo.displayMessage("propagate gain for label "+n+"\n");
+			BasicInfo.displayMessage(".");
+			// get the gain ; normalize
+			for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+				float sum = 0.0f;
+				map[xyzi] = 0.0f;
+				for (byte m=0;m<ngain+1;m++) {
+					if (bestlabelHD[m][xyzi]==n) {
+						map[xyzi] = 0.5f+0.5f*bestgainHD[m][xyzi];
+						if (m==0) certainty[xyzi] = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[1][xyzi],factor);
+						else certainty[xyzi] = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[m][xyzi],factor);
+						mapdepth[xyzi] = m;
+					}
+					//sum += 0.5f+0.5f*bestgainHD[m][xyzi];
+				}
+				if (map[xyzi]==0.0f) {
+					certainty[xyzi] = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[ngain][xyzi],factor);
+					mapdepth[xyzi] = (byte)(ngain+1);
+				}
+				// normalize over sum proba?
+				//map[xyzi] /= sum;
+				
+				orig[xyzi] = map[xyzi];
+				if (certainty[xyzi]>mincertainty) diffmask[xyzi] = false;
+				else diffmask[xyzi] = true;
+			}
+			// propagate the values : diffusion
+			for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+				int xyzi = x+nix*y+nix*niy*z;
+				if (diffmask[xyzi]) {
+					float den = certainty[xyzi];
+					float num = den*orig[xyzi];
+					float weight;
+					float prev = map[xyzi];
+				
+					for (byte j=0;j<26;j++) {
+						int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+						//weight = 1.0f/26.0f*certainty[xyzj]*diffusionImageWeightFunction(xyzi,xyzj,scale);
+						ngbweight[j] = certainty[xyzj]*imgweight[xyzi][j];
+					}
+					byte[] rank = Numerics.argmax(ngbweight, ngbsize);
+					for (int l=0;l<ngbsize;l++) {
+						int xyzl = Ngb.neighborIndex(rank[l], xyzi, nix, niy, niz);
+						num += ngbweight[rank[l]]*orig[xyzl];
+						den += ngbweight[rank[l]];
+					}
+					
+					map[xyzi] = num/den;
+					
+					maxdiff = Numerics.max(maxdiff, Numerics.abs(map[xyzi]-prev));
+				} else {
+					map[xyzi] = orig[xyzi];
+				}
+			}
+			// store in the gain if large enough
+			/*
+			// this is very slow, going over all voxels and values!!!
+			for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+				for (int m=0;m<ngain+1;m++) {
+					if (newlabelHD[m][xyzi]==EMPTY) {
+						newgainHD[m][xyzi] = 2.0f*map[xyzi]-1.0f;
+						newlabelHD[m][xyzi] = n;
+						m = ngain+1;
+					} else if (2.0f*map[xyzi]-1.0f>newgainHD[m][xyzi]) {
+						for (int p=ngain;p>m;p--) {
+							newgainHD[p][xyzi] = newgainHD[p-1][xyzi];
+							newlabelHD[p][xyzi] = newlabelHD[p-1][xyzi];
+						}
+						newgainHD[m][xyzi] = 2.0f*map[xyzi]-1.0f;
+						newlabelHD[m][xyzi] = n;
+						m=ngain+1;
+					}
+				}
+			}
+			*/
+			for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+				int xyzi = x+nix*y+nix*niy*z;
+				if (diffmask[xyzi]) {
+					byte d=mapdepth[xyzi];
+					if (d==ngain+1 && newgainHD[ngain][xyzi]<2.0f*map[xyzi]-1.0f) {
+						d=ngain;
+					}
+					if (d<ngain+1) {
+						while (d>0 && 2.0f*map[xyzi]-1.0f>newgainHD[d-1][xyzi]) {
+							newgainHD[d][xyzi] = newgainHD[d-1][xyzi];
+							newlabelHD[d][xyzi] = newlabelHD[d-1][xyzi];
+							d--;
+						}
+						while (d<ngain && 2.0f*map[xyzi]-1.0f<newgainHD[d+1][xyzi]) {
+							newgainHD[d][xyzi] = newgainHD[d+1][xyzi];
+							newlabelHD[d][xyzi] = newlabelHD[d+1][xyzi];
+							d++;
+						}
+						newgainHD[d][xyzi] = 2.0f*map[xyzi]-1.0f;
+						newlabelHD[d][xyzi] = n;
+					}
+				}
+			}
+		}
+		BasicInfo.displayMessage("max diff. "+maxdiff+"\n");
+		// make a hard copy
+		for (int m=0;m<ngain+1;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+			bestgainHD[m][xyzi] = newgainHD[m][xyzi];
+			bestlabelHD[m][xyzi] = newlabelHD[m][xyzi];
+		}
+	}
+	newgainHD = null;
+	newlabelHD = null;
+    }
+    public final void diffuseFastJointImageGainFunctions(int iter, float scale, float factor, int ngbsize, float mincertainty) {
+    	
+		//mix with the neighbors?
+		float[] certainty = new float[nix*niy*niz];   	
+		float[][] newgainHD = new float[ngain+1][nix*niy*niz];
+		byte[][] newlabelHD = new byte[ngain+1][nix*niy*niz];
+		float[] ngbweight = new float[26];
+		float[][] imgweight = new float[nix*niy*niz][26];   	
+		byte[][] mapdepth = new byte[nobj][nix*niy*niz];	
+		
+		// rescale the certainty threshold so that it maps to the computed certainty values
+		mincertainty = certaintyFunction(mincertainty,factor);
+		
+		for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+			int xyzi = x+nix*y+nix*niy*z;
+			for (byte j=0;j<26;j++) {
+				int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+				imgweight[xyzi][j] = diffusionImageWeightFunction(xyzi,xyzj,scale)/ngbsize;
+			}
+		}
+		for (int m=0;m<ngain+1;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+			newgainHD[m][xyzi] = bestgainHD[m][xyzi];
+			newlabelHD[m][xyzi] = bestlabelHD[m][xyzi];
+		}
+		for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+			for (byte n=0;n<nobj;n++) {
+				mapdepth[n][xyzi] = (byte)(ngain+1);
+				for (byte m=0;m<ngain+1;m++) {
+					if (bestlabelHD[m][xyzi]==n) {
+						mapdepth[n][xyzi] = m;
+					}
+				}
+			}
+		}
+		float maxdiff = 1.0f;
+		float meandiff = 1.0f;
+		for (int t=0;t<iter && meandiff>0.001f;t++) {
+			BasicInfo.displayMessage("iter "+(t+1));
+			maxdiff = 0.0f;
+			meandiff = 0.0f;
+			float ndiff = 0.0f;
+			for (byte n=0;n<nobj;n++) {
+				//BasicInfo.displayMessage("propagate gain for label "+n+"\n");
+				BasicInfo.displayMessage(".");
+				// get the gain ; normalize
+				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+					if (mapdepth[n][xyzi]<=ngain) {
+						if (mapdepth[n][xyzi]==0) certainty[xyzi] = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[1][xyzi],factor);
+						else certainty[xyzi] = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[mapdepth[n][xyzi]][xyzi],factor);
+					} else {
+						certainty[xyzi] = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[ngain][xyzi],factor);
+					}
+				}
+				// propagate the values : diffusion
+				for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+					int xyzi = x+nix*y+nix*niy*z;
+					if (mapdepth[n][xyzi]<=ngain && certainty[xyzi]<=mincertainty) {
+						float den = certainty[xyzi];
+						float num = den*bestgainHD[mapdepth[n][xyzi]][xyzi];
+						float prev = bestgainHD[mapdepth[n][xyzi]][xyzi];
+					
+						for (byte j=0;j<26;j++) {
+							int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+							ngbweight[j] = certainty[xyzj]*imgweight[xyzi][j];
+						}
+						byte[] rank = Numerics.argmax(ngbweight, ngbsize);
+						for (int l=0;l<ngbsize;l++) {
+							int xyzl = Ngb.neighborIndex(rank[l], xyzi, nix, niy, niz);
+							if (mapdepth[n][xyzl]<=ngain) num += ngbweight[rank[l]]*bestgainHD[mapdepth[n][xyzl]][xyzl];
+							else num += ngbweight[rank[l]]*bestgainHD[ngain][xyzl];
+							den += ngbweight[rank[l]];
+						}
+						num /= den;
+						
+						newgainHD[mapdepth[n][xyzi]][xyzi] = num;
+						
+						meandiff += Numerics.abs(num-prev);
+						ndiff++;
+						maxdiff = Numerics.max(maxdiff, Numerics.abs(num-prev));
+					}
+				}
+			}
+			meandiff /= ndiff;
+			BasicInfo.displayMessage("mean diff. "+meandiff+", max diff. "+maxdiff+"\n");
+			// make a hard copy
+			for (int m=0;m<ngain+1;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+				bestgainHD[m][xyzi] = newgainHD[m][xyzi];
+				bestlabelHD[m][xyzi] = newlabelHD[m][xyzi];
+			}
+		}
+		newgainHD = null;
+		newlabelHD = null;
+		
+		// re-sort the gain functions
+		for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+			for (int m=0;m<ngain;m++) {
+				boolean stop=true;
+				for (int l=ngain;l>m;l--) {
+					if (bestgainHD[l][xyzi]>bestgainHD[l-1][xyzi]) {
+						float swap = bestgainHD[l-1][xyzi];
+						bestgainHD[l-1][xyzi] = bestgainHD[l][xyzi];
+						bestgainHD[l][xyzi] = swap;
+						byte swaplb = bestlabelHD[l-1][xyzi];
+						bestlabelHD[l-1][xyzi] = bestlabelHD[l][xyzi];
+						bestlabelHD[l][xyzi] = swaplb;
+						stop=false;
+					}
+				}
+				if (stop) m=ngain;
+			}
+		}
+    }
+    /*
+    // probability diffusion
+    public final void diffuseFastJointImageGainFunctions(int iter, float scale, float factor, int ngbsize, float mincertainty) {
+    	
+		//mix with the neighbors?
+		//float[] certainty = new float[nix*niy*niz];   	
+		float[][] imgweight = new float[nix*niy*niz][26];   	
+		byte[][][] ngbindex = new byte[nix*niy*niz][ngain][ngbsize];   	
+		byte[][][] ngbdepth = new byte[nix*niy*niz][ngain][ngbsize];   	
+		float[][] newgainHD = new float[ngain+1][nix*niy*niz];
+		byte[][] newlabelHD = new byte[ngain+1][nix*niy*niz];
+		//boolean[] diffmask = new boolean[nix*niy*niz];
+		
+		BasicInfo.displayMessage("label diffusion: pre-processing");
+		
+		// compute neighborhood location only once; assuming the structure is mostly driven by image weights and initial certainty gradients
+		float[] ngbweight = new float[26];
+		byte[] ngbmapping = new byte[26];
+		byte[] ngblevel = new byte[26];
+		for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+			int xyzi = x+nix*y+nix*niy*z;
+			float certainty = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[1][xyzi],factor);
+			if (certainty<mincertainty) {
+				for (byte j=0;j<26;j++) {
+					int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+					imgweight[xyzi][j] = diffusionImageWeightFunction(xyzi,xyzj,scale)/ngbsize;
+				}
+			}
+		}
+		for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+			int xyzi = x+nix*y+nix*niy*z;
+			for (int g=0;g<ngain+1;g++) {
+				int next = Numerics.max(g,1);
+				float certainty = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[next][xyzi],factor);
+				if (certainty<mincertainty) {
+					for (byte j=0;j<26;j++) {
+						int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+						if (bestlabelHD[g][xyzi]==bestlabelHD[g][xyzj]) {
+							ngblevel[j] = g;
+						} else {
+							byte lvl=0;
+							// find the same label, or give the last known one (upper approx of the values) 
+							while (bestlabelHD[g][xyzi]!=bestlabelHD[lvl][xyzj] && lvl<ngain) lvl++;
+							ngblevel[j] = lvl;
+						}
+						ngbweight[j] = certaintyFunction(bestgainHD[0][xyzj]-bestgainHD[Numerics.max(ngblevel[j],1)][xyzj],factor)*imgweight[xyzi][j];
+						ngbmapping[j] = j;
+					}
+					byte[] rank = Numerics.argmax(ngbweight, ngbsize);
+					for (int n=0;n<ngbsize;n++) {
+						ngbindex[xyzi][g][n] = ngbmapping[rank[n]];
+						ngbdepth[xyzi][g][n] = ngblevel[rank[n]];
+					}
+				}
+			}
+			for (int m=0;m<ngain+1;m++) {
+				newlabelHD[m][xyzi] = bestlabelHD[m][xyzi];
+				newgainHD[m][xyzi] = bestgainHD[m][xyzi];
+			}		
+		}
+		float maxdiff = 1.0f;
+		for (int t=0;t<iter && maxdiff>0.05f;t++) {
+			maxdiff = 0.0f;
+			BasicInfo.displayMessage("\n iter "+t);
+			for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
+				int xyzi = x+nix*y+nix*niy*z;
+				for (int g=0;g<ngain+1;g++) {
+					int next = Numerics.max(g,1);
+					float certainty = certaintyFunction(bestgainHD[0][xyzi]-bestgainHD[next][xyzi],factor);
+					if (certainty<mincertainty) {
+						float prev = newgainHD[g][xyzi];
+						float den = certainty;
+						float num = den*bestgainHD[g][xyzi];
+						
+						for (int n=0;n<ngbsize;n++) {
+							byte j = ngbindex[xyzi][g][n];
+							int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+							byte l = ngbdepth[xyzi][g][n];
+							byte nl = Numerics.max(l,1);
+							float ngbcertainty = certaintyFunction(bestgainHD[0][xyzj]-bestgainHD[nl][xyzj],factor);
+							num += ngbcertainty*imgweight[xyzi][j]*bestgainHD[l][xyzj];
+							den += ngbcertainty*imgweight[xyzi][j];							
+						}
+						newgainHD[m][xyzi] = num/den;
+						
+						maxdiff = Numerics.max(maxdiff, Numerics.abs(newgainHD[m][xyzi]-prev));
+						
+						// check the ordering?
+						if (g>0 && newgainHD[g][xyzi]>prev) {
+							int n=g;
+							while (n>0 && newgainHD[n][xyzi]>newgainHD[n-1][xyzi]) {
+								float gain = newgainHD[n-1][xyzi];
+								byte label = newlabelHD[n-1][xyzi];
+								newgainHD[n-1][xyzi] = newgainHD[n][xyzi];
+								newlabelHD[n-1][xyzi] = newlabelHD[n][xyzi];
+								newgainHD[n][xyzi] = gain;
+								newlabelHD[n][xyzi] = label;
+								n--;
+							}
+						} else if (g<ngain && newgainHD[g][xyzi]<prev) {
+							int n=g;
+							while (n<ngain && newgainHD[n][xyzi]<newgainHD[n+1][xyzi]) {
+								float gain = newgainHD[n+1][xyzi];
+								byte label = newlabelHD[n+1][xyzi];
+								newgainHD[n+1][xyzi] = newgainHD[n][xyzi];
+								newlabelHD[n+1][xyzi] = newlabelHD[n][xyzi];
+								newgainHD[n][xyzi] = gain;
+								newlabelHD[n][xyzi] = label;
+								n++;
+							}
+						}
+					}
+				}
+			}
+			BasicInfo.displayMessage("max diff. "+maxdiff+"\n");
+			// reinit the certainty
+			if (t<iter && maxdiff>0.05f) {
+				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+					certainty[xyzi] = certaintyFunction(newgainHD[0][xyzi]-newgainHD[1][xyzi],factor);
+					if (certainty[xyzi]>=1.0f) diffmask[xyzi] = false;
+					else diffmask[xyzi] = true;
+				}
+			}
+		}		
+		// make a hard copy
+		for (int m=0;m<ngain+1;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
+			bestgainHD[m][xyzi] = newgainHD[m][xyzi];
+			bestlabelHD[m][xyzi] = newlabelHD[m][xyzi];
+		}
+		newgainHD = null;
+		newlabelHD = null;
+	}
+	*/
     /*
     // probability diffusion
     public final void diffuseBestGainFunctions2(int iter, float scale) {
@@ -996,6 +1603,19 @@ public class MgdmFastAtlasSegmentation2 {
     	//return 1.0f/(1.0f+Numerics.square( (val-ngb)/scale ))/(1.0f+Numerics.square(Numerics.min(1.0f-ngb, ngb)/scale));	
     	return Numerics.square(Numerics.min(1.0f-val, val)/scale)/(1.0f+Numerics.square(Numerics.min(1.0f-val, val)/scale))
     				/(1.0f+Numerics.square( (val-ngb)/scale ))/(1.0f+Numerics.square(Numerics.min(1.0f-ngb, ngb)/scale));	
+    }
+    
+    private final float diffusionImageWeightFunction(int xyz, int ngb, float scale) {
+    	float maxdiff = 0.0f;
+    	for (int c=0;c<nc;c++) if (atlas.isIntensityContrast(modalityId[c])) {
+    		float diff = Numerics.abs(image[c][xyz]/imrange[c] - image[c][ngb]/imrange[c]);
+    		if (diff>maxdiff) maxdiff = diff;
+    	}
+    	return 1.0f/(1.0f+Numerics.square( maxdiff/scale));
+    }
+    
+    private final float certaintyFunction(float delta, float scale) {
+    	return 1.0f - 1.0f/(1.0f+Numerics.square(delta/scale));	
     }
     
     public final void propagateBestGainFunctions(int iter, float scale) {
