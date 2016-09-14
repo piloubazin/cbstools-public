@@ -179,16 +179,17 @@ public class MgdmFastAtlasSegmentation2 {
 									int nmgdm_, int ngain_,
 									float fw_, float sw_, float dw_, float k0_, float gd_, 
 									String connectivityType_) {
-	
 		this(img_, mod_, rng_, nc_, nix_, niy_, niz_, rix_, riy_, riz_, atlas_, nmgdm_, ngain_, fw_, sw_, dw_, k0_, gd_, connectivityType_, null);
 	}
-		
+	/**
+	 *  constructors for different cases: with/out outliers, with/out selective constraints
+	 */
 	public MgdmFastAtlasSegmentation2(float[][] img_, String[] mod_, float[] rng_, int nc_,
 									int nix_, int niy_, int niz_, float rix_, float riy_, float riz_,
 									SimpleShapeAtlas2 atlas_,
 									int nmgdm_, int ngain_,
 									float fw_, float sw_, float dw_, float k0_, float gd_, 
-									String connectivityType_, String connectivityPath_) {
+									String connectivityType_, String lutdir_) {
 	
 		image = img_;
 		imrange = rng_;
@@ -271,17 +272,17 @@ public class MgdmFastAtlasSegmentation2 {
 			// topology luts
 			checkTopology=true;
 			checkComposed=false;
-				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT(connectivityPath_, "critical266LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT(connectivityPath_, "critical626LUT.raw.gz",200);
-			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT(connectivityPath_, "critical186LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(connectivityPath_, "critical618LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(connectivityPath_, "critical66LUT.raw.gz",200);
+				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT(lutdir_,"critical266LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT(lutdir_,"critical626LUT.raw.gz",200);
+			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT(lutdir_,"critical186LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(lutdir_,"critical618LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(lutdir_,"critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT(connectivityPath_, "criticalWCLUT.raw.gz",200);
+				lut = new CriticalPointLUT(lutdir_,"criticalWCLUT.raw.gz",200);
 				checkComposed=false;
 			}
 			else if (connectivityType_.equals("wco")) {
-				lut = new CriticalPointLUT(connectivityPath_, "critical66LUT.raw.gz",200);
+				lut = new CriticalPointLUT(lutdir_,"critical66LUT.raw.gz",200);
 				checkComposed=true;
 			}
 			else if (connectivityType_.equals("no")) {
@@ -1604,7 +1605,7 @@ public class MgdmFastAtlasSegmentation2 {
     				/(1.0f+Numerics.square( (val-ngb)/scale ))/(1.0f+Numerics.square(Numerics.min(1.0f-ngb, ngb)/scale));	
     }
     
-   private final float diffusionImageWeightFunction(int xyz, int ngb, float scale) {
+    private final float diffusionImageWeightFunction(int xyz, int ngb, float scale) {
     	float maxdiff = 0.0f;
     	for (int c=0;c<nc;c++) if (atlas.isIntensityContrast(modalityId[c])) {
     		float diff = Numerics.abs(image[c][xyz]/imrange[c] - image[c][ngb]/imrange[c]);
