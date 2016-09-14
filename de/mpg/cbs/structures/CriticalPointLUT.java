@@ -390,7 +390,8 @@ public class CriticalPointLUT {
 			 InputStream fis;
 			 if (filepath==null) fis = CriticalPointLUT.class.getResourceAsStream( filename );
 			 else fis = new FileInputStream( filepath+filename );
-			 //if (debug) System.out.println("Opening LUT: "+fis.toString());
+			 System.out.println("Opening LUT: "+fis.toString());
+			 System.out.flush();
 			 GZIPInputStream gzfis = new GZIPInputStream(fis, B26);
 			 //GZIPInputStream gzfis = new GZIPInputStream(res.openStream(), B26);
 			 byte[] list = new byte[B26];

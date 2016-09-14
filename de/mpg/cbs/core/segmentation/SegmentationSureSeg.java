@@ -260,10 +260,10 @@ public class SegmentationSureSeg {
 		}
 	
 		// for debug
-		debugImage = new float[nxyz*27];
+		debugImage = new float[nxyz*(neighborParam+1)];
 		float[] tmp = sur.computeMaxCertainty(certainscaleParam);
 		for (int xyz=0;xyz<nxyz;xyz++) debugImage[xyz] = tmp[xyz];
-		
+		/*
 		tmp = sur.computeMaxImageWeight(imgscaleParam);
 		for (int xyz=0;xyz<nxyz;xyz++) debugImage[xyz+nxyz] = tmp[xyz];
 		tmp = sur.computeMinImageWeight(imgscaleParam);
@@ -272,6 +272,8 @@ public class SegmentationSureSeg {
 		float[][] imw = sur.computeAllImageWeight(imgscaleParam);
 		for (int xyz=0;xyz<nxyz;xyz++) for (int j=0;j<26;j++) debugImage[xyz+j*nxyz] = imw[j][xyz];
 		*/
+		float[][] imw = sur.computeBestImageWeight(imgscaleParam,neighborParam);
+		for (int xyz=0;xyz<nxyz;xyz++) for (int j=0;j<neighborParam;j++) debugImage[xyz+nxyz+j*nxyz] = imw[j][xyz];
 		
 		return;
 	}

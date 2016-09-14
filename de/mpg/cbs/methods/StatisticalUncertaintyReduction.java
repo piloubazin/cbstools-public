@@ -177,7 +177,7 @@ public class StatisticalUncertaintyReduction {
 				int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
 				w0[j] = diffusionImageWeightFunction(xyzi,xyzj,scale);
 			}
-			byte[] rank = Numerics.argmax(ngbweight, ngbsize);
+			byte[] rank = Numerics.argmax(w0, ngbsize);
 			for (byte n=0;n<ngbsize;n++) {
 				imgweight[n][xyzi] = w0[rank[n]];
 			}
@@ -208,7 +208,9 @@ public class StatisticalUncertaintyReduction {
 		float[][] objvar = new float[nobj][nc];
 		float[] objcount = new float[nobj];
 		
-		float sorfactor = 1.95f;
+		// SOR-scheme?
+		//float sorfactor = 1.95f;
+		float sorfactor = 1.0f;
 		
 		// compute the functional factor
 		//float certaintyfactor = (float)(FastMath.log(0.5)/FastMath.log(factor));
@@ -245,12 +247,14 @@ public class StatisticalUncertaintyReduction {
 		
 		float maxdiff = 1.0f;
 		float meandiff = 1.0f;
-		for (int t=0;t<iter && meandiff>0.001f;t++) {
+		for (int t=0;t<iter && meandiff>0.0005f;t++) {
+		//for (int t=0;t<iter && maxdiff>0.1f;t++) {
 			BasicInfo.displayMessage("iter "+(t+1));
 			maxdiff = 0.0f;
 			meandiff = 0.0f;
 			float ndiff = 0.0f;
-			
+			float nflip = 0.0f;
+			float nproc = 0.0f;
 			/*
 			// re-compute depth
 			for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
@@ -264,6 +268,7 @@ public class StatisticalUncertaintyReduction {
 				}
 			}
 			*/
+			/*
 			// estimate a gaussian intensity distribution for each region, and modulate the corresponding labels
 			if (computeDistribution) {
 				for (int n=0;n<nobj;n++) {
@@ -331,7 +336,7 @@ public class StatisticalUncertaintyReduction {
 						if (stop) m=nbest;
 					}
 				}
-			}
+			}*/
 				
 			// main loop: label-per-label
 			for (byte n=0;n<nobj;n++) {
@@ -364,6 +369,8 @@ public class StatisticalUncertaintyReduction {
 				//for (int x=1;x<nix-1;x++) for (int y=1;y<niy-1;y++) for (int z=1;z<niz-1;z++) {
 					//int xyzi = x+nix*y+nix*niy*z;
 					if (mapdepth[xyzi]<nbest && certainty[xyzi]<=mincertainty) {
+						nproc++;
+						
 						float den = certainty[xyzi];
 						float num = den*bestproba[mapdepth[xyzi]][xyzi];
 						float prev = bestproba[mapdepth[xyzi]][xyzi];
@@ -382,22 +389,24 @@ public class StatisticalUncertaintyReduction {
 						if (den>1e-9f) num /= den;
 						
 						newproba[mapdepth[xyzi]][xyzi] = num;
+						newlabel[mapdepth[xyzi]][xyzi] = n;
 						
 						meandiff += Numerics.abs(num-prev);
 						ndiff++;
 						maxdiff = Numerics.max(maxdiff, Numerics.abs(num-prev));
+						if (prev<0.5f && num>0.5f) nflip++;
+						if (prev>0.5f && num<0.5f) nflip++;
 					}
 				}
 			}
 			if (ndiff>0) meandiff /= ndiff;
-			BasicInfo.displayMessage("mean diff. "+meandiff+", max diff. "+maxdiff+"\n");
-			
 			// make a hard copy
 			for (int m=0;m<nbest;m++) for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
 				bestproba[m][xyzi] = newproba[m][xyzi];
 				bestlabel[m][xyzi] = newlabel[m][xyzi];
 			}
-			
+			float nresort=0.0f;
+			float nreseg=0.0f;
 			// re-sort the gain functions
 			for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) {
 				for (int m=0;m<nbest-1;m++) {
@@ -411,11 +420,17 @@ public class StatisticalUncertaintyReduction {
 							bestlabel[l-1][xyzi] = bestlabel[l][xyzi];
 							bestlabel[l][xyzi] = swaplb;
 							stop=false;
+							nresort++;
+							if (l==0) nreseg++;
 						}
 					}
-					if (stop) m=nbest;
+					//if (stop) m=nbest;
 				}
 			}
+			BasicInfo.displayMessage("mean diff. "+meandiff+", max diff. "+maxdiff+", changed. "+nreseg+"\n");
+			//BasicInfo.displayMessage("n processed "+nproc+", n flipped "+nflip+"\n");
+			
+			//BasicInfo.displayMessage("n resorted"+nresort+"\n");
 			
 		}
 		newproba = null;

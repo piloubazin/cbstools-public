@@ -178,7 +178,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		Interface.setFloatImage4D(algorithm.getMaxProbabilityImage(), dims, nbestParam.getValue().byteValue(), maxprobaImage, name+"_mems", header);
 		Interface.setUByteImage4D(algorithm.getSegmentedIdsImage(), dims, nbestParam.getValue().byteValue(), maxidImage, name+"_lbls", header);
 		
-		Interface.setFloatImage4D(algorithm.getDebugImage(), dims, 3, debugImage, name+"_debug", header);
+		Interface.setFloatImage4D(algorithm.getDebugImage(), dims, neighborParam.getValue().byteValue()+1, debugImage, name+"_debug", header);
 		
 		return;
 	}
