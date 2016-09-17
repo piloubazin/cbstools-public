@@ -243,9 +243,9 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
 
 def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=None,
                              con3_files=None, con3_type=None, con4_files=None, con4_type=None,
-                             output_dir = None, num_steps = 5, atlas_file=None, topology_lut_dir = None,
-                             adjust_intensity_priors = False, compute_posterior = False, diffuse_probabilities = False,
-                             file_suffix = None):
+                             output_dir = None, num_steps = 5, topology = 'wcs', atlas_file=None,
+                             topology_lut_dir = None, adjust_intensity_priors = False, compute_posterior = False,
+                             diffuse_probabilities = False, file_suffix = None):
     """
     Perform MGDM segmentation
     simplified inputs
@@ -253,14 +253,15 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
 
     :param con1_files:              List of files for contrast 1, required
     :param con1_type:               Contrast 1 type (from get_MGDM_seg_contrast_names(atlas_file))
-    :param con2_files:              List of files for contrast 2, optional
+    :param con2_files:              List of files for contrast 2, optional, must be matched to con1_files
     :param con2_type:               Contrast 2 type
-    :param con3_files:              List of files for contrast 3, optional
+    :param con3_files:              List of files for contrast 3, optional, must be matched to con1_files
     :param con3_type:               Contrast 3 type
-    :param con4_files:              List of files for contrast 4, optional
+    :param con4_files:              List of files for contrast 4, optional, must be matched to con1_files
     :param con4_type:               Contrast 4 type
     :param output_dir:              Directory to place output, defaults to input directory if = None
-    :param num_steps:               Number of steps for MGDM
+    :param num_steps:               Number of steps for MGDM, default = 5, set to 0 for quicker testing (but worse quality segmentation)
+    :param topology:                Topology setting {'wcs', 'no'} ('no' for no topology)
     :param atlas_file:              Atlas file full path and filename
     :param topology_lut_dir:        Directory for topology files
     :param adjust_intensity_priors: Adjust intensity priors based on dataset: True/False
@@ -313,7 +314,8 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     mgdm.setComputePosterior(compute_posterior)
     mgdm.setDiffuseProbabilities(diffuse_probabilities )
     mgdm.setSteps(num_steps)
-    mgdm.setTopology('wcs')  # {'wcs','no'} no=off for testing, wcs=default
+    mgdm.setTopology(topology)  # {'wcs','no'} no=off for testing, wcs=default
+
     for idx,con1 in enumerate(con1_files):
         print("Input files and filetypes:")
         print(con1_type + ":\t" + con1.split(pathsep)[-1])
@@ -356,12 +358,12 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
         mgdm.setDimensions(d.shape[0], d.shape[1], d.shape[2])
         mgdm.setResolutions(res[0], res[1], res[2])
 
-        if idx == 0:
-            # keep the shape and affine from the first image for saving
-            d_shape = np.array(d.shape)
-            out_root_fname = os.path.basename(fname)[0:os.path.basename(fname).find('.')]  # assumes no periods in filename, :-/
-            mgdm.setContrastImage1(cj.JArray('float')((d.flatten('F')).astype(float)))
-            mgdm.setContrastType1(type)
+        # keep the shape and affine from the first image for saving
+        d_shape = np.array(d.shape)
+        out_root_fname = os.path.basename(fname)[0:os.path.basename(fname).find('.')]  # assumes no periods in filename, :-/
+        mgdm.setContrastImage1(cj.JArray('float')((d.flatten('F')).astype(float)))
+        mgdm.setContrastType1(type)
+
         if con2_files is not None: #only bother with the other contrasts if something is in the one before it
             print(con2_type + ":\t" + con2_files[idx].split(pathsep)[-1])
             d, a = niiLoad(con2_files[idx], return_header=False)
@@ -411,7 +413,7 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
             print("Data stored in: " + output_dir)
         except:
             print("--- MGDM failed. Go cry. ---")
-            return
+            #return
         print("Execution completed")
 
     return seg_im,d_aff,d_head
