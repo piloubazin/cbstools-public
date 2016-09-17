@@ -316,7 +316,7 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     mgdm.setTopology('wcs')  # {'wcs','no'} no=off for testing, wcs=default
     for idx,con1 in enumerate(con1_files):
         print("Input files and filetypes:")
-        print("\t" + con1.split(pathsep)[-1])
+        print(con1_type + ":\t" + con1.split(pathsep)[-1])
 
         fname = con1
         type = con1_type
@@ -363,56 +363,56 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
             mgdm.setContrastImage1(cj.JArray('float')((d.flatten('F')).astype(float)))
             mgdm.setContrastType1(type)
         if con2_files is not None: #only bother with the other contrasts if something is in the one before it
-            print("\t" + con2_files[idx].split(pathsep)[-1])
+            print(con2_type + ":\t" + con2_files[idx].split(pathsep)[-1])
             d, a = niiLoad(con2_files[idx], return_header=False)
             mgdm.setContrastImage2(cj.JArray('float')((d.flatten('F')).astype(float)))
             mgdm.setContrastType2(con2_type)
             if con3_files is not None:
-                print("\t" + con3_files[idx].split(pathsep)[-1])
+                print(con3_type + ":\t" + con3_files[idx].split(pathsep)[-1])
                 d, a = niiLoad(con3_files[idx], return_header=False)
                 mgdm.setContrastImage3(cj.JArray('float')((d.flatten('F')).astype(float)))
                 mgdm.setContrastType3(con3_type)
                 if con4_files is not None:
-                    print("\t" + con4_files[idx].split(pathsep)[-1])
+                    print(con4_type + ":\t" + con4_files[idx].split(pathsep)[-1])
                     d, a = niiLoad(con4_files[idx], return_header=False)
                     mgdm.setContrastImage4(cj.JArray('float')((d.flatten('F')).astype(float)))
                     mgdm.setContrastType4(con4_type)
-    try:
-        print("Executing MGDM on your inputs")
-        print("Don't worry, the magic is happening!")
-        ## ---------------------------- MAGIC START ---------------------------- ##
-        mgdm.execute()
-        ## ---------------------------- MAGIC END   ---------------------------- ##
-        print(os.path.join(output_dir, out_root_fname + '_seg_cjs.nii.gz'))
+        try:
+            print("Executing MGDM on your inputs")
+            print("Don't worry, the magic is happening!")
+            ## ---------------------------- MAGIC START ---------------------------- ##
+            mgdm.execute()
+            ## ---------------------------- MAGIC END   ---------------------------- ##
+            print(os.path.join(output_dir, out_root_fname + '_seg_cjs.nii.gz'))
 
-        # outputs
-        # reshape fortran stype to convert back to the format the nibabel likes
-        seg_im = np.reshape(np.array(mgdm.getSegmentedBrainImage(), dtype=np.uint32), d_shape,'F')
-        lbl_im = np.reshape(np.array(mgdm.getPosteriorMaximumLabels4D(), dtype=np.uint32), d_shape, 'F')
-        ids_im = np.reshape(np.array(mgdm.getSegmentedIdsImage(), dtype=np.uint32), d_shape, 'F')
+            # outputs
+            # reshape fortran stype to convert back to the format the nibabel likes
+            seg_im = np.reshape(np.array(mgdm.getSegmentedBrainImage(), dtype=np.uint32), d_shape,'F')
+            lbl_im = np.reshape(np.array(mgdm.getPosteriorMaximumLabels4D(), dtype=np.uint32), d_shape, 'F')
+            ids_im = np.reshape(np.array(mgdm.getSegmentedIdsImage(), dtype=np.uint32), d_shape, 'F')
 
-        # filenames for saving
-        if file_suffix is not None:
-            seg_file = os.path.join(output_dir, out_root_fname + '_seg' + file_suffix + '.nii.gz')
-            lbl_file = os.path.join(output_dir, out_root_fname + '_lbl' + file_suffix + '.nii.gz')
-            ids_file = os.path.join(output_dir, out_root_fname + '_ids' + file_suffix + '.nii.gz')
-        else:
-            seg_file = os.path.join(output_dir, out_root_fname + '_seg.nii.gz')
-            lbl_file = os.path.join(output_dir, out_root_fname + '_lbl.nii.gz')
-            ids_file = os.path.join(output_dir, out_root_fname + '_ids.nii.gz')
+            # filenames for saving
+            if file_suffix is not None:
+                seg_file = os.path.join(output_dir, out_root_fname + '_seg' + file_suffix + '.nii.gz')
+                lbl_file = os.path.join(output_dir, out_root_fname + '_lbl' + file_suffix + '.nii.gz')
+                ids_file = os.path.join(output_dir, out_root_fname + '_ids' + file_suffix + '.nii.gz')
+            else:
+                seg_file = os.path.join(output_dir, out_root_fname + '_seg.nii.gz')
+                lbl_file = os.path.join(output_dir, out_root_fname + '_lbl.nii.gz')
+                ids_file = os.path.join(output_dir, out_root_fname + '_ids.nii.gz')
 
-        d_head['data_type'] = np.array(32).astype('uint32') #convert the header as well
-        d_head['cal_max'] = np.max(seg_im)  #max for display
-        niiSave(seg_file, seg_im, d_aff, header=d_head, data_type='uint32')
-        d_head['cal_max'] = np.max(lbl_im)
-        niiSave(lbl_file, lbl_im, d_aff, header=d_head, data_type='uint32')
-        d_head['cal_max'] = np.max(ids_im)  # convert the header as well
-        niiSave(ids_file, ids_im, d_aff, header=d_head, data_type='uint32')
-        print("Data stored in: " + output_dir)
-    except:
-        print("--- MGDM failed. Go cry. ---")
-        return
-    print("Execution completed")
+            d_head['data_type'] = np.array(32).astype('uint32') #convert the header as well
+            d_head['cal_max'] = np.max(seg_im)  #max for display
+            niiSave(seg_file, seg_im, d_aff, header=d_head, data_type='uint32')
+            d_head['cal_max'] = np.max(lbl_im)
+            niiSave(lbl_file, lbl_im, d_aff, header=d_head, data_type='uint32')
+            d_head['cal_max'] = np.max(ids_im)  # convert the header as well
+            niiSave(ids_file, ids_im, d_aff, header=d_head, data_type='uint32')
+            print("Data stored in: " + output_dir)
+        except:
+            print("--- MGDM failed. Go cry. ---")
+            return
+        print("Execution completed")
 
     return seg_im,d_aff,d_head
 
