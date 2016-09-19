@@ -276,12 +276,19 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     print("Thank you for choosing the MGDM segmentation from the cbstools for your brain segmentation needs")
     print("Sit back and relax, let the magic of algorithms happen...")
     print("")
+
+    out_files_seg = []
+    out_files_lbl = []
+    out_files_ids = []
+
     if output_dir is None:
         output_dir = os.path.dirname(con1_files[0])
     if atlas_file is None:
         atlas = os.path.join(ATLAS_DIR,'brain-atlas-3.0.3.txt')
     else:
         atlas = atlas_file
+
+    create_dir(output_dir)
 
     if topology_lut_dir is None:
         topology_lut_dir = TOPOLOGY_LUT_DIR  # grabbing this from the default settings in defaults.py
@@ -411,13 +418,61 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
             niiSave(ids_file, ids_im, d_aff, header=d_head, data_type='uint32')
             print("Data stored in: " + output_dir)
             print("")
+            out_files_seg.append(seg_file)
+            out_files_lbl.append(lbl_file)
+            out_files_ids.append(ids_file)
         except:
             print("--- MGDM failed. Go cry. ---")
             return
         print("Execution completed")
 
-    return seg_im,d_aff,d_head
+    return out_files_seg, out_files_lbl, out_files_ids
 
+def compare_atlas_segs_priors(seg_file_orig,seg_file_new,atlas_file_orig=None,atlas_file_new=None,
+                              metric_contrast_name=None,background_idx=1,seg_null_value=0):
+    """
+    Compare a new segmentation and atlas priors to another. Comparison is made relative to the orig
+    :param seg_file_orig:
+    :param atlas_file_orig:
+    :param seg_file_new:
+    :param atlas_file_new:
+    :param metric_contrast_name:        Contrast type from atlas file
+    :return:
+    """
+    import numpy as np
+
+    d1, a1 = niiLoad(seg_file_orig,return_header=False)
+    d2, a2 = niiLoad(seg_file_new, return_header=False)
+    idxs1 = np.unique(d1)
+    idxs2 = np.unique(d2)
+    [lut1, con_idx1, lut_rows1, priors1] = extract_lut_priors_from_atlas(atlas_file_orig, metric_contrast_name)
+    #TODO: make sure that all indices are in both segs? or just base it all on the gold standard?
+
+    for struc_idx in lut1.Index:
+#    for struc_idx in idxs1:
+        if not(struc_idx == background_idx):
+            print("Structure index: {0}, {1}").format(struc_idx,lut1.index[lut1.Index==struc_idx][0])
+            bin_vol = np.zeros_like(d1)
+            bin_vol[d1 == struc_idx] = 1
+            dice = np.sum(bin_vol[d2 == struc_idx]) * 2.0 / (np.sum(bin_vol) + np.sum(d2 == struc_idx))
+            print("Dice similarity: {}").format(dice)
+            #identify misclassifications
+            bin_vol = np.ones_like(d1) * seg_null_value
+            bin_vol[d1==struc_idx] = 1
+
+            overlap = np.multiply(bin_vol,d2)
+            overlap_idxs = np.unique(overlap)
+            overlap_idxs = np.delete(overlap_idxs,np.where(overlap_idxs == struc_idx)) #remove the idx that we should be at the moment
+            overlap_idxs = np.delete(overlap_idxs,np.where(overlap_idxs == seg_null_value)) #remove the null value, now left with the overlap with things we don't want :-(
+            #print overlap_idxs
+
+
+
+    #TODO: overlap comparison here
+
+    #[lut2, con_idx2, lut_rows2, priors2] = extract_lut_priors_from_atlas(atlas_file_new, metric_contrast_name)
+    #TODO: based on overlap comparison, adjust intensity priors
+    return lut1
 
 def seg_erode(seg_d, iterations=1, background_idx=1,
                   structure=None, min_vox_count=5, seg_null_value=0,
@@ -678,6 +733,14 @@ def niiSave(nii_fname,d,affine,header=None,data_type=None):
     img.to_filename(nii_fname)
     return nii_fname
 
+def create_dir(some_directory):
+    """
+    Create directory recursively if it does not exist
+      - uses os.mkdirs
+    """
+    import os
+    if not os.path.exists(some_directory):
+        os.mkdirs(some_directory)
 
 def get_MGDM_seg_contrast_names(atlas_file):
     """
