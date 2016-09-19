@@ -312,7 +312,7 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     # mgdm.setOrientations(mgdm.AXIAL, mgdm.L2R, mgdm.P2A, mgdm.I2S)  #LR,PA,IS is always how they are returned from nibabel
     mgdm.setAdjustIntensityPriors(adjust_intensity_priors)  # default is True
     mgdm.setComputePosterior(compute_posterior)
-    mgdm.setDiffuseProbabilities(diffuse_probabilities )
+    mgdm.setDiffuseProbabilities(diffuse_probabilities)
     mgdm.setSteps(num_steps)
     mgdm.setTopology(topology)  # {'wcs','no'} no=off for testing, wcs=default
 
@@ -382,10 +382,9 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
         try:
             print("Executing MGDM on your inputs")
             print("Don't worry, the magic is happening!")
-            ## ---------------------------- MAGIC START ---------------------------- ##
+            ## ---------------------------- MGDM MAGIC START ---------------------------- ##
             mgdm.execute()
-            ## ---------------------------- MAGIC END   ---------------------------- ##
-            print(os.path.join(output_dir, out_root_fname + '_seg_cjs.nii.gz'))
+            ## ---------------------------- MGDM MAGIC END   ---------------------------- ##
 
             # outputs
             # reshape fortran stype to convert back to the format the nibabel likes
@@ -411,9 +410,10 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
             d_head['cal_max'] = np.max(ids_im)  # convert the header as well
             niiSave(ids_file, ids_im, d_aff, header=d_head, data_type='uint32')
             print("Data stored in: " + output_dir)
+            print("")
         except:
             print("--- MGDM failed. Go cry. ---")
-            #return
+            return
         print("Execution completed")
 
     return seg_im,d_aff,d_head
@@ -542,7 +542,7 @@ def extract_lut_priors_from_atlas(atlas_file,contrast_name):
     for i, line in enumerate(fp):
         if "Structures:" in line:  # this is the beginning of the LUT
             lut_idx = i
-            lut_rows = map(int, [line.split()[1]])[0]
+            lut_rows = map(int, [line.split()[1]])[0] + 1 #+1 to ensure that the last line is included
         if "Intensity Prior:" in line:
             if contrast_name in line:
                 con_idx = i
