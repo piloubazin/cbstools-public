@@ -740,7 +740,7 @@ def create_dir(some_directory):
     """
     import os
     if not os.path.exists(some_directory):
-        os.mkdirs(some_directory)
+        os.makedirs(some_directory)
 
 def get_MGDM_seg_contrast_names(atlas_file):
     """
