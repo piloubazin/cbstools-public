@@ -32,6 +32,7 @@ public class StatisticalUncertaintyReduction {
 	//private 	float			rix,riy,riz;   		// image resolutions
 	private		boolean[]		imused;				// check if image modality / contrast is used
 	private		float[]			imscale;			// image intensity scaling
+	private		float[][]			imvar;			// image intensity scaling
 	private		int				nc;					// number of channels
 
 	// labeling parameters
@@ -54,9 +55,16 @@ public class StatisticalUncertaintyReduction {
 									int nix_, int niy_, int niz_, 
 									//float rix_, float riy_, float riz_,
 									byte nbest_) {
+		this(img_, null, used_, sca_, nc_, nix_, niy_, niz_, nbest_);
+	}
+	public StatisticalUncertaintyReduction(float[][] img_, float[][] var_, boolean[] used_, float[] sca_, int nc_,
+									int nix_, int niy_, int niz_, 
+									//float rix_, float riy_, float riz_,
+									byte nbest_) {
 	
 		image = img_;
 		imscale = sca_;
+		imvar = var_;
 		imused = used_;
 		nc = nc_;
 		nix = nix_;
@@ -459,10 +467,17 @@ public class StatisticalUncertaintyReduction {
        
     private final float diffusionImageWeightFunction(int xyz, int ngb, float scale) {
     	float maxdiff = 0.0f;
-    	for (int c=0;c<nc;c++) if (imused[c]) {
-    		float diff = Numerics.abs(image[c][xyz]/imscale[c] - image[c][ngb]/imscale[c]);
-    		if (diff>maxdiff) maxdiff = diff;
-    	}
+    	if (imvar==null) {
+		for (int c=0;c<nc;c++) if (imused[c]) {
+			float diff = Numerics.abs((image[c][xyz] - image[c][ngb])/imscale[c]);
+			if (diff>maxdiff) maxdiff = diff;
+		}
+	} else {
+		for (int c=0;c<nc;c++) if (imused[c]) {
+			float diff = Numerics.abs((image[c][xyz] - image[c][ngb])/imvar[c][xyz]);
+			if (diff>maxdiff) maxdiff = diff;
+		}
+	}
     	return 1.0f/(1.0f+Numerics.square( maxdiff/scale));
     }
     

@@ -67,34 +67,62 @@ public class JistUtilitiesImageBoundary extends ProcessingAlgorithm{
 		int nx=vol.getRows();
 		int ny=vol.getCols();
 		int nz=vol.getSlices();
-		float[][][] image = vol.toArray3d();
+		int nt=vol.getComponents();
 		
-		// main algorithm
-		float[][][] result = new float[nx][ny][nz];
 		ImageDataFloat resultData;
 		
-		float Imin = ImageStatistics.minimum(image,nx,ny,nz);
-		float Imax = ImageStatistics.maximum(image,nx,ny,nz);
-		int d = distParam.getValue().intValue();
-				
-		byte op = ZERO;
-		if (operationParam.getValue().equals("min")) op = MIN;
-		else if (operationParam.getValue().equals("max")) op = MAX;
-		
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			if (x<d || x>=nx-d || y<d || y>=ny-d || z<d || z>=nz-d) {
-				if (op==ZERO) result[x][y][z] = 0.0f;
-				else if (op==MIN) result[x][y][z] = Imin;
-				else if (op==MAX) result[x][y][z] = Imax;
-			} else {
-				result[x][y][z] = image[x][y][z];
+		if (nt==1) {
+			float[][][] image = vol.toArray3d();
+			
+			// main algorithm
+			float[][][] result = new float[nx][ny][nz];
+			
+			float Imin = ImageStatistics.minimum(image,nx,ny,nz);
+			float Imax = ImageStatistics.maximum(image,nx,ny,nz);
+			int d = distParam.getValue().intValue();
+					
+			byte op = ZERO;
+			if (operationParam.getValue().equals("min")) op = MIN;
+			else if (operationParam.getValue().equals("max")) op = MAX;
+			
+			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+				if (x<d || x>=nx-d || y<d || y>=ny-d || z<d || z>=nz-d) {
+					if (op==ZERO) result[x][y][z] = 0.0f;
+					else if (op==MIN) result[x][y][z] = Imin;
+					else if (op==MAX) result[x][y][z] = Imax;
+				} else {
+					result[x][y][z] = image[x][y][z];
+				}
 			}
+			resultData = new ImageDataFloat(result);	
+		} else {
+			float[][][][] image = vol.toArray4d();
+			
+			// main algorithm
+			float[][][][] result = new float[nx][ny][nz][nt];
+			
+			float Imin = ImageStatistics.minimum(image,nx,ny,nz,nt);
+			float Imax = ImageStatistics.maximum(image,nx,ny,nz,nt);
+			int d = distParam.getValue().intValue();
+					
+			byte op = ZERO;
+			if (operationParam.getValue().equals("min")) op = MIN;
+			else if (operationParam.getValue().equals("max")) op = MAX;
+			
+			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int t=0;t<nt;t++) {
+				if (x<d || x>=nx-d || y<d || y>=ny-d || z<d || z>=nz-d) {
+					if (op==ZERO) result[x][y][z][t] = 0.0f;
+					else if (op==MIN) result[x][y][z][t] = Imin;
+					else if (op==MAX) result[x][y][z][t] = Imax;
+				} else {
+					result[x][y][z][t] = image[x][y][z][t];
+				}
+			}
+			resultData = new ImageDataFloat(result);	
 		}
-		resultData = new ImageDataFloat(result);		
 		resultData.setHeader(vol.getHeader());
 		resultData.setName(vol.getName()+"_imb");
 		resultVolParam.setValue(resultData);
 		resultData = null;
-		result = null;
 	}
 }

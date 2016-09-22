@@ -17,6 +17,10 @@ public class SegmentationSureSeg {
 	private float[] input2Image = null;
 	private float[] input3Image = null;
 	
+	private float[] var1Image = null;
+	private float[] var2Image = null;
+	private float[] var3Image = null;
+	
 	private float scale1Param =1.0f;
 	private float scale2Param =1.0f;
 	private float scale3Param =1.0f;	
@@ -49,6 +53,10 @@ public class SegmentationSureSeg {
 	public final void setContrastImage2(float[] val) { input2Image = val; }
 	public final void setContrastImage3(float[] val) { input3Image = val; }
 	
+	public final void setNoiseImage1(float[] val) { var1Image = val; }
+	public final void setNoiseImage2(float[] val) { var2Image = val; }
+	public final void setNoiseImage3(float[] val) { var3Image = val; }
+	
 	public final void setContrastScale1(float val) { scale1Param = val; }
 	public final void setContrastScale2(float val) { scale2Param = val; }
 	public final void setContrastScale3(float val) { scale3Param = val; }
@@ -76,7 +84,7 @@ public class SegmentationSureSeg {
 	// to be used for JIST definitions, generic info / help
 	public static final String getPackage() { return "CBS Tools"; }
 	public static final String getCategory() { return "Segmentation.devel"; }
-	public static final String getLabel() { return "Statistical Uncertainty Reduction (SUR)"; }
+	public static final String getLabel() { return "Spatial Uncertainty Relaxation (SUR)"; }
 	public static final String getName() { return "SUR"; }
 
 	public static final String[] getAlgorithmAuthors() { return new String[]{"Pierre-Louis Bazin"}; }
@@ -100,31 +108,39 @@ public class SegmentationSureSeg {
 		
 		float[][] image = new float[nimg][nxyz];
 		float[] scaling = new float[nimg];
+		float[][] noise = null;
+		if (var1Image!=null) noise = new float[nimg][nxyz];
 		int n = 0;
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;
 			image[n][xyz] = input1Image[xyz];
+			if (var1Image!=null) noise[n][xyz] = var1Image[xyz];
 		}
 		scaling[n] = scale1Param;
 		input1Image = null;
+		var1Image = null;
 		if (input2Image != null) {
 			n++;
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 				int xyz = x+nx*y+nx*ny*z;
 				image[n][xyz] = input2Image[xyz];
+				if (var2Image!=null) noise[n][xyz] = var2Image[xyz];
 			}
 			scaling[n] = scale2Param;
 		}	
 		input2Image = null;		
+		var2Image = null;		
 		if (input3Image != null) {
 			n++;
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 				int xyz = x+nx*y+nx*ny*z;
 				image[n][xyz] = input3Image[xyz];
+				if (var3Image!=null) noise[n][xyz] = var3Image[xyz];
 			}
 			scaling[n] = scale3Param;
 		}			
 		input3Image = null;		
+		var3Image = null;		
 		
 		// two input options: a max proba + labels or a set of probabilities (incl. background or not)
 		byte nlabels = -1;
@@ -231,7 +247,7 @@ public class SegmentationSureSeg {
 		boolean[] used = new boolean[nimg];
 		for (int i=0;i<nimg;i++) used[i] = true;
 		
-		StatisticalUncertaintyReduction sur = new StatisticalUncertaintyReduction(image, used, scaling, nimg, nx, ny, nz,  nbestParam);
+		StatisticalUncertaintyReduction sur = new StatisticalUncertaintyReduction(image, noise, used, scaling, nimg, nx, ny, nz,  nbestParam);
 		sur.setBestProbabilities(maxproba, maxlabel, objlb);
 		
 		sur.diffuseCertainty(iterationParam, imgscaleParam, certainscaleParam, neighborParam, mincertaintyParam, computeDistributionParam);

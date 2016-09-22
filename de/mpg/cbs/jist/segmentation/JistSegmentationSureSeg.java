@@ -40,6 +40,10 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 	private ParamVolume input2Image;
 	private ParamVolume input3Image;
 	
+	private ParamVolume var1Image;
+	private ParamVolume var2Image;
+	private ParamVolume var3Image;
+	
 	private ParamFloat scale1Param;
 	private ParamFloat scale2Param;
 	private ParamFloat scale3Param;
@@ -70,13 +74,19 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		imageParams=new ParamCollection("Data");
 		
 		imageParams.add(input1Image = new ParamVolume("Contrast Image 1"));
+		imageParams.add(var1Image = new ParamVolume("Noise Image 1 (opt)"));
+		var1Image.setMandatory(false);
 		imageParams.add(scale1Param = new ParamFloat("Contrast Scale 1",0.0f,1e15f,1.0f));
 		
 		imageParams.add(input2Image = new ParamVolume("Contrast Image 2 (opt)"));
+		imageParams.add(var2Image = new ParamVolume("Noise Image 2 (opt)"));
+		var2Image.setMandatory(false);
 		imageParams.add(scale2Param = new ParamFloat("Contrast Scale 2",0.0f,1e15f,1.0f));
 		input2Image.setMandatory(false);
 		
 		imageParams.add(input3Image = new ParamVolume("Contrast Image 3 (opt)"));
+		imageParams.add(var3Image = new ParamVolume("Noise Image 3 (opt)"));
+		var3Image.setMandatory(false);
 		imageParams.add(scale3Param = new ParamFloat("Contrast Scale 3",0.0f,1e15f,1.0f));
 		input3Image.setMandatory(false);
 		

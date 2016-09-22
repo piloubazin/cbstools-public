@@ -349,7 +349,7 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 			float[][][][] deformed = new float[nrx][nry][nrz][nst];
 			if (interpOption.getValue().equals("NN")) {
 				for (int x=0;x<nrx;x++) for (int y=0;y<nry;y++) for (int z=0;z<nrz;z++) {
-					if (deformation1[x][y][z][X]>=1 && deformation1[x][y][z][Y]>=1 && deformation1[x][y][z][Z]>=1) {
+					//if (deformation1[x][y][z][X]>=1 && deformation1[x][y][z][Y]>=1 && deformation1[x][y][z][Z]>=1) {
 						for (int t=0;t<nst;t++) {
 							if (padOption.getValue().equals("closest"))
 								deformed[x][y][z][t] = ImageInterpolation.nearestNeighborClosestInterpolation(source, deformation1[x][y][z][X], deformation1[x][y][z][Y], deformation1[x][y][z][Z], t, nsx, nsy, nsz, nst);
@@ -360,11 +360,11 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 							else if (padOption.getValue().equals("max"))
 								deformed[x][y][z][t] = ImageInterpolation.nearestNeighborInterpolation(source, max, deformation1[x][y][z][X], deformation1[x][y][z][Y], deformation1[x][y][z][Z], t, nsx, nsy, nsz, nst); 
 						}
-					}
+					//}
 				}
 			} else if (interpOption.getValue().equals("linear")) {
 				for (int x=0;x<nrx;x++) for (int y=0;y<nry;y++) for (int z=0;z<nrz;z++) {
-					if (deformation1[x][y][z][X]>=1 && deformation1[x][y][z][Y]>=1 && deformation1[x][y][z][Z]>=1) {
+					//if (deformation1[x][y][z][X]>=1 && deformation1[x][y][z][Y]>=1 && deformation1[x][y][z][Z]>=1) {
 						for (int t=0;t<nst;t++) {
 							if (padOption.getValue().equals("closest"))
 								deformed[x][y][z][t] = ImageInterpolation.linearClosestInterpolation(source, deformation1[x][y][z][X], deformation1[x][y][z][Y], deformation1[x][y][z][Z], t, nsx, nsy, nsz, nst);
@@ -375,7 +375,7 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 							else if (padOption.getValue().equals("max"))
 								deformed[x][y][z][t] = ImageInterpolation.linearInterpolation(source, max, deformation1[x][y][z][X], deformation1[x][y][z][Y], deformation1[x][y][z][Z], t, nsx, nsy, nsz, nst);
 						}
-					}
+					//}					
 				}
 			} else if (interpOption.getValue().equals("WSinc")) {
 				double[] imgBuf = new double[nsx*nsy*nsz];
@@ -387,7 +387,7 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 					}
 					WSinc.setup3DWSinc(imgBuf, inVolExtents, true);
 					for (int x=0;x<nrx;x++) for (int y=0;y<nry;y++) for (int z=0;z<nrz;z++) {
-						if (deformation1[x][y][z][X]>=1 && deformation1[x][y][z][Y]>=1 && deformation1[x][y][z][Z]>=1) {
+						//if (deformation1[x][y][z][X]>=1 && deformation1[x][y][z][Y]>=1 && deformation1[x][y][z][Z]>=1) {
 							if (deformation1[x][y][z][X]>=0 && deformation1[x][y][z][X]<nsx
 								&& deformation1[x][y][z][Y]>=0 && deformation1[x][y][z][Y]<nsy
 								&& deformation1[x][y][z][Z]>=0 && deformation1[x][y][z][Z]<nsz) {
@@ -397,7 +397,7 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 								else if (padOption.getValue().equals("min")) deformed[x][y][z][t] = min;
 								else if (padOption.getValue().equals("max")) deformed[x][y][z][t] = max;
 							}
-						}
+						//}
 					}
 				}
 			}

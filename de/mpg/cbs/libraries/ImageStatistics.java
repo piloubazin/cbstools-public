@@ -76,6 +76,17 @@ public class ImageStatistics {
 		return min;
 	}
 	
+    /**
+	 *	minimum value of the image
+	 */
+    public static float minimum(float[][][][] img, int nx, int ny, int nz, int nt) {
+		float min = img[0][0][0][0];
+        for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int t=0;t<nt;t++) {
+			if (img[x][y][z][t]<min) min = img[x][y][z][t];
+		}
+		return min;
+	}
+	
 	/**
 	 *	maximum value of the image
 	 */
@@ -83,6 +94,17 @@ public class ImageStatistics {
 		float max = img[0][0][0];
         for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			if (img[x][y][z]>max) max = img[x][y][z];
+		}
+		return max;
+	}
+	
+	/**
+	 *	minimum value of the image
+	 */
+    public static float maximum(float[][][][] img, int nx, int ny, int nz, int nt) {
+		float max = img[0][0][0][0];
+        for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int t=0;t<nt;t++) {
+			if (img[x][y][z][t]>max) max = img[x][y][z][t];
 		}
 		return max;
 	}
