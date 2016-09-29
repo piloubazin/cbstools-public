@@ -470,12 +470,24 @@ public class StatisticalUncertaintyReduction {
     	if (imvar==null) {
 		for (int c=0;c<nc;c++) if (imused[c]) {
 			float diff = Numerics.abs((image[c][xyz] - image[c][ngb])/imscale[c]);
-			if (diff>maxdiff) maxdiff = diff;
+			// argmax
+			//if (diff>maxdiff) maxdiff = diff;
+			// arg max dist from 1
+			if (c==0) maxdiff = diff;
+			else if (maxdiff>1 && diff>maxdiff) maxdiff = diff;
+			else if (maxdiff<1 && diff<maxdiff) maxdiff = diff;
+			else if (maxdiff>1 && diff<1.0f/maxdiff) maxdiff = diff;
+			else if (maxdiff<1 && diff>1.0f/maxdiff) maxdiff = diff;
 		}
 	} else {
 		for (int c=0;c<nc;c++) if (imused[c]) {
 			float diff = Numerics.abs((image[c][xyz] - image[c][ngb])/imvar[c][xyz]);
-			if (diff>maxdiff) maxdiff = diff;
+			//if (diff>maxdiff) maxdiff = diff;
+			if (c==0) maxdiff = diff;
+			else if (maxdiff>1 && diff>maxdiff) maxdiff = diff;
+			else if (maxdiff<1 && diff<maxdiff) maxdiff = diff;
+			else if (maxdiff>1 && diff<1.0f/maxdiff) maxdiff = diff;
+			else if (maxdiff<1 && diff>1.0f/maxdiff) maxdiff = diff;
 		}
 	}
     	return 1.0f/(1.0f+Numerics.square( maxdiff/scale));

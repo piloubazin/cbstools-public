@@ -44,6 +44,7 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 	private ParamBoolean skip0Param;
 	private ParamFloat  ratioParam;
 	
+	private ParamVolume rawnoiseImage;
 	private ParamVolume spatialnoiseImage;
 	private ParamVolume histnoiseImage;
 	private ParamFloat  medianParam;
@@ -106,6 +107,7 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
+		outputParams.add(rawnoiseImage = new ParamVolume("Raw Noise Image",VoxelType.FLOAT));
 		outputParams.add(spatialnoiseImage = new ParamVolume("Spatial Noise Image",VoxelType.FLOAT));
 		outputParams.add(histnoiseImage = new ParamVolume("Intensity Noise Image",VoxelType.FLOAT));
 		//outputParams.add(outImage = new ParamVolume("Outlier Image",VoxelType.FLOAT));
@@ -290,7 +292,14 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 		}
 		
 		// output
-		ImageDataFloat bufferData = new ImageDataFloat(second);
+		ImageDataFloat bufferData = new ImageDataFloat(first);
+		bufferData.setHeader(inputImage.getImageData().getHeader());
+		bufferData.setName(inputImage.getImageData().getName()+"_medn");
+		rawnoiseImage.setValue(bufferData);
+		bufferData = null;
+		first = null;			
+		
+		bufferData = new ImageDataFloat(second);
 		bufferData.setHeader(inputImage.getImageData().getHeader());
 		bufferData.setName(inputImage.getImageData().getName()+"_medspn");
 		spatialnoiseImage.setValue(bufferData);
