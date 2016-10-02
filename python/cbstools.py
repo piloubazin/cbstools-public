@@ -478,7 +478,7 @@ def seg_erode(seg_d, iterations=1, background_idx=1,
                   structure=None, min_vox_count=5, seg_null_value=0,
                   VERBOSE=False):
     """
-    Binary erosion or dilation of integer type segmentation data (np.array) with options
+    Binary erosion (or dilation) of integer type segmentation data (np.array) with options
     If iterations < 0, performs binary dilation
 
     :param seg_d:           np.array of segmentation, integers
@@ -488,7 +488,7 @@ def seg_erode(seg_d, iterations=1, background_idx=1,
     :param min_vox_count:   minimun number of voxels to allow to be in a segmentation, if less, does not erode
     :param seg_null_value:  value to set as null for binary erosion step (i.e., a value NOT in your segmentation index)
     :param VERBOSE:         spit out loads of text to stdout, because you can.
-    :return: seg_shrunk_d   eroded version of segmentation
+    :return: seg_shrunk_d   eroded (or dilated) version of segmentation
     """
 
     import scipy.ndimage as ndi
