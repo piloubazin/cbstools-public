@@ -478,7 +478,8 @@ def seg_erode(seg_d, iterations=1, background_idx=1,
                   structure=None, min_vox_count=5, seg_null_value=0,
                   VERBOSE=False):
     """
-    Binary erosion of integer type segmentation data (np.array) with options
+    Binary erosion or dilation of integer type segmentation data (np.array) with options
+    If iterations < 0, performs binary dilation
 
     :param seg_d:           np.array of segmentation, integers
     :param iterations:      number of erosion iterations, if negative, provides the number of dilations (in this case, min_vox_count not used)
