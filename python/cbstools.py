@@ -481,7 +481,7 @@ def seg_erode(seg_d, iterations=1, background_idx=1,
     Binary erosion of integer type segmentation data (np.array) with options
 
     :param seg_d:           np.array of segmentation, integers
-    :param iterations:      number of erosion iterations
+    :param iterations:      number of erosion iterations, if negative, provides the number of dilations (in this case, min_vox_count not used)
     :param background_idx:  value for background index, currently ignored (TODO: remove)
     :param structure:       binary structure for erosion from scipy.ndimage (ndimage.morphology.generate_binary_structure(3,1))
     :param min_vox_count:   minimun number of voxels to allow to be in a segmentation, if less, does not erode
@@ -492,6 +492,12 @@ def seg_erode(seg_d, iterations=1, background_idx=1,
 
     import scipy.ndimage as ndi
     import numpy as np
+
+    if iterations >= 0:
+        pos_iter = True
+    else:
+        iterations = iterations*-1
+        pos_iter = False
 
     if structure is None:
         structure = ndi.morphology.generate_binary_structure(3, 1)
@@ -519,8 +525,11 @@ def seg_erode(seg_d, iterations=1, background_idx=1,
                 print("[bckg]"),
         else:
             temp_d[seg_d == seg_idx] = 1
-            for idx in range(0, iterations):  # messy, does not exit the loop when already gone too far.
-                temp_temp_d = ndi.binary_erosion(temp_d, iterations=1, structure=structure)
+            for idx in range(0, iterations):  # messy, does not exit the loop when already gone too far. but it still works
+                if pos_iter:
+                    temp_temp_d = ndi.binary_erosion(temp_d, iterations=1, structure=structure)
+                else:
+                    temp_temp_d = ndi.binary_dilation(temp_d, iterations=1, structure=structure)
                 if np.sum(temp_temp_d) >= min_vox_count:
                     temp_d = temp_temp_d
                     if VERBOSE:
