@@ -7,12 +7,13 @@ steele{AT}cbs{dot}mpg{dot}de
 """
 
 import numpy as np
-#import nibabel as nb
-#import os
+from os.path import sep as pathsep
 import sys
 
+#TODO: hardcoded for now, make relative before release
 sys.path.append('/home/chris/Documents/code/python/cbstools-python/cbstoolsjcc-3.1.0.1-py2.7-linux-x86_64.egg')
 import cbstoolsjcc as cj
+
 
 from defaults import * #ATLAS_DIR and TOPOLOGY_LUT_DIR
 
@@ -116,7 +117,7 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
     mgdm.setAtlasFile(atlas)
     mgdm.setTopologyLUTdirectory(topology_lut_dir)
 
-    mgdm.setOutputImages('segmentation');
+    mgdm.setOutputImages('segmentation')
     # --> mgdm.setOrientations(mgdm.AXIAL, mgdm.R2L, mgdm.A2P, mgdm.I2S) # this is the default for MGDM, <--
     # mgdm.setOrientations(mgdm.AXIAL, mgdm.L2R, mgdm.P2A, mgdm.I2S)  #LR,PA,IS is always how they are returned from nibabel
     mgdm.setAdjustIntensityPriors(False)  # default is True
@@ -242,30 +243,31 @@ def MGDMBrainSegmentation(input_filename_type_list, output_dir = None, num_steps
 
 def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=None,
                              con3_files=None, con3_type=None, con4_files=None, con4_type=None,
-                             output_dir = None, num_steps = 5, atlas_file=None, topology_lut_dir = None,
-                             adjust_intensity_priors = False, compute_posterior = False, diffuse_probabilities = False,
-                             file_suffix = None):
+                             output_dir = None, num_steps = 5, topology = 'wcs', atlas_file=None,
+                             topology_lut_dir = None, adjust_intensity_priors = False, compute_posterior = False,
+                             diffuse_probabilities = False, file_suffix = None):
     """
     Perform MGDM segmentation
     simplified inputs
     adjust_intensity_priors is supposed to be True??? totally screws up :-/
 
-    :param con1_files:
-    :param con1_type:
-    :param con2_files:
-    :param con2_type:
-    :param con3_files:
-    :param con3_type:
-    :param con4_files:
-    :param con4_type:
-    :param output_dir:
-    :param num_steps:
-    :param atlas_file:
-    :param topology_lut_dir:
-    :param adjust_intensity_priors:
-    :param compute_posterior:
-    :param diffuse_probabilities:
-    :param file_suffix:
+    :param con1_files:              List of files for contrast 1, required
+    :param con1_type:               Contrast 1 type (from get_MGDM_seg_contrast_names(atlas_file))
+    :param con2_files:              List of files for contrast 2, optional, must be matched to con1_files
+    :param con2_type:               Contrast 2 type
+    :param con3_files:              List of files for contrast 3, optional, must be matched to con1_files
+    :param con3_type:               Contrast 3 type
+    :param con4_files:              List of files for contrast 4, optional, must be matched to con1_files
+    :param con4_type:               Contrast 4 type
+    :param output_dir:              Directory to place output, defaults to input directory if = None
+    :param num_steps:               Number of steps for MGDM, default = 5, set to 0 for quicker testing (but worse quality segmentation)
+    :param topology:                Topology setting {'wcs', 'no'} ('no' for no topology)
+    :param atlas_file:              Atlas file full path and filename
+    :param topology_lut_dir:        Directory for topology files
+    :param adjust_intensity_priors: Adjust intensity priors based on dataset: True/False
+    :param compute_posterior:       Copmute posterior: True/False
+    :param diffuse_probabilities:   Compute diffuse probabilities: True/False
+    :param file_suffix:             Distinguishing text to add to the end of the filename
     :return:
     """
 
@@ -274,6 +276,11 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     print("Thank you for choosing the MGDM segmentation from the cbstools for your brain segmentation needs")
     print("Sit back and relax, let the magic of algorithms happen...")
     print("")
+
+    out_files_seg = []
+    out_files_lbl = []
+    out_files_ids = []
+
     if output_dir is None:
         output_dir = os.path.dirname(con1_files[0])
     if atlas_file is None:
@@ -281,11 +288,13 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     else:
         atlas = atlas_file
 
+    create_dir(output_dir)
+
     if topology_lut_dir is None:
         topology_lut_dir = TOPOLOGY_LUT_DIR  # grabbing this from the default settings in defaults.py
     else:
-        if not(topology_lut_dir[-1] == os.sep): #if we don't end in a path sep, we need to make sure that we add it
-            topology_lut_dir += os.sep
+        if not(topology_lut_dir[-1] == pathsep): #if we don't end in a path sep, we need to make sure that we add it
+            topology_lut_dir += pathsep
 
     print("Atlas file: " + atlas)
     print("Topology LUT durectory: " + topology_lut_dir)
@@ -305,17 +314,18 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
     mgdm.setAtlasFile(atlas)
     mgdm.setTopologyLUTdirectory(topology_lut_dir)
 
-    mgdm.setOutputImages('segmentation');
+    mgdm.setOutputImages('segmentation')
     # --> mgdm.setOrientations(mgdm.AXIAL, mgdm.R2L, mgdm.A2P, mgdm.I2S) # this is the default for MGDM, <--
     # mgdm.setOrientations(mgdm.AXIAL, mgdm.L2R, mgdm.P2A, mgdm.I2S)  #LR,PA,IS is always how they are returned from nibabel
     mgdm.setAdjustIntensityPriors(adjust_intensity_priors)  # default is True
     mgdm.setComputePosterior(compute_posterior)
-    mgdm.setDiffuseProbabilities(diffuse_probabilities )
+    mgdm.setDiffuseProbabilities(diffuse_probabilities)
     mgdm.setSteps(num_steps)
-    mgdm.setTopology('wcs')  # {'wcs','no'} no=off for testing, wcs=default
+    mgdm.setTopology(topology)  # {'wcs','no'} no=off for testing, wcs=default
+
     for idx,con1 in enumerate(con1_files):
         print("Input files and filetypes:")
-        print("\t" + con1.split("/")[-1])
+        print(con1_type + ":\t" + con1.split(pathsep)[-1])
 
         fname = con1
         type = con1_type
@@ -355,85 +365,140 @@ def MGDMBrainSegmentation_v2(con1_files, con1_type, con2_files=None, con2_type=N
         mgdm.setDimensions(d.shape[0], d.shape[1], d.shape[2])
         mgdm.setResolutions(res[0], res[1], res[2])
 
-        if idx == 0:
-            # keep the shape and affine from the first image for saving
-            d_shape = np.array(d.shape)
-            out_root_fname = os.path.basename(fname)[0:os.path.basename(fname).find('.')]  # assumes no periods in filename, :-/
-            mgdm.setContrastImage1(cj.JArray('float')((d.flatten('F')).astype(float)))
-            mgdm.setContrastType1(type)
+        # keep the shape and affine from the first image for saving
+        d_shape = np.array(d.shape)
+        out_root_fname = os.path.basename(fname)[0:os.path.basename(fname).find('.')]  # assumes no periods in filename, :-/
+        mgdm.setContrastImage1(cj.JArray('float')((d.flatten('F')).astype(float)))
+        mgdm.setContrastType1(type)
+
         if con2_files is not None: #only bother with the other contrasts if something is in the one before it
-            print("\t" + con2_files[idx].split("/")[-1])
+            print(con2_type + ":\t" + con2_files[idx].split(pathsep)[-1])
             d, a = niiLoad(con2_files[idx], return_header=False)
             mgdm.setContrastImage2(cj.JArray('float')((d.flatten('F')).astype(float)))
             mgdm.setContrastType2(con2_type)
             if con3_files is not None:
-                print("\t" + con3_files[idx].split("/")[-1])
+                print(con3_type + ":\t" + con3_files[idx].split(pathsep)[-1])
                 d, a = niiLoad(con3_files[idx], return_header=False)
                 mgdm.setContrastImage3(cj.JArray('float')((d.flatten('F')).astype(float)))
                 mgdm.setContrastType3(con3_type)
                 if con4_files is not None:
-                    print("\t" + con4_files[idx].split("/")[-1])
+                    print(con4_type + ":\t" + con4_files[idx].split(pathsep)[-1])
                     d, a = niiLoad(con4_files[idx], return_header=False)
                     mgdm.setContrastImage4(cj.JArray('float')((d.flatten('F')).astype(float)))
                     mgdm.setContrastType4(con4_type)
-    try:
-        print("Executing MGDM on your inputs")
-        print("Don't worry, the magic is happening!")
-        ## ---------------------------- MAGIC START ---------------------------- ##
-        mgdm.execute()
-        ## ---------------------------- MAGIC END   ---------------------------- ##
-        print(os.path.join(output_dir, out_root_fname + '_seg_cjs.nii.gz'))
+        try:
+            print("Executing MGDM on your inputs")
+            print("Don't worry, the magic is happening!")
+            ## ---------------------------- MGDM MAGIC START ---------------------------- ##
+            mgdm.execute()
+            ## ---------------------------- MGDM MAGIC END   ---------------------------- ##
 
-        # outputs
-        # reshape fortran stype to convert back to the format the nibabel likes
-        seg_im = np.reshape(np.array(mgdm.getSegmentedBrainImage(), dtype=np.uint32), d_shape,'F')
-        lbl_im = np.reshape(np.array(mgdm.getPosteriorMaximumLabels4D(), dtype=np.uint32), d_shape, 'F')
-        ids_im = np.reshape(np.array(mgdm.getSegmentedIdsImage(), dtype=np.uint32), d_shape, 'F')
+            # outputs
+            # reshape fortran stype to convert back to the format the nibabel likes
+            seg_im = np.reshape(np.array(mgdm.getSegmentedBrainImage(), dtype=np.uint32), d_shape,'F')
+            lbl_im = np.reshape(np.array(mgdm.getPosteriorMaximumLabels4D(), dtype=np.uint32), d_shape, 'F')
+            ids_im = np.reshape(np.array(mgdm.getSegmentedIdsImage(), dtype=np.uint32), d_shape, 'F')
 
-        # filenames for saving
-        if file_suffix is not None:
-            seg_file = os.path.join(output_dir, out_root_fname + '_seg' + file_suffix + '.nii.gz')
-            lbl_file = os.path.join(output_dir, out_root_fname + '_lbl' + file_suffix + '.nii.gz')
-            ids_file = os.path.join(output_dir, out_root_fname + '_ids' + file_suffix + '.nii.gz')
-        else:
-            seg_file = os.path.join(output_dir, out_root_fname + '_seg.nii.gz')
-            lbl_file = os.path.join(output_dir, out_root_fname + '_lbl.nii.gz')
-            ids_file = os.path.join(output_dir, out_root_fname + '_ids.nii.gz')
+            # filenames for saving
+            if file_suffix is not None:
+                seg_file = os.path.join(output_dir, out_root_fname + '_seg' + file_suffix + '.nii.gz')
+                lbl_file = os.path.join(output_dir, out_root_fname + '_lbl' + file_suffix + '.nii.gz')
+                ids_file = os.path.join(output_dir, out_root_fname + '_ids' + file_suffix + '.nii.gz')
+            else:
+                seg_file = os.path.join(output_dir, out_root_fname + '_seg.nii.gz')
+                lbl_file = os.path.join(output_dir, out_root_fname + '_lbl.nii.gz')
+                ids_file = os.path.join(output_dir, out_root_fname + '_ids.nii.gz')
 
-        d_head['data_type'] = np.array(32).astype('uint32') #convert the header as well
-        d_head['cal_max'] = np.max(seg_im)  #max for display
-        niiSave(seg_file, seg_im, d_aff, header=d_head, data_type='uint32')
-        d_head['cal_max'] = np.max(lbl_im)
-        niiSave(lbl_file, lbl_im, d_aff, header=d_head, data_type='uint32')
-        d_head['cal_max'] = np.max(ids_im)  # convert the header as well
-        niiSave(ids_file, ids_im, d_aff, header=d_head, data_type='uint32')
-        print("Data stored in: " + output_dir)
-    except:
-        print("--- MGDM failed. Go cry. ---")
-        return
-    print("Execution completed")
+            d_head['data_type'] = np.array(32).astype('uint32') #convert the header as well
+            d_head['cal_max'] = np.max(seg_im)  #max for display
+            niiSave(seg_file, seg_im, d_aff, header=d_head, data_type='uint32')
+            d_head['cal_max'] = np.max(lbl_im)
+            niiSave(lbl_file, lbl_im, d_aff, header=d_head, data_type='uint32')
+            d_head['cal_max'] = np.max(ids_im)  # convert the header as well
+            niiSave(ids_file, ids_im, d_aff, header=d_head, data_type='uint32')
+            print("Data stored in: " + output_dir)
+            print("")
+            out_files_seg.append(seg_file)
+            out_files_lbl.append(lbl_file)
+            out_files_ids.append(ids_file)
+        except:
+            print("--- MGDM failed. Go cry. ---")
+            return
+        print("Execution completed")
 
-    return seg_im,d_aff,d_head
+    return out_files_seg, out_files_lbl, out_files_ids
 
+def compare_atlas_segs_priors(seg_file_orig,seg_file_new,atlas_file_orig=None,atlas_file_new=None,
+                              metric_contrast_name=None,background_idx=1,seg_null_value=0):
+    """
+    Compare a new segmentation and atlas priors to another. Comparison is made relative to the orig
+    :param seg_file_orig:
+    :param atlas_file_orig:
+    :param seg_file_new:
+    :param atlas_file_new:
+    :param metric_contrast_name:        Contrast type from atlas file
+    :return:
+    """
+    import numpy as np
+
+    d1, a1 = niiLoad(seg_file_orig,return_header=False)
+    d2, a2 = niiLoad(seg_file_new, return_header=False)
+    idxs1 = np.unique(d1)
+    idxs2 = np.unique(d2)
+    [lut1, con_idx1, lut_rows1, priors1] = extract_lut_priors_from_atlas(atlas_file_orig, metric_contrast_name)
+    #TODO: make sure that all indices are in both segs? or just base it all on the gold standard?
+
+    for struc_idx in lut1.Index:
+#    for struc_idx in idxs1:
+        if not(struc_idx == background_idx):
+            print("Structure index: {0}, {1}").format(struc_idx,lut1.index[lut1.Index==struc_idx][0])
+            bin_vol = np.zeros_like(d1)
+            bin_vol[d1 == struc_idx] = 1
+            dice = np.sum(bin_vol[d2 == struc_idx]) * 2.0 / (np.sum(bin_vol) + np.sum(d2 == struc_idx))
+            print("Dice similarity: {}").format(dice)
+            #identify misclassifications
+            bin_vol = np.ones_like(d1) * seg_null_value
+            bin_vol[d1==struc_idx] = 1
+
+            overlap = np.multiply(bin_vol,d2)
+            overlap_idxs = np.unique(overlap)
+            overlap_idxs = np.delete(overlap_idxs,np.where(overlap_idxs == struc_idx)) #remove the idx that we should be at the moment
+            overlap_idxs = np.delete(overlap_idxs,np.where(overlap_idxs == seg_null_value)) #remove the null value, now left with the overlap with things we don't want :-(
+            #print overlap_idxs
+
+
+
+    #TODO: overlap comparison here
+
+    #[lut2, con_idx2, lut_rows2, priors2] = extract_lut_priors_from_atlas(atlas_file_new, metric_contrast_name)
+    #TODO: based on overlap comparison, adjust intensity priors
+    return lut1
 
 def seg_erode(seg_d, iterations=1, background_idx=1,
                   structure=None, min_vox_count=5, seg_null_value=0,
                   VERBOSE=False):
     """
-    Binary erosion of integer type segmentation data (np.array) with options
+    Binary erosion (or dilation) of integer type segmentation data (np.array) with options
+    If iterations < 0, performs binary dilation
 
     :param seg_d:           np.array of segmentation, integers
-    :param iterations:      number of erosion iterations
+    :param iterations:      number of erosion iterations, if negative, provides the number of dilations (in this case, min_vox_count not used)
     :param background_idx:  value for background index, currently ignored (TODO: remove)
     :param structure:       binary structure for erosion from scipy.ndimage (ndimage.morphology.generate_binary_structure(3,1))
     :param min_vox_count:   minimun number of voxels to allow to be in a segmentation, if less, does not erode
     :param seg_null_value:  value to set as null for binary erosion step (i.e., a value NOT in your segmentation index)
     :param VERBOSE:         spit out loads of text to stdout, because you can.
-    :return: seg_shrunk_d   eroded version of segmentation
+    :return: seg_shrunk_d   eroded (or dilated) version of segmentation
     """
 
     import scipy.ndimage as ndi
     import numpy as np
+
+    if iterations >= 0:
+        pos_iter = True
+    else:
+        iterations = iterations*-1
+        pos_iter = False
 
     if structure is None:
         structure = ndi.morphology.generate_binary_structure(3, 1)
@@ -461,8 +526,11 @@ def seg_erode(seg_d, iterations=1, background_idx=1,
                 print("[bckg]"),
         else:
             temp_d[seg_d == seg_idx] = 1
-            for idx in range(0, iterations):  # messy, does not exit the loop when already gone too far.
-                temp_temp_d = ndi.binary_erosion(temp_d, iterations=1, structure=structure)
+            for idx in range(0, iterations):  # messy, does not exit the loop when already gone too far. but it still works
+                if pos_iter:
+                    temp_temp_d = ndi.binary_erosion(temp_d, iterations=1, structure=structure)
+                else:
+                    temp_temp_d = ndi.binary_dilation(temp_d, iterations=1, structure=structure)
                 if np.sum(temp_temp_d) >= min_vox_count:
                     temp_d = temp_temp_d
                     if VERBOSE:
@@ -539,7 +607,7 @@ def extract_lut_priors_from_atlas(atlas_file,contrast_name):
     for i, line in enumerate(fp):
         if "Structures:" in line:  # this is the beginning of the LUT
             lut_idx = i
-            lut_rows = map(int, [line.split()[1]])[0]
+            lut_rows = map(int, [line.split()[1]])[0] + 1 #+1 to ensure that the last line is included
         if "Intensity Prior:" in line:
             if contrast_name in line:
                 con_idx = i
@@ -675,6 +743,14 @@ def niiSave(nii_fname,d,affine,header=None,data_type=None):
     img.to_filename(nii_fname)
     return nii_fname
 
+def create_dir(some_directory):
+    """
+    Create directory recursively if it does not exist
+      - uses os.mkdirs
+    """
+    import os
+    if not os.path.exists(some_directory):
+        os.makedirs(some_directory)
 
 def get_MGDM_seg_contrast_names(atlas_file):
     """
@@ -751,8 +827,8 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
         d_metric = img.get_data()
         a_metric = img.affine #not currently using the affine and header, but could also output the successive steps
         h_metric = img.header
-        print(seg_file.split("/")[-1])
-        print(metric_file.split("/")[-1])
+        print(seg_file.split(pathsep)[-1])
+        print(metric_file.split(pathsep)[-1])
         d_seg = nb.load(seg_file).get_data()
 
         #erode our data
@@ -778,7 +854,7 @@ def generate_group_intensity_priors(orig_seg_files,metric_files,metric_contrast_
 
         if intermediate_output_dir is not None:
             img=nb.Nifti1Image(d_seg_ero,a_metric,header=h_metric)
-            img.to_filename(os.path.join(intermediate_output_dir,seg_file.split("/")[-1].split(".")[0]+"_ero"+str(erosion_iterations)+".nii.gz"))
+            img.to_filename(os.path.join(intermediate_output_dir,seg_file.split(pathsep)[-1].split(".")[0]+"_ero"+str(erosion_iterations)+".nii.gz"))
         print("")
     return all_Ss_priors_median, all_Ss_priors_spread
 
@@ -791,6 +867,7 @@ def iteratively_generate_group_intensity_priors(input_filename_type_list, metric
     #TODO: alter this so that you explicitly input up to 4 different contrasts. just makes life easier than lists of lists...?
 
     import numpy as np
+    import os
     current_atlas_file = atlas_file
     if new_atlas_file_head is None:
         new_atlas_file_head = atlas_file.split('.txt')[0] + "_mod" #we cut off the .txt, and add our mod txt, we don't check if it already exists
