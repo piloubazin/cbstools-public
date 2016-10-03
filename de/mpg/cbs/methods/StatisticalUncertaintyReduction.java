@@ -276,7 +276,7 @@ public class StatisticalUncertaintyReduction {
 				}
 			}
 			*/
-			/*
+			
 			// estimate a gaussian intensity distribution for each region, and modulate the corresponding labels
 			if (computeDistribution) {
 				for (int n=0;n<nobj;n++) {
@@ -344,7 +344,7 @@ public class StatisticalUncertaintyReduction {
 						if (stop) m=nbest;
 					}
 				}
-			}*/
+			}
 				
 			// main loop: label-per-label
 			for (byte n=0;n<nobj;n++) {
@@ -495,7 +495,8 @@ public class StatisticalUncertaintyReduction {
     
     private final float certaintyFunction(float delta, float scale) {
     	//return 1.0f - 1.0f/(1.0f+Numerics.square(delta/scale));	
-    	return (float)FastMath.pow(Numerics.abs(delta), scale);	
+    	//return (float)FastMath.pow(Numerics.abs(delta), scale);	
+    	return (1.0f+scale)*(1.0f-1.0f/(1.0f+Numerics.abs(delta/scale)));
     }
     
 }

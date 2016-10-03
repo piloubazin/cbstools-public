@@ -219,7 +219,7 @@ public class SegmentationSureSeg {
 				for (int b=0;b<nbestParam-1;b++) {
 					maxproba[b+1][xyz] = Numerics.min( boundary[xyz], (1.0f-boundary[xyz])*(distproba[b]/distproba[nbestParam-1]) );
 				}
-			}
+			}			
 		}
 		/*
 		// rescale highest values to 1 / lowest value to 0 for each label

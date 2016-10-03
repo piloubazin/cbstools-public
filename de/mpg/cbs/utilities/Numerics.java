@@ -386,6 +386,24 @@ public class Numerics {
 	}	
 			
 	/** find the indices of the num largest values in val (>=0) */
+	public static final byte[] argmax(float[] val, int size, int num) {
+		byte[] id = new byte[num];
+		for (int n=0;n<num;n++) {
+			byte nmax=0;
+			for (byte m=1;m<size;m++) if (val[m]>val[nmax]) {
+				nmax = m;
+			}
+			id[n] = nmax;
+			val[nmax] *= -1;
+		}
+		// rewrite the values
+		for (int n=0;n<num;n++) {
+			val[id[n]] *= -1;
+		}
+		return id;
+	}	
+			
+	/** find the indices of the num largest values in val (>=0) */
 	public static final void argmax(byte[] id, float[] val, int num) {
 		for (int n=0;n<num;n++) {
 			byte nmax=0;
