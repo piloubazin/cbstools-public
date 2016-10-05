@@ -278,7 +278,7 @@ public class StatisticalUncertaintyReduction {
 			*/
 			
 			// estimate a gaussian intensity distribution for each region, and modulate the corresponding labels
-			if (computeDistribution) {
+			if (computeDistribution) { // should be done at first, then in last step of the loop
 				for (int n=0;n<nobj;n++) {
 					for (int c=0;c<nc;c++) if (imused[c]) {
 						objmean[n][c] = 0.0f;
@@ -429,7 +429,7 @@ public class StatisticalUncertaintyReduction {
 							bestlabel[l][xyzi] = swaplb;
 							stop=false;
 							nresort++;
-							if (l==0) nreseg++;
+							if (l==1) nreseg++;
 						}
 					}
 					//if (stop) m=nbest;
@@ -471,23 +471,29 @@ public class StatisticalUncertaintyReduction {
 		for (int c=0;c<nc;c++) if (imused[c]) {
 			float diff = Numerics.abs((image[c][xyz] - image[c][ngb])/imscale[c]);
 			// argmax
-			//if (diff>maxdiff) maxdiff = diff;
+			if (diff>maxdiff) maxdiff = diff;
 			// arg max dist from 1
+			/*
 			if (c==0) maxdiff = diff;
 			else if (maxdiff>1 && diff>maxdiff) maxdiff = diff;
 			else if (maxdiff<1 && diff<maxdiff) maxdiff = diff;
 			else if (maxdiff>1 && diff<1.0f/maxdiff) maxdiff = diff;
 			else if (maxdiff<1 && diff>1.0f/maxdiff) maxdiff = diff;
+			*/
 		}
 	} else {
 		for (int c=0;c<nc;c++) if (imused[c]) {
 			float diff = Numerics.abs((image[c][xyz] - image[c][ngb])/imvar[c][xyz]);
-			//if (diff>maxdiff) maxdiff = diff;
+			// argmax
+			if (diff>maxdiff) maxdiff = diff;
+			// arg max dist from 1
+			/*
 			if (c==0) maxdiff = diff;
 			else if (maxdiff>1 && diff>maxdiff) maxdiff = diff;
 			else if (maxdiff<1 && diff<maxdiff) maxdiff = diff;
 			else if (maxdiff>1 && diff<1.0f/maxdiff) maxdiff = diff;
 			else if (maxdiff<1 && diff>1.0f/maxdiff) maxdiff = diff;
+			*/
 		}
 	}
     	return 1.0f/(1.0f+Numerics.square( maxdiff/scale));
@@ -495,8 +501,10 @@ public class StatisticalUncertaintyReduction {
     
     private final float certaintyFunction(float delta, float scale) {
     	//return 1.0f - 1.0f/(1.0f+Numerics.square(delta/scale));	
-    	//return (float)FastMath.pow(Numerics.abs(delta), scale);	
-    	return (1.0f+scale)*(1.0f-1.0f/(1.0f+Numerics.abs(delta/scale)));
+    	return (float)FastMath.pow(Numerics.abs(delta), scale);	
+    	//return (1.0f+scale)*(1.0f-1.0f/(1.0f+Numerics.abs(delta/scale)));
+    	//return (1.0f+Numerics.quad(scale))*(1.0f - 1.0f/(1.0f+Numerics.quad(delta/scale)));	
+    	
     }
     
 }
