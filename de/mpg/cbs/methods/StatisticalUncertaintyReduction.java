@@ -11,6 +11,8 @@ import de.mpg.cbs.structures.*;
 import de.mpg.cbs.utilities.*;
 
 import org.apache.commons.math3.util.FastMath;
+import org.apache.commons.math3.special.Erf;
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
 /**
  *
@@ -137,6 +139,83 @@ public class StatisticalUncertaintyReduction {
 	
 	//public final byte[] getSegmentation() { return segmentation; }
     
+	public final void estimateMeanImageNoise() {
+		imvar = new float[nc][nxyzi];   	
+		
+		for (int xyzi=0; xyzi<nxyzi; xyzi++) if (mask[xyzi]) {
+			for (int c=0;c<nc;c++) {
+				float num = 0.0f;
+				float den = 0.0f;
+			
+				for (byte j=0;j<26;j++) {
+					int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+					if (mask[xyzj]) {
+						num += Numerics.abs(image[c][xyzi]-image[c][xyzj]);
+						den ++;
+					}
+				}
+				// average of the difference is not quite the standard deviation: need corrective factor
+				if (den>0) imvar[c][xyzi] = num/den;
+				else imvar[c][xyzi] = 1.0f;
+			}
+		}
+		return;
+	}
+
+	public final void estimateMedianImageNoise() {
+		imvar = new float[nc][nxyzi];   	
+		
+		double[] sample = new double[26];
+		Percentile measure = new Percentile();
+		//double rfactor = Erf.erf(1.0/FastMath.sqrt(2.0));
+		double rfactor = FastMath.sqrt(2.0)*Erf.erfInv(0.5);
+		for (int xyzi=0; xyzi<nxyzi; xyzi++) if (mask[xyzi]) {
+			for (int c=0;c<nc;c++) {
+				int ns=0;
+				for (byte j=0;j<26;j++) {
+					int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+					if (mask[xyzj]) {
+						sample[ns] = Numerics.abs(image[c][xyzi]-image[c][xyzj]);
+						ns ++;
+					}
+				}
+				// med = sigma x sqrt(2) x erf-1(1/2); sigma of difference is twice the original
+				if (ns>0) imvar[c][xyzi] = (float)(0.5*measure.evaluate(sample, 0, ns, 50.0)/rfactor);
+				else imvar[c][xyzi] = 1.0f;
+			}
+		}
+		return;
+	}
+
+	public final void estimateImageRankScale(int ngbsize) {
+		imvar = new float[nc][nxyzi];   	
+		
+		float[] sample = new float[26];
+		//Percentile measure = new Percentile();
+		//double ratio = 100.0*ngbsize/26.0;
+		for (int xyzi=0; xyzi<nxyzi; xyzi++) if (mask[xyzi]) {
+			for (int c=0;c<nc;c++) {
+				int ns=0;
+				for (byte j=0;j<26;j++) {
+					int xyzj = Ngb.neighborIndex(j, xyzi, nix, niy, niz);
+					if (mask[xyzj]) {
+						sample[ns] = Numerics.abs(image[c][xyzi]-image[c][xyzj]);
+						ns ++;
+					}
+				}
+				// sets up an arbitrary weighting such that w(diff_ngbsize)=1/2
+				//if (ns>0) imvar[c][xyzi] = (float)measure.evaluate(sample, 0, ns, ratio);
+				if (ns>=ngbsize) {
+					byte[] rank = Numerics.argmin(sample, ns, ngbsize);
+					imvar[c][xyzi] = (float)sample[rank[ngbsize-1]];
+				} else {
+					imvar[c][xyzi] = 1.0f;
+				}
+			}
+		}
+		return;
+	}
+	
 	public final float[] computeMaxImageWeight(float scale) {
 		float[] imgweight = new float[nix*niy*niz];   	
 		
@@ -313,6 +392,14 @@ public class StatisticalUncertaintyReduction {
 						objvar[n][c] /= objcount[n];
 					}
 				}
+				// for debug
+				for (int c=0;c<nc;c++) {
+					BasicInfo.displayMessage("\n contrast "+(c+1));
+					BasicInfo.displayMessage("\n mean |");
+					for (int n=0;n<nobj;n++) BasicInfo.displayMessage(objmean[n][c]+"| ");
+					BasicInfo.displayMessage("\n stdev |");
+					for (int n=0;n<nobj;n++) BasicInfo.displayMessage(FastMath.sqrt(objvar[n][c])+"| ");
+				}				
 				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
 					for (int m=0;m<nbest;m++) {
 						int n = bestlabel[m][xyzi];

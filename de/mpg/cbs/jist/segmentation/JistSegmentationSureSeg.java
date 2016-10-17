@@ -54,6 +54,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 	private ParamBoolean	includeBgParam;
 	private ParamBoolean	rescaleProbaParam;
 	private ParamBoolean	computeDistributionParam;
+	private ParamBoolean	computeNoiseParam;
 	
 	private ParamInteger 	iterationParam;
 	private ParamFloat 		imgscaleParam;
@@ -109,6 +110,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		mainParams.add(neighborParam = new ParamInteger("Neighborhood size", 0, 26, 6));
 		
 		mainParams.add(computeDistributionParam = new ParamBoolean("Re-estimate intensity distributions",true));
+		mainParams.add(computeNoiseParam = new ParamBoolean("Estimate image noise",true));
 		
 		inputParams.add(mainParams);
 		
@@ -163,6 +165,10 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		algorithm.setContrastScale2(scale2Param.getValue().floatValue());
 		algorithm.setContrastScale3(scale3Param.getValue().floatValue());
 		
+		if (Interface.isValid(var1Image)) algorithm.setNoiseImage1(Interface.getFloatImage3D(var1Image));
+		if (Interface.isValid(var2Image)) algorithm.setNoiseImage2(Interface.getFloatImage3D(var2Image));
+		if (Interface.isValid(var3Image)) algorithm.setNoiseImage3(Interface.getFloatImage3D(var3Image));
+		
 		if (Interface.isValid(labelImage)) {
 			algorithm.setLabelSegmentation(Interface.getIntegerImage3D(labelImage));
 			algorithm.setLabelProbabilities(Interface.getFloatImage3D(probaImage));
@@ -180,6 +186,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		algorithm.setNeighborhoodSize(neighborParam.getValue().intValue());
 		
 		algorithm.setReestimateIntensityDistributions(computeDistributionParam.getValue().booleanValue());
+		algorithm.setEstimateNoise(computeNoiseParam.getValue().booleanValue());
 		
 		algorithm.execute();
 		
@@ -188,7 +195,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		Interface.setFloatImage4D(algorithm.getMaxProbabilityImage(), dims, nbestParam.getValue().byteValue(), maxprobaImage, name+"_mems", header);
 		Interface.setUByteImage4D(algorithm.getSegmentedIdsImage(), dims, nbestParam.getValue().byteValue(), maxidImage, name+"_lbls", header);
 		
-		Interface.setFloatImage4D(algorithm.getDebugImage(), dims, neighborParam.getValue().byteValue()+1, debugImage, name+"_debug", header);
+		Interface.setFloatImage4D(algorithm.getDebugImage(), dims, 2*neighborParam.getValue().byteValue()+1, debugImage, name+"_debug", header);
 		
 		return;
 	}

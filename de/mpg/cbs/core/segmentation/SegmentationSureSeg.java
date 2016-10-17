@@ -41,6 +41,7 @@ public class SegmentationSureSeg {
 	private int 	neighborParam	=	6;
 	
 	private boolean	computeDistributionParam = false;
+	private boolean	computeNoiseParam = false;
 	
 	// outputs
 	private int[] segmentImage;
@@ -80,6 +81,7 @@ public class SegmentationSureSeg {
 	public final void setNeighborhoodSize(int val) { neighborParam = val; }
 	
 	public final void setReestimateIntensityDistributions(boolean val) { computeDistributionParam = val; }
+	public final void setEstimateNoise(boolean val) { computeNoiseParam = val; }
 
 	// to be used for JIST definitions, generic info / help
 	public static final String getPackage() { return "CBS Tools"; }
@@ -249,7 +251,14 @@ public class SegmentationSureSeg {
 		
 		StatisticalUncertaintyReduction sur = new StatisticalUncertaintyReduction(image, noise, used, scaling, nimg, nx, ny, nz,  nbestParam);
 		sur.setBestProbabilities(maxproba, maxlabel, objlb);
+		//if (computeNoiseParam) sur.estimateMeanImageNoise();
+		//if (computeNoiseParam) sur.estimateMedianImageNoise();
+		if (computeNoiseParam) {
+			BasicInfo.displayMessage("estimation of rank-based noise level...\n");
+			sur.estimateImageRankScale(neighborParam);
+		}
 		
+		BasicInfo.displayMessage("main certainty diffusion...\n");
 		sur.diffuseCertainty(iterationParam, imgscaleParam, certainscaleParam, neighborParam, mincertaintyParam, computeDistributionParam);
 				
 		// outputs
@@ -276,7 +285,7 @@ public class SegmentationSureSeg {
 		}
 	
 		// for debug
-		debugImage = new float[nxyz*(neighborParam+1)];
+		debugImage = new float[nxyz*(2*neighborParam+1)];
 		float[] tmp = sur.computeMaxCertainty(certainscaleParam);
 		for (int xyz=0;xyz<nxyz;xyz++) debugImage[xyz] = tmp[xyz];
 		/*
@@ -288,8 +297,8 @@ public class SegmentationSureSeg {
 		float[][] imw = sur.computeAllImageWeight(imgscaleParam);
 		for (int xyz=0;xyz<nxyz;xyz++) for (int j=0;j<26;j++) debugImage[xyz+j*nxyz] = imw[j][xyz];
 		*/
-		float[][] imw = sur.computeBestImageWeight(imgscaleParam,neighborParam);
-		for (int xyz=0;xyz<nxyz;xyz++) for (int j=0;j<neighborParam;j++) debugImage[xyz+nxyz+j*nxyz] = imw[j][xyz];
+		float[][] imw = sur.computeBestImageWeight(imgscaleParam,2*neighborParam);
+		for (int xyz=0;xyz<nxyz;xyz++) for (int j=0;j<2*neighborParam;j++) debugImage[xyz+nxyz+j*nxyz] = imw[j][xyz];
 		
 		return;
 	}

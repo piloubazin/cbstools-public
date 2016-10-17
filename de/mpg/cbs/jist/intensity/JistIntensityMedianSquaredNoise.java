@@ -192,7 +192,8 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 				Percentile measure = new Percentile();
 				first[x][y][z] = (float)measure.evaluate(sample, 0, nsample, ratio*100.0)/rfactor;
 				
-
+				// this is the distribution of the difference: rescale by 1/2 for the distribution of noise
+				first[x][y][z] *= 0.5f;
 			}
 		}
 		
@@ -222,10 +223,7 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 				double erfinvA = Erf.erfInv(2.0*ratio-1.0);
 				double erfinvB = Erf.erfInv(2.0*ratiob-1.0);
 				if (erfinvB!=erfinvA) second[x][y][z] = (float)( (erfinvB*alpha-erfinvA*beta)/(erfinvB-erfinvA) );
-				else second[x][y][z] = (float)measure.evaluate(median, 0, nmedian, 50.0);
-				
-				// this is the distribution of the difference: rescale by 1/2 for the distribution of noise
-				second[x][y][z] *= 0.5f;
+				else second[x][y][z] = (float)measure.evaluate(median, 0, nmedian, 50.0);				
 			}
 		}
 		

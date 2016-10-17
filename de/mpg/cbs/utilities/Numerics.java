@@ -403,6 +403,26 @@ public class Numerics {
 		return id;
 	}	
 			
+	/** find the indices of the num smallest values in val */
+	public static final byte[] argmin(float[] val, int size, int num) {
+		float max = val[0];
+		for (byte m=1;m<size;m++) if (val[m]>max) max = val[m];
+		byte[] id = new byte[num];
+		for (int n=0;n<num;n++) {
+			byte nmin=0;
+			for (byte m=1;m<size;m++) if (val[m]<val[nmin]) {
+				nmin = m;
+			}
+			id[n] = nmin;
+			val[nmin] += max+1.0f;
+		}
+		// rewrite the values
+		for (int n=0;n<num;n++) {
+			val[id[n]] -= max+1.0f;
+		}
+		return id;
+	}	
+			
 	/** find the indices of the num largest values in val (>=0) */
 	public static final void argmax(byte[] id, float[] val, int num) {
 		for (int n=0;n<num;n++) {
