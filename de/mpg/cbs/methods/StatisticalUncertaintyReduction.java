@@ -398,15 +398,19 @@ public class StatisticalUncertaintyReduction {
 					BasicInfo.displayMessage("\n mean |");
 					for (int n=0;n<nobj;n++) BasicInfo.displayMessage(objmean[n][c]+"| ");
 					BasicInfo.displayMessage("\n stdev |");
-					for (int n=0;n<nobj;n++) BasicInfo.displayMessage(FastMath.sqrt(objvar[n][c])+"| ");
+					for (int n=0;n<nobj;n++) BasicInfo.displayMessage((float)FastMath.sqrt(objvar[n][c])+"| ");
+					BasicInfo.displayMessage("\n count |");
+					for (int n=0;n<nobj;n++) BasicInfo.displayMessage(objcount[n]+"| ");
 				}				
 				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
 					for (int m=0;m<nbest;m++) {
 						int n = bestlabel[m][xyzi];
 						if (n>-1) {
-							float proba = 1.0f;
-							for (int c=0;c<nc;c++) if (imused[c]) {
-								float probac = (float)FastMath.exp(0.5*(image[c][xyzi]-objmean[n][c])*(image[c][xyzi]-objmean[n][c])/objvar[n][c]);
+							//float proba = (float)(1.0/FastMath.sqrt(2.0*FastMath.PI*objvar[n][0])*FastMath.exp(-0.5*(image[0][xyzi]-objmean[n][0])*(image[0][xyzi]-objmean[n][0])/objvar[n][0]));
+							float proba = (float)FastMath.exp(-0.5*(image[0][xyzi]-objmean[n][0])*(image[0][xyzi]-objmean[n][0])/objvar[n][0]);
+							for (int c=1;c<nc;c++) if (imused[c]) {
+								//float probac = (float)(1.0/FastMath.sqrt(2.0*FastMath.PI*objvar[n][c])*FastMath.exp(-0.5*(image[c][xyzi]-objmean[n][c])*(image[c][xyzi]-objmean[n][c])/objvar[n][c]));
+								float probac = (float)FastMath.exp(-0.5*(image[c][xyzi]-objmean[n][c])*(image[c][xyzi]-objmean[n][c])/objvar[n][c]);
 								if (probac<proba) proba = probac;
 							}
 							bestproba[m][xyzi] *= proba;

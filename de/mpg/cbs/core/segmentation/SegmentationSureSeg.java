@@ -176,7 +176,8 @@ public class SegmentationSureSeg {
 			
 			MaxProbaRepresentation maxprep = new MaxProbaRepresentation(nbestParam, nlabels, nx,ny,nz);
 			if (includeBgParam) maxprep.buildFromCompleteProbabilities(probaImage);
-			else maxprep.buildFromCompetingProbabilitiesAndBackground(probaImage);
+			//else maxprep.buildFromCompetingProbabilitiesAndBackground(probaImage);
+			else maxprep.buildFromCompetingProbabilitiesAndConstantBackground(probaImage,0.5f);
 			maxproba = maxprep.getMaxProba();
 			maxlabel = maxprep.getMaxLabel();
 			

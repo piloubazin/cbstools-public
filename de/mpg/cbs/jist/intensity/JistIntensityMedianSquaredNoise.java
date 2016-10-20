@@ -43,8 +43,9 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 	private ParamOption distribParam;
 	private ParamBoolean skip0Param;
 	private ParamFloat  ratioParam;
+	private ParamBoolean twostepParam;
 	
-	private ParamVolume rawnoiseImage;
+	//private ParamVolume rawnoiseImage;
 	private ParamVolume spatialnoiseImage;
 	private ParamVolume histnoiseImage;
 	private ParamFloat  medianParam;
@@ -88,7 +89,7 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 		inputParams.add(skip0Param = new ParamBoolean("Skip zero values (if no mask)", false));
 		
 		inputParams.add(ratioParam = new ParamFloat("sampling ratio", 0.0f, 1.0f, 0.33f));
-		//inputParams.add(adjustParam = new ParamBoolean("Two-level estimation", false));
+		inputParams.add(twostepParam = new ParamBoolean("Two-level estimation", false));
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Intensity.devel");
@@ -107,7 +108,7 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
-		outputParams.add(rawnoiseImage = new ParamVolume("Raw Noise Image",VoxelType.FLOAT));
+		//outputParams.add(rawnoiseImage = new ParamVolume("Raw Noise Image",VoxelType.FLOAT));
 		outputParams.add(spatialnoiseImage = new ParamVolume("Spatial Noise Image",VoxelType.FLOAT));
 		outputParams.add(histnoiseImage = new ParamVolume("Intensity Noise Image",VoxelType.FLOAT));
 		//outputParams.add(outImage = new ParamVolume("Outlier Image",VoxelType.FLOAT));
@@ -171,21 +172,25 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 		float ratio = ratioParam.getValue().floatValue();
 		float rfactor = 1.0f;
 		// estimate parameters of the underlying distribution
-		if (distrib==HGAUSS) rfactor = (float)Erf.erf(ratio/SQRT2); 	// med = sigma x sqrt(2) x erf-1(1/2)
+		if (distrib==HGAUSS) rfactor = (float)(SQRT2*Erf.erfInv(ratio)); 	// med = sigma x sqrt(2) x erf-1(1/2)
 		else if (distrib==EXP) rfactor = -(float)FastMath.log(1.0-ratio);
 		//ratio *= 100.0f;
 		System.out.println("distribution scaling factor: "+rfactor);
 		
 		// 1. find the median of distances in neighborhood
 		float[][][] first = new float[nx][ny][nz];
+		boolean[][][] boundary = new boolean[nx][ny][nz];
 		for (int x=ngb;x<nx-ngb;x++) for (int y=ngb;y<ny-ngb;y++) for (int z=ngb;z<nz-ngb;z++) {
 			if (mask[x][y][z]) {
 				int nsample=0;
+				boundary[x][y][z] = false;
 				for (int dx=-ngb;dx<=ngb;dx++) for (int dy=-ngb;dy<=ngb;dy++) for (int dz=-ngb;dz<=ngb;dz++) {
-					if (mask[x+dx][y+dy][z+dz]) {
+					if (mask[x+dx][y+dy][z+dz] && (x!=0 || y!=0 || z!=0)) {
 						if (abs) sample[nsample] = Numerics.abs(image[x][y][z]-image[x+dx][y+dy][z+dz]);
 						else sample[nsample] = image[x][y][z]-image[x+dx][y+dy][z+dz];
 						nsample++;
+					} else if (!mask[x+dx][y+dy][z+dz]) {
+						boundary[x][y][z] = true;
 					}
 				}
 				// estimate mean, variance robustly
@@ -197,58 +202,63 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 			}
 		}
 		
-		// 2. compute the median of median distances in neighborhood
-		double[] median = new double[nsize];
-		float[][][] second = new float[nx][ny][nz];
-		for (int x=ngb;x<nx-ngb;x++) for (int y=ngb;y<ny-ngb;y++) for (int z=ngb;z<nz-ngb;z++) {
-			if (mask[x][y][z]) {
-				int nmedian = 0;
-				for (int dx=-ngb;dx<=ngb;dx++) for (int dy=-ngb;dy<=ngb;dy++) for (int dz=-ngb;dz<=ngb;dz++) {
-					if (mask[x+dx][y+dy][z+dz]) {
-						if (abs) median[nmedian] = first[x+dx][y+dy][z+dz];
-						else median[nmedian] = first[x+dx][y+dy][z+dz];
-						nmedian++;
+		// 2. compute the median of median distances in neighborhood (opt)
+		float[][][] second;
+		if (twostepParam.getValue().booleanValue()) {
+			double[] median = new double[nsize];
+			second = new float[nx][ny][nz];
+			for (int x=ngb;x<nx-ngb;x++) for (int y=ngb;y<ny-ngb;y++) for (int z=ngb;z<nz-ngb;z++) {
+				if (mask[x][y][z]) {
+					int nmedian = 0;
+					for (int dx=-ngb;dx<=ngb;dx++) for (int dy=-ngb;dy<=ngb;dy++) for (int dz=-ngb;dz<=ngb;dz++) {
+						if (mask[x+dx][y+dy][z+dz]) {
+							if (abs) median[nmedian] = first[x+dx][y+dy][z+dz];
+							else median[nmedian] = first[x+dx][y+dy][z+dz];
+							nmedian++;
+						}
 					}
-				}
-				// estimate mean, variance robustly
-				Percentile measure = new Percentile();
-				//second[x][y][z] = (float)measure.evaluate(median, 0, nmedian, 50.0);
+					// estimate mean, variance robustly
+					Percentile measure = new Percentile();
+					//second[x][y][z] = (float)measure.evaluate(median, 0, nmedian, 50.0);
+						
+					// other option: uses a smaller percentage based on ratio
+					double alpha = measure.evaluate(median, 0, nmedian, ratio*100.0);
+					double ratiob = ratio+0.5*(0.5-ratio);
+					double beta = measure.evaluate(median, 0, nmedian, ratiob*100.0);
 					
-				// other option: uses a smaller percentage based on ratio
-				double alpha = measure.evaluate(median, 0, nmedian, ratio*100.0);
-				double ratiob = ratio+0.5*(0.5-ratio);
-				double beta = measure.evaluate(median, 0, nmedian, ratiob*100.0);
-				
-				// solve for mean...
-				double erfinvA = Erf.erfInv(2.0*ratio-1.0);
-				double erfinvB = Erf.erfInv(2.0*ratiob-1.0);
-				if (erfinvB!=erfinvA) second[x][y][z] = (float)( (erfinvB*alpha-erfinvA*beta)/(erfinvB-erfinvA) );
-				else second[x][y][z] = (float)measure.evaluate(median, 0, nmedian, 50.0);				
+					// solve for mean...
+					double erfinvA = Erf.erfInv(2.0*ratio-1.0);
+					double erfinvB = Erf.erfInv(2.0*ratiob-1.0);
+					if (erfinvB!=erfinvA) second[x][y][z] = (float)( (erfinvB*alpha-erfinvA*beta)/(erfinvB-erfinvA) );
+					else second[x][y][z] = (float)measure.evaluate(median, 0, nmedian, 50.0);				
+				}
 			}
+		} else {
+			second = first;
 		}
 		
 		// 3. get the median of the map as a global value
 		int nsampled=0;
 		for (int x=ngb;x<nx-ngb;x++) for (int y=ngb;y<ny-ngb;y++) for (int z=ngb;z<nz-ngb;z++) 
-			if (mask[x][y][z]) 
+			if (mask[x][y][z] && !boundary[x][y][z]) 
 				nsampled++;
 		
 		double[] sampled = new double[nsampled]; 
 		nsampled=0;
 		for (int x=ngb;x<nx-ngb;x++) for (int y=ngb;y<ny-ngb;y++) for (int z=ngb;z<nz-ngb;z++) {
-			if (mask[x][y][z]) {
+			if (mask[x][y][z] && !boundary[x][y][z]) {
 				sampled[nsampled] = second[x][y][z];
 				nsampled++;
 			}
 		}
 		Percentile measure = new Percentile();
-		float globalmedian = (float)measure.evaluate(sampled, 0, sampled.length, 50.0);
+		float globalmedian = (float)measure.evaluate(sampled, 0, nsampled, 50.0);
 				
 		// 4. Build an histogram mapping of the intensity - variance relationship
 		float Imin = 1e15f;
 		float Imax = -1e15f;
 		for (int x=ngb;x<nx-ngb;x++) for (int y=ngb;y<ny-ngb;y++) for (int z=ngb;z<nz-ngb;z++) {
-			if (mask[x][y][z]) {
+			if (mask[x][y][z] && !boundary[x][y][z]) {
 				if (image[x][y][z]>Imax) Imax = image[x][y][z];
 				if (image[x][y][z]<Imin) Imin = image[x][y][z];
 			}
@@ -256,7 +266,7 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 		int nbins = 1000;
 		int[] bincount = new int[nbins];
 		for (int x=ngb;x<nx-ngb;x++) for (int y=ngb;y<ny-ngb;y++) for (int z=ngb;z<nz-ngb;z++) {
-			if (mask[x][y][z]) {
+			if (mask[x][y][z] && !boundary[x][y][z]) {
 				int count = Numerics.round( (image[x][y][z]-Imin)/(Imax-Imin)*(nbins-1.0));
 				bincount[count]++;
 			}
@@ -265,7 +275,7 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 		for (int b=0;b<nbins;b++) sorted[b] = new double[bincount[b]];
 		for (int b=0;b<nbins;b++) bincount[b] = 0;
 		for (int x=ngb;x<nx-ngb;x++) for (int y=ngb;y<ny-ngb;y++) for (int z=ngb;z<nz-ngb;z++) {
-			if (mask[x][y][z]) {
+			if (mask[x][y][z] && !boundary[x][y][z]) {
 				int count = Numerics.round( (image[x][y][z]-Imin)/(Imax-Imin)*(nbins-1.0));
 				sorted[count][bincount[count]] = second[x][y][z];
 				bincount[count]++;
@@ -277,27 +287,22 @@ public class JistIntensityMedianSquaredNoise extends ProcessingAlgorithm {
 		}
 		float[][][] sortedimg = new float[nx][ny][nz];
 		for (int x=ngb;x<nx-ngb;x++) for (int y=ngb;y<ny-ngb;y++) for (int z=ngb;z<nz-ngb;z++) {
-			if (mask[x][y][z]) {
+			if (mask[x][y][z] && !boundary[x][y][z]) {
 				double loc = (image[x][y][z]-Imin)/(Imax-Imin)*(nbins-1.0);
-				int c0 = Numerics.floor(loc);
-				int c1 = Numerics.ceil(loc);
+				int c0 = Numerics.max(0,Numerics.floor(loc));
+				int c1 = Numerics.min(nbins-1,Numerics.ceil(loc));
 				if (c1>c0 && sorted[c0].length>0 && sorted[c1].length>0) 
 					sortedimg[x][y][z] = (float)( (c1-loc)*sortedmedian[c0] + (loc-c0)*sortedmedian[c1]);
 				else if (sorted[c0].length>0) sortedimg[x][y][z] = (float)sortedmedian[c0];
 				else if (sorted[c1].length>0) sortedimg[x][y][z] = (float)sortedmedian[c1];
 				else sortedimg[x][y][z] = globalmedian;
+			} else if (mask[x][y][z]) {
+				sortedimg[x][y][z] = globalmedian;
 			}
 		}
 		
 		// output
-		ImageDataFloat bufferData = new ImageDataFloat(first);
-		bufferData.setHeader(inputImage.getImageData().getHeader());
-		bufferData.setName(inputImage.getImageData().getName()+"_medn");
-		rawnoiseImage.setValue(bufferData);
-		bufferData = null;
-		first = null;			
-		
-		bufferData = new ImageDataFloat(second);
+		ImageDataFloat bufferData = new ImageDataFloat(second);
 		bufferData.setHeader(inputImage.getImageData().getHeader());
 		bufferData.setName(inputImage.getImageData().getName()+"_medspn");
 		spatialnoiseImage.setValue(bufferData);

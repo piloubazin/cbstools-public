@@ -271,6 +271,53 @@ public class MaxProbaRepresentation {
 		nobj++;
 		proba = null;
 	}
+	public final void buildFromCompetingProbabilitiesAndConstantBackground(float[] proba, float bgproba) {
+	   	maxproba = new float[nmax][nx*ny*nz];
+    		maxlabel = new byte[nmax][nx*ny*nz];
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			float max=0.0f;
+			for (byte n=0;n<nobj;n++) max = Numerics.max(max, proba[xyz+nxyz*n]);
+			if (max>0) {
+				for (byte n=0;n<nmax;n++) {
+					byte nbest=0;
+					
+					for (byte m=1;m<nobj;m++) if (proba[xyz+nxyz*m]>proba[xyz+nxyz*nbest]) {
+						nbest = m;
+					}
+					maxlabel[n][xyz] = nbest;
+					maxproba[n][xyz] = proba[xyz+nxyz*nbest];
+					proba[xyz+nxyz*nbest] = -1.0f;
+				}
+				for (byte n=0; n<nmax; n++) if (maxproba[n][xyz]<bgproba) {
+					for (byte m=(byte)(nmax-1);m>n;m--) {
+						maxproba[m][xyz] = maxproba[m-1][xyz];
+						maxlabel[m][xyz] = maxlabel[m-1][xyz];
+					}
+					maxproba[n][xyz] = bgproba;
+					maxlabel[n][xyz] = nobj;
+					n=nmax;
+				}
+			} else {
+				
+				// background is first, all others are zero
+				maxproba[0][xyz] = bgproba;
+				maxlabel[0][xyz] = nobj;
+				for (byte n=1;n<nmax;n++) {
+					maxproba[n][xyz] = 0.0f;
+					maxlabel[n][xyz] = n;
+				}
+				/*
+				for (int n=0;n<nmax;n++) {
+					maxproba[n][xyz] = -1.0f;
+					maxlabel[n][xyz] = -1;
+				}
+				*/
+			}
+		}
+		// now the background is its own label
+		nobj++;
+		proba = null;
+	}
 	
 	public final void insertNewLabel(int xyz, float val, byte lb) {
 		if (val<maxproba[nmax-1][xyz]) return;

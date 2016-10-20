@@ -75,16 +75,22 @@ public class SegmentationDistanceBasedProbability {
 				if (mgdm.getFunctions()[0][xyz]>maxobjdist[l]) maxobjdist[l] = mgdm.getFunctions()[0][xyz];
 			}
 		}
-				
+		
+		// background: use the largest distance from foreground object instead as basis ? Or just 1-sum?
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			for (byte l=0;l<nlabels;l++) {
+			float probaFg = 0.0f;
+			for (byte l=1;l<nlabels;l++) {
 				float dist = mgdm.reconstructedLevelSetAt(xyz, l);
 				if (dist<-ratioParam*maxobjdist[l]) probaImage[l*nxyz+xyz] = 1.0f;
 				else if (dist<0) probaImage[l*nxyz+xyz] = 0.5f - 0.5f*dist/maxobjdist[l]/ratioParam;
 				else if (dist<ratioParam*maxobjdist[l]) probaImage[l*nxyz+xyz] = 0.5f - 0.5f*dist/maxobjdist[l]/ratioParam;
 				else probaImage[l*nxyz+xyz] = 0.0f;
+				
+				probaFg += probaImage[l*nxyz+xyz];
 			}	
+			probaImage[xyz] = 1.0f-Numerics.min(probaFg, 1.0f);
 		}
+		
 	}
 	
 }

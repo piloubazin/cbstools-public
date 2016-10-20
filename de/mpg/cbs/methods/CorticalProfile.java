@@ -209,7 +209,7 @@ public class CorticalProfile {
 	public final float computeLength() {
 		double length = 0.0;
 		for (int l=0;l<nlayers;l++) {
-			length += Math.sqrt( (profile[l][X]-profile[l+1][X])*rx*(profile[l][X]-profile[l+1][X])*rx
+			length += FastMath.sqrt( (profile[l][X]-profile[l+1][X])*rx*(profile[l][X]-profile[l+1][X])*rx
 								+(profile[l][Y]-profile[l+1][Y])*ry*(profile[l][Y]-profile[l+1][Y])*ry
 								+(profile[l][Z]-profile[l+1][Z])*rz*(profile[l][Z]-profile[l+1][Z])*rz );
 		}
@@ -224,15 +224,15 @@ public class CorticalProfile {
 						 +(profile[l+1][Y]-profile[l][Y])*(profile[l+2][Y]-profile[l+1][Y])
 						 +(profile[l+1][Z]-profile[l][Z])*(profile[l+2][Z]-profile[l+1][Z]);
 						 
-			double norm1 = Math.sqrt( (profile[l+1][X]-profile[l][X])*(profile[l+1][X]-profile[l][X])
+			double norm1 = FastMath.sqrt( (profile[l+1][X]-profile[l][X])*(profile[l+1][X]-profile[l][X])
 									  +(profile[l+1][Y]-profile[l][Y])*(profile[l+1][Y]-profile[l][Y])
 									  +(profile[l+1][Z]-profile[l][Z])*(profile[l+1][Z]-profile[l][Z]) );
 			
-			double norm2 = Math.sqrt( (profile[l+2][X]-profile[l+1][X])*(profile[l+2][X]-profile[l+1][X])
+			double norm2 = FastMath.sqrt( (profile[l+2][X]-profile[l+1][X])*(profile[l+2][X]-profile[l+1][X])
 									  +(profile[l+2][Y]-profile[l+1][Y])*(profile[l+2][Y]-profile[l+1][Y])
 									  +(profile[l+2][Z]-profile[l+1][Z])*(profile[l+2][Z]-profile[l+1][Z]) );
 			
-			angle  += Math.acos( Numerics.bounded(prod/(norm1*norm2), -1.0, 1.0) )/Math.PI;
+			angle  += FastMath.acos( Numerics.bounded(prod/(norm1*norm2), -1.0, 1.0) )/FastMath.PI;
 		}
 		return (float)(angle/(nlayers-2.0));
 	}
@@ -245,16 +245,16 @@ public class CorticalProfile {
 						 +(profile[l+1][Y]-profile[l][Y])*(profile[l+2][Y]-profile[l+1][Y])
 						 +(profile[l+1][Z]-profile[l][Z])*(profile[l+2][Z]-profile[l+1][Z]);
 						 
-			double norm1 = Math.sqrt( (profile[l+1][X]-profile[l][X])*(profile[l+1][X]-profile[l][X])
+			double norm1 = FastMath.sqrt( (profile[l+1][X]-profile[l][X])*(profile[l+1][X]-profile[l][X])
 									  +(profile[l+1][Y]-profile[l][Y])*(profile[l+1][Y]-profile[l][Y])
 									  +(profile[l+1][Z]-profile[l][Z])*(profile[l+1][Z]-profile[l][Z]) );
 			
-			double norm2 = Math.sqrt( (profile[l+2][X]-profile[l+1][X])*(profile[l+2][X]-profile[l+1][X])
+			double norm2 = FastMath.sqrt( (profile[l+2][X]-profile[l+1][X])*(profile[l+2][X]-profile[l+1][X])
 									  +(profile[l+2][Y]-profile[l+1][Y])*(profile[l+2][Y]-profile[l+1][Y])
 									  +(profile[l+2][Z]-profile[l+1][Z])*(profile[l+2][Z]-profile[l+1][Z]) );
 			
 			
-			double theta = Math.acos( Numerics.bounded(prod/(norm1*norm2), -1.0, 1.0) )/Math.PI;
+			double theta = FastMath.acos( Numerics.bounded(prod/(norm1*norm2), -1.0, 1.0) )/FastMath.PI;
 			if (theta>angle) angle = theta;
 		}
 		return (float)(angle);		
@@ -272,8 +272,8 @@ public class CorticalProfile {
 			double d2y = (profile[l+1][Y]-2.0*profile[l][Y]+profile[l-1][Y]);
 			double d2z = (profile[l+1][Z]-2.0*profile[l][Z]+profile[l-1][Z]);
 			
-			double num = Math.sqrt( Numerics.square(d2z*dy-d2y*dz) + Numerics.square(d2x*dz-d2z*dx) + Numerics.square(d2y*dx-d2x*dy) );
-			double den = Math.sqrt( Numerics.cube(dx*dx + dy*dy + dz*dz) );
+			double num = FastMath.sqrt( Numerics.square(d2z*dy-d2y*dz) + Numerics.square(d2x*dz-d2z*dx) + Numerics.square(d2y*dx-d2x*dy) );
+			double den = FastMath.sqrt( Numerics.cube(dx*dx + dy*dy + dz*dz) );
 			
 			curv  += num/den;
 		}
@@ -307,16 +307,16 @@ public class CorticalProfile {
 	/** average angle between profile segments (normalized in [0,1]) */
 	public final float computeAngleWith(double vx, double vy, double vz) {
 		double angle = 0.0;
-		double nv = Math.sqrt( vx*vx + vy*vy + vz*vz );
+		double nv = FastMath.sqrt( vx*vx + vy*vy + vz*vz );
 		for (int l=1;l<=nlayers-1;l++) {
 			double dx = (profile[l+1][X]-profile[l-1][X])/2.0;
 			double dy = (profile[l+1][Y]-profile[l-1][Y])/2.0;
 			double dz = (profile[l+1][Z]-profile[l-1][Z])/2.0;
 			
 			double num = vx*dx + vy*dy + vz*dz;
-			double nd = Math.sqrt( dx*dx + dy*dy + dz*dz );
+			double nd = FastMath.sqrt( dx*dx + dy*dy + dz*dz );
 						 
-			angle  += Math.acos( Numerics.bounded(num/(nv*nd), -1.0, 1.0) )/Math.PI;
+			angle  += FastMath.acos( Numerics.bounded(num/(nv*nd), -1.0, 1.0) )/FastMath.PI;
 		}
 		return (float)(angle/(nlayers-2.0));
 	}
