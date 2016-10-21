@@ -25,6 +25,8 @@ public class SegmentationSureSeg {
 	private float scale2Param =1.0f;
 	private float scale3Param =1.0f;	
 	
+	private byte[] 	maskImage = null;
+	
 	private int nx, ny, nz, nxyz;
 	private float rx, ry, rz;
 	
@@ -67,6 +69,8 @@ public class SegmentationSureSeg {
 	
 	public final void setResolutions(float x, float y, float z) { rx=x; ry=y; rz=z; }
 	public final void setResolutions(float[] res) { rx=res[0]; ry=res[1]; rz=res[2]; }
+	
+	public final void setImageMask(byte[] val) { maskImage = val; }
 	
 	public final void setLabelProbabilities(float[] val) { probaImage = val; }
 	public final void setLabelSegmentation(int[] val) { labelImage = val; }
@@ -176,8 +180,8 @@ public class SegmentationSureSeg {
 			
 			MaxProbaRepresentation maxprep = new MaxProbaRepresentation(nbestParam, nlabels, nx,ny,nz);
 			if (includeBgParam) maxprep.buildFromCompleteProbabilities(probaImage);
-			//else maxprep.buildFromCompetingProbabilitiesAndBackground(probaImage);
-			else maxprep.buildFromCompetingProbabilitiesAndConstantBackground(probaImage,0.5f);
+			else maxprep.buildFromCompetingProbabilitiesAndBackground(probaImage);
+			//else maxprep.buildFromCompetingProbabilitiesAndConstantBackground(probaImage,0.5f);
 			maxproba = maxprep.getMaxProba();
 			maxlabel = maxprep.getMaxLabel();
 			
@@ -247,10 +251,8 @@ public class SegmentationSureSeg {
 		*/
 		
 		// main algorithm
-		boolean[] used = new boolean[nimg];
-		for (int i=0;i<nimg;i++) used[i] = true;
 		
-		StatisticalUncertaintyReduction sur = new StatisticalUncertaintyReduction(image, noise, used, scaling, nimg, nx, ny, nz,  nbestParam);
+		StatisticalUncertaintyReduction sur = new StatisticalUncertaintyReduction(image, noise, maskImage, scaling, nimg, nx, ny, nz,  nbestParam);
 		sur.setBestProbabilities(maxproba, maxlabel, objlb);
 		//if (computeNoiseParam) sur.estimateMeanImageNoise();
 		//if (computeNoiseParam) sur.estimateMedianImageNoise();

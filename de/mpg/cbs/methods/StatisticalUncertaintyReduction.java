@@ -32,11 +32,10 @@ public class StatisticalUncertaintyReduction {
 	private 	float[][]		image;  			// original images
 	private 	int				nix,niy,niz, nxyzi;   		// image dimensions
 	//private 	float			rix,riy,riz;   		// image resolutions
-	private		boolean[]		imused;				// check if image modality / contrast is used
 	private		float[]			imscale;			// image intensity scaling
 	private		float[][]			imvar;			// image intensity scaling
 	private		int				nc;					// number of channels
-
+	
 	// labeling parameters
 	private 	int 			nobj;    			// number of shapes
 	private 	int[]			objlabel;			// label values in the original image
@@ -53,13 +52,13 @@ public class StatisticalUncertaintyReduction {
 	/**
 	 *  constructors for different cases: with/out outliers, with/out selective constraints
 	 */
-	public StatisticalUncertaintyReduction(float[][] img_, boolean[] used_, float[] sca_, int nc_,
+	public StatisticalUncertaintyReduction(float[][] img_, byte[] mask_, float[] sca_, int nc_,
 									int nix_, int niy_, int niz_, 
 									//float rix_, float riy_, float riz_,
 									byte nbest_) {
-		this(img_, null, used_, sca_, nc_, nix_, niy_, niz_, nbest_);
+		this(img_, null, mask_, sca_, nc_, nix_, niy_, niz_, nbest_);
 	}
-	public StatisticalUncertaintyReduction(float[][] img_, float[][] var_, boolean[] used_, float[] sca_, int nc_,
+	public StatisticalUncertaintyReduction(float[][] img_, float[][] var_, byte[] mask_, float[] sca_, int nc_,
 									int nix_, int niy_, int niz_, 
 									//float rix_, float riy_, float riz_,
 									byte nbest_) {
@@ -67,7 +66,6 @@ public class StatisticalUncertaintyReduction {
 		image = img_;
 		imscale = sca_;
 		imvar = var_;
-		imused = used_;
 		nc = nc_;
 		nix = nix_;
 		niy = niy_;
@@ -94,7 +92,11 @@ public class StatisticalUncertaintyReduction {
 			int xyzi = x+nix*y+nix*niy*z;
 			mask[xyzi] = false;
 			if (x>0 && x<nix-1 && y>0 && y<niy-1 && z>0 && z<niz-1) {
-				for (int c=0;c<nc;c++) if (image[c][xyzi]!=0) mask[xyzi] = true;	
+				if (mask_==null) {
+					for (int c=0;c<nc;c++) if (image[c][xyzi]!=0) mask[xyzi] = true;	
+				} else {
+					mask[xyzi] = (mask_[xyzi]>0);
+				}
 			}
 		}
 	}
@@ -359,7 +361,7 @@ public class StatisticalUncertaintyReduction {
 			// estimate a gaussian intensity distribution for each region, and modulate the corresponding labels
 			if (computeDistribution) { // should be done at first, then in last step of the loop
 				for (int n=0;n<nobj;n++) {
-					for (int c=0;c<nc;c++) if (imused[c]) {
+					for (int c=0;c<nc;c++) {
 						objmean[n][c] = 0.0f;
 						objvar[n][c] = 0.0f;
 					}
@@ -368,27 +370,27 @@ public class StatisticalUncertaintyReduction {
 				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
 					int n = bestlabel[0][xyzi];
 					if (n>-1) {
-						for (int c=0;c<nc;c++) if (imused[c]) {
+						for (int c=0;c<nc;c++) {
 							objmean[n][c] += bestproba[0][xyzi]*image[c][xyzi];
 						}
 						objcount[n]+=bestproba[0][xyzi];
 					}
 				}
 				for (int n=0;n<nobj;n++) if (objcount[n]>0) {
-					for (int c=0;c<nc;c++) if (imused[c]) {
+					for (int c=0;c<nc;c++) {
 						objmean[n][c] /= objcount[n];
 					}
 				}
 				for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
 					int n = bestlabel[0][xyzi];
 					if (n>-1) {
-						for (int c=0;c<nc;c++) if (imused[c]) {
+						for (int c=0;c<nc;c++) {
 							objvar[n][c] += bestproba[0][xyzi]*(image[c][xyzi]-objmean[n][c])*(image[c][xyzi]-objmean[n][c]);
 						}
 					}
 				}
 				for (int n=0;n<nobj;n++) if (objcount[n]>0) {
-					for (int c=0;c<nc;c++) if (imused[c]) {
+					for (int c=0;c<nc;c++) {
 						objvar[n][c] /= objcount[n];
 					}
 				}
@@ -408,7 +410,7 @@ public class StatisticalUncertaintyReduction {
 						if (n>-1) {
 							//float proba = (float)(1.0/FastMath.sqrt(2.0*FastMath.PI*objvar[n][0])*FastMath.exp(-0.5*(image[0][xyzi]-objmean[n][0])*(image[0][xyzi]-objmean[n][0])/objvar[n][0]));
 							float proba = (float)FastMath.exp(-0.5*(image[0][xyzi]-objmean[n][0])*(image[0][xyzi]-objmean[n][0])/objvar[n][0]);
-							for (int c=1;c<nc;c++) if (imused[c]) {
+							for (int c=1;c<nc;c++) {
 								//float probac = (float)(1.0/FastMath.sqrt(2.0*FastMath.PI*objvar[n][c])*FastMath.exp(-0.5*(image[c][xyzi]-objmean[n][c])*(image[c][xyzi]-objmean[n][c])/objvar[n][c]));
 								float probac = (float)FastMath.exp(-0.5*(image[c][xyzi]-objmean[n][c])*(image[c][xyzi]-objmean[n][c])/objvar[n][c]);
 								if (probac<proba) proba = probac;
@@ -559,7 +561,7 @@ public class StatisticalUncertaintyReduction {
     private final float diffusionImageWeightFunction(int xyz, int ngb, float scale) {
     	float maxdiff = 0.0f;
     	if (imvar==null) {
-		for (int c=0;c<nc;c++) if (imused[c]) {
+		for (int c=0;c<nc;c++) {
 			float diff = Numerics.abs((image[c][xyz] - image[c][ngb])/imscale[c]);
 			// argmax
 			if (diff>maxdiff) maxdiff = diff;
@@ -573,7 +575,7 @@ public class StatisticalUncertaintyReduction {
 			*/
 		}
 	} else {
-		for (int c=0;c<nc;c++) if (imused[c]) {
+		for (int c=0;c<nc;c++) {
 			float diff = Numerics.abs((image[c][xyz] - image[c][ngb])/imvar[c][xyz]);
 			// argmax
 			if (diff>maxdiff) maxdiff = diff;
