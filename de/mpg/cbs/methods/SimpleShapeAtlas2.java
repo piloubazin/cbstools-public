@@ -293,7 +293,7 @@ public class SimpleShapeAtlas2 {
 		y0i = niy/2.0f;
 		z0i = niz/2.0f;
 		
-		if (debug) {
+		if (verbose) {
 			System.out.print("dimensions: "+nix+", "+niy+", "+niz+"\n");
 			System.out.print("resolutions: "+rix+", "+riy+", "+riz+"\n");
 			System.out.print("orientation: "+orient+" | "+orix+", "+oriy+", "+oriz+"\n");
