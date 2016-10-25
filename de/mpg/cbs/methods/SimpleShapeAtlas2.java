@@ -1218,13 +1218,15 @@ public class SimpleShapeAtlas2 {
 	 *	initialize registration parameters
 	 */
 	public final void initShapeMapping() {
+		// first create the transform and update the axes orientations
+		initRigidTransform();
+		
 		// transform mapping tools
 		transformMode = PARAMETRIC;
 		transformModel = new ParametricTransform("rigid", x0i,y0i,z0i, rix,riy,riz, nix,niy,niz, x0t,y0t,z0t, rtx,rty,rtz, ntx,nty,ntz);
 
 		// init parameters		
 		Nd = transformModel.getDimension();
-		initRigidTransform();
 		rotation = transformModel.computeRotation(transform);
 			
 		shapeTransform = new float[3][4];

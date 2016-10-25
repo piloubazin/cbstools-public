@@ -40,7 +40,7 @@ public class BrainMgdmMultiSegmentation2 {
 	private String type2Param = "none";
 	private String type3Param = "none";
 	private String type4Param = "none";
-	private static final String[] inputTypes = {"-- 3T --", "MPRAGE3T", "T1MAP3T", "MP2RAGE3T", 
+	public static final String[] inputTypes = {"-- 3T --", "MPRAGE3T", "T1MAP3T", "MP2RAGE3T", 
 													"HCPT1w", "HCPT2w", "NormMPRAGE", "FLAIR3T",
 													"DWIFA3T", "DWIMD3T",
 													"-- 7T --", "T1MAP7T", "MP2RAGE7T", "T2SW7T", "QSM7T", 
@@ -48,7 +48,7 @@ public class BrainMgdmMultiSegmentation2 {
 													"-- MPM --", "mpmPD3T", "mpmMT3T", "mpmR13T", "mpmR2s3T",
 													"-- misc --", "Filters", "WMLesions", "PVDURA", "Labeling","none"};
 	
-	private static final String inputTypeInfo = "Currently available contrasts:\n"
+	public static final String inputTypeInfo = "Currently available contrasts:\n"
 			+"T1MAP7T: a 7T quantitative T1 map, \n"
 			+"MP2RAGE7T: a T1-weighted image from 7T MP2RAGE (UNI), \n"
 			+"T2SW7T: a 7T T2*-weighted image (devel), \n"
@@ -84,11 +84,11 @@ public class BrainMgdmMultiSegmentation2 {
 	private float		diffuseParam		=	0.5f;
 	
 	private String 	topologyParam	=	"wcs";
-	private static final String[] topoTypes = {"26/6", "6/26", "18/6", "6/18", "6/6", "wcs", "wco", "no"};
+	public static final String[] topoTypes = {"26/6", "6/26", "18/6", "6/18", "6/6", "wcs", "wco", "no"};
 	private String	lutdir = null;
 	
 	private String 	outputParam	=	"label_memberships";
-	private static final String[] outputTypes = {"label_memberships","raw_memberships","segmentation","debug"};
+	public static final String[] outputTypes = {"label_memberships","raw_memberships","segmentation","debug"};
 	//private static final String[] outputTypes = {"segmentation","memberships","cortex"};
 	private boolean	normalizeQuantitative	=	false;
 	
