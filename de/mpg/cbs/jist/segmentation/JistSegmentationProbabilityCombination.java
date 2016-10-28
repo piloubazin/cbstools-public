@@ -28,6 +28,7 @@ public class JistSegmentationProbabilityCombination extends ProcessingAlgorithm{
 	ParamVolumeCollection 	volParam;
 	ParamInteger			sizeParam;
 	ParamBoolean			includebgParam;
+	ParamBoolean			rescaleParam;
 
 	ParamVolume maxVolParam;
 	ParamVolume lbVolParam;
@@ -36,6 +37,7 @@ public class JistSegmentationProbabilityCombination extends ProcessingAlgorithm{
 		inputParams.add(volParam=new ParamVolumeCollection("Probability Images"));
 		inputParams.add(sizeParam=new ParamInteger("Combined result size",1,10,3));
 		inputParams.add(includebgParam=new ParamBoolean("Background included",true));
+		inputParams.add(rescaleParam=new ParamBoolean("Rescale probabilities",false));
 
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Segmentation");
@@ -45,7 +47,7 @@ public class JistSegmentationProbabilityCombination extends ProcessingAlgorithm{
 		AlgorithmInformation info = getAlgorithmInformation();
 		info.setWebsite("http://www.cbs.mpg.de/");
 		info.setDescription("combine multiple probability maps into a (truncated) maximum probability image");
-		info.setVersion("3.0");
+		info.setVersion("3.0.9");
 		info.setEditable(false);
 		info.setStatus(DevelopmentStatus.RC);
 	}
@@ -71,6 +73,30 @@ public class JistSegmentationProbabilityCombination extends ProcessingAlgorithm{
 		ImageDataFloat maxVol=new ImageDataFloat(rows,cols,slices,M);
 		ImageDataUByte lbVol=new ImageDataUByte(rows,cols,slices,M);
 		
+		float[] max = new float[N];
+		float[] min = new float[N];
+		for(byte l=0; l<N; l++) {
+			max[l] = 1.0f;
+			min[l] = 0.0f;
+		}
+		if (rescaleParam.getValue().booleanValue()) {
+			for(byte l=0; l<N; l++) {
+				float vmin = 1e15f;
+				float vmax = -1e15f;
+				for (int i = 0; i < rows; i++) {
+					for (int j = 0; j < cols; j++) {
+						for (int k = 0; k < slices; k++) {
+							float val=volParam.getImageDataList().get(l).getFloat(i, j, k, l);
+							if (val<vmin) vmin = val;
+							if (val>vmax) vmax = val;
+						}
+					}
+				}
+				min[l] = vmin;
+				max[l] = vmax;
+			}			
+		}
+		
 		float[] val = new float[NP];
 		float[] best = new float[M];
 		byte[] arg = new byte[M];
@@ -78,8 +104,10 @@ public class JistSegmentationProbabilityCombination extends ProcessingAlgorithm{
 			for (int j = 0; j < cols; j++) {
 				for (int k = 0; k < slices; k++) {
 					
-					for(byte l=0; l<N; l++)
-						val[l]=volParam.getImageDataList().get(l).getFloat(i, j, k, l);
+					for(byte l=0; l<N; l++) {
+						if (min[l]<max[l]) val[l]=(volParam.getImageDataList().get(l).getFloat(i, j, k, l)-min[l])/(max[l]-min[l]);
+						else val[l] = 0.0f;
+					}
 						
 					if (addbg) { 
 						val[N] = 1.0f;

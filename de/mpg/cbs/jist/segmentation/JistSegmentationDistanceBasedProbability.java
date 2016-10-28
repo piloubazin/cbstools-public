@@ -35,6 +35,7 @@ public class JistSegmentationDistanceBasedProbability extends ProcessingAlgorith
 	// jist containers
 	private ParamVolume segImage;
 	private ParamFloat ratioParam;
+	private ParamFloat bgscaleParam;
 	
 	private ParamVolume 	probaImage;
 		
@@ -44,6 +45,7 @@ public class JistSegmentationDistanceBasedProbability extends ProcessingAlgorith
 		
 		inputParams.add(segImage = new ParamVolume("Segmentation"));
 		inputParams.add(ratioParam = new ParamFloat("Distance ratio",0.0f,1.0f,0.5f));
+		inputParams.add(bgscaleParam = new ParamFloat("Background Distance (mm)",0.0f,1.0e15f,3.0f));
 		
 		
 		algorithm = new SegmentationDistanceBasedProbability();
@@ -88,6 +90,7 @@ public class JistSegmentationDistanceBasedProbability extends ProcessingAlgorith
 		// pass the input parameters
 		algorithm.setSegmentationImage(Interface.getIntegerImage3D(segImage));
 		algorithm.setDistanceRatio(ratioParam.getValue().floatValue());
+		algorithm.setBackgroundDistance_mm(bgscaleParam.getValue().floatValue());
 				
 		algorithm.execute();
 		

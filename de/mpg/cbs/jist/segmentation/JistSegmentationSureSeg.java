@@ -50,6 +50,8 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 	
 	private ParamVolume 	probaImage;
 	private ParamVolume 	labelImage;
+	private ParamVolume 	maskImage;
+	
 	private ParamInteger 	nbestParam;
 	private ParamBoolean	includeBgParam;
 	private ParamBoolean	rescaleProbaParam;
@@ -94,6 +96,9 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		imageParams.add(probaImage = new ParamVolume("Label Probabilities (3D or 4D)"));
 		imageParams.add(labelImage = new ParamVolume("Label Segmentation (only if 3D proba)"));
 		labelImage.setMandatory(false);
+		
+		imageParams.add(maskImage = new ParamVolume("Image Mask (opt)"));
+		maskImage.setMandatory(false);
 		
 		inputParams.add(imageParams);
 		
@@ -175,6 +180,8 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		} else {
 			algorithm.setLabelProbabilities(Interface.getFloatImage4D(probaImage));
 		}
+		if (Interface.isValid(maskImage)) algorithm.setImageMask(Interface.getUByteImage3D(maskImage));
+		
 		algorithm.setLabelDepth(nbestParam.getValue().byteValue());
 		algorithm.setBackgroundIncluded(includeBgParam.getValue().booleanValue());
 		algorithm.setRescaleIndividualProbabilities(rescaleProbaParam.getValue().booleanValue());

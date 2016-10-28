@@ -15,7 +15,7 @@ public class SegmentationDistanceBasedProbability {
 
 	// jist containers
 	private float[] probaImage;
-	//private float scaleParam = 5.0f;
+	private float bgscaleParam = 5.0f;
 	private float ratioParam = 0.5f;
 	private int[] segImage;
 	
@@ -26,7 +26,7 @@ public class SegmentationDistanceBasedProbability {
 	
 	// create inputs
 	public final void setSegmentationImage(int[] val) { segImage = val; }
-	//public final void setScale_mm(float val) { scaleParam = val; }
+	public final void setBackgroundDistance_mm(float val) { bgscaleParam = val; }
 	public final void setDistanceRatio(float val) { ratioParam = val; }
 	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
@@ -54,7 +54,7 @@ public class SegmentationDistanceBasedProbability {
 	public void execute() {
 		
 		
-		BasicInfo.displayMessage("build from max labeling and max probability...\n");
+		BasicInfo.displayMessage("build from segmentation...\n");
 		int[] objlb = ObjectLabeling.listOrderedLabels(segImage,nx,ny,nz);
 		nlabels = (byte)objlb.length;
 			
@@ -78,17 +78,24 @@ public class SegmentationDistanceBasedProbability {
 		
 		// background: use the largest distance from foreground object instead as basis ? Or just 1-sum?
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			float probaFg = 0.0f;
+			// background : go to a given distance
+			float dist = mgdm.reconstructedLevelSetAt(xyz, (byte)0)*Numerics.min(rx,ry,rz);
+			if (dist<-bgscaleParam) probaImage[xyz] = 1.0f;
+			else if (dist<0) probaImage[xyz] = 0.5f - 0.5f*dist/bgscaleParam;
+			else if (dist<bgscaleParam) probaImage[xyz] = 0.5f - 0.5f*dist/bgscaleParam;
+			else probaImage[xyz] = 0.0f;
+			// foreground: go to a ratio of object's size
+			//float probaFg = 0.0f;
 			for (byte l=1;l<nlabels;l++) {
-				float dist = mgdm.reconstructedLevelSetAt(xyz, l);
+				dist = mgdm.reconstructedLevelSetAt(xyz, l);
 				if (dist<-ratioParam*maxobjdist[l]) probaImage[l*nxyz+xyz] = 1.0f;
 				else if (dist<0) probaImage[l*nxyz+xyz] = 0.5f - 0.5f*dist/maxobjdist[l]/ratioParam;
 				else if (dist<ratioParam*maxobjdist[l]) probaImage[l*nxyz+xyz] = 0.5f - 0.5f*dist/maxobjdist[l]/ratioParam;
 				else probaImage[l*nxyz+xyz] = 0.0f;
 				
-				probaFg += probaImage[l*nxyz+xyz];
+				//probaFg += probaImage[l*nxyz+xyz];
 			}	
-			probaImage[xyz] = 1.0f-Numerics.min(probaFg, 1.0f);
+			//probaImage[xyz] = 1.0f-Numerics.min(probaFg, 1.0f);
 		}
 		
 	}

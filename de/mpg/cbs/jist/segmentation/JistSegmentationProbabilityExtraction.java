@@ -1,4 +1,4 @@
-package de.mpg.cbs.jist.modules;
+package de.mpg.cbs.jist.segmentation;
 
 import edu.jhu.ece.iacl.jist.pipeline.AlgorithmInformation;
 import edu.jhu.ece.iacl.jist.pipeline.AlgorithmInformation.AlgorithmAuthor;
