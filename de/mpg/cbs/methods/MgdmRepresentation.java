@@ -363,6 +363,8 @@ public class MgdmRepresentation {
     
 	public final byte[] getSegmentation() { return segmentation; }
 	
+	public final boolean[] getMask() { return mask; }
+	
 	public final void reduceMGDMsize(int nred) {
 		
 		float[][] redfunctions = new float[nred][nx*ny*nz];

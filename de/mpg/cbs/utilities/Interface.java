@@ -423,9 +423,9 @@ public class Interface {
 		int nx = inImg.getRows();
 		int ny = inImg.getCols();
 		int nz = inImg.getSlices();
-		int nxyz = nx*ny*nz;
+		//int nxyz = nx*ny*nz;
 		
-		float[] image = new float[nxyz];
+		float[] image = new float[nx*ny*nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;
 			image[xyz] = buffer[x][y][z];
@@ -441,9 +441,9 @@ public class Interface {
 		int ny = inImg.getCols();
 		int nz = inImg.getSlices();
 		int nc = inImg.getComponents();
-		int nxyz = nx*ny*nz*nc;
+		//int nxyz = nx*ny*nz*nc;
 		
-		float[] image = new float[nxyz];
+		float[] image = new float[nx*ny*nz*nc];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int c=0;c<nc;c++) {
 			int xyz = x+nx*y+nx*ny*z+nx*ny*nz*c;
 			image[xyz] = buffer[x][y][z][c];
@@ -459,9 +459,9 @@ public class Interface {
 			int nx = inImg.getRows();
 			int ny = inImg.getCols();
 			int nz = inImg.getSlices();
-			int nxyz = nx*ny*nz;
+			//int nxyz = nx*ny*nz;
 			
-			byte[] image = new byte[nxyz];
+			byte[] image = new byte[nx*ny*nz];
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 				int xyz = x+nx*y+nx*ny*z;
 				image[xyz] = buffer[x][y][z];
@@ -479,9 +479,9 @@ public class Interface {
 		int nx = inImg.getRows();
 		int ny = inImg.getCols();
 		int nz = inImg.getSlices();
-		int nxyz = nx*ny*nz;
+		//int nxyz = nx*ny*nz;
 		
-		int[] image = new int[nxyz];
+		int[] image = new int[nx*ny*nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;
 			image[xyz] = buffer[x][y][z];
@@ -497,9 +497,9 @@ public class Interface {
 		int ny = inImg.getCols();
 		int nz = inImg.getSlices();
 		int nc = inImg.getComponents();
-		int nxyz = nx*ny*nz;
+		//int nxyz = nx*ny*nz*nc;
 		
-		int[] image = new int[nxyz];
+		int[] image = new int[nx*ny*nz*nc];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int c=0;c<nc;c++) {
 			int xyz = x+nx*y+nx*ny*z+nx*ny*nz*c;
 			image[xyz] = buffer[x][y][z][c];
@@ -512,7 +512,7 @@ public class Interface {
 		int nx = dimensions[0];
 		int ny = dimensions[1];
 		int nz = dimensions[2];
-		int nxyz = nx*ny*nz;
+		//int nxyz = nx*ny*nz;
 		
 		float[][][] buffer = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
@@ -533,7 +533,7 @@ public class Interface {
 		int nx = dimensions[0];
 		int ny = dimensions[1];
 		int nz = dimensions[2];
-		int nxyz = nx*ny*nz;
+		//int nxyz = nx*ny*nz;
 		
 		float[][][][] buffer = new float[nx][ny][nz][length];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int l=0;l<length;l++) {
@@ -553,7 +553,7 @@ public class Interface {
 		int nx = dimensions[0];
 		int ny = dimensions[1];
 		int nz = dimensions[2];
-		int nxyz = nx*ny*nz;
+		//int nxyz = nx*ny*nz;
 		
 		byte[][][] buffer = new byte[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
