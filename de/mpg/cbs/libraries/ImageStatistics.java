@@ -969,7 +969,7 @@ public class ImageStatistics {
 				}
 			}
 		}
-		return (float)sigma2;
+		return (float)FastMath.sqrt(sigma2);
 	}
 	
 		
