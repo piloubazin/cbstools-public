@@ -340,9 +340,9 @@ public class Interface {
     	return input.getImageData().getHeader();
     }
     
-    public static final int[] getDimensions(ParamVolume input) {
-    	int[] dims = new int[3];
-    	dims[0] = input.getImageData().getRows();
+	public static final int[] getDimensions(ParamVolume input) {
+		int[] dims = new int[3];
+		dims[0] = input.getImageData().getRows();
 		dims[1] = input.getImageData().getCols();
 		dims[2] = input.getImageData().getSlices();
 		return dims;
@@ -573,7 +573,7 @@ public class Interface {
 		int nx = dimensions[0];
 		int ny = dimensions[1];
 		int nz = dimensions[2];
-		int nxyz = nx*ny*nz;
+		//int nxyz = nx*ny*nz;
 		
 		byte[][][][] buffer = new byte[nx][ny][nz][length];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int l=0;l<length;l++) {
@@ -593,7 +593,7 @@ public class Interface {
 		int nx = dimensions[0];
 		int ny = dimensions[1];
 		int nz = dimensions[2];
-		int nxyz = nx*ny*nz;
+		//int nxyz = nx*ny*nz;
 		
 		byte[][][] buffer = new byte[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
@@ -613,7 +613,7 @@ public class Interface {
 		int nx = dimensions[0];
 		int ny = dimensions[1];
 		int nz = dimensions[2];
-		int nxyz = nx*ny*nz;
+		//int nxyz = nx*ny*nz;
 		
 		byte[][][][] buffer = new byte[nx][ny][nz][length];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int l=0;l<length;l++) {
@@ -632,7 +632,7 @@ public class Interface {
 		int nx = dimensions[0];
 		int ny = dimensions[1];
 		int nz = dimensions[2];
-		int nxyz = nx*ny*nz;
+		//int nxyz = nx*ny*nz;
 		
 		int[][][] buffer = new int[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
@@ -652,7 +652,7 @@ public class Interface {
 		int nx = dimensions[0];
 		int ny = dimensions[1];
 		int nz = dimensions[2];
-		int nxyz = nx*ny*nz;
+		//int nxyz = nx*ny*nz;
 		
 		int[][][][] buffer = new int[nx][ny][nz][length];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int l=0;l<length;l++) {

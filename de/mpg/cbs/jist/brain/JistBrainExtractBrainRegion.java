@@ -118,6 +118,7 @@ public class JistBrainExtractBrainRegion extends ProcessingAlgorithm {
 		outputParams.add(probaStructureImage = new ParamVolume("Structure (GM) Probability",VoxelType.FLOAT));
 		outputParams.add(probaBackgroundImage = new ParamVolume("Background (CSF) Probability",VoxelType.FLOAT));
 		
+		/*
 		segInsideImage.setLoadAndSaveOnValidate(false);
 		segStructureImage.setLoadAndSaveOnValidate(false);
 		segBackgroundImage.setLoadAndSaveOnValidate(false);
@@ -127,6 +128,7 @@ public class JistBrainExtractBrainRegion extends ProcessingAlgorithm {
 		probaInsideImage.setLoadAndSaveOnValidate(false);
 		probaStructureImage.setLoadAndSaveOnValidate(false);
 		probaBackgroundImage.setLoadAndSaveOnValidate(false);
+		*/
 		
 		outputParams.setName("extract atlas images");
 		outputParams.setLabel("extract atlas images");
@@ -134,6 +136,8 @@ public class JistBrainExtractBrainRegion extends ProcessingAlgorithm {
 
 	@Override
 	protected void execute(CalculationMonitor monitor){
+
+		algorithm = new BrainExtractBrainRegion(); 
 		
 		// i/o variables
 		String functName = Interface.getName(functionImage);
@@ -143,12 +147,11 @@ public class JistBrainExtractBrainRegion extends ProcessingAlgorithm {
 		ImageHeader header = Interface.getHeader(functionImage);
 		int[] dims = Interface.getDimensions(segImage);
 		int comps = Interface.getComponents(functionImage);
+		
 		algorithm.setDimensions(dims);
 		algorithm.setComponents(comps);
 		algorithm.setResolutions(Interface.getResolutions(segImage));
 		
-		algorithm = new BrainExtractBrainRegion();
-		 
 		algorithm.setSegmentationImage(Interface.getIntegerImage3D(segImage));
 		algorithm.setLevelsetBoundaryImage(Interface.getFloatImage3D(mgdmImage));
 		algorithm.setMaximumMembershipImage(Interface.getFloatImage4D(functionImage));

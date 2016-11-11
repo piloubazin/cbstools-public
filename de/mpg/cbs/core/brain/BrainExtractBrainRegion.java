@@ -468,6 +468,7 @@ public class BrainExtractBrainRegion {
 		}
 		
 		// process the data: segmentation
+		System.out.println("Computing extracted segmentations");
 		segStructureImage = new byte[nx*ny*nz];
 		segInsideImage = new byte[nx*ny*nz];
 		segBackgroundImage = new byte[nx*ny*nz];
@@ -483,6 +484,7 @@ public class BrainExtractBrainRegion {
 
 		// process the data: levelsets 
 		// TODO: (could use the full representation and/or reinitialize => do it before the probabilities)
+		System.out.println("Computing extracted level sets");
 		lvlStructureImage = new float[nxyz];
 		lvlInsideImage = new float[nxyz];
 		lvlBackgroundImage = new float[nxyz];

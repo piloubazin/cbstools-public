@@ -153,7 +153,7 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 		if (model==EXP) mean = ImageStatistics.robustExponentialFit(data, iterate, ndata);
 		else if (model==HNORM) mean = ImageStatistics.robustHalfGaussianFit(data, iterate, ndata);
 		
-		Interface.displayMessage("background mean: "+mean);
+		Interface.displayMessage("background mean: "+mean+"\n");
 		
 		// re-normalized probability map
 		float[] proba = new float[nxyz];

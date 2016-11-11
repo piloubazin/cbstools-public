@@ -182,10 +182,10 @@ public class JistIntensityRobustNoiseEstimation extends ProcessingAlgorithm {
 			}
 		}
 		
-		float sigma2 = 0.0f;
+		float sigma = 0.0f;
 		float beta = 0.0f;
 		if (modelParam.getValue().equals("Gaussian")) {
-			sigma2 = ImageStatistics.robustHalfGaussianFit(data, outlierParam.getValue().booleanValue(), nngb*nb);
+			sigma = ImageStatistics.robustHalfGaussianFit(data, outlierParam.getValue().booleanValue(), nngb*nb);
 		} else if (modelParam.getValue().equals("Exponential")) {
 			beta = ImageStatistics.robustExponentialFit(data, outlierParam.getValue().booleanValue(), nngb*nb);
 		}
@@ -200,7 +200,7 @@ public class JistIntensityRobustNoiseEstimation extends ProcessingAlgorithm {
 				 	
 				 	float proba = 0.0f;
 				 	if (modelParam.getValue().equals("Gaussian")) {
-				 		proba = (float)(FastMath.exp( -0.5*diff*diff/sigma2)*FastMath.sqrt(2.0/(FastMath.PI*sigma2)) );
+				 		proba = (float)(FastMath.exp( -0.5*diff*diff/(sigma*sigma))*FastMath.sqrt(2.0/(FastMath.PI*sigma*sigma)) );
 				 	} else if (modelParam.getValue().equals("Exponential")) {
 				 		proba = (float)(FastMath.exp( -diff/beta)/beta );
 				 	}				 		
@@ -217,7 +217,7 @@ public class JistIntensityRobustNoiseEstimation extends ProcessingAlgorithm {
 		
 		// output
 		if (modelParam.getValue().equals("Gaussian")) {
-			medianParam.setValue((float)FastMath.sqrt(sigma2));
+			medianParam.setValue(sigma);
 		} else if (modelParam.getValue().equals("Exponential")) {
 			medianParam.setValue(beta);
 		}
