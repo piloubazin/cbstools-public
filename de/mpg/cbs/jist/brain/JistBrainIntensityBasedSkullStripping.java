@@ -165,7 +165,7 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 				// exponential model
 				proba[xyz] = (float)(Math.exp(-image[main][xyz]/mean)/mean);
 			// bg vs. outlier test : proba is p(xyz is background)
-			proba[xyz] = proba[xyz]/(1.0f+(float)max*proba[xyz]);
+			proba[xyz] = (float)max*proba[xyz]/(1.0f+(float)max*proba[xyz]);
 		}
 
 		Interface.displayMessage("background-based skull stripping");
@@ -217,12 +217,11 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 		float[][][] probamask = new float[nx][ny][nz];	
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;
+			probamask[x][y][z] = 1.0f-proba[xyz];
 			if (brain[xyz]>0) {
 				brainmask[x][y][z] = 1;
-				probamask[x][y][z] = 1.0f-proba[xyz];
 			} else {
 				brainmask[x][y][z] = 0;
-				probamask[x][y][z] = 0.0f;
 			}
 		}
 

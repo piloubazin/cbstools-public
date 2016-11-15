@@ -92,7 +92,7 @@ public class JistLaminarProfileSampling extends ProcessingAlgorithm {
 		// i/o variables
 		String name = Interface.commonNameBase(Interface.getName(layersImage),Interface.getName(intensityImage));
 		ImageHeader header = Interface.getHeader(layersImage);
-		int[] dims = Interface.getDimensions(layersImage);
+		int[] dims = Interface.getDimensions4D(layersImage);
 		float[] res = Interface.getResolutions(layersImage);
 		
 		// main algorithm

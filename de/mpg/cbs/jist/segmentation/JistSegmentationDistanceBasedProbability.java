@@ -34,21 +34,30 @@ public class JistSegmentationDistanceBasedProbability extends ProcessingAlgorith
 
 	// jist containers
 	private ParamVolume segImage;
+	private ParamVolume priorImage;
 	private ParamFloat ratioParam;
 	private ParamFloat bgscaleParam;
-	private ParamBoolean bgDistParam;
+	private ParamFloat bgprobaParam;
+	private ParamBoolean bgincludedParam;
+	private ParamOption mergeParam;
 	
 	private ParamVolume 	probaImage;
+	private ParamVolume 	bgmaskImage;
 		
 	private SegmentationDistanceBasedProbability algorithm;
 	
 	protected void createInputParameters(ParamCollection inputParams) {
 		
-		inputParams.add(segImage = new ParamVolume("Segmentation"));
+		inputParams.add(segImage = new ParamVolume("Segmentation (opt if priors)"));
+		segImage.setMandatory(false);
+		inputParams.add(priorImage = new ParamVolume("Prior probabilities (4D, opt if segmentation)"));
+		priorImage.setMandatory(false);
 		inputParams.add(ratioParam = new ParamFloat("Distance ratio",0.0f,1.0f,0.5f));
 		inputParams.add(bgscaleParam = new ParamFloat("Background Distance (mm)",0.0f,1.0e15f,3.0f));
-		inputParams.add(bgDistParam = new ParamBoolean("Use fixed background distance",true));
-		
+		inputParams.add(bgprobaParam = new ParamFloat("Background Probability",0.0f,1.0f,0.5f));
+		inputParams.add(bgincludedParam = new ParamBoolean("Background included",true));
+		inputParams.add(mergeParam = new ParamOption("Probability merging",algorithm.mergingTypes));
+		mergeParam.setValue(algorithm.mergingType);
 		
 		algorithm = new SegmentationDistanceBasedProbability();
 		
@@ -70,6 +79,7 @@ public class JistSegmentationDistanceBasedProbability extends ProcessingAlgorith
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
 		outputParams.add(probaImage = new ParamVolume("Distance-based Probability Image (4D)",VoxelType.FLOAT,-1,-1,-1,-1));
+		outputParams.add(bgmaskImage = new ParamVolume("Background mask",VoxelType.UBYTE));
 		
 		outputParams.setName(algorithm.getName());
 		outputParams.setLabel(algorithm.getLabel());
@@ -82,23 +92,38 @@ public class JistSegmentationDistanceBasedProbability extends ProcessingAlgorith
 		algorithm = new SegmentationDistanceBasedProbability();
 		
 		// i/o variables
-		String name = Interface.getName(segImage);
-		ImageHeader header = Interface.getHeader(segImage);
+		String name;
+		ImageHeader header;
+		int[] dims;
+		if (segImage.getValue()!=null) {
+			name = Interface.getName(segImage);
+			header = Interface.getHeader(segImage);
 		
-		int[] dims = Interface.getDimensions(segImage);
-		algorithm.setDimensions(dims);
-		algorithm.setResolutions(Interface.getResolutions(segImage));
+			dims = Interface.getDimensions(segImage);
+			algorithm.setDimensions(dims);
+			algorithm.setResolutions(Interface.getResolutions(segImage));
+		} else {
+			name = Interface.getName(priorImage);
+			header = Interface.getHeader(priorImage);
 		
+			dims = Interface.getDimensions(priorImage);
+			algorithm.setDimensions(dims);
+			algorithm.setResolutions(Interface.getResolutions(priorImage));
+		}
 		// pass the input parameters
-		algorithm.setSegmentationImage(Interface.getIntegerImage3D(segImage));
+		if (segImage.getValue()!=null) algorithm.setSegmentationImage(Interface.getIntegerImage3D(segImage));
+		if (priorImage.getValue()!=null) algorithm.setPriorProbabilityImage(Interface.getFloatImage4D(priorImage));
 		algorithm.setDistanceRatio(ratioParam.getValue().floatValue());
 		algorithm.setBackgroundDistance_mm(bgscaleParam.getValue().floatValue());
-		algorithm.setUseBackgroundDistance(bgDistParam.getValue().booleanValue());
+		algorithm.setBackgroundProbability(bgprobaParam.getValue().floatValue());
+		algorithm.setBackgroundIncluded(bgincludedParam.getValue().booleanValue());
+		algorithm.setProbabilityMerging(mergeParam.getValue());
 				
 		algorithm.execute();
 		
 		// outputs
 		Interface.setFloatImage4D(algorithm.getProbabilityImage(), dims, algorithm.getLabelNumber(), probaImage, name+"_prob", header);
+		Interface.setUByteImage3D(algorithm.getBackgroundMaskImage(), dims, bgmaskImage, name+"_mask", header);
 		
 		return;
 	}

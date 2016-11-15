@@ -340,11 +340,20 @@ public class Interface {
     	return input.getImageData().getHeader();
     }
     
-	public static final int[] getDimensions(ParamVolume input) {
+    public static final int[] getDimensions(ParamVolume input) {
 		int[] dims = new int[3];
 		dims[0] = input.getImageData().getRows();
 		dims[1] = input.getImageData().getCols();
 		dims[2] = input.getImageData().getSlices();
+		return dims;
+	}
+	
+    public static final int[] getDimensions4D(ParamVolume input) {
+		int[] dims = new int[4];
+		dims[0] = input.getImageData().getRows();
+		dims[1] = input.getImageData().getCols();
+		dims[2] = input.getImageData().getSlices();
+		dims[3] = input.getImageData().getComponents();
 		return dims;
 	}
 	
