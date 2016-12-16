@@ -50,7 +50,7 @@ public class JistSurfaceMgdmToMeshes extends ProcessingAlgorithm {
 	private ParamVolume functionImage;
 	//private ParamFile atlasParam;
 	//private ParamInteger 	mgdmParam;
-	//private ParamBoolean	zeroParam;
+	private ParamBoolean	zeroParam;
 	//private ParamDouble 	distParam;
 	ParamOption		topologyParam;
 	
@@ -72,7 +72,7 @@ public class JistSurfaceMgdmToMeshes extends ProcessingAlgorithm {
 		//inputParams.add(atlasParam = new ParamFile("Atlas file (opt)",new FileExtensionFilter(new String[]{"txt"})));
 		//atlasParam.setMandatory(false);
         
-		//inputParams.add(zeroParam = new ParamBoolean("Skip zero label", true));
+		inputParams.add(zeroParam = new ParamBoolean("Skip background label", true));
 		
         //inputParams.add(typeParam = new ParamOption("Data type", functionTypes));
 		inputParams.add(topologyParam = new ParamOption("Topology", topoTypes));
@@ -161,11 +161,11 @@ public class JistSurfaceMgdmToMeshes extends ProcessingAlgorithm {
 		nobj = objlabel.length;
 		
 		//int nmgdm = mgdmParam.getValue().intValue();
-		//boolean skip = zeroParam.getValue().booleanValue();
+		boolean skip = zeroParam.getValue().booleanValue();
 		//float dist = distParam.getValue().floatValue();
 		
-		//if (skip && objlabel[0]==0) {
-		if (objlabel[0]==0) {
+		if (skip) {
+		//if (objlabel[0]==0) {
 			byte[] tmp = new byte[nobj-1];
 			for (int n=0;n<nobj-1;n++) tmp[n] = objlabel[n+1];
 			objlabel = tmp;
@@ -187,6 +187,7 @@ public class JistSurfaceMgdmToMeshes extends ProcessingAlgorithm {
 		// for each label, create the levelset then generate a mesh
 		float[][][] levelset = new float[nx][ny][nz];
 		for (int n=0;n<nobj;n++) {
+			Interface.displayMessage("extract object: "+objlabel[n]+"\n");
 			// extract corresponding region	
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 				int xyz = x+nx*y+nx*ny*z;
@@ -211,7 +212,7 @@ public class JistSurfaceMgdmToMeshes extends ProcessingAlgorithm {
 			surf.computeNormals();
 			
 			// weird discrepancy with the inflation module??
-			SurfaceInflate inflate=new SurfaceInflate(surf);
+			//SurfaceInflate inflate=new SurfaceInflate(surf);
 			
 			// outputs
 			meshSurfaces.add(surf);
