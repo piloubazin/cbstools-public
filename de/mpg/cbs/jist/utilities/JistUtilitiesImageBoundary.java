@@ -11,6 +11,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataMipav;
@@ -27,6 +28,7 @@ public class JistUtilitiesImageBoundary extends ProcessingAlgorithm{
 	ParamVolume resultVolParam;
 	ParamOption operationParam;
 	ParamInteger distParam;
+	ParamBoolean addboundaryParam;
 	
 	private static final String cvsversion = "$Revision: 1.10 $";
 	private static final String revnum = cvsversion.replace("Revision: ", "").replace("$", "").replace(" ", "");
@@ -41,6 +43,7 @@ public class JistUtilitiesImageBoundary extends ProcessingAlgorithm{
 		inputParams.add(volParam=new ParamVolume("Image Volume"));
 		inputParams.add(operationParam=new ParamOption("Image boundary value",new String[]{"zero","min","max"}));
 		inputParams.add(distParam=new ParamInteger("Image boundary size (voxels)", 1, 100, 1));
+		inputParams.add(addboundaryParam=new ParamBoolean("resize image to add boundary", false));
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Utilities");
@@ -75,47 +78,72 @@ public class JistUtilitiesImageBoundary extends ProcessingAlgorithm{
 			float[][][] image = vol.toArray3d();
 			
 			// main algorithm
-			float[][][] result = new float[nx][ny][nz];
-			
 			float Imin = ImageStatistics.minimum(image,nx,ny,nz);
 			float Imax = ImageStatistics.maximum(image,nx,ny,nz);
 			int d = distParam.getValue().intValue();
+			
+			int nbx,nby,nbz,b;
+			if (addboundaryParam.getValue().booleanValue()) {
+				b = d;
+				nbx = nx+2*b;
+				nby = ny+2*b;
+				nbz = nz+2*b;
+			} else {
+				b = 0;
+				nbx = nx;
+				nby = ny;
+				nbz = nz;
+			}
+			float[][][] result = new float[nbx][nby][nbz];
+			
 					
 			byte op = ZERO;
 			if (operationParam.getValue().equals("min")) op = MIN;
 			else if (operationParam.getValue().equals("max")) op = MAX;
 			
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-				if (x<d || x>=nx-d || y<d || y>=ny-d || z<d || z>=nz-d) {
+			for (int x=0;x<nbx;x++) for (int y=0;y<nby;y++) for (int z=0;z<nbz;z++) {
+				if (x<d || x>=nbx-d || y<d || y>=nby-d || z<d || z>=nbz-d) {
 					if (op==ZERO) result[x][y][z] = 0.0f;
 					else if (op==MIN) result[x][y][z] = Imin;
 					else if (op==MAX) result[x][y][z] = Imax;
 				} else {
-					result[x][y][z] = image[x][y][z];
+					result[x][y][z] = image[x-b][y-b][z-b];
 				}
 			}
 			resultData = new ImageDataFloat(result);	
 		} else {
 			float[][][][] image = vol.toArray4d();
 			
-			// main algorithm
-			float[][][][] result = new float[nx][ny][nz][nt];
-			
+			// main algorithm	
 			float Imin = ImageStatistics.minimum(image,nx,ny,nz,nt);
 			float Imax = ImageStatistics.maximum(image,nx,ny,nz,nt);
 			int d = distParam.getValue().intValue();
-					
+			
+			int nbx,nby,nbz,b;
+			if (addboundaryParam.getValue().booleanValue()) {
+				b = d;
+				nbx = nx+2*b;
+				nby = ny+2*b;
+				nbz = nz+2*b;
+			} else {
+				b = 0;
+				nbx = nx;
+				nby = ny;
+				nbz = nz;
+			}
+			float[][][][] result = new float[nbx][nby][nbz][nt];
+			
 			byte op = ZERO;
 			if (operationParam.getValue().equals("min")) op = MIN;
 			else if (operationParam.getValue().equals("max")) op = MAX;
 			
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int t=0;t<nt;t++) {
-				if (x<d || x>=nx-d || y<d || y>=ny-d || z<d || z>=nz-d) {
+			for (int x=0;x<nbx;x++) for (int y=0;y<nby;y++) for (int z=0;z<nbz;z++) for (int t=0;t<nt;t++) {
+				if (x<d || x>=nbx-d || y<d || y>=nby-d || z<d || z>=nbz-d) {
 					if (op==ZERO) result[x][y][z][t] = 0.0f;
 					else if (op==MIN) result[x][y][z][t] = Imin;
 					else if (op==MAX) result[x][y][z][t] = Imax;
 				} else {
-					result[x][y][z][t] = image[x][y][z][t];
+					result[x][y][z][t] = image[x-b][y-b][z-b][t];
 				}
 			}
 			resultData = new ImageDataFloat(result);	
