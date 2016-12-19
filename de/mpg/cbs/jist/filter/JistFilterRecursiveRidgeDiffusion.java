@@ -213,8 +213,9 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		byte[] maxdirection = new byte[nxyz];
 		byte[] maxscale = new byte[nxyz];
 		
-		directionFromRecursiveRidgeFilter(image, mask, maxresponse, maxdirection);
-		
+		if (filterParam.getValue().equals("1D")) directionFromRecursiveRidgeFilter1D(image, mask, maxresponse, maxdirection);
+		else if (filterParam.getValue().equals("2D")) directionFromRecursiveRidgeFilter2D(image, mask, maxresponse, maxdirection);
+			
 		for(int i=0;i<nscales;i++){
 			
 			float scale = 1.0f+i;
@@ -231,7 +232,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 
 			byte[] direction = new byte[nxyz];
 			float[] response = new float[nxyz];
-			directionFromRecursiveRidgeFilter(smoothed, mask, response, direction);
+			if (filterParam.getValue().equals("1D")) directionFromRecursiveRidgeFilter1D(smoothed, mask, response, direction);
+			else if (filterParam.getValue().equals("2D")) directionFromRecursiveRidgeFilter2D(smoothed, mask, response, direction);
 			
 			//Combine scales: keep maximum response
 			for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
@@ -306,49 +308,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			direction[Z][xyz] = vec[Z];
 		}
 		
-		// 3. diffuse the data to neighboring structures
-		// compute neighborhood structure
-		Interface.displayMessage("compute neighborhood structure\n");
-		float[] similarity1 = new float[nxyz];
-		float[] similarity2 = new float[nxyz];
-		byte[] neighbor1 = new byte[nxyz];
-		byte[] neighbor2 = new byte[nxyz];
-		//estimateDiffusionSimilarity(direction, mask, neighbor1, neighbor2, similarity1, similarity2);
-		estimateSimpleDiffusionSimilarity(direction, mask, neighbor1, neighbor2, similarity1, similarity2);
-		
-		// original score
-		float[] diffused = new float[nxyz];
-		float shapeScale = 1.0f;
-		for (int xyz=0;xyz<nxyz;xyz++) {
-			if (!mask[xyz]) proba[xyz] = 0.0f;
-
-			//diffused[xyz] = proba[xyz];
-			diffused[xyz] = (float)FastMath.log(1.0f + proba[xyz]);
-		}
-		
-		// pre-compute different similarity models; default is angle only
-		for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
-			// value more neighbors that are well aligned and have strong tubular response
-			similarity1[xyz] = (float)FastMath.sqrt(similarity1[xyz]*proba[neighborIndex(neighbor1[xyz],xyz)]);
-			similarity2[xyz] = (float)FastMath.sqrt(similarity2[xyz]*proba[neighborIndex(neighbor2[xyz],xyz)]);
-		}
-		
-		// diffuse along neighborhood
-		int maxiter = iterParam.getValue().intValue();
-		float maxdiff = diffParam.getValue().floatValue();
-		float factor = factorParam.getValue().floatValue();
-		
-		if (propagationParam.getValue().equals("diffusion")) {
-			// diffuse along the tensor
-			Interface.displayMessage("diffusion smoothing ("+factorParam.getValue().floatValue()+")\n");
-		
-			proba = probaDiffusion(proba, similarity1, similarity2, neighbor1, neighbor2, mask, nxyz, maxiter, maxdiff, factor);
-		} else if (propagationParam.getValue().equals("belief")) {
-			// belief propagation
-			Interface.displayMessage("belief propagation\n");
-		
-			proba = beliefPropagation(proba, similarity1, similarity2, neighbor1, neighbor2, mask, nxyz, maxiter, maxdiff);
-		}
+		// 3. diffuse the data to neighboring structures with SUR
 				
 		// Output
 		Interface.displayMessage("Prepare output images\n");
@@ -410,7 +370,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		return;
 	}
 	
-	private final void directionFromRecursiveRidgeFilter(float[] img, boolean[] mask, float[] filter,byte[] direction) {
+	private final void directionFromRecursiveRidgeFilter1D(float[] img, boolean[] mask, float[] filter,byte[] direction) {
 			
 			// get the tubular filter response
 			float[][][] planescore = new float[nx][ny][nz];
@@ -443,6 +403,33 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			planescore = null;
 			planedir = null;
 			linedir = null;
+			image = null;
+			return;
+	}
+	private final void directionFromRecursiveRidgeFilter2D(float[] img, boolean[] mask, float[] filter,byte[] direction) {
+			
+			// get the tubular filter response
+			float[][][] planescore = new float[nx][ny][nz];
+			byte[][][] planedir = new byte[nx][ny][nz];
+			float[][][] image = new float[nx][ny][nz];
+			//float[] filter = new float[nx*ny*nz];
+			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+				int xyz = x + nx*y + nx*ny*z;
+				image[x][y][z] = img[xyz];
+			}
+			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
+				int xyz = x + nx*y + nx*ny*z;
+				filter[xyz] = 0.0f;
+				if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
+					// check for zero-valued neighbors as well
+					minmaxplaneScore(image, planescore, planedir, x,y,z, 13);
+					filter[xyz] = planescore[x][y][z];
+					direction[xyz] = planedir[x][y][z];
+					if (filter[xyz]<0) { filter[xyz]=0; direction[xyz] = -1; }
+				}
+			}
+			planescore = null;
+			planedir = null;
 			image = null;
 			return;
 	}
@@ -1239,257 +1226,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		else return new byte[]{0, 0, 0};
 	}
 	
-	private final float[] beliefPropagation(float[] proba, float[] similarity1, float[] similarity2, byte[] ngb1, byte[] ngb2, boolean[] mask, int nxyz, int iter, float maxdiff) {
-		
-		float[] message1fg = new float[nxyz];
-		float[] message2fg = new float[nxyz];
-		float[] message1bg = new float[nxyz];
-		float[] message2bg = new float[nxyz];
-		
-		float[] newmsg1fg = new float[nxyz];
-		float[] newmsg2fg = new float[nxyz];
-		float[] newmsg1bg = new float[nxyz];
-		float[] newmsg2bg = new float[nxyz];
-		
-		// init
-		for (int xyz=0;xyz<nxyz;xyz++) {
-			message1fg[xyz] = 1.0f;
-			message2fg[xyz] = 1.0f;
-			message1bg[xyz] = 1.0f;
-			message2bg[xyz] = 1.0f;
-			newmsg1fg[xyz] = 1.0f;
-			newmsg2fg[xyz] = 1.0f;
-			newmsg1bg[xyz] = 1.0f;
-			newmsg2bg[xyz] = 1.0f;
-		}
-		
-		// min value for probas, similarities
-		float minp = 0.00f;
-		float mins = 0.00f;
-		
-		// message passing
-		for (int t=0;t<iter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
-			float diff = 0.0f;
-			//float prev;
-			int ngb;
-			for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) if (proba[xyz]>0 && proba[xyz]<1) {
-				float simfgfg1 = similarity1[xyz];
-				float simbgfg1 = 0.0f; //(1.0f-similarity1[xyz]); //similarity1[xyz];
-				float simfgbg1 = (1.0f-similarity1[xyz]); // good results
-				float simbgbg1 = 1.0f; //(1.0f-similarity1[xyz]); //1.0f; //similarity1[xyz];
-				
-				float simfgfg2 = similarity2[xyz];
-				float simbgfg2 = 0.0f;//(1.0f-similarity2[xyz]); //similarity2[xyz];
-				float simfgbg2 = (1.0f-similarity2[xyz]); // good results
-				float simbgbg2 = 1.0f; //(1.0f-similarity2[xyz]); //1.0f; //similarity2[xyz];
-				
-				// first neighbor message, fg label
-				ngb = neighborIndex(ngb1[xyz],xyz);
-				float mfgfg1 = Numerics.max(mins,simfgfg1)*Numerics.max(minp,proba[ngb]);
-				if (neighborIndex(ngb1[ngb],ngb)!=xyz && message1fg[ngb]>0) mfgfg1 *= message1fg[ngb];
-				if (neighborIndex(ngb2[ngb],ngb)!=xyz && message2fg[ngb]>0) mfgfg1 *= message2fg[ngb];
-				
-				float mfgbg1 = Numerics.max(mins,simfgbg1)*Numerics.max(minp,(1.0f-proba[ngb]));
-				if (neighborIndex(ngb1[ngb],ngb)!=xyz && message1bg[ngb]>0) mfgbg1 *= message1bg[ngb];
-				if (neighborIndex(ngb2[ngb],ngb)!=xyz && message2bg[ngb]>0) mfgbg1 *= message2bg[ngb];
-				
-				newmsg1fg[xyz] = Numerics.max(mfgfg1, mfgbg1);
-				diff = Numerics.max(diff, Numerics.abs(newmsg1fg[xyz]-message1fg[xyz]));
-				
-				// first neighbor message, bg label
-				ngb = neighborIndex(ngb1[xyz],xyz);
-				float mbgbg1 = Numerics.max(mins,simbgbg1)*Numerics.max(minp,(1.0f-proba[ngb]));
-				if (neighborIndex(ngb1[ngb],ngb)!=xyz && message1bg[ngb]>0) mbgbg1 *= message1bg[ngb];
-				if (neighborIndex(ngb2[ngb],ngb)!=xyz && message2bg[ngb]>0) mbgbg1 *= message2bg[ngb];
-				
-				float mbgfg1 = Numerics.max(mins,simbgfg1)*Numerics.max(minp,proba[ngb]);
-				if (neighborIndex(ngb1[ngb],ngb)!=xyz && message1fg[ngb]>0) mbgfg1 *= message1fg[ngb];
-				if (neighborIndex(ngb2[ngb],ngb)!=xyz && message2fg[ngb]>0) mbgfg1 *= message2fg[ngb];
-				
-				newmsg1bg[xyz] = Numerics.max(mbgbg1, mbgfg1);
-				diff = Numerics.max(diff, Numerics.abs(newmsg1bg[xyz]-message1bg[xyz]));
-				
-				// second neighbor message, fg label
-				ngb = neighborIndex(ngb2[xyz],xyz);
-				float mfgfg2 = Numerics.max(mins,simfgfg2)*Numerics.max(minp,proba[ngb]);
-				if (neighborIndex(ngb1[ngb],ngb)!=xyz && message1fg[ngb]>0) mfgfg2 *= message1fg[ngb];
-				if (neighborIndex(ngb2[ngb],ngb)!=xyz && message2fg[ngb]>0) mfgfg2 *= message2fg[ngb];
-				
-				float mfgbg2 = Numerics.max(mins,simfgbg2)*Numerics.max(minp,(1.0f-proba[ngb]));
-				if (neighborIndex(ngb1[ngb],ngb)!=xyz && message1bg[ngb]>0) mfgbg2 *= message1bg[ngb];
-				if (neighborIndex(ngb2[ngb],ngb)!=xyz && message2bg[ngb]>0) mfgbg2 *= message2bg[ngb];
-				
-				newmsg2fg[xyz] = Numerics.max(mfgfg2, mfgbg2);
-				diff = Numerics.max(diff, Numerics.abs(newmsg2fg[xyz]-message2fg[xyz]));
-				
-				// second neighbor message, bg label
-				ngb = neighborIndex(ngb2[xyz],xyz);
-				float mbgbg2 = Numerics.max(mins,simbgbg2)*Numerics.max(minp,(1.0f-proba[ngb]));
-				if (neighborIndex(ngb1[ngb],ngb)!=xyz && message1bg[ngb]>0) mbgbg2 *= message1bg[ngb];
-				if (neighborIndex(ngb2[ngb],ngb)!=xyz && message2bg[ngb]>0) mbgbg2 *= message2bg[ngb];
-				
-				float mbgfg2 = Numerics.max(mins,simbgfg2)*Numerics.max(minp,proba[ngb]);
-				if (neighborIndex(ngb1[ngb],ngb)!=xyz && message1fg[ngb]>0) mbgfg2 *= message1fg[ngb];
-				if (neighborIndex(ngb2[ngb],ngb)!=xyz && message2fg[ngb]>0) mbgfg2 *= message2fg[ngb];
-				
-				newmsg2bg[xyz] = Numerics.max(mbgbg2, mbgfg2);
-				diff = Numerics.max(diff, Numerics.abs(newmsg2bg[xyz]-message2bg[xyz]));
-			}
-			// copy new messages onto older ones
-			for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) if (proba[xyz]>0 && proba[xyz]<1){
-				message1fg[xyz] = newmsg1fg[xyz];
-				message1bg[xyz] = newmsg1bg[xyz];
-				message2fg[xyz] = newmsg2fg[xyz];
-				message2bg[xyz] = newmsg2bg[xyz];
-			}
-			Interface.displayMessage("diff "+diff+"\n");
-			if (diff < maxdiff) t = iter;
-		}
-		
-		// compute final belief
-		float[] belief = new float[nxyz];
-		float 	bgbelief;
-		
-		for (int xyz=0;xyz<nxyz;xyz++) {
-			belief[xyz] = proba[xyz];
-			
-			if (mask[xyz]) if (proba[xyz]>0 && proba[xyz]<1) {
-				if (message1fg[xyz]>0) belief[xyz] *= message1fg[xyz];
-				if (message2fg[xyz]>0) belief[xyz] *= message2fg[xyz];
-			}
-			
-			bgbelief = (1.0f-proba[xyz]);
-			if (mask[xyz]) if (proba[xyz]>0 && proba[xyz]<1) {
-				if (message1bg[xyz]>0) bgbelief *= message1bg[xyz];
-				if (message2bg[xyz]>0) bgbelief *= message2bg[xyz];
-			}
-			// normalize
-			//belief[xyz] = belief[xyz]/Numerics.max(1e-9f,belief[xyz]+bgbelief);
-			belief[xyz] = belief[xyz]/(belief[xyz]+bgbelief);
-		}
-		return belief;
-	}
 	
-	private final float[] probaDiffusion(float[] proba, float[] similarity1, float[] similarity2, byte[] neighbor1, byte[] neighbor2, boolean[] mask, int nxyz, int maxiter, float maxdiff, float factor) {
-		
-		float[] diffused = new float[nxyz];
-		for (int xyz=0;xyz<nxyz;xyz++) {
-			diffused[xyz] = (float)FastMath.log(1.0f + proba[xyz]);
-		}
-		
-		for (int t=0;t<maxiter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
-			float diff = 0.0f;
-			/*
-			float globalw = 0.0f;
-			float den = 0.0f;
-			float ratio = 1.0f;
-			for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
-				float ngb1 = diffused[neighborIndex(neighbor1[xyz],xyz)];
-				float ngb2 = diffused[neighborIndex(neighbor2[xyz],xyz)];
-				float w1 = similarity1[xyz]*probaWeight(ngb1);
-				float w2 = similarity2[xyz]*probaWeight(ngb2);
-				globalw += w1+w2;
-				den += 1.0f;
-			}
-			ratio = globalw/den;
-			*/
-			for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
-				float prev = diffused[xyz];
-				// weight with distance to 0 or 1
-				float ngb1 = diffused[neighborIndex(neighbor1[xyz],xyz)];
-				float ngb2 = diffused[neighborIndex(neighbor2[xyz],xyz)];
-				//float w1 = similarity1[xyz]*probaWeight(ngb1);
-				//float w2 = similarity2[xyz]*probaWeight(ngb2);
-				
-				// remap neighbors?
-				ngb1 = (float)FastMath.exp(ngb1)-1.0f;
-				ngb2 = (float)FastMath.exp(ngb2)-1.0f;
-				
-				// now this depends on similarity choices
-				// value more neighbors that are well aligned and have strong tubular response
-				//float w1 = similarity1[xyz]*proba[neighborIndex(neighbor1[xyz],xyz)];
-				//float w2 = similarity2[xyz]*proba[neighborIndex(neighbor2[xyz],xyz)];
-				float w1 = similarity1[xyz];
-				float w2 = similarity2[xyz];
-				
-				// stable normalization	 (works OK, but not much different from the raw filter?)			 
-				//diffused[xyz] = Numerics.bounded((proba[xyz] + factor*w1*ngb1 + factor*w2*ngb2)/(1.0f + factor*globalw), 0, 1);
-				// integration over the whole vessel (log version is more stable (??) )
-				diffused[xyz] = (float)FastMath.log(1.0f + proba[xyz] + factor*w1*ngb1 + factor*w2*ngb2);
-				//diffused[xyz] = proba[xyz] + factor*w1*ngb1 + factor*w2*ngb2;
-				
-				if (Numerics.abs(prev-diffused[xyz])>diff) diff = Numerics.abs(prev-diffused[xyz]);
-			}
-			
-			Interface.displayMessage("diff "+diff+"\n");
-			if (diff<maxdiff) t=maxiter;
-		}
-		
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			int id = x + nx*y + nx*ny*z;
-			if (maxiter==0) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
-			else diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0)/(1.0f+2.0f*factor), 0.0f, 1.0f);
-		}
-		return diffused;
-	}
-    private final void estimateSimpleDiffusionSimilarity(float[][] imdir, boolean[] mask, byte[] neighbor1, byte[] neighbor2, 
-    													float[] similarity1, float[] similarity2) {
-    	
-		float[]	ds1 = new float[NC2];
-		float[]	ds2 = new float[NC2];
-		
-		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
-			int id = x+nx*y+nx*ny*z;
-			if (mask[id]) {
-				// find the aligned discrete directions
-				byte d1 = -1; float dv1 = 0.0f;
-				byte d2 = -1; float dv2 = 0.0f;
-				for (byte d=0;d<NC2;d++) {
-					int idn = neighborIndex(d,id);
-					
-					if (mask[idn]) {
-						float dv = directionProduct(d, id, imdir);
-						if (dv>dv1) {
-							dv1 = dv;
-							d1 = d;
-						}
-						if (dv<dv2) {
-							dv2 = dv;
-							d2 = d;
-						}
-					}
-				}
-				if (d1!=-1) {
-					neighbor1[id] = d1;
-					similarity1[id] = simpleAngleSimilarityGain(imdir, d1,id,neighborIndex(d1,id));
-				} else {
-					neighbor1[id] = 0;
-					similarity1[id] = 0.0f;
-				}
-				if (d2!=-1) {
-					neighbor2[id] = d2;
-					similarity2[id] = simpleAngleSimilarityGain(imdir, d2,id,neighborIndex(d2,id));
-				} else {
-					neighbor2[id] = 0;
-					similarity2[id] = 0.0f;
-				}
-			}
-		}
-		
-		return;
-    
-
-    }
-    
-	private final float simpleAngleSimilarityGain(float[][] imdir, int dir, int id1, int id2) {
-		float prod = (imdir[0][id1]*imdir[0][id2]+imdir[1][id1]*imdir[1][id2]+imdir[2][id1]*imdir[2][id2]);
-		float dataAngle = (float)FastMath.acos(Numerics.min(1.0f,Numerics.abs(prod)))/PI2;
-				
-		return (1.0f-dataAngle);
-	}	
-
 	private final int neighborIndex(byte d, int id) {
 		int idn=id;
 		
@@ -1554,210 +1291,218 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 
 		return dv;
 	}	
-	
-	private final void directionFromHessian(float[] img, boolean[] mask, float[] shape, byte[] direction) {
-		double[][] hessian = new double[3][3];
-			   
-		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
-			int id = x + nx*y + nx*ny*z;
-			if (mask[id] && !zeroNeighbor(img, mask, x,y,z,2)) {
-				ImageGeometry.computeHessianOrder2At(img, id, hessian, nx, ny, nz);
-				
-				// compute eigenvalues
-				double[] vals = Matrix3D.eigenvalues(hessian);
-				double[][] dirs = Matrix3D.eigenvectors(hessian, vals);
-				
-				// shape: basic score is not good enough (too much background noise)
-				if (vals[0]!=0) shape[id] = (float)(-vals[0]*(Numerics.abs(vals[0])-Numerics.abs(vals[2]))/Numerics.abs(vals[0]));
-				
-				// main direction: lowest eigenvalue : approx with closest neighbor
-				double maxcorr = 0.0;
-				byte maxd = -1;
-				for (byte d=0;d<NC;d++) {
-					float[] dird = directionVector(d);
-					double corr = Numerics.abs(dirs[X][2]*dird[X]+dirs[Y][2]*dird[Y]+dirs[Z][2]*dird[Z]);
-					if (corr>maxcorr) {
-						maxcorr = corr;
-						maxd = d;
-					}
+
+	private final void spatialUncertaintyRelaxation1D(float[] proba, byte[] dir, int ngbsize, float scale, float factor, int iter) {
+		// run SUR with weighting against normal directions
+		//mix with the neighbors?
+		float[] certainty = new float[nx*ny*nz];   	
+		float[] newproba = new float[nx*ny*nz];
+		float[] ngbweight = new float[26];
+		float[][] imgweight = new float[nx*ny*nz][26];  
+		float[][] angleweight1D = new float[13][13];
+		for (int d1=0;d1<13;d1++) for (int d2=0;d2<13;d2++) {
+			float[] dir1 = directionVector(d1);
+			float[] dir2 = directionVector(d2);
+			angleweight1D[d1][d2] = (float)FastMath.pow(2.0f*FastMath.asin(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z])/FastMath.PI,factor);
+		}
+		
+		// SOR-scheme?
+		//float sorfactor = 1.95f;
+		float sorfactor = 1.0f;
+		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
+			int xyzi = x+nx*y+nx*ny*z;
+			for (byte dj=0;dj<26;dj++) {
+				int xyzj = Ngb.neighborIndex(dj, xyzi, nx, ny, nz);
+				imgweight[xyzi][dj] = sorfactor*diffusionWeightFunction(proba, dir, xyzi, xyzj, dj, angleweight1D, scale)/ngbsize;
+			}
+		}
+		for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) {
+			newproba[xyzi] = proba[xyzi];
+		}
+		
+		float maxdiff = 1.0f;
+		float meandiff = 1.0f;
+		float t0diff = 1.0f;
+		for (int t=0;t<iter && meandiff>0.001f*t0diff;t++) {
+		//for (int t=0;t<iter && maxdiff>0.1f;t++) {
+			BasicInfo.displayMessage("iter "+(t+1));
+			maxdiff = 0.0f;
+			meandiff = 0.0f;
+			float ndiff = 0.0f;
+			float nflip = 0.0f;
+			float nproc = 0.0f;
+							
+			// mask: remove regions 0,1 away from ]0,1[ regions
+			boolean[] diffmask = new boolean[nxyz];
+			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
+				int xyz = x+nx*y+nx*ny*z;
+				if (proba[xyz]>0 && proba[xyz]<1) diffmask[xyz] = true;
+				else diffmask[xyz] = false;
+				for (int i=-1;i<=1 && !diffmask[xyz];i++) for (int j=-1;j<=1 && !diffmask[xyz];j++) for (int k=-1;k<=1 && !diffmask[xyz];k++) {
+					if (proba[xyz+i+j*nx+k*nx*ny]>0 && proba[xyz+i+j*nx+k*nx*ny]<1) diffmask[xyz] = true;
 				}
-				direction[id] = maxd;
 			}
-		}
-
-		// remove differences of incorrect sign
-		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
-			int xyz = x + nx*y + nx*ny*z;
-			if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
-				// keep only the proper sign
-				if (shape[xyz]<0) shape[xyz] = 0.0f;
-			}
-		}
-
-		return;
-    }
-    
-	private final float tubularScore(float[] image, int x, int y, int z, int d) {
-		float val = 0.0f;
-		if (d==0) {
-			val =(8.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x-1+nx*(y)+nx*ny*(z)]		+image[x+1+nx*(y)+nx*ny*(z)])
-						-image[x+nx*(y-1)+nx*ny*(z)]		-image[x-1+nx*(y-1)+nx*ny*(z)]		-image[x+1+nx*(y-1)+nx*ny*(z)]
-						-image[x+nx*(y+1)+nx*ny*(z)]		-image[x-1+nx*(y+1)+nx*ny*(z)]		-image[x+1+nx*(y+1)+nx*ny*(z)]
-						-image[x+nx*(y)+nx*ny*(z-1)]		-image[x-1+nx*(y)+nx*ny*(z-1)]		-image[x+1+nx*(y)+nx*ny*(z-1)]
-						-image[x+nx*(y)+nx*ny*(z+1)]		-image[x-1+nx*(y)+nx*ny*(z+1)]		-image[x+1+nx*(y)+nx*ny*(z+1)]
-						-image[x+nx*(y-1)+nx*ny*(z-1)]		-image[x-1+nx*(y-1)+nx*ny*(z-1)]	-image[x+1+nx*(y-1)+nx*ny*(z-1)]
-						-image[x+nx*(y-1)+nx*ny*(z+1)]		-image[x-1+nx*(y-1)+nx*ny*(z+1)]	-image[x+1+nx*(y-1)+nx*ny*(z+1)]
-						-image[x+nx*(y+1)+nx*ny*(z-1)]		-image[x-1+nx*(y+1)+nx*ny*(z-1)]	-image[x+1+nx*(y+1)+nx*ny*(z-1)]
-						-image[x+nx*(y+1)+nx*ny*(z+1)]		-image[x-1+nx*(y+1)+nx*ny*(z+1)]	-image[x+1+nx*(y+1)+nx*ny*(z+1)])/24.0f;		
-		} else if (d==1) {
-			val =(8.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x+nx*(y-1)+nx*ny*(z)]		+image[x+nx*(y+1)+nx*ny*(z)])
-						-image[x-1+nx*(y)+nx*ny*(z)]		-image[x-1+nx*(y-1)+nx*ny*(z)]		-image[x-1+nx*(y+1)+nx*ny*(z)]
-						-image[x+1+nx*(y)+nx*ny*(z)]		-image[x+1+nx*(y-1)+nx*ny*(z)]		-image[x+1+nx*(y+1)+nx*ny*(z)]
-						-image[x+nx*(y)+nx*ny*(z-1)]		-image[x+nx*(y-1)+nx*ny*(z-1)]		-image[x+nx*(y+1)+nx*ny*(z-1)]
-						-image[x+nx*(y)+nx*ny*(z+1)]		-image[x+nx*(y-1)+nx*ny*(z+1)]		-image[x+nx*(y+1)+nx*ny*(z+1)]
-						-image[x-1+nx*(y)+nx*ny*(z-1)]		-image[x-1+nx*(y-1)+nx*ny*(z-1)]	-image[x-1+nx*(y+1)+nx*ny*(z-1)]
-						-image[x-1+nx*(y)+nx*ny*(z+1)]		-image[x-1+nx*(y-1)+nx*ny*(z+1)]	-image[x-1+nx*(y+1)+nx*ny*(z+1)]
-						-image[x+1+nx*(y)+nx*ny*(z-1)]		-image[x+1+nx*(y-1)+nx*ny*(z-1)]	-image[x+1+nx*(y+1)+nx*ny*(z-1)]
-						-image[x+1+nx*(y)+nx*ny*(z+1)]		-image[x+1+nx*(y-1)+nx*ny*(z+1)]	-image[x+1+nx*(y+1)+nx*ny*(z+1)])/24.0f;
-		} else if (d==2) {
-			val =(8.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x+nx*(y)+nx*ny*(z-1)]		+image[x+nx*(y)+nx*ny*(z+1)])
-						-image[x-1+nx*(y)+nx*ny*(z)]		-image[x-1+nx*(y)+nx*ny*(z-1)]		-image[x-1+nx*(y)+nx*ny*(z+1)]
-						-image[x+1+nx*(y)+nx*ny*(z)]		-image[x+1+nx*(y)+nx*ny*(z-1)]		-image[x+1+nx*(y)+nx*ny*(z+1)]
-						-image[x+nx*(y-1)+nx*ny*(z)]		-image[x+nx*(y-1)+nx*ny*(z-1)]		-image[x+nx*(y-1)+nx*ny*(z+1)]
-						-image[x+nx*(y+1)+nx*ny*(z)]		-image[x+nx*(y+1)+nx*ny*(z-1)]		-image[x+nx*(y+1)+nx*ny*(z+1)]
-						-image[x-1+nx*(y-1)+nx*ny*(z)]		-image[x-1+nx*(y-1)+nx*ny*(z-1)]	-image[x-1+nx*(y-1)+nx*ny*(z+1)]
-						-image[x-1+nx*(y+1)+nx*ny*(z)]		-image[x-1+nx*(y+1)+nx*ny*(z-1)]	-image[x-1+nx*(y+1)+nx*ny*(z+1)]
-						-image[x+1+nx*(y-1)+nx*ny*(z)]		-image[x+1+nx*(y-1)+nx*ny*(z-1)]	-image[x+1+nx*(y-1)+nx*ny*(z+1)]
-						-image[x+1+nx*(y+1)+nx*ny*(z)]		-image[x+1+nx*(y+1)+nx*ny*(z-1)]	-image[x+1+nx*(y+1)+nx*ny*(z+1)])/24.0f;
-		} else if (d==3) {
-			val =(8.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x-1+nx*(y-1)+nx*ny*(z)]		+image[x+1+nx*(y+1)+nx*ny*(z)])
-						-image[x-1+nx*(y+1)+nx*ny*(z)]		-image[x-2+nx*(y)+nx*ny*(z)]		-image[x+nx*(y+2)+nx*ny*(z)]
-						-image[x+1+nx*(y-1)+nx*ny*(z)]		-image[x+nx*(y-2)+nx*ny*(z)]		-image[x+2+nx*(y)+nx*ny*(z)]
-						-image[x+nx*(y)+nx*ny*(z-1)]		-image[x-1+nx*(y-1)+nx*ny*(z-1)]	-image[x+1+nx*(y+1)+nx*ny*(z-1)]
-						-image[x-1+nx*(y+1)+nx*ny*(z-1)]	-image[x-2+nx*(y)+nx*ny*(z-1)]		-image[x+nx*(y+2)+nx*ny*(z-1)]
-						-image[x+1+nx*(y-1)+nx*ny*(z-1)]	-image[x+nx*(y-2)+nx*ny*(z-1)]		-image[x+2+nx*(y)+nx*ny*(z-1)]
-						-image[x+nx*(y)+nx*ny*(z+1)]		-image[x-1+nx*(y-1)+nx*ny*(z+1)]	-image[x+1+nx*(y+1)+nx*ny*(z+1)]
-						-image[x-1+nx*(y+1)+nx*ny*(z+1)]	-image[x-2+nx*(y)+nx*ny*(z+1)]		-image[x+nx*(y+2)+nx*ny*(z+1)]
-						-image[x+1+nx*(y-1)+nx*ny*(z+1)]	-image[x+nx*(y-2)+nx*ny*(z+1)]		-image[x+2+nx*(y)+nx*ny*(z+1)])/24.0f;
-		} else if (d==4) {		
-			val =(8.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x+nx*(y-1)+nx*ny*(z-1)]		+image[x+nx*(y+1)+nx*ny*(z+1)])
-						-image[x+nx*(y+1)+nx*ny*(z-1)]		-image[x+nx*(y)+nx*ny*(z-2)]		-image[x+nx*(y+2)+nx*ny*(z)]
-						-image[x+nx*(y-1)+nx*ny*(z+1)]		-image[x+nx*(y-2)+nx*ny*(z)]		-image[x+nx*(y)+nx*ny*(z+2)]
-						-image[x-1+nx*(y)+nx*ny*(z)]		-image[x-1+nx*(y-1)+nx*ny*(z-1)]	-image[x-1+nx*(y+1)+nx*ny*(z+1)]
-						-image[x-1+nx*(y+1)+nx*ny*(z-1)]	-image[x-1+nx*(y)+nx*ny*(z-2)]		-image[x-1+nx*(y-2)+nx*ny*(z)]
-						-image[x-1+nx*(y-1)+nx*ny*(z+1)]	-image[x-1+nx*(y-2)+nx*ny*(z)]		-image[x-1+nx*(y)+nx*ny*(z+2)]
-						-image[x+1+nx*(y)+nx*ny*(z)]		-image[x+1+nx*(y-1)+nx*ny*(z-1)]	-image[x+1+nx*(y+1)+nx*ny*(z+1)]
-						-image[x+1+nx*(y+1)+nx*ny*(z-1)]	-image[x+1+nx*(y)+nx*ny*(z-2)]		-image[x+1+nx*(y)+nx*ny*(z+2)]
-						-image[x+1+nx*(y-1)+nx*ny*(z+1)]	-image[x+1+nx*(y-2)+nx*ny*(z)]		-image[x+1+nx*(y)+nx*ny*(z+2)])/24.0f;
-		} else if (d==5) {	
-			val =(8.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x-1+nx*(y)+nx*ny*(z-1)]		+image[x+1+nx*(y)+nx*ny*(z+1)])
-						-image[x+1+nx*(y)+nx*ny*(z-1)]		-image[x+nx*(y)+nx*ny*(z-2)]		-image[x+2+nx*(y)+nx*ny*(z)]
-						-image[x-1+nx*(y)+nx*ny*(z+1)]		-image[x-2+nx*(y)+nx*ny*(z)]		-image[x+nx*(y)+nx*ny*(z+2)]
-						-image[x+nx*(y-1)+nx*ny*(z)]		-image[x-1+nx*(y-1)+nx*ny*(z-1)]	-image[x+1+nx*(y-1)+nx*ny*(z+1)]
-						-image[x+1+nx*(y-1)+nx*ny*(z-1)]	-image[x+nx*(y-1)+nx*ny*(z-2)]		-image[x+2+nx*(y-1)+nx*ny*(z)]
-						-image[x-1+nx*(y-1)+nx*ny*(z+1)]	-image[x-2+nx*(y-1)+nx*ny*(z)]		-image[x+nx*(y-1)+nx*ny*(z+2)]
-						-image[x+nx*(y+1)+nx*ny*(z)]		-image[x-1+nx*(y+1)+nx*ny*(z-1)]	-image[x+1+nx*(y+1)+nx*ny*(z+1)]
-						-image[x+1+nx*(y+1)+nx*ny*(z-1)]	-image[x+nx*(y+1)+nx*ny*(z-2)]		-image[x+2+nx*(y+1)+nx*ny*(z)]
-						-image[x-1+nx*(y+1)+nx*ny*(z+1)]	-image[x-2+nx*(y+1)+nx*ny*(z)]		-image[x+nx*(y+1)+nx*ny*(z+2)])/24.0f;
-		} else if (d==6) {
-			val =(8.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x-1+nx*(y+1)+nx*ny*(z)]		+image[x+1+nx*(y-1)+nx*ny*(z)])
-						-image[x-1+nx*(y-1)+nx*ny*(z)]		-image[x-2+nx*(y)+nx*ny*(z)]		-image[x+nx*(y-2)+nx*ny*(z)]
-						-image[x+1+nx*(y+1)+nx*ny*(z)]		-image[x+nx*(y-2)+nx*ny*(z)]		-image[x+2+nx*(y)+nx*ny*(z)]
-						-image[x+nx*(y)+nx*ny*(z-1)]		-image[x-1+nx*(y+1)+nx*ny*(z-1)]	-image[x+1+nx*(y-1)+nx*ny*(z-1)]
-						-image[x-1+nx*(y-1)+nx*ny*(z-1)]	-image[x-2+nx*(y)+nx*ny*(z-1)]		-image[x+nx*(y-2)+nx*ny*(z-1)]
-						-image[x+1+nx*(y+1)+nx*ny*(z-1)]	-image[x+nx*(y-2)+nx*ny*(z-1)]		-image[x+2+nx*(y)+nx*ny*(z-1)]
-						-image[x+nx*(y)+nx*ny*(z+1)]		-image[x-1+nx*(y+1)+nx*ny*(z+1)]	-image[x+1+nx*(y-1)+nx*ny*(z+1)]
-						-image[x-1+nx*(y-1)+nx*ny*(z+1)]	-image[x-2+nx*(y)+nx*ny*(z+1)]		-image[x+nx*(y-2)+nx*ny*(z+1)]
-						-image[x+1+nx*(y+1)+nx*ny*(z+1)]	-image[x+nx*(y-2)+nx*ny*(z+1)]		-image[x+2+nx*(y)+nx*ny*(z+1)])/24.0f;
-		} else if (d==7) {
-			val =(8.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x+nx*(y-1)+nx*ny*(z+1)]		+image[x+nx*(y+1)+nx*ny*(z-1)])
-						-image[x+nx*(y-1)+nx*ny*(z-1)]		-image[x+nx*(y-2)+nx*ny*(z)]		-image[x+nx*(y)+nx*ny*(z-2)]
-						-image[x+nx*(y+1)+nx*ny*(z+1)]		-image[x+nx*(y)+nx*ny*(z+2)]		-image[x+nx*(y+2)+nx*ny*(z)]
-						-image[x-1+nx*(y)+nx*ny*(z)]		-image[x-1+nx*(y-1)+nx*ny*(z+1)]	-image[x-1+nx*(y+1)+nx*ny*(z-1)]
-						-image[x-1+nx*(y-1)+nx*ny*(z-1)]	-image[x-1+nx*(y-2)+nx*ny*(z)]		-image[x-1+nx*(y)+nx*ny*(z-2)]
-						-image[x-1+nx*(y+1)+nx*ny*(z+1)]	-image[x-1+nx*(y)+nx*ny*(z+2)]		-image[x-1+nx*(y+2)+nx*ny*(z)]
-						-image[x+1+nx*(y)+nx*ny*(z)]		-image[x+1+nx*(y-1)+nx*ny*(z+1)]	-image[x+1+nx*(y+1)+nx*ny*(z-1)]
-						-image[x+1+nx*(y-1)+nx*ny*(z-1)]	-image[x+1+nx*(y-2)+nx*ny*(z)]		-image[x+1+nx*(y)+nx*ny*(z-2)]
-						-image[x+1+nx*(y+1)+nx*ny*(z+1)]	-image[x+1+nx*(y)+nx*ny*(z+2)]		-image[x+1+nx*(y+2)+nx*ny*(z)])/24.0f;
-		} else if (d==8) {
-			val =(8.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x-1+nx*(y)+nx*ny*(z+1)]		+image[x+1+nx*(y)+nx*ny*(z-1)])
-						-image[x-1+nx*(y)+nx*ny*(z-1)]		-image[x-2+nx*(y)+nx*ny*(z)]		-image[x+nx*(y)+nx*ny*(z-2)]
-						-image[x+1+nx*(y)+nx*ny*(z+1)]		-image[x+nx*(y)+nx*ny*(z+2)]		-image[x+2+nx*(y)+nx*ny*(z)]
-						-image[x+nx*(y-1)+nx*ny*(z)]		-image[x-1+nx*(y-1)+nx*ny*(z+1)]	-image[x+1+nx*(y-1)+nx*ny*(z-1)]
-						-image[x-1+nx*(y-1)+nx*ny*(z-1)]	-image[x-2+nx*(y-1)+nx*ny*(z)]		-image[x+nx*(y-1)+nx*ny*(z-2)]
-						-image[x+1+nx*(y-1)+nx*ny*(z+1)]	-image[x+nx*(y-1)+nx*ny*(z+2)]		-image[x+2+nx*(y-1)+nx*ny*(z)]
-						-image[x+nx*(y+1)+nx*ny*(z)]		-image[x-1+nx*(y+1)+nx*ny*(z+1)]	-image[x+1+nx*(y+1)+nx*ny*(z-1)]
-						-image[x-1+nx*(y+1)+nx*ny*(z-1)]	-image[x-2+nx*(y+1)+nx*ny*(z)]		-image[x+nx*(y+1)+nx*ny*(z-2)]
-						-image[x+1+nx*(y+1)+nx*ny*(z+1)]	-image[x+nx*(y+1)+nx*ny*(z+2)]		-image[x+2+nx*(y+1)+nx*ny*(z)])/24.0f;
-		} else if (d==9) {
-			val =(6.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x-1+nx*(y-1)+nx*ny*(z-1)]	+image[x+1+nx*(y+1)+nx*ny*(z+1)])
-						-image[x-1+nx*(y-1)+nx*ny*(z+1)]	-image[x-2+nx*(y-2)+nx*ny*(z)]		-image[x+nx*(y)+nx*ny*(z+2)]
-						-image[x-1+nx*(y+1)+nx*ny*(z-1)]	-image[x-2+nx*(y)+nx*ny*(z-2)]		-image[x+nx*(y+2)+nx*ny*(z)]
-						-image[x+1+nx*(y-1)+nx*ny*(z-1)]	-image[x+nx*(y-2)+nx*ny*(z-2)]		-image[x+2+nx*(y)+nx*ny*(z)]
-						-image[x+1+nx*(y+1)+nx*ny*(z-1)]	-image[x+nx*(y)+nx*ny*(z-2)]		-image[x+2+nx*(y+2)+nx*ny*(z)]
-						-image[x-1+nx*(y+1)+nx*ny*(z+1)]	-image[x-2+nx*(y)+nx*ny*(z)]		-image[x+nx*(y+2)+nx*ny*(z+2)]
-						-image[x+1+nx*(y-1)+nx*ny*(z+1)]	-image[x+nx*(y-2)+nx*ny*(z)]		-image[x+2+nx*(y)+nx*ny*(z+2)])/18.0f;
-		} else if (d==10) {
-			val =(6.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x+1+nx*(y-1)+nx*ny*(z-1)]	+image[x-1+nx*(y+1)+nx*ny*(z+1)])
-						-image[x+1+nx*(y-1)+nx*ny*(z+1)]	-image[x+2+nx*(y-2)+nx*ny*(z)]		-image[x+nx*(y)+nx*ny*(z+2)]
-						-image[x+1+nx*(y+1)+nx*ny*(z-1)]	-image[x+2+nx*(y)+nx*ny*(z-2)]		-image[x+nx*(y+2)+nx*ny*(z)]
-						-image[x-1+nx*(y-1)+nx*ny*(z-1)]	-image[x+nx*(y-2)+nx*ny*(z-2)]		-image[x-2+nx*(y)+nx*ny*(z)]
-						-image[x-1+nx*(y+1)+nx*ny*(z-1)]	-image[x+nx*(y)+nx*ny*(z-2)]		-image[x-2+nx*(y+2)+nx*ny*(z)]
-						-image[x-1+nx*(y-1)+nx*ny*(z+1)]	-image[x+nx*(y-2)+nx*ny*(z)]		-image[x-2+nx*(y)+nx*ny*(z+2)]
-						-image[x+1+nx*(y+1)+nx*ny*(z+1)]	-image[x+2+nx*(y)+nx*ny*(z)]		-image[x+nx*(y+2)+nx*ny*(z+2)])/18.0f;
-		} else if (d==11) {				
-			val =(6.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x-1+nx*(y+1)+nx*ny*(z-1)]	+image[x+1+nx*(y-1)+nx*ny*(z+1)])
-						 -image[x-1+nx*(y+1)+nx*ny*(z+1)]	-image[x-2+nx*(y+2)+nx*ny*(z)]		-image[x+nx*(y)+nx*ny*(z+2)]
-						 -image[x+1+nx*(y+1)+nx*ny*(z-1)]	-image[x+nx*(y+2)+nx*ny*(z-2)]		-image[x+2+nx*(y)+nx*ny*(z)]
-						 -image[x-1+nx*(y-1)+nx*ny*(z-1)]	-image[x-2+nx*(y)+nx*ny*(z-2)]		-image[x+nx*(y-2)+nx*ny*(z)]
-						 -image[x+1+nx*(y-1)+nx*ny*(z-1)]	-image[x+nx*(y)+nx*ny*(z-2)]		-image[x+2+nx*(y-2)+nx*ny*(z)]
-						 -image[x-1+nx*(y-1)+nx*ny*(z+1)]	-image[x-2+nx*(y)+nx*ny*(z)]		-image[x+nx*(y-2)+nx*ny*(z+2)]
-						 -image[x+1+nx*(y+1)+nx*ny*(z+1)]	-image[x+nx*(y+2)+nx*ny*(z)]		-image[x+2+nx*(y)+nx*ny*(z+2)])/18.0f;
-		} else if (d==12) {				
-			val =(6.0f*(image[x+nx*(y)+nx*ny*(z)]			+image[x-1+nx*(y-1)+nx*ny*(z+1)]	+image[x+1+nx*(y+1)+nx*ny*(z-1)])
-						-image[x-1+nx*(y+1)+nx*ny*(z+1)]	-image[x-2+nx*(y)+nx*ny*(z-2)]		-image[x+nx*(y+2)+nx*ny*(z)]
-						-image[x+1+nx*(y-1)+nx*ny*(z+1)]	-image[x+nx*(y-2)+nx*ny*(z+2)]		-image[x+2+nx*(y)+nx*ny*(z)]
-						-image[x-1+nx*(y-1)+nx*ny*(z-1)]	-image[x-2+nx*(y-2)+nx*ny*(z)]		-image[x+nx*(y)+nx*ny*(z-2)]
-						-image[x+1+nx*(y-1)+nx*ny*(z-1)]	-image[x+nx*(y-2)+nx*ny*(z)]		-image[x+2+nx*(y)+nx*ny*(z-2)]
-						-image[x-1+nx*(y+1)+nx*ny*(z-1)]	-image[x-2+nx*(y)+nx*ny*(z)]		-image[x+nx*(y+2)+nx*ny*(z-2)]
-						-image[x+1+nx*(y+1)+nx*ny*(z+1)]	-image[x+nx*(y)+nx*ny*(z+2)]		-image[x+2+nx*(y+2)+nx*ny*(z)])/18.0f;
-		}
-		return 0.5f*val;
-	}
-	
-	private final void directionFromTubularFilter(float[] img, boolean[] mask, float[] filter,byte[] direction) {
 			
-			// get the tubular filter response
-			float[][][] image = new float[nx][ny][nz];
-			//float[] filter = new float[nx*ny*nz];
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-				int xyz = x + nx*y + nx*ny*z;
-				image[x][y][z] = img[xyz];
+			// main loop: label-per-label
+			//BasicInfo.displayMessage("propagate gain for label "+n+"\n");
+			//BasicInfo.displayMessage(".");
+
+			// get the gain ; normalize
+			for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) if (diffmask[xyzi]) {
+				certainty[xyzi] = Numerics.abs(2.0f*proba[xyzi]-1.0f);
 			}
-			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
-				int xyz = x + nx*y + nx*ny*z;
-				filter[xyz] = 0.0f;
-				if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
-					// check for zero-valued neighbors as well
-					float best = 0.0f;
-					int dmax = 13;
-					byte dbest = -1;
-					for (byte d=0;d<dmax;d++) {
-						float val = tubularScore(img, x,y,z,d);
-						if (val*val>best*best) {
-							best = val;
-							dbest = d;
-						}
-					}
-					filter[xyz] = best;
-					if (filter[xyz]<0) {
-						filter[xyz]=0;
-					}
-					direction[xyz] = dbest;
+			// propagate the values : diffusion
+			for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) if (diffmask[xyzi]) {
+				nproc++;
+						
+				float den = certainty[xyzi];
+				float num = den*proba[xyzi];
+				float prev = proba[xyzi];
+					
+				for (byte j=0;j<26;j++) {
+					int xyzj = Ngb.neighborIndex(j, xyzi, nx, ny, nz);
+					ngbweight[j] = certainty[xyzj]*imgweight[xyzi][j];
+				}
+				byte[] rank = Numerics.argmax(ngbweight, ngbsize);
+				for (int l=0;l<ngbsize;l++) {
+					int xyzl = Ngb.neighborIndex(rank[l], xyzi, nx, ny, nz);
+					num += ngbweight[rank[l]]*proba[xyzl];
+					den += ngbweight[rank[l]];
+				}
+				if (den>1e-9f) num /= den;
+					
+				newproba[xyzi] = num;
+						
+				meandiff += Numerics.abs(num-prev);
+				ndiff++;
+				maxdiff = Numerics.max(maxdiff, Numerics.abs(num-prev));
+				if (prev<0.5f && num>0.5f) nflip++;
+				if (prev>0.5f && num<0.5f) nflip++;
+			}
+			if (ndiff>0) meandiff /= ndiff;
+			if (t==0) t0diff = meandiff;
+			
+			// make a hard copy
+			for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) if (diffmask[xyzi]) {
+				proba[xyzi] = newproba[xyzi];
+			}
+			BasicInfo.displayMessage("mean diff. "+meandiff+", max diff. "+maxdiff+"\n");
+			//BasicInfo.displayMessage("n processed "+nproc+", n flipped "+nflip+"\n");
+			
+			//BasicInfo.displayMessage("n resorted"+nresort+"\n");
+			
+		}
+		newproba = null;
+	}
+	
+	private final void spatialUncertaintyRelaxation2D(float[] proba, byte[] dir, int ngbsize, float scale, float factor, int iter) {
+		// run SUR with weighting against normal directions
+		//mix with the neighbors?
+		float[] certainty = new float[nx*ny*nz];   	
+		float[] newproba = new float[nx*ny*nz];
+		float[] ngbweight = new float[26];
+		float[][] imgweight = new float[nx*ny*nz][26];  
+		float[][] angleweight2D = new float[13][13];
+		for (int d1=0;d1<13;d1++) for (int d2=0;d2<13;d2++) {
+			float[] dir1 = directionVector(d1);
+			float[] dir2 = directionVector(d2);
+			angleweight2D[d1][d2] = (float)FastMath.pow(2.0f*FastMath.acos(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z])/FastMath.PI,factor);
+		}
+		
+		// SOR-scheme?
+		//float sorfactor = 1.95f;
+		float sorfactor = 1.0f;
+		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
+			int xyzi = x+nx*y+nx*ny*z;
+			for (byte dj=0;dj<26;dj++) {
+				int xyzj = Ngb.neighborIndex(dj, xyzi, nx, ny, nz);
+				imgweight[xyzi][dj] = sorfactor*diffusionWeightFunction(proba, dir, xyzi, xyzj, dj, angleweight2D, scale)/ngbsize;
+			}
+		}
+		for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) {
+			newproba[xyzi] = proba[xyzi];
+		}
+		
+		float maxdiff = 1.0f;
+		float meandiff = 1.0f;
+		float t0diff = 1.0f;
+		for (int t=0;t<iter && meandiff>0.001f*t0diff;t++) {
+		//for (int t=0;t<iter && maxdiff>0.1f;t++) {
+			BasicInfo.displayMessage("iter "+(t+1));
+			maxdiff = 0.0f;
+			meandiff = 0.0f;
+			float ndiff = 0.0f;
+			float nflip = 0.0f;
+			float nproc = 0.0f;
+							
+			// mask: remove regions 0,1 away from ]0,1[ regions
+			boolean[] diffmask = new boolean[nxyz];
+			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
+				int xyz = x+nx*y+nx*ny*z;
+				if (proba[xyz]>0 && proba[xyz]<1) diffmask[xyz] = true;
+				else diffmask[xyz] = false;
+				for (int i=-1;i<=1 && !diffmask[xyz];i++) for (int j=-1;j<=1 && !diffmask[xyz];j++) for (int k=-1;k<=1 && !diffmask[xyz];k++) {
+					if (proba[xyz+i+j*nx+k*nx*ny]>0 && proba[xyz+i+j*nx+k*nx*ny]<1) diffmask[xyz] = true;
 				}
 			}
-			image = null;
-			return;
+			
+			// main loop: label-per-label
+			//BasicInfo.displayMessage("propagate gain for label "+n+"\n");
+			//BasicInfo.displayMessage(".");
+
+			// get the gain ; normalize
+			for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) if (diffmask[xyzi]) {
+				certainty[xyzi] = Numerics.abs(2.0f*proba[xyzi]-1.0f);
+			}
+			// propagate the values : diffusion
+			for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) if (diffmask[xyzi]) {
+				nproc++;
+						
+				float den = certainty[xyzi];
+				float num = den*proba[xyzi];
+				float prev = proba[xyzi];
+					
+				for (byte j=0;j<26;j++) {
+					int xyzj = Ngb.neighborIndex(j, xyzi, nx, ny, nz);
+					ngbweight[j] = certainty[xyzj]*imgweight[xyzi][j];
+				}
+				byte[] rank = Numerics.argmax(ngbweight, ngbsize);
+				for (int l=0;l<ngbsize;l++) {
+					int xyzl = Ngb.neighborIndex(rank[l], xyzi, nx, ny, nz);
+					num += ngbweight[rank[l]]*proba[xyzl];
+					den += ngbweight[rank[l]];
+				}
+				if (den>1e-9f) num /= den;
+					
+				newproba[xyzi] = num;
+						
+				meandiff += Numerics.abs(num-prev);
+				ndiff++;
+				maxdiff = Numerics.max(maxdiff, Numerics.abs(num-prev));
+				if (prev<0.5f && num>0.5f) nflip++;
+				if (prev>0.5f && num<0.5f) nflip++;
+			}
+			if (ndiff>0) meandiff /= ndiff;
+			if (t==0) t0diff = meandiff;
+			
+			// make a hard copy
+			for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) if (diffmask[xyzi]) {
+				proba[xyzi] = newproba[xyzi];
+			}
+			BasicInfo.displayMessage("mean diff. "+meandiff+", max diff. "+maxdiff+"\n");
+			//BasicInfo.displayMessage("n processed "+nproc+", n flipped "+nflip+"\n");
+			
+			//BasicInfo.displayMessage("n resorted"+nresort+"\n");
+			
+		}
+		newproba = null;
 	}
+	
+	private final float diffusionWeightFunction(float[] proba, byte[] dir, int xyz, int ngb, byte dngb, float[][] corr, float scale) {
+    	float diff = Numerics.abs((proba[xyz] - proba[ngb])/scale);
+    	float weight = 1.0f;
+    	if (dir[xyz]>-1 && dngb>-1) weight = corr[dir[xyz]][dngb];
+    	return weight/(1.0f+Numerics.square(diff/scale));
+    }
 
 }
