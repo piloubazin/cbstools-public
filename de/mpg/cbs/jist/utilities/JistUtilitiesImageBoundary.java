@@ -19,6 +19,8 @@ import edu.jhu.ece.iacl.jist.structures.image.ImageDataMipav;
 import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.utilities.*;
 
+import org.apache.commons.math3.util.*;
+
 /*
  * @author Pierre-Louis bazin (bazin@cbs.mpg.de)
  *
@@ -38,10 +40,11 @@ public class JistUtilitiesImageBoundary extends ProcessingAlgorithm{
 	private static final byte ZERO = 0;
 	private static final byte MIN = 1;
 	private static final byte MAX = 2;
+	private static final byte NOISE = 3;
 
 	protected void createInputParameters(ParamCollection inputParams) {
 		inputParams.add(volParam=new ParamVolume("Image Volume"));
-		inputParams.add(operationParam=new ParamOption("Image boundary value",new String[]{"zero","min","max"}));
+		inputParams.add(operationParam=new ParamOption("Image boundary value",new String[]{"zero","min","max","noise"}));
 		inputParams.add(distParam=new ParamInteger("Image boundary size (voxels)", 1, 100, 1));
 		inputParams.add(addboundaryParam=new ParamBoolean("resize image to add boundary", false));
 		
@@ -100,12 +103,14 @@ public class JistUtilitiesImageBoundary extends ProcessingAlgorithm{
 			byte op = ZERO;
 			if (operationParam.getValue().equals("min")) op = MIN;
 			else if (operationParam.getValue().equals("max")) op = MAX;
+			else if (operationParam.getValue().equals("noise")) op = NOISE;
 			
 			for (int x=0;x<nbx;x++) for (int y=0;y<nby;y++) for (int z=0;z<nbz;z++) {
 				if (x<d || x>=nbx-d || y<d || y>=nby-d || z<d || z>=nbz-d) {
 					if (op==ZERO) result[x][y][z] = 0.0f;
 					else if (op==MIN) result[x][y][z] = Imin;
 					else if (op==MAX) result[x][y][z] = Imax;
+					else if (op==NOISE) result[x][y][z] = (float)(0.01f*FastMath.random()*(Imax-Imin)+Imin);
 				} else {
 					result[x][y][z] = image[x-b][y-b][z-b];
 				}

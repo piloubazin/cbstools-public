@@ -13,6 +13,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
+import edu.jhu.ece.iacl.jist.structures.image.ImageDataByte;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataDouble;
@@ -60,16 +61,18 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	private ParamOption filterParam;
 	private static final String[] filterTypes = {"2D","1D"};
 	
-	private ParamOption propagationParam;
-	private static final String[] propagationTypes = {"diffusion","belief"};
+	//private ParamOption propagationParam;
+	//private static final String[] propagationTypes = {"diffusion","belief"};
 	private ParamFloat factorParam;
 	private ParamFloat diffParam;
+	private ParamInteger ngbParam;
 	private ParamInteger iterParam;
 	
 	private ParamVolume filterImage;
 	private ParamVolume probaImage;
 	private ParamVolume scaleImage;
 	private ParamVolume directionImage;
+	private ParamVolume correctImage;
 	
 	// global variables
 	int nx, ny, nz, nc, nxyz;
@@ -126,16 +129,17 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		inputParams.add(surfaceImage = new ParamVolume("Surface(s) level sets"));
 		surfaceImage.setMandatory(false);
 		inputParams.add(orientationParam = new ParamOption("Orientation relative to surface", orientationTypes));
-		inputParams.add(scalingParam = new ParamFloat("Angular factor", 0.0f, 10.0f, 2.0f));
+		inputParams.add(scalingParam = new ParamFloat("Angular factor", 0.0f, 10.0f, 1.0f));
 		
 		
 		//inputParams.add(thresholdParam = new ParamFloat("Probability threshold", 0.0, 1.0, 0.5));
 		//inputParams.add(scalingParam = new ParamFloat("Scale factor ", 0.25f, 2.0f, 1.0f));
 		inputParams.add(nscalesParam = new ParamInteger("Number of scales ", 0, 10, 3));
 
-		inputParams.add(propagationParam = new ParamOption("Propagation model", propagationTypes));
-		inputParams.add(factorParam = new ParamFloat("Diffusion factor", 0.0f, 100.0f, 0.5f));
-		inputParams.add(diffParam = new ParamFloat("Max difference", 0.0f, 1.0f, 0.001f));
+		//inputParams.add(propagationParam = new ParamOption("Propagation model", propagationTypes));
+		inputParams.add(factorParam = new ParamFloat("Diffusion factor", 0.0f, 10.0f, 1.0f));
+		inputParams.add(diffParam = new ParamFloat("Difference scale", 0.0f, 1.0f, 0.1f));
+		inputParams.add(ngbParam = new ParamInteger("Neighborhood size", 0, 26, 4));
 		inputParams.add(iterParam = new ParamInteger("Max iterations", 0, 1000, 100));
 		
 		inputParams.setPackage("CBS Tools");
@@ -156,8 +160,9 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	protected void createOutputParameters(ParamCollection outputParams) {
 		outputParams.add(filterImage = new ParamVolume("Filter response",VoxelType.FLOAT,-1,-1,-1,-1));
 		outputParams.add(probaImage = new ParamVolume("Probability response",VoxelType.FLOAT,-1,-1,-1,-1));
-		outputParams.add(scaleImage = new ParamVolume("Detection scale",VoxelType.FLOAT,-1,-1,-1,-1));
+		outputParams.add(scaleImage = new ParamVolume("Detection scale",VoxelType.BYTE,-1,-1,-1,-1));
 		outputParams.add(directionImage = new ParamVolume("Ridge direction",VoxelType.FLOAT,-1,-1,-1,-1));
+		outputParams.add(correctImage = new ParamVolume("Directional correction",VoxelType.FLOAT,-1,-1,-1,-1));
 		
 		outputParams.setName("Recursive Ridge Diffusion");
 		outputParams.setLabel("Recursive Ridge Diffusion");
@@ -165,17 +170,21 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	
 	@Override
 	protected void execute(CalculationMonitor monitor){
+		BasicInfo.displayMessage("recursive ridge diffusion:\n");
+		
 		// import the image data into 1D arrays
 		float[] image = Interface.getFloatImage3D(inputImage);
 		int[] dim = Interface.getDimensions(inputImage);
 		nx = dim[X]; ny = dim[Y]; nz = dim[Z];
 		nxyz = nx*ny*nz;
+		BasicInfo.displayMessage("...load data\n");
 		
 		// load surface, if used
 		float[] surface = null;
 		nc = 0;
 		String orientation = orientationParam.getValue();
 		if (orientation.equals("parallel") || orientation.equals("orthogonal")) {
+			BasicInfo.displayMessage("...load surface orientation(s)\n");
 			nc = Interface.getComponents(surfaceImage);
 			surface = Interface.getFloatImage4D(surfaceImage);
 		}
@@ -213,14 +222,24 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		byte[] maxdirection = new byte[nxyz];
 		byte[] maxscale = new byte[nxyz];
 		
+		BasicInfo.displayMessage("...first filter response\n");
+		
 		if (filterParam.getValue().equals("1D")) directionFromRecursiveRidgeFilter1D(image, mask, maxresponse, maxdirection);
 		else if (filterParam.getValue().equals("2D")) directionFromRecursiveRidgeFilter2D(image, mask, maxresponse, maxdirection);
 			
-		for(int i=0;i<nscales;i++){
-			
+		for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
+			if (maxresponse[xyz]>0) {
+				maxscale[xyz] = (byte)0;
+			} else {
+				maxscale[xyz] = (byte)-1;
+			}
+		}
+		for (int i=0;i<nscales;i++) {
 			float scale = 1.0f+i;
 			float[] smoothed = new float[nxyz];
 
+			BasicInfo.displayMessage("...filter response at scale "+scale+"\n");
+		
 			// Gaussian Kernel
 			float[][] G = ImageFilters.separableGaussianKernel(scale/L2N2,scale/L2N2,scale/L2N2);
 			int gx = (G[0].length-1)/2;
@@ -246,13 +265,15 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		}
 		
 		// Attenuate response according to orientation
-		if (orientation.equals("parallel")|| orientation.equals("orthogonal")) {
+		float[] correction = new float[nxyz];
+		if (orientation.equals("parallel") || orientation.equals("orthogonal")) {
+			BasicInfo.displayMessage("...orientation response filtering\n");
 			float factor = scalingParam.getValue().floatValue();
 			for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
 				float[] vec = directionVector(maxdirection[xyz]);
 				// find the closest surfaces; weighted mean
 				int closest = 0;
-				float dist = 1e9f;
+				float dist = Numerics.abs(surface[xyz]);
 				for (int c=1;c<nc;c++) {
 					if (Numerics.abs(surface[xyz+c*nxyz])<dist) {
 						closest = c;
@@ -261,7 +282,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 				}
 				int second = closest;
 				if (closest<nc-1 && surface[xyz+closest*nxyz]*surface[xyz+(closest+1)*nxyz]<0) second = closest+1; 
-				if (closest>0 && surface[xyz+closest*nxyz]*surface[xyz+(closest-1)*nxyz]<0) second = closest-1; 
+				if (closest>0 && surface[xyz+closest*nxyz]*surface[xyz+(closest-1)*nxyz]>0) second = closest-1; 
 				
 				float w1 = 1.0f, w2 = 0.0f;
 				if (second!=closest) {
@@ -285,17 +306,26 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 					grad[Y] /= norm;
 					grad[Z] /= norm;
 				}
-				double correlation = FastMath.pow(grad[X]*vec[X]+grad[Y]*vec[Y]+grad[Z]*vec[Z],factor);
+				// angle projected back into [0,1], 0: parallel, 1:orthogonal
+				double angle = 2.0*FastMath.acos(grad[X]*vec[X]+grad[Y]*vec[Y]+grad[Z]*vec[Z])/FastMath.PI;
+				angle = Numerics.min(angle,2.0-angle);
 				if (orientation.equals("parallel") && filterParam.getValue().equals("1D")) {
-					correlation = 1.0-correlation;
+					correction[xyz] = (float)FastMath.pow(angle, factor);
+				} else if (orientation.equals("parallel") && filterParam.getValue().equals("2D")) {
+					correction[xyz] = (float)FastMath.pow(1.0-angle, factor);
+				} else if (orientation.equals("orthogonal") && filterParam.getValue().equals("1D")) {
+					correction[xyz] = (float)FastMath.pow(1.0-angle, factor);
 				} else if (orientation.equals("orthogonal") && filterParam.getValue().equals("2D")) {
-					correlation = 1.0-correlation;
+					correction[xyz] = (float)FastMath.pow(angle, factor);
+				} else {
+					correction[xyz] = 1.0f;
 				}
-				maxresponse[xyz] *= (float)correlation;
+				maxresponse[xyz] *= correction[xyz];
 			}
 		}
 
 		// Equalize histogram (Exp Median)
+		BasicInfo.displayMessage("...normalization into probabilities\n");
 		float[] proba = new float[nxyz];
 		probabilityFromRecursiveRidgeFilter(maxresponse, proba);	
 		
@@ -309,19 +339,23 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		}
 		
 		// 3. diffuse the data to neighboring structures with SUR
+		BasicInfo.displayMessage("...diffusion\n");
+		int ngbsize = ngbParam.getValue().intValue();
+		float scale = diffParam.getValue().floatValue();
+		float factor = factorParam.getValue().floatValue();
+		int iter = iterParam.getValue().intValue();
+		
+		if (filterParam.getValue().equals("1D"))  spatialUncertaintyRelaxation1D(proba, maxdirection, ngbsize, scale, factor, iter);
+		else if (filterParam.getValue().equals("2D"))  spatialUncertaintyRelaxation2D(proba, maxdirection, ngbsize, scale, factor, iter);
 				
 		// Output
-		Interface.displayMessage("Prepare output images\n");
+		BasicInfo.displayMessage("...output images\n");
 		String outname = Interface.getName(inputImage);
 		ImageHeader outheader = Interface.getHeader(inputImage);
 		
 		if (filterParam.getValue().equals("1D")) outname+="_rrf1d";
 		else outname+="_rrf2d";
 		
-		if (propagationParam.getValue().equals("diffusion") && iterParam.getValue().intValue()>0) outname += "d";
-		else if (propagationParam.getValue().equals("belief") && iterParam.getValue().intValue()>0) outname += "bp";
-		
-		Interface.displayMessage("filter out\n");
 		float[][][] result = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
@@ -332,7 +366,6 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		resData.setName(outname+"_filter");
 		filterImage.setValue(resData);
 		
-		Interface.displayMessage("proba out\n");
 		result = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
@@ -343,18 +376,16 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		resData.setName(outname+"_proba");
 		probaImage.setValue(resData);
 		
-		Interface.displayMessage("scale out\n");
-		result = new float[nx][ny][nz];
+		byte[][][] resultb = new byte[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
-			result[x][y][z] = maxscale[id];
+			resultb[x][y][z] = maxscale[id];
 		}					
-		resData = new ImageDataFloat(result);	
-		resData.setHeader(outheader);
-		resData.setName(outname+"_scale");
-		scaleImage.setValue(resData);
+		ImageDataByte resDataB = new ImageDataByte(resultb);	
+		resDataB.setHeader(outheader);
+		resDataB.setName(outname+"_scale");
+		scaleImage.setValue(resDataB);
 		
-		Interface.displayMessage("direction out\n");
 		float[][][][] result4 = new float[nx][ny][nz][3];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
@@ -366,6 +397,16 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		resData.setHeader(outheader);
 		resData.setName(outname+"_dir");
 		directionImage.setValue(resData);
+		
+		result = new float[nx][ny][nz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int id = x + nx*y + nx*ny*z;
+			result[x][y][z] = correction[id];
+		}					
+		resData = new ImageDataFloat(result);	
+		resData.setHeader(outheader);
+		resData.setName(outname+"_correct");
+		correctImage.setValue(resData);
 		
 		return;
 	}
@@ -1299,11 +1340,11 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		float[] newproba = new float[nx*ny*nz];
 		float[] ngbweight = new float[26];
 		float[][] imgweight = new float[nx*ny*nz][26];  
-		float[][] angleweight1D = new float[13][13];
-		for (int d1=0;d1<13;d1++) for (int d2=0;d2<13;d2++) {
+		float[][] angleweight1D = new float[26][26];
+		for (int d1=0;d1<26;d1++) for (int d2=0;d2<26;d2++) {
 			float[] dir1 = directionVector(d1);
 			float[] dir2 = directionVector(d2);
-			angleweight1D[d1][d2] = (float)FastMath.pow(2.0f*FastMath.asin(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z])/FastMath.PI,factor);
+			angleweight1D[d1][d2] = (float)FastMath.pow(2.0f*FastMath.asin(Numerics.abs(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z]))/FastMath.PI,factor);
 		}
 		
 		// SOR-scheme?
@@ -1402,11 +1443,11 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		float[] newproba = new float[nx*ny*nz];
 		float[] ngbweight = new float[26];
 		float[][] imgweight = new float[nx*ny*nz][26];  
-		float[][] angleweight2D = new float[13][13];
-		for (int d1=0;d1<13;d1++) for (int d2=0;d2<13;d2++) {
+		float[][] angleweight2D = new float[26][26];
+		for (int d1=0;d1<26;d1++) for (int d2=0;d2<26;d2++) {
 			float[] dir1 = directionVector(d1);
 			float[] dir2 = directionVector(d2);
-			angleweight2D[d1][d2] = (float)FastMath.pow(2.0f*FastMath.acos(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z])/FastMath.PI,factor);
+			angleweight2D[d1][d2] = (float)FastMath.pow(2.0f*FastMath.acos(Numerics.abs(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z]))/FastMath.PI,factor);
 		}
 		
 		// SOR-scheme?
@@ -1499,10 +1540,10 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	}
 	
 	private final float diffusionWeightFunction(float[] proba, byte[] dir, int xyz, int ngb, byte dngb, float[][] corr, float scale) {
-    	float diff = Numerics.abs((proba[xyz] - proba[ngb])/scale);
-    	float weight = 1.0f;
-    	if (dir[xyz]>-1 && dngb>-1) weight = corr[dir[xyz]][dngb];
-    	return weight/(1.0f+Numerics.square(diff/scale));
-    }
+		float diff = Numerics.abs((proba[xyz] - proba[ngb])/scale);
+		float weight = 1.0f;
+		if (dir[xyz]>-1 && dngb>-1) weight = corr[dir[xyz]][dngb];
+		return weight/(1.0f+Numerics.square(diff/scale));
+	}
 
 }

@@ -113,8 +113,8 @@ public class JistBrainMp2rageSkullStripping extends ProcessingAlgorithm {
 		algorithm.setResolutions(res);
 
 		algorithm.setSecondInversionImage(Interface.getFloatImage3D(inv2Image));
-		algorithm.setT1MapImage(Interface.getFloatImage3D(t1mapImage));
-		algorithm.setT1weightedImage(Interface.getFloatImage3D(isoImage));
+		if (Interface.isValid(t1mapImage)) algorithm.setT1MapImage(Interface.getFloatImage3D(t1mapImage));
+		if (Interface.isValid(isoImage)) algorithm.setT1weightedImage(Interface.getFloatImage3D(isoImage));
 		
 		algorithm.setSkipZeroValues(skip0Param.getValue().booleanValue());
 

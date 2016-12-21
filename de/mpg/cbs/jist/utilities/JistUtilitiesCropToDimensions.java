@@ -91,7 +91,7 @@ public class JistUtilitiesCropToDimensions extends ProcessingAlgorithm{
 
 	protected void createOutputParameters(ParamCollection outputParams) {
 
-		outputParams.add(outputVol = new ParamVolume("Cropped Image"));
+		outputParams.add(outputVol = new ParamVolume("Cropped Image",null,-1,-1,-1,-1));
 	
 		offset=new ParamPointInteger("Offset");
 		dim=new ParamPointInteger("Uncropped Dimensions");
@@ -113,36 +113,63 @@ public class JistUtilitiesCropToDimensions extends ProcessingAlgorithm{
 		int nx = inVol.getRows();
 		int ny = inVol.getCols();
 		int nz = inVol.getSlices();
+		int nt = inVol.getComponents();
 		int nxyz = nx*ny*nz;
 		float rx = inVol.getHeader().getDimResolutions()[0];
 		float ry = inVol.getHeader().getDimResolutions()[1];
 		float rz = inVol.getHeader().getDimResolutions()[2];
 		
-		float[][][] in = inVol.toArray3d();
-		
-		int newnx = xmax.getInt()-xmin.getInt();
-		int newny = ymax.getInt()-ymin.getInt();
-		int newnz = zmax.getInt()-zmin.getInt();	
-		
-		float[][][] out = new float[newnx][newny][newnz];
-		
-		for (int x=0;x<newnx;x++) for (int y=0;y<newny;y++) for (int z=0;z<newnz;z++) {
-			out[x][y][z] = in[x+xmin.getInt()][y+ymin.getInt()][z+zmin.getInt()];
-		}
-		in = null;
-		inVol = null;
-		
-		offset.setValue(new Point3i(xmin.getInt(),ymin.getInt(),zmin.getInt()));
-		dimNew.setValue(new Point3i(newnx,newny,newnz));
-		dim.setValue(new Point3i(nx,ny,nz));
-
-		
-		ImageDataFloat outVol = new ImageDataFloat(out);		
-		outVol.setHeader(inputVol.getImageData().getHeader());
-		outVol.setName(inputVol.getImageData().getName()+"_"+roiName.getValue());
-		outputVol.setValue(outVol);
-		out = null;
-		outVol = null;
-		
+		if (nt==1) {
+			float[][][] in = inVol.toArray3d();
+			
+			int newnx = xmax.getInt()-xmin.getInt();
+			int newny = ymax.getInt()-ymin.getInt();
+			int newnz = zmax.getInt()-zmin.getInt();	
+			
+			float[][][] out = new float[newnx][newny][newnz];
+			
+			for (int x=0;x<newnx;x++) for (int y=0;y<newny;y++) for (int z=0;z<newnz;z++) {
+				out[x][y][z] = in[x+xmin.getInt()][y+ymin.getInt()][z+zmin.getInt()];
+			}
+			in = null;
+			inVol = null;
+			
+			offset.setValue(new Point3i(xmin.getInt(),ymin.getInt(),zmin.getInt()));
+			dimNew.setValue(new Point3i(newnx,newny,newnz));
+			dim.setValue(new Point3i(nx,ny,nz));
+	
+			
+			ImageDataFloat outVol = new ImageDataFloat(out);		
+			outVol.setHeader(inputVol.getImageData().getHeader());
+			outVol.setName(inputVol.getImageData().getName()+"_"+roiName.getValue());
+			outputVol.setValue(outVol);
+			out = null;
+			outVol = null;
+		} else {
+			float[][][][] in = inVol.toArray4d();
+			
+			int newnx = xmax.getInt()-xmin.getInt();
+			int newny = ymax.getInt()-ymin.getInt();
+			int newnz = zmax.getInt()-zmin.getInt();	
+			
+			float[][][][] out = new float[newnx][newny][newnz][nt];
+			
+			for (int x=0;x<newnx;x++) for (int y=0;y<newny;y++) for (int z=0;z<newnz;z++) for (int t=0;t<nt;t++) {
+				out[x][y][z][t] = in[x+xmin.getInt()][y+ymin.getInt()][z+zmin.getInt()][t];
+			}
+			in = null;
+			inVol = null;
+			
+			offset.setValue(new Point3i(xmin.getInt(),ymin.getInt(),zmin.getInt()));
+			dimNew.setValue(new Point3i(newnx,newny,newnz));
+			dim.setValue(new Point3i(nx,ny,nz));
+	
+			ImageDataFloat outVol = new ImageDataFloat(out);		
+			outVol.setHeader(inputVol.getImageData().getHeader());
+			outVol.setName(inputVol.getImageData().getName()+"_"+roiName.getValue());
+			outputVol.setValue(outVol);
+			out = null;
+			outVol = null;
+		}			
 	}
 }
