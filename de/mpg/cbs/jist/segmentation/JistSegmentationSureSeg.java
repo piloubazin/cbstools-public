@@ -64,6 +64,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 	private ParamFloat 		mincertaintyParam;
 	private ParamFloat	 	scaleParam;
 	private ParamInteger 	neighborParam;
+	private ParamFloat	 	diffratioParam;
 	
 	private ParamVolume segmentImage;
 	private ParamVolume maxprobaImage;
@@ -113,6 +114,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		mainParams.add(certainscaleParam = new ParamFloat("Certainty Scale", 0.0f, 100.0f, 2.0f));
 		mainParams.add(mincertaintyParam = new ParamFloat("Min Certainty", 0, 1, 0.5f));
 		mainParams.add(neighborParam = new ParamInteger("Neighborhood size", 0, 26, 6));
+		mainParams.add(diffratioParam = new ParamFloat("Min difference ratio", 0, 1, 0.01f));
 		
 		mainParams.add(computeDistributionParam = new ParamBoolean("Re-estimate intensity distributions",true));
 		mainParams.add(computeNoiseParam = new ParamBoolean("Estimate image noise",true));
@@ -176,9 +178,10 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		
 		if (Interface.isValid(labelImage)) {
 			algorithm.setLabelSegmentation(Interface.getIntegerImage3D(labelImage));
-			algorithm.setLabelProbabilities(Interface.getFloatImage3D(probaImage));
+			if (Interface.isImage4D(probaImage)) algorithm.setLabel4DProbabilities(Interface.getFloatImage4D(probaImage));
+			else algorithm.setLabelMaxProbability(Interface.getFloatImage3D(probaImage));
 		} else {
-			algorithm.setLabelProbabilities(Interface.getFloatImage4D(probaImage));
+			algorithm.setLabel4DProbabilities(Interface.getFloatImage4D(probaImage));
 		}
 		if (Interface.isValid(maskImage)) algorithm.setImageMask(Interface.getUByteImage3D(maskImage));
 		
@@ -191,6 +194,7 @@ public class JistSegmentationSureSeg extends ProcessingAlgorithm {
 		algorithm.setCertaintyScale(certainscaleParam.getValue().floatValue());
 		algorithm.setMinCertainty(mincertaintyParam.getValue().floatValue());
 		algorithm.setNeighborhoodSize(neighborParam.getValue().intValue());
+		algorithm.setMinDifferenceRatio(diffratioParam.getValue().floatValue());
 		
 		algorithm.setReestimateIntensityDistributions(computeDistributionParam.getValue().booleanValue());
 		algorithm.setEstimateNoise(computeNoiseParam.getValue().booleanValue());

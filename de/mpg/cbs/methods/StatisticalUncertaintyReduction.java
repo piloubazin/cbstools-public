@@ -282,7 +282,7 @@ public class StatisticalUncertaintyReduction {
 		return certainty;	
 	}
 	
-    public final void diffuseCertainty(int iter, float scale, float factor, int ngbsize, float mincertainty, boolean computeDistribution) {
+    public final void diffuseCertainty(int iter, float scale, float factor, int ngbsize, float mincertainty, boolean computeDistribution, float diffratio) {
     	
 		//mix with the neighbors?
 		float[] certainty = new float[nix*niy*niz];   	
@@ -337,7 +337,7 @@ public class StatisticalUncertaintyReduction {
 		float maxdiff = 1.0f;
 		float meandiff = 1.0f;
 		float t0diff = 1.0f;
-		for (int t=0;t<iter && meandiff>0.001f*t0diff;t++) {
+		for (int t=0;t<iter && meandiff>diffratio*t0diff;t++) {
 		//for (int t=0;t<iter && maxdiff>0.1f;t++) {
 			BasicInfo.displayMessage("iter "+(t+1));
 			maxdiff = 0.0f;

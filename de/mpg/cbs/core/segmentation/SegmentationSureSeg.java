@@ -32,6 +32,7 @@ public class SegmentationSureSeg {
 	
 	private float[] probaImage = null;
 	private int[] 	labelImage = null;
+	private	boolean	maxProba = false;
 	private byte 	nbestParam	=	4;
 	private boolean	includeBgParam = false;
 	private boolean	rescaleProbaParam = false;
@@ -39,8 +40,9 @@ public class SegmentationSureSeg {
 	private int 	iterationParam	=	100;
 	private float 	imgscaleParam		=	1.0f;
 	private	float 	certainscaleParam		= 	1.0f;
-	private float 	mincertaintyParam		=	0.5f;
-	private int 	neighborParam	=	6;
+	private float 	mincertaintyParam		=	1.0f;
+	private int 	neighborParam	=	4;
+	private float 	diffratioParam		=	0.01f;
 	
 	private boolean	computeDistributionParam = false;
 	private boolean	computeNoiseParam = false;
@@ -72,7 +74,8 @@ public class SegmentationSureSeg {
 	
 	public final void setImageMask(byte[] val) { maskImage = val; }
 	
-	public final void setLabelProbabilities(float[] val) { probaImage = val; }
+	public final void setLabel4DProbabilities(float[] val) { probaImage = val; maxProba = false; }
+	public final void setLabelMaxProbability(float[] val) { probaImage = val; maxProba = true; }
 	public final void setLabelSegmentation(int[] val) { labelImage = val; }
 	public final void setLabelDepth(byte val) { nbestParam = val; }
 	public final void setBackgroundIncluded(boolean val) { includeBgParam = val; }
@@ -83,6 +86,7 @@ public class SegmentationSureSeg {
 	public final void setCertaintyScale(float val) { certainscaleParam = val; }
 	public final void setMinCertainty(float val) { mincertaintyParam = val; }
 	public final void setNeighborhoodSize(int val) { neighborParam = val; }
+	public final void setMinDifferenceRatio(float val) { diffratioParam = val; }
 	
 	public final void setReestimateIntensityDistributions(boolean val) { computeDistributionParam = val; }
 	public final void setEstimateNoise(boolean val) { computeNoiseParam = val; }
@@ -154,42 +158,7 @@ public class SegmentationSureSeg {
 		float[][] maxproba = null;
 		byte[][] maxlabel = null;
 		
-		if (labelImage==null) {
-			BasicInfo.displayMessage("build from probabilities...\n");
-			// create max proba, labels (assuming a background value with label zero)
-			nlabels = (byte)(probaImage.length/nxyz);
-			
-			if (rescaleProbaParam) {
-				float[] minpb = new float[nlabels];
-				float[] maxpb = new float[nlabels];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int l=0;l<nlabels;l++)  {
-						if (probaImage[xyz+l*nxyz]<minpb[l]) minpb[l] = probaImage[xyz+l*nxyz];
-						if (probaImage[xyz+l*nxyz]>maxpb[l]) maxpb[l] = probaImage[xyz+l*nxyz];
-					}
-				}
-				BasicInfo.displayMessage("probability ranges ("+nlabels+" ):\n");
-				for (int l=0;l<nlabels;l++) BasicInfo.displayMessage("["+minpb[l]+", "+maxpb[l]+"] ");
-				BasicInfo.displayMessage("\n");
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int l=0;l<nlabels;l++)  {
-						probaImage[xyz+l*nxyz] = (probaImage[xyz+l*nxyz]-minpb[l])/(maxpb[l]-minpb[l]);
-					}
-				}
-			}
-			
-			MaxProbaRepresentation maxprep = new MaxProbaRepresentation(nbestParam, nlabels, nx,ny,nz);
-			if (includeBgParam) maxprep.buildFromCompleteProbabilities(probaImage);
-			else maxprep.buildFromCompetingProbabilitiesAndBackground(probaImage);
-			//else maxprep.buildFromCompetingProbabilitiesAndConstantBackground(probaImage,0.5f);
-			maxproba = maxprep.getMaxProba();
-			maxlabel = maxprep.getMaxLabel();
-			
-			if (!includeBgParam) nlabels++;
-			objlb = new int[nlabels];
-			for (int l=0;l<nlabels;l++) objlb[l] = l+1;
-
-		} else {
+		if (maxProba) {
 			BasicInfo.displayMessage("build from max labeling and max probability...\n");
 			objlb = ObjectLabeling.listOrderedLabels(labelImage,nx,ny,nz);
 			nlabels = (byte)objlb.length;
@@ -227,6 +196,48 @@ public class SegmentationSureSeg {
 					maxproba[b+1][xyz] = Numerics.min( boundary[xyz], (1.0f-boundary[xyz])*(distproba[b]/distproba[nbestParam-1]) );
 				}
 			}			
+		} else {
+			BasicInfo.displayMessage("build from probabilities...\n");
+			// create max proba, labels (assuming a background value with label zero)
+			nlabels = (byte)(probaImage.length/nxyz);
+			
+			if (rescaleProbaParam) {
+				float[] minpb = new float[nlabels];
+				float[] maxpb = new float[nlabels];
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int l=0;l<nlabels;l++)  {
+						if (probaImage[xyz+l*nxyz]<minpb[l]) minpb[l] = probaImage[xyz+l*nxyz];
+						if (probaImage[xyz+l*nxyz]>maxpb[l]) maxpb[l] = probaImage[xyz+l*nxyz];
+					}
+				}
+				BasicInfo.displayMessage("probability ranges ("+nlabels+" ):\n");
+				for (int l=0;l<nlabels;l++) BasicInfo.displayMessage("["+minpb[l]+", "+maxpb[l]+"] ");
+				BasicInfo.displayMessage("\n");
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int l=0;l<nlabels;l++)  {
+						probaImage[xyz+l*nxyz] = (probaImage[xyz+l*nxyz]-minpb[l])/(maxpb[l]-minpb[l]);
+					}
+				}
+			}
+			
+			MaxProbaRepresentation maxprep = new MaxProbaRepresentation(nbestParam, nlabels, nx,ny,nz);
+			if (includeBgParam) maxprep.buildFromCompleteProbabilities(probaImage);
+			else maxprep.buildFromCompetingProbabilitiesAndBackground(probaImage);
+			//else maxprep.buildFromCompetingProbabilitiesAndConstantBackground(probaImage,0.5f);
+			maxproba = maxprep.getMaxProba();
+			maxlabel = maxprep.getMaxLabel();
+			
+			if (!includeBgParam) nlabels++;
+			
+			// get labels from input if given
+			if (labelImage==null) {
+				objlb = new int[nlabels];
+				for (int l=0;l<nlabels;l++) objlb[l] = l+1;
+			} else {
+				objlb = ObjectLabeling.listOrderedLabels(labelImage,nx,ny,nz);
+			}
+			BasicInfo.displayMessage("found "+nlabels+" labels\n");
+
 		}
 		/*
 		// rescale highest values to 1 / lowest value to 0 for each label
@@ -262,7 +273,7 @@ public class SegmentationSureSeg {
 		}
 		
 		BasicInfo.displayMessage("main certainty diffusion...\n");
-		sur.diffuseCertainty(iterationParam, imgscaleParam, certainscaleParam, neighborParam, mincertaintyParam, computeDistributionParam);
+		sur.diffuseCertainty(iterationParam, imgscaleParam, certainscaleParam, neighborParam, mincertaintyParam, computeDistributionParam, diffratioParam);
 				
 		// outputs
 		BasicInfo.displayMessage("generating outputs...\n");
