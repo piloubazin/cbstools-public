@@ -64,7 +64,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	private static final String[] filterTypes = {"2D","1D"};
 	
 	private ParamOption propagationParam;
-	private static final String[] propagationTypes = {"diffusion","belief","SUR"};
+	private static final String[] propagationTypes = {"diffusion","belief","SUR","flooding","none"};
 	private ParamFloat factorParam;
 	private ParamFloat diffParam;
 	private ParamInteger ngbParam;
@@ -142,8 +142,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		inputParams.add(nscalesParam = new ParamInteger("Number of scales ", 0, 10, 3));
 
 		inputParams.add(propagationParam = new ParamOption("Propagation model", propagationTypes));
-		inputParams.add(factorParam = new ParamFloat("Diffusion factor", 0.0f, 10.0f, 1.0f));
-		inputParams.add(diffParam = new ParamFloat("Similarity scale", 0.0f, 1.0f, 0.1f));
+		inputParams.add(factorParam = new ParamFloat("Diffusion factor", 0.0f, 100.0f, 1.0f));
+		inputParams.add(diffParam = new ParamFloat("Similarity scale", 0.0f, 100.0f, 0.1f));
 		inputParams.add(ngbParam = new ParamInteger("Neighborhood size", 0, 26, 4));
 		inputParams.add(iterParam = new ParamInteger("Max iterations", 0, 1000, 100));
 		inputParams.add(maxdiffParam = new ParamFloat("Max difference", 0.0f, 1.0f, 0.001f));
@@ -364,14 +364,17 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		float maxdiff = maxdiffParam.getValue().floatValue();
 		
 		if (propagationParam.getValue().equals("SUR")) {
-			if (filterParam.getValue().equals("1D"))  spatialUncertaintyRelaxation1D(proba, maxdirection, ngbsize, scale, factor, iter);
-			else if (filterParam.getValue().equals("2D"))  spatialUncertaintyRelaxation2D(proba, maxdirection, ngbsize, scale, factor, iter);
+			if (filterParam.getValue().equals("1D"))  proba = spatialUncertaintyRelaxation1D(proba, maxdirection, ngbsize, scale, factor, iter);
+			else if (filterParam.getValue().equals("2D"))  proba = spatialUncertaintyRelaxation2D(proba, maxdirection, ngbsize, scale, factor, iter);
 		} else if  (propagationParam.getValue().equals("diffusion")) {
-			if (filterParam.getValue().equals("1D"))  probabilisticDiffusion1D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
-			else if (filterParam.getValue().equals("2D"))  probabilisticDiffusion2D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
+			if (filterParam.getValue().equals("1D"))  proba = probabilisticDiffusion1D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
+			else if (filterParam.getValue().equals("2D"))  proba = probabilisticDiffusion2D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
 		} else if  (propagationParam.getValue().equals("belief")) {
-			if (filterParam.getValue().equals("1D"))  beliefPropagation1D(proba, maxdirection, ngbsize, scale, iter, maxdiff);
-			else if (filterParam.getValue().equals("2D"))  beliefPropagation2D(proba, maxdirection, ngbsize, scale, iter, maxdiff);
+			if (filterParam.getValue().equals("1D"))  proba = beliefPropagation1D(proba, maxdirection, ngbsize, scale, iter, maxdiff);
+			else if (filterParam.getValue().equals("2D"))  proba = beliefPropagation2D(proba, maxdirection, ngbsize, scale, iter, maxdiff);
+		} else if  (propagationParam.getValue().equals("flooding")) {
+			if (filterParam.getValue().equals("1D"))  proba = probabilisticDiffusion1D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
+			else if (filterParam.getValue().equals("2D"))  proba = probabilisticFlooding2D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
 		} 				
 		// Output
 		BasicInfo.displayMessage("...output images\n");
@@ -1358,11 +1361,12 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		return dv;
 	}	
 
-	private final void spatialUncertaintyRelaxation1D(float[] proba, byte[] dir, int ngbsize, float scale, float factor, int iter) {
+	private final float[] spatialUncertaintyRelaxation1D(float[] proba, byte[] dir, int ngbsize, float scale, float factor, int iter) {
 		// run SUR with weighting against normal directions
 		//mix with the neighbors?
 		float[] certainty = new float[nx*ny*nz];   	
 		float[] newproba = new float[nx*ny*nz];
+		float[] prevproba = new float[nx*ny*nz];
 		float[] ngbweight = new float[26];
 		float[][] imgweight = new float[nx*ny*nz][26];  
 		float[][] angleweight1D = new float[26][26];
@@ -1384,6 +1388,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		}
 		for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) {
 			newproba[xyzi] = proba[xyzi];
+			prevproba[xyzi] = proba[xyzi];
 		}
 		
 		float maxdiff = 1.0f;
@@ -1402,10 +1407,10 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			boolean[] diffmask = new boolean[nxyz];
 			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
 				int xyz = x+nx*y+nx*ny*z;
-				if (proba[xyz]>0 && proba[xyz]<1) diffmask[xyz] = true;
+				if (prevproba[xyz]>0 && prevproba[xyz]<1) diffmask[xyz] = true;
 				else diffmask[xyz] = false;
 				for (int i=-1;i<=1 && !diffmask[xyz];i++) for (int j=-1;j<=1 && !diffmask[xyz];j++) for (int k=-1;k<=1 && !diffmask[xyz];k++) {
-					if (proba[xyz+i+j*nx+k*nx*ny]>0 && proba[xyz+i+j*nx+k*nx*ny]<1) diffmask[xyz] = true;
+					if (prevproba[xyz+i+j*nx+k*nx*ny]>0 && prevproba[xyz+i+j*nx+k*nx*ny]<1) diffmask[xyz] = true;
 				}
 			}
 			
@@ -1415,15 +1420,15 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 
 			// get the gain ; normalize
 			for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) if (diffmask[xyzi]) {
-				certainty[xyzi] = Numerics.abs(2.0f*proba[xyzi]-1.0f);
+				certainty[xyzi] = Numerics.abs(2.0f*prevproba[xyzi]-1.0f);
 			}
 			// propagate the values : diffusion
 			for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) if (diffmask[xyzi]) {
 				nproc++;
 						
 				float den = certainty[xyzi];
-				float num = den*proba[xyzi];
-				float prev = proba[xyzi];
+				float num = den*prevproba[xyzi];
+				float prev = prevproba[xyzi];
 					
 				for (byte j=0;j<26;j++) {
 					int xyzj = Ngb.neighborIndex(j, xyzi, nx, ny, nz);
@@ -1432,7 +1437,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 				byte[] rank = Numerics.argmax(ngbweight, ngbsize);
 				for (int l=0;l<ngbsize;l++) {
 					int xyzl = Ngb.neighborIndex(rank[l], xyzi, nx, ny, nz);
-					num += ngbweight[rank[l]]*proba[xyzl];
+					num += ngbweight[rank[l]]*prevproba[xyzl];
 					den += ngbweight[rank[l]];
 				}
 				if (den>1e-9f) num /= den;
@@ -1450,7 +1455,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			
 			// make a hard copy
 			for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) if (diffmask[xyzi]) {
-				proba[xyzi] = newproba[xyzi];
+				prevproba[xyzi] = newproba[xyzi];
 			}
 			BasicInfo.displayMessage("mean diff. "+meandiff+", max diff. "+maxdiff+"\n");
 			//BasicInfo.displayMessage("n processed "+nproc+", n flipped "+nflip+"\n");
@@ -1458,14 +1463,15 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			//BasicInfo.displayMessage("n resorted"+nresort+"\n");
 			
 		}
-		newproba = null;
+		return newproba;
 	}
 	
-	private final void spatialUncertaintyRelaxation2D(float[] proba, byte[] dir, int ngbsize, float scale, float factor, int iter) {
+	private final float[] spatialUncertaintyRelaxation2D(float[] proba, byte[] dir, int ngbsize, float scale, float factor, int iter) {
 		// run SUR with weighting against normal directions
 		//mix with the neighbors?
 		float[] certainty = new float[nx*ny*nz];   	
 		float[] newproba = new float[nx*ny*nz];
+		float[] prevproba = new float[nx*ny*nz];
 		float[] ngbweight = new float[26];
 		float[][] imgweight = new float[nx*ny*nz][26];  
 		float[][] angleweight2D = new float[26][26];
@@ -1487,6 +1493,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		}
 		for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) {
 			newproba[xyzi] = proba[xyzi];
+			prevproba[xyzi] = proba[xyzi];
 		}
 		
 		float maxdiff = 1.0f;
@@ -1505,10 +1512,10 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			boolean[] diffmask = new boolean[nxyz];
 			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
 				int xyz = x+nx*y+nx*ny*z;
-				if (proba[xyz]>0 && proba[xyz]<1) diffmask[xyz] = true;
+				if (prevproba[xyz]>0 && prevproba[xyz]<1) diffmask[xyz] = true;
 				else diffmask[xyz] = false;
 				for (int i=-1;i<=1 && !diffmask[xyz];i++) for (int j=-1;j<=1 && !diffmask[xyz];j++) for (int k=-1;k<=1 && !diffmask[xyz];k++) {
-					if (proba[xyz+i+j*nx+k*nx*ny]>0 && proba[xyz+i+j*nx+k*nx*ny]<1) diffmask[xyz] = true;
+					if (prevproba[xyz+i+j*nx+k*nx*ny]>0 && prevproba[xyz+i+j*nx+k*nx*ny]<1) diffmask[xyz] = true;
 				}
 			}
 			
@@ -1518,15 +1525,15 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 
 			// get the gain ; normalize
 			for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) if (diffmask[xyzi]) {
-				certainty[xyzi] = Numerics.abs(2.0f*proba[xyzi]-1.0f);
+				certainty[xyzi] = Numerics.abs(2.0f*prevproba[xyzi]-1.0f);
 			}
 			// propagate the values : diffusion
 			for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) if (diffmask[xyzi]) {
 				nproc++;
 						
 				float den = certainty[xyzi];
-				float num = den*proba[xyzi];
-				float prev = proba[xyzi];
+				float num = den*prevproba[xyzi];
+				float prev = prevproba[xyzi];
 					
 				for (byte j=0;j<26;j++) {
 					int xyzj = Ngb.neighborIndex(j, xyzi, nx, ny, nz);
@@ -1535,7 +1542,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 				byte[] rank = Numerics.argmax(ngbweight, ngbsize);
 				for (int l=0;l<ngbsize;l++) {
 					int xyzl = Ngb.neighborIndex(rank[l], xyzi, nx, ny, nz);
-					num += ngbweight[rank[l]]*proba[xyzl];
+					num += ngbweight[rank[l]]*prevproba[xyzl];
 					den += ngbweight[rank[l]];
 				}
 				if (den>1e-9f) num /= den;
@@ -1553,7 +1560,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			
 			// make a hard copy
 			for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) if (diffmask[xyzi]) {
-				proba[xyzi] = newproba[xyzi];
+				prevproba[xyzi] = newproba[xyzi];
 			}
 			BasicInfo.displayMessage("mean diff. "+meandiff+", max diff. "+maxdiff+"\n");
 			//BasicInfo.displayMessage("n processed "+nproc+", n flipped "+nflip+"\n");
@@ -1561,7 +1568,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			//BasicInfo.displayMessage("n resorted"+nresort+"\n");
 			
 		}
-		newproba = null;
+		return newproba;
 	}
 	
 	private final float diffusionWeightFunction(float[] proba, byte[] dir, int xyz, int ngb, byte dngb, float[][] corr, float scale) {
@@ -1573,11 +1580,16 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	
 	
 	private final float[] probabilisticDiffusion1D(float[] proba, byte[] dir, int ngbsize, float maxdiff, float angle, float factor, int iter) {
-		// build a similarity function from aligned neighbors
-		float[][] similarity = null;
-		byte[][] neighbor = null;
+		// mask out image boundaries
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (x<1 || y<1 || z<1 || x>=nx-1 || y>=ny-1 || z>=nz-1) proba[xyz] = 0.0f;
+		}
 		
-		estimateSimpleDiffusionSimilarity1D(dir, proba, ngbsize, neighbor, similarity, angle);
+		// build a similarity function from aligned neighbors
+		float[][] similarity = new float[ngbsize][nxyz];
+		byte[][] neighbor = new byte[ngbsize][nxyz];
+    		estimateSimpleDiffusionSimilarity1D(dir, proba, ngbsize, neighbor, similarity, angle);
 		
 		// run the diffusion process
 		float[] diffused = new float[nxyz];
@@ -1614,6 +1626,65 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			if (iter==0) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
 			else diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0)/(1.0f+2.0f*factor), 0.0f, 1.0f);
 		}
+		return diffused;
+	}
+
+	private final float[] probabilisticFlooding1D(float[] proba, byte[] dir, int ngbsize, float maxdiff, float angle, float factor, int iter) {
+		// mask out image boundaries
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (x<1 || y<1 || z<1 || x>=nx-1 || y>=ny-1 || z>=nz-1) proba[xyz] = 0.0f;
+		}
+		
+		// build a similarity function from aligned neighbors
+		float[][] similarity = new float[ngbsize][nxyz];
+		byte[][] neighbor = new byte[ngbsize][nxyz];
+    		estimateSimpleDiffusionSimilarity1D(dir, proba, ngbsize, neighbor, similarity, angle);
+		
+		// run the diffusion process
+		float[] diffused = new float[nxyz];
+		float[] previous = new float[nxyz];
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			//diffused[xyz] = (float)FastMath.log(1.0f + proba[xyz]);
+			diffused[xyz] = proba[xyz];
+		}
+
+		for (int t=0;t<iter;t++) {
+			Interface.displayMessage("iteration "+(t+1)+": ");
+			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
+				previous[xyz] = diffused[xyz];
+			}
+			float max = 0.0f;
+			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
+				// weight with distance to 0 or 1
+				for (int n=0;n<ngbsize;n++) {
+					float ngb = previous[neighborIndex(neighbor[n][xyz],xyz)];
+					// remap neighbors?
+					//ngb = (float)FastMath.exp(ngb)-1.0f;
+				
+					// integration over the whole vessel (log version is more stable (??) )
+					diffused[xyz] += factor*similarity[n][xyz]*ngb;
+				}
+				//diffused[xyz] = (float)FastMath.log(1.0f + diffused[xyz]);
+				if (diffused[xyz]>max) max = diffused[xyz];
+			}
+			// renormalization (global)
+			float diff = 0.0f;
+			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
+				diffused[xyz] /= max;
+				if (Numerics.abs(previous[xyz]-diffused[xyz])>diff) diff = Numerics.abs(previous[xyz]-diffused[xyz]);
+			}
+			
+			Interface.displayMessage("diff "+diff+"\n");
+			if (diff<maxdiff) t=iter;
+		}
+		/*
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int id = x + nx*y + nx*ny*z;
+			if (iter==0) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
+			else diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0)/(1.0f+2.0f*factor), 0.0f, 1.0f);
+		}
+		*/
 		return diffused;
 	}
 
@@ -1661,11 +1732,16 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
     }
     
 	private final float[] probabilisticDiffusion2D(float[] proba, byte[] dir, int ngbsize, float maxdiff, float angle, float factor, int iter) {
-		// build a similarity function from aligned neighbors
-		float[][] similarity = null;
-		byte[][] neighbor = null;
+		// mask out image boundaries
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (x<1 || y<1 || z<1 || x>=nx-1 || y>=ny-1 || z>=nz-1) proba[xyz] = 0.0f;
+		}
 		
-		estimateSimpleDiffusionSimilarity2D(dir, proba, ngbsize, neighbor, similarity, angle);
+		// build a similarity function from aligned neighbors
+		float[][] similarity = new float[ngbsize][nxyz];
+		byte[][] neighbor = new byte[ngbsize][nxyz];
+    		estimateSimpleDiffusionSimilarity2D(dir, proba, ngbsize, neighbor, similarity, angle);
 		
 		// run the diffusion process
 		float[] diffused = new float[nxyz];
@@ -1673,6 +1749,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			diffused[xyz] = (float)FastMath.log(1.0f + proba[xyz]);
 		}
 
+		factor /= (float)ngbsize;
 		for (int t=0;t<iter;t++) {
 			Interface.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
@@ -1705,11 +1782,66 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		return diffused;
 	}
 
-    private final void estimateSimpleDiffusionSimilarity2D(byte[] dir, float[] proba, int ngbsize, byte[][] neighbor, float[][] similarity, float factor) {
-    	
-    	// initialize
-    	neighbor = new byte[ngbsize][nxyz];
-    	similarity = new float[ngbsize][nxyz];
+ 	private final float[] probabilisticFlooding2D(float[] proba, byte[] dir, int ngbsize, float maxdiff, float angle, float factor, int iter) {
+		// mask out image boundaries
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (x<1 || y<1 || z<1 || x>=nx-1 || y>=ny-1 || z>=nz-1) proba[xyz] = 0.0f;
+		}
+		
+		// build a similarity function from aligned neighbors
+		float[][] similarity = new float[ngbsize][nxyz];
+		byte[][] neighbor = new byte[ngbsize][nxyz];
+    		estimateSimpleDiffusionSimilarity2D(dir, proba, ngbsize, neighbor, similarity, angle);
+		
+		// run the diffusion process
+		float[] diffused = new float[nxyz];
+		float[] previous = new float[nxyz];
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			//diffused[xyz] = (float)FastMath.log(1.0f + proba[xyz]);
+			diffused[xyz] = proba[xyz];
+		}
+
+		for (int t=0;t<iter;t++) {
+			Interface.displayMessage("iteration "+(t+1)+": ");
+			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
+				previous[xyz] = diffused[xyz];
+			}
+			float max = 0.0f;
+			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
+				// weight with distance to 0 or 1
+				for (int n=0;n<ngbsize;n++) {
+					float ngb = previous[neighborIndex(neighbor[n][xyz],xyz)];
+					// remap neighbors?
+					//ngb = (float)FastMath.exp(ngb)-1.0f;
+				
+					// integration over the whole vessel (log version is more stable (??) )
+					diffused[xyz] += factor*similarity[n][xyz]*ngb;
+				}
+				//diffused[xyz] = (float)FastMath.log(1.0f + diffused[xyz]);
+				if (diffused[xyz]>max) max = diffused[xyz];
+			}
+			// renormalization (global)
+			float diff = 0.0f;
+			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
+				diffused[xyz] /= max;
+				if (Numerics.abs(previous[xyz]-diffused[xyz])>diff) diff = Numerics.abs(previous[xyz]-diffused[xyz]);
+			}
+			
+			Interface.displayMessage("diff "+diff+"\n");
+			if (diff<maxdiff) t=iter;
+		}
+		/*
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int id = x + nx*y + nx*ny*z;
+			if (iter==0) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
+			else diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0)/(1.0f+2.0f*factor), 0.0f, 1.0f);
+		}
+		*/
+		return diffused;
+	}
+
+   private final void estimateSimpleDiffusionSimilarity2D(byte[] dir, float[] proba, int ngbsize, byte[][] neighbor, float[][] similarity, float factor) {
     	
     	float[][] angleweight1D = new float[26][26];
 		float[][] angleweight2D = new float[26][26];
@@ -1752,11 +1884,16 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
     }
     
     private final float[] beliefPropagation1D(float[] proba, byte[] dir, int ngbsize, float angle, int iter, float maxdiff) {
-		// build a similarity function from aligned neighbors
-		float[][] similarity = null;
-		byte[][] neighbor = null;
+		// mask out image boundaries
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (x<1 || y<1 || z<1 || x>=nx-1 || y>=ny-1 || z>=nz-1) proba[xyz] = 0.0f;
+		}
 		
-		estimateSimpleDiffusionSimilarity1D(dir, proba, ngbsize, neighbor, similarity, angle);
+		// build a similarity function from aligned neighbors
+		float[][] similarity = new float[ngbsize][nxyz];
+		byte[][] neighbor = new byte[ngbsize][nxyz];
+    		estimateSimpleDiffusionSimilarity1D(dir, proba, ngbsize, neighbor, similarity, angle);
 		
 		float[][] messagefg = new float[ngbsize][nxyz];
 		float[][] messagebg = new float[ngbsize][nxyz];
@@ -1790,31 +1927,33 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 					float simbgbg = 1.0f; //(1.0f-similarity1[xyz]); //1.0f; //similarity1[xyz];
 				
 					ngb = neighborIndex(neighbor[n][xyz],xyz);
-					// neighbor message, fg label
-					float mfgfg = Numerics.max(mins,simfgfg)*Numerics.max(minp,proba[ngb]);
-					for (int m=0;m<ngbsize;m++) {
-						if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagefg[m][ngb]>0) mfgfg *= messagefg[m][ngb];
-					}
+					if (proba[ngb]>0) {
+						// neighbor message, fg label
+						float mfgfg = Numerics.max(mins,simfgfg)*Numerics.max(minp,proba[ngb]);
+						for (int m=0;m<ngbsize;m++) {
+							if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagefg[m][ngb]>0) mfgfg *= messagefg[m][ngb];
+						}
+						
+						float mfgbg = Numerics.max(mins,simfgbg)*Numerics.max(minp,(1.0f-proba[ngb]));
+						for (int m=0;m<ngbsize;m++) {
+							if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagebg[m][ngb]>0) mfgbg *= messagebg[m][ngb];
+						}
+						newmsgfg[n][xyz] = Numerics.max(mfgfg, mfgbg);
+						diff = Numerics.max(diff, Numerics.abs(newmsgfg[n][xyz]-messagefg[n][xyz]));
 					
-					float mfgbg = Numerics.max(mins,simfgbg)*Numerics.max(minp,(1.0f-proba[ngb]));
-					for (int m=0;m<ngbsize;m++) {
-						if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagebg[m][ngb]>0) mfgbg *= messagebg[m][ngb];
+						// neighbor message, bg label
+						float mbgbg = Numerics.max(mins,simbgbg)*Numerics.max(minp,(1.0f-proba[ngb]));
+						for (int m=0;m<ngbsize;m++) {
+							if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagebg[m][ngb]>0) mbgbg *= messagebg[m][ngb];
+						}
+					
+						float mbgfg = Numerics.max(mins,simbgfg)*Numerics.max(minp,proba[ngb]);
+						for (int m=0;m<ngbsize;m++) {
+							if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagefg[m][ngb]>0) mbgfg *= messagefg[m][ngb];
+						}
+						newmsgbg[n][xyz] = Numerics.max(mbgbg, mbgfg);
+						diff = Numerics.max(diff, Numerics.abs(newmsgbg[n][xyz]-messagebg[n][xyz]));
 					}
-					newmsgfg[n][xyz] = Numerics.max(mfgfg, mfgbg);
-					diff = Numerics.max(diff, Numerics.abs(newmsgfg[n][xyz]-messagefg[n][xyz]));
-				
-					// neighbor message, bg label
-					float mbgbg = Numerics.max(mins,simbgbg)*Numerics.max(minp,(1.0f-proba[ngb]));
-					for (int m=0;m<ngbsize;m++) {
-						if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagebg[m][ngb]>0) mbgbg *= messagebg[m][ngb];
-					}
-				
-					float mbgfg = Numerics.max(mins,simbgfg)*Numerics.max(minp,proba[ngb]);
-					for (int m=0;m<ngbsize;m++) {
-						if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagefg[m][ngb]>0) mbgfg *= messagefg[m][ngb];
-					}
-					newmsgbg[n][xyz] = Numerics.max(mbgbg, mbgfg);
-					diff = Numerics.max(diff, Numerics.abs(newmsgbg[n][xyz]-messagebg[n][xyz]));
 				}
 			}
 			// copy new messages onto older ones
@@ -1855,11 +1994,16 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	}
 	
     private final float[] beliefPropagation2D(float[] proba, byte[] dir, int ngbsize, float angle, int iter, float maxdiff) {
-		// build a similarity function from aligned neighbors
-		float[][] similarity = null;
-		byte[][] neighbor = null;
+		// mask out image boundaries
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (x<1 || y<1 || z<1 || x>=nx-1 || y>=ny-1 || z>=nz-1) proba[xyz] = 0.0f;
+		}
 		
-		estimateSimpleDiffusionSimilarity2D(dir, proba, ngbsize, neighbor, similarity, angle);
+		// build a similarity function from aligned neighbors
+		float[][] similarity = new float[ngbsize][nxyz];
+		byte[][] neighbor = new byte[ngbsize][nxyz];
+    		estimateSimpleDiffusionSimilarity2D(dir, proba, ngbsize, neighbor, similarity, angle);
 		
 		float[][] messagefg = new float[ngbsize][nxyz];
 		float[][] messagebg = new float[ngbsize][nxyz];
@@ -1893,31 +2037,34 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 					float simbgbg = 1.0f; //(1.0f-similarity1[xyz]); //1.0f; //similarity1[xyz];
 				
 					ngb = neighborIndex(neighbor[n][xyz],xyz);
-					// neighbor message, fg label
-					float mfgfg = Numerics.max(mins,simfgfg)*Numerics.max(minp,proba[ngb]);
-					for (int m=0;m<ngbsize;m++) {
-						if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagefg[m][ngb]>0) mfgfg *= messagefg[m][ngb];
-					}
 					
-					float mfgbg = Numerics.max(mins,simfgbg)*Numerics.max(minp,(1.0f-proba[ngb]));
-					for (int m=0;m<ngbsize;m++) {
-						if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagebg[m][ngb]>0) mfgbg *= messagebg[m][ngb];
+					if (proba[ngb]>0) {
+						// neighbor message, fg label
+						float mfgfg = Numerics.max(mins,simfgfg)*Numerics.max(minp,proba[ngb]);
+						for (int m=0;m<ngbsize;m++) {
+							if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagefg[m][ngb]>0) mfgfg *= messagefg[m][ngb];
+						}
+						
+						float mfgbg = Numerics.max(mins,simfgbg)*Numerics.max(minp,(1.0f-proba[ngb]));
+						for (int m=0;m<ngbsize;m++) {
+							if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagebg[m][ngb]>0) mfgbg *= messagebg[m][ngb];
+						}
+						newmsgfg[n][xyz] = Numerics.max(mfgfg, mfgbg);
+						diff = Numerics.max(diff, Numerics.abs(newmsgfg[n][xyz]-messagefg[n][xyz]));
+					
+						// neighbor message, bg label
+						float mbgbg = Numerics.max(mins,simbgbg)*Numerics.max(minp,(1.0f-proba[ngb]));
+						for (int m=0;m<ngbsize;m++) {
+							if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagebg[m][ngb]>0) mbgbg *= messagebg[m][ngb];
+						}
+					
+						float mbgfg = Numerics.max(mins,simbgfg)*Numerics.max(minp,proba[ngb]);
+						for (int m=0;m<ngbsize;m++) {
+							if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagefg[m][ngb]>0) mbgfg *= messagefg[m][ngb];
+						}
+						newmsgbg[n][xyz] = Numerics.max(mbgbg, mbgfg);
+						diff = Numerics.max(diff, Numerics.abs(newmsgbg[n][xyz]-messagebg[n][xyz]));
 					}
-					newmsgfg[n][xyz] = Numerics.max(mfgfg, mfgbg);
-					diff = Numerics.max(diff, Numerics.abs(newmsgfg[n][xyz]-messagefg[n][xyz]));
-				
-					// neighbor message, bg label
-					float mbgbg = Numerics.max(mins,simbgbg)*Numerics.max(minp,(1.0f-proba[ngb]));
-					for (int m=0;m<ngbsize;m++) {
-						if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagebg[m][ngb]>0) mbgbg *= messagebg[m][ngb];
-					}
-				
-					float mbgfg = Numerics.max(mins,simbgfg)*Numerics.max(minp,proba[ngb]);
-					for (int m=0;m<ngbsize;m++) {
-						if (neighborIndex(neighbor[m][ngb],ngb)!=xyz && messagefg[m][ngb]>0) mbgfg *= messagefg[m][ngb];
-					}
-					newmsgbg[n][xyz] = Numerics.max(mbgbg, mbgfg);
-					diff = Numerics.max(diff, Numerics.abs(newmsgbg[n][xyz]-messagebg[n][xyz]));
 				}
 			}
 			// copy new messages onto older ones
