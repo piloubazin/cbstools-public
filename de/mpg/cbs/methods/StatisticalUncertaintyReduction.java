@@ -359,6 +359,7 @@ public class StatisticalUncertaintyReduction {
 			}
 			*/
 			
+			/* not a good idea
 			// estimate a gaussian intensity distribution for each region, and modulate the corresponding labels
 			if (computeDistribution) { // should be done at first, then in last step of the loop
 				for (int n=0;n<nobj;n++) {
@@ -439,6 +440,7 @@ public class StatisticalUncertaintyReduction {
 					}
 				}
 			}
+			*/
 				
 			// main loop: label-per-label
 			for (byte n=0;n<nobj;n++) {
@@ -488,8 +490,12 @@ public class StatisticalUncertaintyReduction {
 							else num += ngbweight[rank[l]]*bestproba[nbest-1][xyzl];
 							den += ngbweight[rank[l]];
 						}
-						if (den>1e-9f) num /= den;
-						
+						// other forms of regularization??
+						if (computeDistribution) {
+							//num /= 0.5f*(1.0f+0.5f);
+						} else {
+							if (den>1e-9f) num /= den;
+						}
 						newproba[mapdepth[xyzi]][xyzi] = num;
 						newlabel[mapdepth[xyzi]][xyzi] = n;
 						
@@ -498,6 +504,20 @@ public class StatisticalUncertaintyReduction {
 						maxdiff = Numerics.max(maxdiff, Numerics.abs(num-prev));
 						if (prev<0.5f && num>0.5f) nflip++;
 						if (prev>0.5f && num<0.5f) nflip++;
+					}
+				}
+				// maybe not really useful..
+				if (computeDistribution) {
+					float maxproba = 0.0f;
+					for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
+						if (newproba[mapdepth[xyzi]][xyzi]>maxproba) maxproba = newproba[mapdepth[xyzi]][xyzi];
+					}
+					meandiff = 0.0f;
+					maxdiff = 0.0f;
+					for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
+						newproba[mapdepth[xyzi]][xyzi] /= maxproba;
+						meandiff += Numerics.abs(newproba[mapdepth[xyzi]][xyzi]-bestproba[mapdepth[xyzi]][xyzi]);
+						maxdiff = Numerics.max(maxdiff, Numerics.abs(newproba[mapdepth[xyzi]][xyzi]-bestproba[mapdepth[xyzi]][xyzi]));
 					}
 				}
 			}
