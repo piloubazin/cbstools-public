@@ -298,8 +298,8 @@ public class StatisticalUncertaintyReduction {
 		float[] objcount = new float[nobj];
 		
 		// SOR-scheme?
-		//float sorfactor = 1.95f;
-		float sorfactor = 1.0f;
+		float sorfactor = 1.95f;
+		//float sorfactor = 1.0f;
 		
 		// compute the functional factor
 		//float certaintyfactor = (float)(FastMath.log(0.5)/FastMath.log(factor));
@@ -492,7 +492,7 @@ public class StatisticalUncertaintyReduction {
 						}
 						// other forms of regularization??
 						if (computeDistribution) {
-							//num /= 0.5f*(1.0f+0.5f);
+							//num /= 0.5f*(1.0f+0.5f*1.95f); // about 1.0
 						} else {
 							if (den>1e-9f) num /= den;
 						}
@@ -507,19 +507,25 @@ public class StatisticalUncertaintyReduction {
 					}
 				}
 				// maybe not really useful..
+				/*
 				if (computeDistribution) {
 					float maxproba = 0.0f;
 					for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
-						if (newproba[mapdepth[xyzi]][xyzi]>maxproba) maxproba = newproba[mapdepth[xyzi]][xyzi];
+						if (mapdepth[xyzi]<nbest && certainty[xyzi]<=mincertainty) {
+							if (newproba[mapdepth[xyzi]][xyzi]>maxproba) maxproba = newproba[mapdepth[xyzi]][xyzi];
+						}
 					}
 					meandiff = 0.0f;
 					maxdiff = 0.0f;
 					for (int xyzi=0;xyzi<nix*niy*niz;xyzi++) if (mask[xyzi]) {
-						newproba[mapdepth[xyzi]][xyzi] /= maxproba;
-						meandiff += Numerics.abs(newproba[mapdepth[xyzi]][xyzi]-bestproba[mapdepth[xyzi]][xyzi]);
-						maxdiff = Numerics.max(maxdiff, Numerics.abs(newproba[mapdepth[xyzi]][xyzi]-bestproba[mapdepth[xyzi]][xyzi]));
+						if (mapdepth[xyzi]<nbest && certainty[xyzi]<=mincertainty) {
+							newproba[mapdepth[xyzi]][xyzi] /= maxproba;
+							meandiff += Numerics.abs(newproba[mapdepth[xyzi]][xyzi]-bestproba[mapdepth[xyzi]][xyzi]);
+							maxdiff = Numerics.max(maxdiff, Numerics.abs(newproba[mapdepth[xyzi]][xyzi]-bestproba[mapdepth[xyzi]][xyzi]));
+						}
 					}
 				}
+				*/
 			}
 			if (ndiff>0) meandiff /= ndiff;
 			if (t==0) t0diff = meandiff;

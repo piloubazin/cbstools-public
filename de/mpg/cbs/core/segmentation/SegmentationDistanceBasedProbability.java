@@ -115,13 +115,30 @@ public class SegmentationDistanceBasedProbability {
 		// background: use the largest distance from foreground object instead as basis ? Or just 1-sum?
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			if (mask[xyz]) {
-				// background : go to a given distance
-				float dist = mgdm.reconstructedLevelSetAt(xyz, (byte)0)*Numerics.min(rx,ry,rz);
-				if (dist<-bgscaleParam) probaImage[xyz] = 1.0f;
-				else if (dist<0) probaImage[xyz] = 0.5f - 0.5f*dist/bgscaleParam;
-				else if (dist<bgscaleParam) probaImage[xyz] = 0.5f - 0.5f*dist/bgscaleParam;
-				else probaImage[xyz] = 0.0f;
-
+				// background : go to a given distance? or go to closest neighborś distance ratio?
+				float dist;
+				if (bgscaleParam>0) {
+					dist = mgdm.reconstructedLevelSetAt(xyz, (byte)0)*Numerics.min(rx,ry,rz);
+					if (dist<-bgscaleParam) probaImage[xyz] = 1.0f;
+					else if (dist<0) probaImage[xyz] = 0.5f - 0.5f*dist/bgscaleParam;
+					else if (dist<bgscaleParam) probaImage[xyz] = 0.5f - 0.5f*dist/bgscaleParam;
+					else probaImage[xyz] = 0.0f;
+				} else {
+					dist = mgdm.reconstructedLevelSetAt(xyz, (byte)0);
+					int l0 = mgdm.getLabels()[0][xyz];
+					if (l0==0) {
+						l0 = mgdm.getLabels()[1][xyz];
+						if (dist<-ratioParam*maxobjdist[l0]) probaImage[xyz] = 1.0f;
+						else if (dist<0) probaImage[xyz] = 0.5f - 0.5f*dist/maxobjdist[l0]/ratioParam;
+						else if (dist<ratioParam*maxobjdist[l0]) probaImage[xyz] = 0.5f - 0.5f*dist/maxobjdist[l0]/ratioParam;
+						else probaImage[xyz] = 0.0f;							
+					} else {
+						if (dist<-ratioParam*maxobjdist[l0]) probaImage[xyz] = 0.0f;
+						else if (dist<0) probaImage[xyz] = 0.5f + 0.5f*dist/maxobjdist[l0]/ratioParam;
+						else if (dist<ratioParam*maxobjdist[l0]) probaImage[xyz] = 0.5f + 0.5f*dist/maxobjdist[l0]/ratioParam;
+						else probaImage[xyz] = 1.0f;
+					}
+				}
 				// foreground: go to a ratio of object's size
 				float probaFg = 0.0f;
 				for (byte l=1;l<nlabels;l++) {
