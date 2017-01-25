@@ -298,8 +298,8 @@ public class StatisticalUncertaintyReduction {
 		float[] objcount = new float[nobj];
 		
 		// SOR-scheme?
-		float sorfactor = 1.95f;
-		//float sorfactor = 1.0f;
+		//float sorfactor = 1.95f;
+		float sorfactor = 1.0f;
 		
 		// compute the functional factor
 		//float certaintyfactor = (float)(FastMath.log(0.5)/FastMath.log(factor));
@@ -623,7 +623,7 @@ public class StatisticalUncertaintyReduction {
     
     private final float certaintyFunction(float delta, float scale) {
     	//return 1.0f - 1.0f/(1.0f+Numerics.square(delta/scale));	
-    	return (float)FastMath.pow(Numerics.abs(delta), scale);	
+    	return (float)FastMath.pow(1.0+Numerics.abs(delta), scale);	
     	//return (1.0f+scale)*(1.0f-1.0f/(1.0f+Numerics.abs(delta/scale)));
     	//return (1.0f+Numerics.quad(scale))*(1.0f - 1.0f/(1.0f+Numerics.quad(delta/scale)));	
     	

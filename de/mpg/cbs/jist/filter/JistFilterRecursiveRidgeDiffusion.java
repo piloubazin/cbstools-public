@@ -64,7 +64,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	private static final String[] filterTypes = {"2D","1D"};
 	
 	private ParamOption propagationParam;
-	private static final String[] propagationTypes = {"diffusion","belief","SUR","flooding","none"};
+	private static final String[] propagationTypes = {"diffusion","belief","SUR","flooding","growing","labeling","none"};
 	private ParamFloat factorParam;
 	private ParamFloat diffParam;
 	private ParamInteger ngbParam;
@@ -375,6 +375,12 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		} else if  (propagationParam.getValue().equals("flooding")) {
 			if (filterParam.getValue().equals("1D"))  proba = probabilisticDiffusion1D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
 			else if (filterParam.getValue().equals("2D"))  proba = probabilisticFlooding2D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
+		} else if  (propagationParam.getValue().equals("growing")) {
+			if (filterParam.getValue().equals("1D"))  proba = regionGrowing1D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
+			else if (filterParam.getValue().equals("2D"))  proba = regionGrowing2D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
+		} else if  (propagationParam.getValue().equals("labeling")) {
+			if (filterParam.getValue().equals("1D"))  proba = regionLabeling1D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
+			else if (filterParam.getValue().equals("2D"))  proba = regionLabeling2D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
 		} 				
 		// Output
 		BasicInfo.displayMessage("...output images\n");
@@ -1369,11 +1375,11 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		float[] prevproba = new float[nx*ny*nz];
 		float[] ngbweight = new float[26];
 		float[][] imgweight = new float[nx*ny*nz][26];  
-		float[][] angleweight1D = new float[26][26];
+		float[][] parallelweight = new float[26][26];
 		for (int d1=0;d1<26;d1++) for (int d2=0;d2<26;d2++) {
 			float[] dir1 = directionVector(d1);
 			float[] dir2 = directionVector(d2);
-			angleweight1D[d1][d2] = (float)FastMath.pow(2.0f*FastMath.asin(Numerics.abs(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z]))/FastMath.PI,factor);
+			parallelweight[d1][d2] = (float)FastMath.pow(2.0f*FastMath.asin(Numerics.abs(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z]))/FastMath.PI,factor);
 		}
 		
 		// SOR-scheme?
@@ -1383,7 +1389,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			int xyzi = x+nx*y+nx*ny*z;
 			for (byte dj=0;dj<26;dj++) {
 				int xyzj = Ngb.neighborIndex(dj, xyzi, nx, ny, nz);
-				imgweight[xyzi][dj] = sorfactor*diffusionWeightFunction(proba, dir, xyzi, xyzj, dj, angleweight1D, scale)/ngbsize;
+				imgweight[xyzi][dj] = sorfactor*diffusionWeightFunction(proba, dir, xyzi, xyzj, dj, parallelweight, scale)/ngbsize;
 			}
 		}
 		for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) {
@@ -1474,11 +1480,11 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		float[] prevproba = new float[nx*ny*nz];
 		float[] ngbweight = new float[26];
 		float[][] imgweight = new float[nx*ny*nz][26];  
-		float[][] angleweight2D = new float[26][26];
+		float[][] orthogonalweight = new float[26][26];
 		for (int d1=0;d1<26;d1++) for (int d2=0;d2<26;d2++) {
 			float[] dir1 = directionVector(d1);
 			float[] dir2 = directionVector(d2);
-			angleweight2D[d1][d2] = (float)FastMath.pow(2.0f*FastMath.acos(Numerics.abs(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z]))/FastMath.PI,factor);
+			orthogonalweight[d1][d2] = (float)FastMath.pow(2.0f*FastMath.acos(Numerics.abs(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z]))/FastMath.PI,factor);
 		}
 		
 		// SOR-scheme?
@@ -1488,7 +1494,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			int xyzi = x+nx*y+nx*ny*z;
 			for (byte dj=0;dj<26;dj++) {
 				int xyzj = Ngb.neighborIndex(dj, xyzi, nx, ny, nz);
-				imgweight[xyzi][dj] = sorfactor*diffusionWeightFunction(proba, dir, xyzi, xyzj, dj, angleweight2D, scale)/ngbsize;
+				imgweight[xyzi][dj] = sorfactor*diffusionWeightFunction(proba, dir, xyzi, xyzj, dj, orthogonalweight, scale)/ngbsize;
 			}
 		}
 		for (int xyzi=0;xyzi<nx*ny*nz;xyzi++) {
@@ -1688,17 +1694,67 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		return diffused;
 	}
 
+	private final float[] regionGrowing1D(float[] proba, byte[] dir, int ngbsize, float maxdiff, float angle, float factor, int iter) {
+		// mask out image boundaries
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (x<1 || y<1 || z<1 || x>=nx-1 || y>=ny-1 || z>=nz-1) proba[xyz] = 0.0f;
+		}
+		
+		// build a similarity function from aligned neighbors
+		float[][] similarity = new float[ngbsize][nxyz];
+		byte[][] neighbor = new byte[ngbsize][nxyz];
+    		estimateSimpleDiffusionSimilarity1D(dir, proba, ngbsize, neighbor, similarity, angle);
+		
+		// sample all possible paths?
+		float[] count = new float[nxyz];
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			count[xyz] = 0.0f;
+		}
+
+		BinaryHeap2D heap = new BinaryHeap2D(nx+ny+nz, nx+ny+nz, BinaryHeap2D.MINTREE);
+		BitSet used = new BitSet(nxyz);
+		for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>factor) {
+			Interface.displayMessage(".");
+			heap.reset();
+			used.clear();
+			heap.addValue(0, xyz, (byte)1);
+			while (heap.isNotEmpty()) {
+				int pos = heap.getFirstId();
+				float val = heap.getFirst();
+				heap.removeFirst();
+				count[pos]++;
+				used.set(pos);
+				
+				for (int n=0;n<ngbsize;n++) if (similarity[n][pos]>=0.5f ) {
+					int ngb = neighborIndex(neighbor[n][pos],pos);
+					if (!used.get(ngb)) {
+						if (proba[ngb]>factor) {
+							heap.addValue(val+1, ngb, (byte)1);
+						}
+					}
+				}
+			}
+		}
+		
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int id = x + nx*y + nx*ny*z;
+			count[id] = (float)FastMath.log(1.0f+count[id]);
+		}
+		return count;
+	}
+
     private final void estimateSimpleDiffusionSimilarity1D(byte[] dir, float[] proba, int ngbsize, byte[][] neighbor, float[][] similarity, float factor) {
     	
     	// initialize
     	neighbor = new byte[ngbsize][nxyz];
     	similarity = new float[ngbsize][nxyz];
     	
-    	float[][] angleweight1D = new float[26][26];
+    	float[][] parallelweight = new float[26][26];
 		for (int d1=0;d1<26;d1++) for (int d2=0;d2<26;d2++) {
 			float[] dir1 = directionVector(d1);
 			float[] dir2 = directionVector(d2);
-			angleweight1D[d1][d2] = (float)FastMath.pow(2.0f*FastMath.asin(Numerics.abs(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z]))/FastMath.PI,factor);
+			parallelweight[d1][d2] = (float)FastMath.pow(2.0f*FastMath.asin(Numerics.abs(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z]))/FastMath.PI,factor);
 		}
 		float[] weight = new float[26];
 		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
@@ -1709,8 +1765,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 					int idn = neighborIndex(d,id);
 					
 					if (proba[idn]>0) {
-						if (ngbsize==2) weight[d] = angleweight1D[d][dir[id]];
-						else weight[d] = angleweight1D[d][dir[id]]*proba[idn];
+						if (ngbsize==2) weight[d] = parallelweight[d][dir[id]];
+						else weight[d] = parallelweight[d][dir[id]]*proba[idn];
 					} else {
 						weight[d] = 0.0f;
 					}
@@ -1720,7 +1776,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 					neighbor[n][id] = ngb[n];
 					int idn = neighborIndex(ngb[n],id);
 					if (proba[idn]>0) {
-						similarity[n][id] = angleweight1D[dir[id]][dir[idn]];
+						similarity[n][id] = parallelweight[dir[id]][dir[idn]];
 					} else {
 						similarity[n][id] = 0.0f;
 					}
@@ -1841,15 +1897,250 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		return diffused;
 	}
 
-   private final void estimateSimpleDiffusionSimilarity2D(byte[] dir, float[] proba, int ngbsize, byte[][] neighbor, float[][] similarity, float factor) {
+	private final float[] regionGrowing2D(float[] proba, byte[] dir, int ngbsize, float maxdiff, float angle, float factor, int iter) {
+		// mask out image boundaries
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (x<1 || y<1 || z<1 || x>=nx-1 || y>=ny-1 || z>=nz-1) proba[xyz] = 0.0f;
+		}
+		
+		// build a similarity function from aligned neighbors
+		float[][] similarity = new float[ngbsize][nxyz];
+		byte[][] neighbor = new byte[ngbsize][nxyz];
+    		estimateSimpleDiffusionSimilarity2D(dir, proba, ngbsize, neighbor, similarity, angle);
+		
+		// sample all possible paths?
+		float[] count = new float[nxyz];
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			count[xyz] = 0.0f;
+		}
+
+		BinaryHeap2D heap = new BinaryHeap2D(nx+ny+nz, nx+ny+nz, BinaryHeap2D.MINTREE);
+		BitSet used = new BitSet(nxyz);
+		for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>factor) {
+			Interface.displayMessage(".");
+			heap.reset();
+			used.clear();
+			heap.addValue(0, xyz, (byte)1);
+			while (heap.isNotEmpty()) {
+				int pos = heap.getFirstId();
+				float val = heap.getFirst();
+				heap.removeFirst();
+				count[pos]++;
+				used.set(pos);
+				
+				for (int n=0;n<ngbsize;n++) if (similarity[n][pos]>=0.5f ) {
+					int ngb = neighborIndex(neighbor[n][pos],pos);
+					if (!used.get(ngb)) {
+						if (proba[ngb]>factor) {
+							heap.addValue(val+1, ngb, (byte)1);
+						}
+					}
+				}
+			}
+		}
+		
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int id = x + nx*y + nx*ny*z;
+			count[id] = (float)FastMath.log(1.0f+count[id]);
+		}
+		return count;
+	}
+	private final float[] regionLabeling2D(float[] proba, byte[] dir, int ngbsize, float maxdiff, float angle, float factor, int iter) {
+		// mask out image boundaries
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (x<1 || y<1 || z<1 || x>=nx-1 || y>=ny-1 || z>=nz-1) proba[xyz] = 0.0f;
+		}
+		
+		// build a similarity function from aligned neighbors
+		float[][] similarity = new float[ngbsize][nxyz];
+		byte[][] neighbor = new byte[ngbsize][nxyz];
+    		estimateSimpleDiffusionSimilarity2D(dir, proba, ngbsize, neighbor, similarity, angle);
+		
+		int Nlabel = 0;
+		float[]   label = new float[nx*ny*nz];
+		int[]       lb = new int[nx+ny+nz];
+		int lbMin;
+		int Nlb;
+		int[]   connect = new int[26];
+		int Nconnect;
+		int AddLabel;
+		
+		for (int xyz=0;xyz<nx*ny*nz;xyz++)
+			label[xyz] = 0;
+		
+		lb[0] = 0;
+		Nlabel = 1;
+		for (int x=0;x<nx;x++) {
+			for (int y=0;y<ny;y++) {
+				for (int z=0;z<nz;z++) {
+					int xyz = x + nx*y + nx*ny*z;
+					if (proba[xyz]>factor) {
+						// object point: neighbors ?
+						Nconnect = 0;
+						for (int n=0;n<ngbsize;n++) if (similarity[n][xyz]>=0.5f ) {
+							int ngb = neighborIndex(neighbor[n][xyz],xyz);
+							if (label[ngb] > 0) {
+								connect[Nconnect] = lb[ (int)label[ngb] ];
+								Nconnect++;
+							}
+						}
+						// if connected values, find the smallest lb label and attribute it
+						// to all others (-> join labels)
+						if (Nconnect>0) {
+							//printf("c:%d",Nconnect);
+							lbMin = lb[connect[0]];
+							for (int l=1;l<Nconnect;l++) lbMin = Math.min(lbMin,lb[connect[l]]);
+							for (int l=0;l<Nconnect;l++) lb[connect[l]] = lbMin;
+							label[xyz] = lbMin;
+						} else {
+							// new, unconnected region
+							label[xyz] = Nlabel;
+							lb[Nlabel] = Nlabel;
+							//printf("l:%d", Nlabel);
+							Nlabel++;
+							// check if the number of labels is above the threshold
+							if (Nlabel>=lb.length-1) {
+								int[] tmp = new int[2*lb.length];
+								for (int n=0;n<Nlabel;n++) tmp[n] = lb[n];
+								lb = tmp;
+							}
+						}
+					}
+				}
+			}
+		}
+		// only one level of labels
+		for (int k=1;k<Nlabel;k++) {
+			int c = k;
+			while (lb[c]!=c) c = lb[c];
+			lb[k] = c;
+		}
+		// count the valid labels and rearrange labels to have regular increment
+		Nlb = 0;
+		int[] lb2 = new int[Nlabel];
+		lb2[0] = 0;
+		for (int k=1;k<Nlabel;k++) {
+			if (lb[k]==k) {
+				Nlb++;
+				lb2[k] = Nlb;
+			}
+		}
+		// copy on label image
+		for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+			label[xyz] = lb2[ lb[ (int)label[xyz] ] ];
+		}
+		// clean up
+		lb = null;
+		lb2 = null;
+		connect = null;
+	   
+		return label;
+	}
+
+	private final float[] regionLabeling1D(float[] proba, byte[] dir, int ngbsize, float maxdiff, float angle, float factor, int iter) {
+		// mask out image boundaries
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (x<1 || y<1 || z<1 || x>=nx-1 || y>=ny-1 || z>=nz-1) proba[xyz] = 0.0f;
+		}
+		
+		// build a similarity function from aligned neighbors
+		float[][] similarity = new float[ngbsize][nxyz];
+		byte[][] neighbor = new byte[ngbsize][nxyz];
+    		estimateSimpleDiffusionSimilarity1D(dir, proba, ngbsize, neighbor, similarity, angle);
+		
+		int Nlabel = 0;
+		float[]   label = new float[nx*ny*nz];
+		int[]       lb = new int[nx+ny+nz];
+		int lbMin;
+		int Nlb;
+		int[]   connect = new int[26];
+		int Nconnect;
+		int AddLabel;
+		
+		for (int xyz=0;xyz<nx*ny*nz;xyz++)
+			label[xyz] = 0;
+		
+		lb[0] = 0;
+		Nlabel = 1;
+		for (int x=0;x<nx;x++) {
+			for (int y=0;y<ny;y++) {
+				for (int z=0;z<nz;z++) {
+					int xyz = x + nx*y + nx*ny*z;
+					if (proba[xyz]>factor) {
+						// object point: neighbors ?
+						Nconnect = 0;
+						for (int n=0;n<ngbsize;n++) if (similarity[n][xyz]>=0.5f ) {
+							int ngb = neighborIndex(neighbor[n][xyz],xyz);
+							if (label[ngb] > 0) {
+								connect[Nconnect] = lb[ (int)label[ngb] ];
+								Nconnect++;
+							}
+						}
+						// if connected values, find the smallest lb label and attribute it
+						// to all others (-> join labels)
+						if (Nconnect>0) {
+							//printf("c:%d",Nconnect);
+							lbMin = lb[connect[0]];
+							for (int l=1;l<Nconnect;l++) lbMin = Math.min(lbMin,lb[connect[l]]);
+							for (int l=0;l<Nconnect;l++) lb[connect[l]] = lbMin;
+							label[xyz] = lbMin;
+						} else {
+							// new, unconnected region
+							label[xyz] = Nlabel;
+							lb[Nlabel] = Nlabel;
+							//printf("l:%d", Nlabel);
+							Nlabel++;
+							// check if the number of labels is above the threshold
+							if (Nlabel>=lb.length-1) {
+								int[] tmp = new int[2*lb.length];
+								for (int n=0;n<Nlabel;n++) tmp[n] = lb[n];
+								lb = tmp;
+							}
+						}
+					}
+				}
+			}
+		}
+		// only one level of labels
+		for (int k=1;k<Nlabel;k++) {
+			int c = k;
+			while (lb[c]!=c) c = lb[c];
+			lb[k] = c;
+		}
+		// count the valid labels and rearrange labels to have regular increment
+		Nlb = 0;
+		int[] lb2 = new int[Nlabel];
+		lb2[0] = 0;
+		for (int k=1;k<Nlabel;k++) {
+			if (lb[k]==k) {
+				Nlb++;
+				lb2[k] = Nlb;
+			}
+		}
+		// copy on label image
+		for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+			label[xyz] = lb2[ lb[ (int)label[xyz] ] ];
+		}
+		// clean up
+		lb = null;
+		lb2 = null;
+		connect = null;
+	   
+		return label;
+	}
+
+	private final void estimateSimpleDiffusionSimilarity2D(byte[] dir, float[] proba, int ngbsize, byte[][] neighbor, float[][] similarity, float factor) {
     	
-    	float[][] angleweight1D = new float[26][26];
-		float[][] angleweight2D = new float[26][26];
+    		float[][] parallelweight = new float[26][26];
+		float[][] orthogonalweight = new float[26][26];
 		for (int d1=0;d1<26;d1++) for (int d2=0;d2<26;d2++) {
 			float[] dir1 = directionVector(d1);
 			float[] dir2 = directionVector(d2);
-			angleweight1D[d1][d2] = (float)FastMath.pow(2.0f*FastMath.asin(Numerics.abs(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z]))/FastMath.PI,factor);
-			angleweight2D[d1][d2] = (float)FastMath.pow(2.0f*FastMath.acos(Numerics.abs(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z]))/FastMath.PI,factor);
+			parallelweight[d1][d2] = (float)FastMath.pow(2.0f*FastMath.asin(Numerics.abs(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z]))/FastMath.PI,factor);
+			orthogonalweight[d1][d2] = (float)FastMath.pow(2.0f*FastMath.acos(Numerics.abs(dir1[X]*dir2[X] + dir1[Y]*dir2[Y] + dir1[Z]*dir2[Z]))/FastMath.PI,factor);
 		}
 		float[] weight = new float[26];
 		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
@@ -1860,8 +2151,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 					int idn = neighborIndex(d,id);
 					
 					if (proba[idn]>0) {
-						if (ngbsize==2) weight[d] = angleweight2D[d][dir[id]];
-						else weight[d] = angleweight2D[d][dir[id]]*proba[idn];
+						if (ngbsize==2) weight[d] = orthogonalweight[d][dir[id]];
+						else weight[d] = orthogonalweight[d][dir[id]]*proba[idn];
 					} else {
 						weight[d] = 0.0f;
 					}
@@ -1872,7 +2163,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 					int idn = neighborIndex(ngb[n],id);
 					if (proba[idn]>0) {
 						// similarity comes from the normal direction
-						similarity[n][id] = angleweight1D[dir[id]][dir[idn]];
+						similarity[n][id] = parallelweight[dir[id]][dir[idn]];
 					} else {
 						similarity[n][id] = 0.0f;
 					}
