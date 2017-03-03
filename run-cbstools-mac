@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# location of the JAVA command to use
+JAVA=/Applications/mipav/jre/Contents/Home/bin/java
+
+# location of additional JAVA libraries to use
+JAVALIB=/Applications/mipav/jre/Contents/Home/lib/ext/
+
+# location of the MIPAV installation to use
+MIPAV=/Applications/mipav
+
+# location of the plugin installation to use
+# please replace 'ThisUser' by your user name
+PLUGINS=/Users/ThisUser/mipav/plugins
+
+# mipav command
+$JAVA -classpath $JAVALIB/*:$MIPAV:$MIPAV/lib/*:$PLUGINS:$/library/* -server MipavMain $@
+

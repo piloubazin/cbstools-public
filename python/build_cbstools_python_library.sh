@@ -6,7 +6,7 @@
 # jar cvf intensity.jar de/mpg/cbs/python/IntensityBackgroundEstimator.class de/mpg/cbs/utilities/Numerics.class de/mpg/cbs/libraries/ImageStatistics.class
 
 # hard-coded path for safety
-cd /scr/armstrong1/bazin/Code/github/cbstools-public/
+cd /home/user/Code/github/cbstools-public/
 
 # include ONLY the classes to manipulate via python (the other ones are handled within Java, which simplifies the dependencies
 rm -f cbstools.jar
@@ -17,7 +17,7 @@ rm -f cbstools-lib.jar
 jar cvf cbstools-lib.jar de/mpg/cbs/*/*.class
 
 # 2.export target library path to python: important for isntallation
-export PYTHONPATH=$PYTHONPATH:/home/pilou/Code/github/cbstools-public/python
+export PYTHONPATH=$PYTHONPATH:/home/user/Code/github/cbstools-public/python
 
 # 3.compile with jcc:
 # python -m jcc --jar intensity.jar --python intensity --build --classpath /home/pilou/Code/cbs/bazin --install --install-dir /home/pilou/Code/cbs/bazin/pylibs/
