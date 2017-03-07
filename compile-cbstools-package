@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# location of the JAVA command to use. Java 7 is currently the standard, Java 8 will compile but bring compatibility problems when running
+JAVAC=/usr/bin/javac
+
+# location of additional JAVA libraries to use, which must include the ones bundled with MIPAV
+JAVALIB=/Path/To/Mipav/jre/lib/ext/
+
+# location of the MIPAV installation to use
+MIPAV=/Path/To/Mipav
+
+# location of the plugin installation to use
+# please replace 'ThisUser' by your user name
+PLUGINS=/home/ThisUser/mipav/plugins
+
+# location of the code
+CODE=/home/ThisUser/github/cbstools-public
+
+# mipav command
+$JAVAC -classpath $CODE:$JAVALIB/*:$MIPAV:$MIPAV/lib/*:$PLUGINS:$PLUGINS/library/* -server -g -O -deprecation -encoding UTF-8 $CODE/de/mpg/cbs/*/*.java $CODE/de/mpg/cbs/core/*/*.java $CODE/de/mpg/cbs/jist/*/*.java $CODE/edu/jhu/ece/iacl/jist/*/*.java
+
