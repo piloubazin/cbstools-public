@@ -96,13 +96,15 @@ public class MinMaxFiltering {
 	/** 
 	 *	compute a scaled map of the image with (min, max)
 	 */
-	public final void buildScaledMaps(float sc) {
+	public final void buildScaledMaps(float sc, boolean is2d) {
 		
 		scale = sc;
+		float scalez = scale;
+		if (is2d) scalez = 1;
 		
 		nsx = Numerics.floor(nix/scale);
 		nsy = Numerics.floor(niy/scale);
-		nsz = Numerics.floor(niz/scale);
+		nsz = Numerics.floor(niz/scalez);
 		
 		if (debug) System.out.println("scaled dimensions: "+nsx+" x "+nsy+" x "+nsz);
 		
@@ -112,14 +114,14 @@ public class MinMaxFiltering {
 		int xyzs,xyzi;
 		for (int x=0;x<nsx;x++) for (int y=0;y<nsy;y++) for (int z=0;z<nsz;z++) {
 			xyzs = x+nsx*y+nsx*nsy*z;
-			xyzi = Numerics.floor(scale*x)+nix*Numerics.floor(scale*y)+nix*niy*Numerics.floor(scale*z);
+			xyzi = Numerics.floor(scale*x)+nix*Numerics.floor(scale*y)+nix*niy*Numerics.floor(scalez*z);
 			
 			for (int c=0;c<nc;c++) {
 				min[c][xyzs] = images[c][xyzi];
 				max[c][xyzs] = images[c][xyzi];
 				
 				// check the neighborhood
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					max[c][xyzs] = Numerics.max(max[c][xyzs], images[c][xyzi+i+nix*j+nix*niy*k]);
 					min[c][xyzs] = Numerics.min(min[c][xyzs], images[c][xyzi+i+nix*j+nix*niy*k]);
 				}
@@ -129,42 +131,50 @@ public class MinMaxFiltering {
 		return;
 	}
 	
-	private boolean[] rescale(boolean[] image, float sc) {
+	private boolean[] rescale(boolean[] image, float sc, boolean is2d) {
+		float scalez = scale;
+		float scz = sc;
+		if (is2d) { scz = 1.0f; scalez = 1.0f; }
+		
 		int nrx = Numerics.floor(nix/sc);
 		int nry = Numerics.floor(niy/sc);
-		int nrz = Numerics.floor(niz/sc);
+		int nrz = Numerics.floor(niz/scz);
 		
 		boolean[] sup = new boolean[nrx*nry*nrz];
 			
         for (int x=0;x<nsx;x++) for (int y=0;y<nsy;y++) for (int z=0;z<nsz;z++) {
-        	int xyzr = Numerics.floor(x*scale/sc) + nrx*Numerics.floor(y*scale/sc) + nrx*nry*Numerics.floor(z*scale/sc);
-			for (int i=0;i<scale/sc;i++) for (int j=0;j<scale/sc;j++) for (int l=0;l<scale/sc;l++) {
+        	int xyzr = Numerics.floor(x*scale/sc) + nrx*Numerics.floor(y*scale/sc) + nrx*nry*Numerics.floor(z*scalez/scz);
+			for (int i=0;i<scale/sc;i++) for (int j=0;j<scale/sc;j++) for (int l=0;l<scalez/scz;l++) {
 				sup[xyzr+i+nrx*j+nrx*nry*l] = image[x + nsx*y + nsx*nsy*z];
 			}
 		}
 		return sup;
 	}
 
-	private byte[] rescale(byte[] image, float sc) {
+	private byte[] rescale(byte[] image, float sc,boolean is2d) {
+		float scalez = scale;
+		float scz = sc;
+		if (is2d) { scz = 1.0f; scalez = 1.0f; }
+		
 		int nrx = Numerics.floor(nix/sc);
 		int nry = Numerics.floor(niy/sc);
-		int nrz = Numerics.floor(niz/sc);
+		int nrz = Numerics.floor(niz/scz);
 		
 		byte[] sup = new byte[nrx*nry*nrz];
 			
         for (int x=0;x<nsx;x++) for (int y=0;y<nsy;y++) for (int z=0;z<nsz;z++) {
-        	int xyzr = Numerics.floor(x*scale/sc) + nrx*Numerics.floor(y*scale/sc) + nrx*nry*Numerics.floor(z*scale/sc);
-			for (int i=0;i<scale/sc;i++) for (int j=0;j<scale/sc;j++) for (int l=0;l<scale/sc;l++) {
+        	int xyzr = Numerics.floor(x*scale/sc) + nrx*Numerics.floor(y*scale/sc) + nrx*nry*Numerics.floor(z*scalez/scz);
+			for (int i=0;i<scale/sc;i++) for (int j=0;j<scale/sc;j++) for (int l=0;l<scalez/scz;l++) {
 				sup[xyzr+i+nrx*j+nrx*nry*l] = image[x + nsx*y + nsx*nsy*z];
 			}
 		}
 		return sup;
 	}
 
-	public final float[] growRegion(float[] minval, float[] maxval, float[] rngval, float sc0, int lv) {
+	public final float[] growRegion(float[] minval, float[] maxval, float[] rngval, float sc0, int lv, boolean is2d) {
 	
 		// 1. build the maps at sc0
-		buildScaledMaps(sc0);
+		buildScaledMaps(sc0,is2d);
 		float[][] rng = generateApproxRange();
 		
 		// 2. find largest region with properties
@@ -202,12 +212,12 @@ public class MinMaxFiltering {
 		boolean[] neighbor,grown;
 		int l=1;
 		while (scale>2 && l<lv) {
-			obj = rescale(obj, scale/2);
-			bound = rescale(bound, scale/2);
-			label = rescale(label, scale/2);
+			obj = rescale(obj, scale/2, is2d);
+			bound = rescale(bound, scale/2, is2d);
+			label = rescale(label, scale/2, is2d);
 			
 			// new scale now, nsxyz are different
-			buildScaledMaps(scale/2);
+			buildScaledMaps(scale/2, is2d);
 			rng = generateApproxRange();
 			
 			grown = new boolean[nsx*nsy*nsz];
@@ -244,19 +254,21 @@ public class MinMaxFiltering {
 		// 4. finest scale: image
 		//obj = rescale(obj, scale/2);
 		//bound = rescale(bound, scale/2);
+		float scalez = scale;
+		if (is2d) scalez = 1.0f;
 		
 		grown = new boolean[nix*niy*niz];
 		for (int x=0;x<nsx;x++) for (int y=0;y<nsy;y++) for (int z=0;z<nsz;z++) {
 			int xyzs = x+nsx*y+nsx*nsy*z;
-			int xyzi = Numerics.floor(scale*x)+nix*Numerics.floor(scale*y)+nix*niy*Numerics.floor(scale*z);
+			int xyzi = Numerics.floor(scale*x)+nix*Numerics.floor(scale*y)+nix*niy*Numerics.floor(scalez*z);
 			
 			if (obj[xyzs]) {
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					int ngbi = xyzi+i+nix*j+nix*niy*k;
 					grown[ngbi] = true;
 				}
 			} else {
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					int ngbi = xyzi+i+nix*j+nix*niy*k;
 					grown[ngbi] = false;
 				}
@@ -268,10 +280,10 @@ public class MinMaxFiltering {
 		int nobj = 0;
 		for (int x=0;x<nsx;x++) for (int y=0;y<nsy;y++) for (int z=0;z<nsz;z++) {
 			int xyzs = x+nsx*y+nsx*nsy*z;
-			int xyzi = Numerics.floor(scale*x)+nix*Numerics.floor(scale*y)+nix*niy*Numerics.floor(scale*z);
+			int xyzi = Numerics.floor(scale*x)+nix*Numerics.floor(scale*y)+nix*niy*Numerics.floor(scalez*z);
 			
 			if (scale<=2 && bound[xyzs]) {
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					int ngbi = xyzi+i+nix*j+nix*niy*k;
 					if (neighbor[xyzi]) {
 						result[ngbi] = 1.0f;
@@ -286,13 +298,13 @@ public class MinMaxFiltering {
 					}
 				}
 			} else if (obj[xyzs]) {
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					int ngbi = xyzi+i+nix*j+nix*niy*k;
 					result[ngbi] = label[xyzs];
 					nobj++;
 				}
 			} else {
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					int ngbi = xyzi+i+nix*j+nix*niy*k;
 					result[ngbi] = label[xyzs];
 				}
@@ -302,10 +314,10 @@ public class MinMaxFiltering {
 		return result;
 	}
 	
-	public final float[] growIncreasingRegion(float[] minval, float[] maxval, float[] rngval, float sc0, int lv) {
+	public final float[] growIncreasingRegion(float[] minval, float[] maxval, float[] rngval, float sc0, int lv, boolean is2d) {
 	
 		// 1. build the maps at sc0
-		buildScaledMaps(sc0);
+		buildScaledMaps(sc0, is2d);
 		float[][] rng = generateApproxRange();
 		
 		// 2. find largest region with properties
@@ -343,12 +355,12 @@ public class MinMaxFiltering {
 		boolean[] neighbor,grown;
 		int l=1;
 		while (scale>2 && l<lv) {
-			obj = rescale(obj, scale/2);
-			bound = rescale(bound, scale/2);
-			label = rescale(label, scale/2);
+			obj = rescale(obj, scale/2, is2d);
+			bound = rescale(bound, scale/2, is2d);
+			label = rescale(label, scale/2, is2d);
 			
 			// new scale now, nsxyz are different
-			buildScaledMaps(scale/2);
+			buildScaledMaps(scale/2, is2d);
 			rng = generateApproxRange();
 			
 			grown = new boolean[nsx*nsy*nsz];
@@ -392,19 +404,21 @@ public class MinMaxFiltering {
 		// 4. finest scale: image
 		//obj = rescale(obj, scale/2);
 		//bound = rescale(bound, scale/2);
+		float scalez = scale;
+		if (is2d) scalez = 1.0f;
 		
 		grown = new boolean[nix*niy*niz];
 		for (int x=0;x<nsx;x++) for (int y=0;y<nsy;y++) for (int z=0;z<nsz;z++) {
 			int xyzs = x+nsx*y+nsx*nsy*z;
-			int xyzi = Numerics.floor(scale*x)+nix*Numerics.floor(scale*y)+nix*niy*Numerics.floor(scale*z);
+			int xyzi = Numerics.floor(scale*x)+nix*Numerics.floor(scale*y)+nix*niy*Numerics.floor(scalez*z);
 			
 			if (obj[xyzs]) {
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					int ngbi = xyzi+i+nix*j+nix*niy*k;
 					grown[ngbi] = true;
 				}
 			} else {
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					int ngbi = xyzi+i+nix*j+nix*niy*k;
 					grown[ngbi] = false;
 				}
@@ -416,10 +430,10 @@ public class MinMaxFiltering {
 		int nobj = 0;
 		for (int x=0;x<nsx;x++) for (int y=0;y<nsy;y++) for (int z=0;z<nsz;z++) {
 			int xyzs = x+nsx*y+nsx*nsy*z;
-			int xyzi = Numerics.floor(scale*x)+nix*Numerics.floor(scale*y)+nix*niy*Numerics.floor(scale*z);
+			int xyzi = Numerics.floor(scale*x)+nix*Numerics.floor(scale*y)+nix*niy*Numerics.floor(scalez*z);
 
 			if (scale<=2 && bound[xyzs]) {
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					int ngbi = xyzi+i+nix*j+nix*niy*k;
 					if (neighbor[xyzi]) {
 						result[ngbi] = 1.0f;
@@ -434,13 +448,13 @@ public class MinMaxFiltering {
 					}
 				}
 			} else if (obj[xyzs]) {
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					int ngbi = xyzi+i+nix*j+nix*niy*k;
 					result[ngbi] = label[xyzs];
 					nobj++;
 				}
 			} else {
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					int ngbi = xyzi+i+nix*j+nix*niy*k;
 					result[ngbi] = label[xyzs];
 				}
@@ -451,10 +465,10 @@ public class MinMaxFiltering {
 	}
 	
 	
-	public final float[] initialRegion(float[] minval, float[] maxval, float[] rngval, float sc0, int lv) {
+	public final float[] initialRegion(float[] minval, float[] maxval, float[] rngval, float sc0, int lv, boolean is2d) {
 	
 		// 1. build the maps at sc0
-		buildScaledMaps(sc0);
+		buildScaledMaps(sc0, is2d);
 		float[][] rng = generateApproxRange();
 		
 		// 2. find largest region with properties
@@ -483,21 +497,23 @@ public class MinMaxFiltering {
 			if (obj[xyz]) label[xyz] = (byte)scale;
 			else label[xyz] = 0;
 		}
+		float scalez = scale;
+		if (is2d) scalez = scale;
 				
 		float[] result = new float[nix*niy*niz];
 		int nobj = 0;
 		for (int x=0;x<nsx;x++) for (int y=0;y<nsy;y++) for (int z=0;z<nsz;z++) {
 			int xyzs = x+nsx*y+nsx*nsy*z;
-			int xyzi = Numerics.floor(scale*x)+nix*Numerics.floor(scale*y)+nix*niy*Numerics.floor(scale*z);
+			int xyzi = Numerics.floor(scale*x)+nix*Numerics.floor(scale*y)+nix*niy*Numerics.floor(scalez*z);
 			
 			if (obj[xyzs]) {
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					int ngbi = xyzi+i+nix*j+nix*niy*k;
 					result[ngbi] = label[xyzs];
 					nobj++;
 				}
 			} else {
-				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scale;k++) {
+				for (int i=0;i<scale;i++) for (int j=0;j<scale;j++) for (int k=0;k<scalez;k++) {
 					int ngbi = xyzi+i+nix*j+nix*niy*k;
 					result[ngbi] = label[xyzs];
 				}

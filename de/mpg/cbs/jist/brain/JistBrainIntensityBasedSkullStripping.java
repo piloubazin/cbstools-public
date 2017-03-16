@@ -23,6 +23,8 @@ import de.mpg.cbs.structures.*;
 import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.methods.*;
 
+import org.apache.commons.math3.util.FastMath;
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
 /*
  * @author Pierre-Louis Bazin
@@ -42,6 +44,8 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 	private		static final byte	EXP = 102;
 	
 	private ParamBoolean	skip0Param;
+	private ParamBoolean	slab2dParam;
+	
 	private ParamVolume maskImage;
 	private ParamVolume probaImage;
 	private ParamVolume mainmaskedImage;
@@ -58,6 +62,7 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 		
 		inputParams.add(iterateParam = new ParamBoolean("Iterative estimation", false));
 		inputParams.add(skip0Param = new ParamBoolean("Skip zero values", false));
+		inputParams.add(slab2dParam = new ParamBoolean("2D slab data", false));
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Brain Processing");
 		inputParams.setLabel("Intensity-based Skull Stripping");
@@ -69,7 +74,7 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 		info.setDescription("Estimate a brain mask for a dataset with good brain/background intensity separation (e.g. PD-weighted). "
 							+"An extra image can be used to ensure high intensities are preserved (e.g. T1 map, T2-weighted data or a probability map for a ROI");
 		
-		info.setVersion("3.0.6");
+		info.setVersion("3.1.0");
 		info.setStatus(DevelopmentStatus.RC);
 		info.setEditable(false);
 	}
@@ -143,6 +148,10 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 			if (data[n]>max) max = data[n];
 			n++;
 		}
+		Percentile measure = new Percentile();
+		measure.setData(data, 0, ndata);
+		max = measure.evaluate(99.8);
+		
 		double mean = 0.0;		
 		double pi = Math.PI;
 		
@@ -171,9 +180,11 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 		Interface.displayMessage("background-based skull stripping");
 		
 		// start from the bg mask
+		boolean is2d = slab2dParam.getValue().booleanValue();
+		
 		MinMaxFiltering minmax = new MinMaxFiltering(proba, nx,ny,nz, rx,ry,rz);
 		
-		float[] brain = minmax.growRegion(new float[]{0.0f}, new float[]{0.9f}, new float[]{0.9f}, 16, 10);
+		float[] brain = minmax.growRegion(new float[]{0.0f}, new float[]{0.9f}, new float[]{0.9f}, 16, 10, is2d);
 		
 		BinaryTopology topo = null;
 		Gdm3d gdm = null;
@@ -200,17 +211,53 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 				balloon[xyz] = force;
 			}
 			
-			// topology correction for the mask?
-			topo = new BinaryTopology(mask, nx, ny, nz, rx, ry, rz, "wcs");
 			
-			topo.outsideSphericalTopology();
-			
-			
-			gdm = new Gdm3d(topo.exportIntSegmentation(), nx, ny, nz, rx, ry, rz, null, balloon, 0.0f, 0.1f, 0.9f, "wcs");
-						
-			gdm.evolveNarrowBand(100, 0.001f);
+			if (is2d) {
+				// cheap option: just add mirrored values and an extra boundary in the slab direction...
+				int[] maskb = new int[nx*ny*(nz+12)];
+				float[] balloonb = new float[nx*ny*(nz+12)];
+				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+					maskb[x+nx*y+nx*ny*(z+6)] = mask[x+nx*y+nx*ny*z];
+					balloonb[x+nx*y+nx*ny*(z+6)] = balloon[x+nx*y+nx*ny*z];
+				}
+				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<6;z++) {
+					maskb[x+nx*y+nx*ny*z] = mask[x+nx*y+nx*ny*0];
+					balloonb[x+nx*y+nx*ny*z] = balloon[x+nx*y+nx*ny*0];
+				}
+				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=nz+6;z<nz+12;z++) {
+					maskb[x+nx*y+nx*ny*z] = mask[x+nx*y+nx*ny*(nz-1)];
+					balloonb[x+nx*y+nx*ny*z] = balloon[x+nx*y+nx*ny*(nz-1)];
+				}
 
-			brain = gdm.exportSegmentation();
+				// topology correction for the mask?
+				topo = new BinaryTopology(maskb, nx, ny, nz+12, rx, ry, rz, "wcs");
+			
+				topo.outsideSphericalTopology();
+			
+				int[] toposeg = topo.exportIntSegmentation();
+
+				gdm = new Gdm3d(toposeg, nx, ny, nz+12, rx, ry, rz, null, balloonb, 0.0f, 0.1f, 0.9f, "wcs");
+						
+				gdm.evolveNarrowBand(200, 0.0005f);
+				
+				float[] brainb = gdm.exportSegmentation();
+				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+					brain[x+nx*y+nx*ny*z] = brainb[x+nx*y+nx*ny*(z+6)];
+				}
+			} else {
+				// topology correction for the mask?
+				topo = new BinaryTopology(mask, nx, ny, nz, rx, ry, rz, "wcs");
+				
+				topo.outsideSphericalTopology();
+				
+				int[] toposeg = topo.exportIntSegmentation();
+				
+				gdm = new Gdm3d(toposeg, nx, ny, nz, rx, ry, rz, null, balloon, 0.0f, 0.1f, 0.9f, "wcs");
+						
+				gdm.evolveNarrowBand(200, 0.0005f);
+
+				brain = gdm.exportSegmentation();
+			}
 		}
 		
 		byte[][][] brainmask = new byte[nx][ny][nz];
