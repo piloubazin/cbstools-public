@@ -1,0 +1,44 @@
+language: python
+
+dist: trusty
+sudo: required
+
+os:
+  - linux
+
+python:
+  - "2.7"
+  - "3.3"
+  - "3.6"
+
+env:
+  matrix:
+    - TESTJDK="openjdk7"
+    - TESTJDK="oraclejdk7"
+    - TESTJDK="oraclejdk8"
+
+matrix:
+  include:
+    # Add OSX builds separately because they don't support "language: python"
+    # and also have  no jdk_switcher. Just using OSX defaults there ...
+    - language: java
+      os: osx
+      osx_image: xcode7.3
+      python: "dflt"
+      env: TESTJDK="OSX 10.11 default"
+    - language: java
+      os: osx
+      osx_image: xcode8.2
+      python: "dflt"
+      env: TESTJDK="OSX 10.12 default"
+
+install:
+  - source ./.travis-functions.sh
+  - travis_have_sudo
+  - travis_jdk_switcher
+  - travis_show_env
+  - travis_install_script
+
+script:
+  - travis_script
+
