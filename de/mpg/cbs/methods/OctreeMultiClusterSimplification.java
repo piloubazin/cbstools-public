@@ -57,16 +57,17 @@ public class OctreeMultiClusterSimplification {
 	private	static 	final int 		VARMAX = 201;
 	private	static 	final int 		VARLIN = 202;
 	private	static 	final int 		VARZERO = 203;
+	private	static 	final int 		VARCONST = 204;
 	private int	clustersize;
 	
-	private static final int connect = 6;
+	private int connect = 6;
 	private int[][] ngb;
 	private float[] ngbfactor;
 	
 	private static final boolean	debug = false;
 	private static final boolean	verbose = true;	
 	
-	public OctreeMultiClusterSimplification(float[][] image, boolean[] mask, float[][] imgdev, int nix, int niy, int niz, int nit, float[] stdev, float devfactor, float thres, String metrictype, String varup, int clustsize) {
+	public OctreeMultiClusterSimplification(float[][] image, boolean[] mask, float[][] imgdev, int nix, int niy, int niz, int nit, float[] stdev, float devfactor, float thres, String metrictype, String varup, int clustsize, int conn_) {
 		
 		nt = nit;
 		
@@ -80,13 +81,16 @@ public class OctreeMultiClusterSimplification {
 		else if (metrictype.equals("exact Jensen-Shannon")) metric = JSDIV_EXACT;
 		else if (metrictype.equals("table Jensen-Shannon")) metric = JSDIV_TABLE;
 		
-		if (metric==JSDIV_TABLE) jsdtable = new JensenShannonDivTable(3.0, 0.01, 0.01);
+		if (metric==JSDIV_TABLE) jsdtable = new JensenShannonDivTable(6.0, 0.01, 0.01);
 		
 		if (varup.equals("Maximum")) varupdate = VARMAX;
 		else if (varup.equals("Linear")) varupdate = VARLIN;
-		else varupdate = VARZERO;
+		else if (varup.equals("Zero")) varupdate = VARLIN;
+		else varupdate = VARCONST;
 		
 		clustersize = clustsize;
+		
+		connect = conn_;
 		
 		LEVELS = findMinimumLevel(nix, niy, niz);
 		
@@ -290,6 +294,18 @@ public class OctreeMultiClusterSimplification {
 				}
 			}
 		}
+		if (maxlevel==0) {
+			int l=0;
+			sum[l] = new float[nx[l]*ny[l]*nz[l]][nt];
+			sqd[l] = new float[nx[l]*ny[l]*nz[l]][nt];
+			npt[l] = new int[nx[l]*ny[l]*nz[l]];
+			valid[l] = new BitSet(nx[l]*ny[l]*nz[l]);
+			for (int x=0;x<nx[l];x++) for (int y=0;y<ny[l];y++) for (int z=0;z<nz[l];z++) {
+				int xyz = x+nx[l]*y+nx[l]*ny[l]*z;
+				valid[l].set(xyz);
+				npt[l][xyz] = CS[l];
+			}
+		}
 		return maxlevel;
 	}
 	
@@ -402,34 +418,39 @@ public class OctreeMultiClusterSimplification {
 					npt[l][xyz] = listnpt[lb];
 					
 					// find neighboring labels not yet relabeled
-					int xyzpx = xyz+1;
-					int xyzpy = xyz+nx[l];
-					int xyzpz = xyz+nx[l]*ny[l];
-					int xyzmx = xyz-1;
-					int xyzmy = xyz-nx[l];
-					int xyzmz = xyz-nx[l]*ny[l];
+					
+					// check for neighbor boundaries
+					int z = Numerics.floor(xyz/(nx[l]*ny[l]));
+					int y = Numerics.floor((xyz-nx[l]*ny[l]*z)/nx[l]);
+					int x = xyz-nx[l]*ny[l]*z-nx[l]*y;
 	
-					if (lbl[l][xyzpx]>nclusters) {
+					int xyzpx = xyz+1;
+					if (x+1<nx[l] && lbl[l][xyzpx]>nclusters) {
 						float js = regionCompetitionJSdiv(xyz, xyzpx, l);
 						if (js>0) tree.addValue(js, xyzpx, xyz);
 					}
-					if (lbl[l][xyzmx]>nclusters) {
+					int xyzmx = xyz-1;
+					if (x-1>=0 && lbl[l][xyzmx]>nclusters) {
 						float js = regionCompetitionJSdiv(xyz, xyzmx, l);
 						if (js>0) tree.addValue(js, xyzmx, xyz);
 					}
-					if (lbl[l][xyzpy]>nclusters) {
+					int xyzpy = xyz+nx[l];
+					if (y+1<ny[l] && lbl[l][xyzpy]>nclusters) {
 						float js = regionCompetitionJSdiv(xyz, xyzpy, l);
 						if (js>0) tree.addValue(js, xyzpy, xyz);
 					}
-					if (lbl[l][xyzmy]>nclusters) {
+					int xyzmy = xyz-nx[l];
+					if (y-1>=0 && lbl[l][xyzmy]>nclusters) {
 						float js = regionCompetitionJSdiv(xyz, xyzmy, l);
 						if (js>0) tree.addValue(js, xyzmy, xyz);
 					}
-					if (lbl[l][xyzpz]>nclusters) {
+					int xyzpz = xyz+nx[l]*ny[l];
+					if (z+1<nz[l] && lbl[l][xyzpz]>nclusters) {
 						float js = regionCompetitionJSdiv(xyz, xyzpz, l);
 						if (js>0) tree.addValue(js, xyzpz, xyz);
 					}
-					if (lbl[l][xyzmz]>nclusters) {
+					int xyzmz = xyz-nx[l]*ny[l];
+					if (z-1>=0 && lbl[l][xyzmz]>nclusters) {
 						float js = regionCompetitionJSdiv(xyz, xyzmz, l);
 						if (js>0) tree.addValue(js, xyzmz, xyz);
 					}
@@ -502,6 +523,16 @@ public class OctreeMultiClusterSimplification {
 				if (sqd[level][xyz6][t]==0) v6 = sigma2[t]; else v6 = sqd[level][xyz6][t]/npt[level][xyz6];
 				if (sqd[level][xyz7][t]==0) v7 = sigma2[t]; else v7 = sqd[level][xyz7][t]/npt[level][xyz7];
 				if (sqd[level][xyz8][t]==0) v8 = sigma2[t]; else v8 = sqd[level][xyz8][t]/npt[level][xyz8];
+			} else if (varupdate==VARCONST) {
+				// weaker priors: go down with number of samples
+				v1 = sigma2[t];
+				v2 = sigma2[t];
+				v3 = sigma2[t];
+				v4 = sigma2[t];
+				v5 = sigma2[t];
+				v6 = sigma2[t];
+				v7 = sigma2[t];
+				v8 = sigma2[t];
 			}
 			/*
 			// shouldn't we use the joint variance calculation instead?? i.e. + \sum w_ij (\mu_i-\mu_j)^2
@@ -512,7 +543,7 @@ public class OctreeMultiClusterSimplification {
 							   + sum[level][xyz5][t]/npt[level][xyz5] + sum[level][xyz6][t]/npt[level][xyz6] 
 							   + sum[level][xyz7][t]/npt[level][xyz7] + sum[level][xyz8][t]/npt[level][xyz8] );
 			*/
-			if (metric==JSDIV_EXACT || metric==JSDIV_TABLE) {
+			if (metric==JSDIV_EXACT) {
 				double mu1 = sum[level][xyz1][t]/npt[level][xyz1];
 				double mu2 = sum[level][xyz2][t]/npt[level][xyz2];
 				double mu3 = sum[level][xyz3][t]/npt[level][xyz3];
@@ -558,6 +589,72 @@ public class OctreeMultiClusterSimplification {
 							+ p5x*FastMath.log(p5x/psum) + p6x*FastMath.log(p6x/psum) + p7x*FastMath.log(p7x/psum) + p8x*FastMath.log(p8x/psum);
 				}
 				js += jsdiv*step/8.0/(double)nt;
+			} else if (metric==JSDIV_TABLE) {
+				double mu1 = sum[level][xyz1][t]/npt[level][xyz1];
+				double mu2 = sum[level][xyz2][t]/npt[level][xyz2];
+				double mu3 = sum[level][xyz3][t]/npt[level][xyz3];
+				double mu4 = sum[level][xyz4][t]/npt[level][xyz4];
+				double mu5 = sum[level][xyz5][t]/npt[level][xyz5];
+				double mu6 = sum[level][xyz6][t]/npt[level][xyz6];
+				double mu7 = sum[level][xyz7][t]/npt[level][xyz7];
+				double mu8 = sum[level][xyz8][t]/npt[level][xyz8];
+				double sq1 = FastMath.sqrt(v1);
+				double sq2 = FastMath.sqrt(v2);
+				double sq3 = FastMath.sqrt(v3);
+				double sq4 = FastMath.sqrt(v4);
+				double sq5 = FastMath.sqrt(v5);
+				double sq6 = FastMath.sqrt(v6);
+				double sq7 = FastMath.sqrt(v7);
+				double sq8 = FastMath.sqrt(v8);
+				
+				// check for all 6-C pairs
+				// ordering is: xyzp,xyzpx,xyzpy,xyzpz,xyzpxy,xyzpyz,xyzpzx,xyzpxyz
+				// 				1	 2	   3	 4	   5	  6		 7		8
+				double jsmax = 0.0;
+				// X direction
+				jsmax = Numerics.max(jsmax, jsdtable.lookup(mu1,sq1,mu2,sq2));
+				jsmax = Numerics.max(jsmax, jsdtable.lookup(mu3,sq3,mu5,sq5));
+				jsmax = Numerics.max(jsmax, jsdtable.lookup(mu4,sq4,mu7,sq7));
+				jsmax = Numerics.max(jsmax, jsdtable.lookup(mu6,sq6,mu8,sq8));
+				// Y direction
+				jsmax = Numerics.max(jsmax, jsdtable.lookup(mu1,sq1,mu3,sq3));
+				jsmax = Numerics.max(jsmax, jsdtable.lookup(mu2,sq2,mu5,sq5));
+				jsmax = Numerics.max(jsmax, jsdtable.lookup(mu4,sq4,mu6,sq6));
+				jsmax = Numerics.max(jsmax, jsdtable.lookup(mu7,sq7,mu8,sq8));
+				// Z direction
+				jsmax = Numerics.max(jsmax, jsdtable.lookup(mu1,sq1,mu4,sq4));
+				jsmax = Numerics.max(jsmax, jsdtable.lookup(mu2,sq2,mu7,sq7));
+				jsmax = Numerics.max(jsmax, jsdtable.lookup(mu3,sq3,mu6,sq6));
+				jsmax = Numerics.max(jsmax, jsdtable.lookup(mu5,sq5,mu8,sq8));
+				
+				// more directions for 18 and 26C
+				// ordering is: xyzp,xyzpx,xyzpy,xyzpz,xyzpxy,xyzpyz,xyzpzx,xyzpxyz
+				// 			1	2	   3	 	4	   5	    6		 7		8
+				if (connect>6) {
+					// XY direction
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu1,sq1,mu5,sq5));
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu4,sq4,mu8,sq8));
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu2,sq2,mu3,sq3));
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu7,sq7,mu6,sq6));
+					// YZ direction
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu1,sq1,mu6,sq6));
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu2,sq2,mu8,sq8));
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu3,sq3,mu4,sq4));
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu5,sq5,mu7,sq7));
+					// ZX direction
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu1,sq1,mu7,sq7));
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu3,sq3,mu8,sq8));
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu2,sq2,mu4,sq4));
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu5,sq5,mu6,sq6));
+				}
+				if (connect>18) {
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu1,sq1,mu8,sq8));
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu2,sq2,mu6,sq6));
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu3,sq3,mu7,sq7));
+					jsmax = Numerics.max(jsmax, jsdtable.lookup(mu4,sq4,mu5,sq5));		
+				}
+				
+				js += jsmax/(double)nt;
 			} else {
 
 				double npt0 = npt[level][xyz1];
@@ -649,6 +746,10 @@ public class OctreeMultiClusterSimplification {
 				// prior only for t=0
 				if (sqd[level][xyzA][t]==0) vA = sigma2[t]; else vA = sqd[level][xyzA][t]/npt[level][xyzA];
 				if (sqd[level][xyzB][t]==0) vB = sigma2[t]; else vB = sqd[level][xyzB][t]/npt[level][xyzB];
+			}else if (varupdate==VARCONST) {
+				// prior always
+				vA = sigma2[t];
+				vB = sigma2[t];
 			}
 			/*
 			if (npt[level][xyzA]==1) vA = vB;
@@ -818,6 +919,65 @@ public class OctreeMultiClusterSimplification {
 		return;
 	}
 	
+	public final int[][][] exportLabelsFrom(int lb) {
+		int[][][] labeling, nextlb;
+		
+		labeling = new int[nx[lb]][ny[lb]][nz[lb]];
+		for (int x=0;x<nx[lb];x++) for (int y=0;y<ny[lb];y++) for (int z=0;z<nz[lb];z++) {
+			int xyz = x+nx[lb]*y+nx[lb]*ny[lb]*z;
+			labeling[x][y][z] = lbl[lb][xyz];
+		}
+		for (int l=lb-1;l>=0;l--) {
+			nextlb= new int[nx[l]][ny[l]][nz[l]];
+			// fill in the labels from previous scale
+			for (int x=0;x<nx[l+1];x++) for (int y=0;y<ny[l+1];y++) for (int z=0;z<nz[l+1];z++) {
+				if (labeling[x][y][z]>0) {
+					nextlb[2*x][2*y][2*z]			= labeling[x][y][z];
+					nextlb[2*x+1][2*y][2*z]		= labeling[x][y][z];
+					nextlb[2*x][2*y+1][2*z]		= labeling[x][y][z];
+					nextlb[2*x][2*y][2*z+1] 		= labeling[x][y][z];
+					nextlb[2*x+1][2*y+1][2*z] 		= labeling[x][y][z];
+					nextlb[2*x][2*y+1][2*z+1] 		= labeling[x][y][z];
+					nextlb[2*x+1][2*y][2*z+1] 		= labeling[x][y][z];
+					nextlb[2*x+1][2*y+1][2*z+1] 	= labeling[x][y][z];
+				}
+			}
+			labeling = nextlb;
+		}
+		return labeling;
+	}
+	
+	public final byte[][][] exportOctreeStructure(int lb) {
+		byte[][][] labeling, nextlb;
+		
+		labeling = new byte[nx[lb]][ny[lb]][nz[lb]];
+		for (int x=0;x<nx[lb];x++) for (int y=0;y<ny[lb];y++) for (int z=0;z<nz[lb];z++) {
+			int xyz = x+nx[lb]*y+nx[lb]*ny[lb]*z;
+			if (npt[lb][xyz]>0) labeling[x][y][z] = (byte)(lb+1);
+		}
+		for (int l=lb-1;l>=0;l--) {
+			nextlb= new byte[nx[l]][ny[l]][nz[l]];
+			// fill in the labels from previous scale
+			for (int x=0;x<nx[l+1];x++) for (int y=0;y<ny[l+1];y++) for (int z=0;z<nz[l+1];z++) {
+				if (labeling[x][y][z]>0) {
+					nextlb[2*x][2*y][2*z]			= labeling[x][y][z];
+					nextlb[2*x+1][2*y][2*z]		= labeling[x][y][z];
+					nextlb[2*x][2*y+1][2*z]		= labeling[x][y][z];
+					nextlb[2*x][2*y][2*z+1] 		= labeling[x][y][z];
+					nextlb[2*x+1][2*y+1][2*z] 		= labeling[x][y][z];
+					nextlb[2*x][2*y+1][2*z+1] 		= labeling[x][y][z];
+					nextlb[2*x+1][2*y][2*z+1] 		= labeling[x][y][z];
+					nextlb[2*x+1][2*y+1][2*z+1] 	= labeling[x][y][z];
+				}
+			}
+			for (int x=0;x<nx[l];x++) for (int y=0;y<ny[l];y++) for (int z=0;z<nz[l];z++) {
+				int xyz = x+nx[l]*y+nx[l]*ny[l]*z;
+				if (npt[l][xyz]>0 && nextlb[x][y][z]==0) nextlb[x][y][z] = (byte)(l+1);
+			}
+			labeling = nextlb;
+		}
+		return labeling;
+	}
 	
 	public final int getDimX(int l) { return nx[l]; } 
 	
