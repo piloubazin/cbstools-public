@@ -189,6 +189,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		float[] surface = null;
 		nc = 0;
 		String orientation = orientationParam.getValue();
+		if (!Interface.isValid(surfaceImage)) orientation = "undefined";
+		
 		if (orientation.equals("parallel") || orientation.equals("orthogonal")) {
 			BasicInfo.displayMessage("...load surface orientation(s)\n");
 			nc = Interface.getComponents(surfaceImage);
@@ -512,6 +514,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	private final void probabilityFromRecursiveRidgeFilter( float[] filter, float[] shape) {
 		// normalization: best is the iterative robust exponential (others are removed)
 		int nb = 0;
+		double min = 1e9;
 		double max = 0.0;
 		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 			int xyz = x + nx*y + nx*ny*z;
@@ -520,11 +523,12 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 				else {
 					// fit exp only to non-zero data
 					nb++;
+					min = Numerics.min(filter[xyz], min);
 					max = Numerics.max(filter[xyz], max);
 				}
 		}
 		
-		// robust measures
+		// robust measures? pb is the exponential is not steep enough
 		double[] response = new double[nb];
 		int n=0;
 		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
@@ -538,13 +542,33 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		double median = measure.evaluate(response, 50.0);
 		double beta = median/FastMath.log(2.0);
 		
-		Interface.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
+		Interface.displayMessage("exponential parameter estimates: median "+median+", beta "+beta+",\n");
+		
+		// model the filter response as something more interesting, e.g. log-normal (removing the bg samples)
+		double fmean = 0.0;
+		double fsum = 0.0;
+		for (int b=0;b<nb;b++) { 
+			double weight = (1.0-FastMath.exp( -response[b]/beta));
+			fmean += weight*FastMath.log(response[b]);
+			fsum += weight;
+		}
+		fmean /= fsum;
+		double fvar = 0.0;
+		for (int b=0;b<nb;b++) { 
+			double weight = (1.0-FastMath.exp( -response[b]/beta));
+			fvar += weight*Numerics.square(FastMath.log(response[b])-fmean);
+		}
+		fvar /= fsum;
+		
+		Interface.displayMessage("Log-normal parameter estimates: mean = "+fmean+", stdev = "+FastMath.sqrt(fvar)+",\n");
 		
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++){
 			int xyz = x + nx*y + nx*ny*z;
 			if (filter[xyz]>0) {
-					double pe = FastMath.exp( -filter[xyz]/beta)/beta;
-					shape[xyz] = (float)(1.0/max/( 1.0/max+pe));
+				double pe = FastMath.exp( -filter[xyz]/beta)/beta;
+				double plg = FastMath.exp(-Numerics.square(FastMath.log(filter[xyz])-fmean)/(2.0*fvar))/FastMath.sqrt(2.0*FastMath.PI*fvar);
+				shape[xyz] = (float)(plg/(plg+pe));
+				//shape[xyz] = (float)(1.0-pe);
 			}
 		}
 		return;
@@ -1630,7 +1654,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
-			if (iter==0) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
+			if (iter<2) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
 			else diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0)/(1.0f+2.0f*factor), 0.0f, 1.0f);
 		}
 		return diffused;

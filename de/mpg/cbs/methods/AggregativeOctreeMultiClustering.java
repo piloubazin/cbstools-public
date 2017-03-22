@@ -70,6 +70,7 @@ public class AggregativeOctreeMultiClustering {
 	private	static 	final int 		VARMAX = 201;
 	private	static 	final int 		VARLIN = 202;
 	private	static 	final int 		VARZERO = 203;
+	private	static 	final int 		VARCONST = 204;
 	private int	clustersize;
 
 	
@@ -149,24 +150,26 @@ public class AggregativeOctreeMultiClustering {
 	/**
 	 *  constructor
 	 */
-	public AggregativeOctreeMultiClustering(OctreeMultiClusterSimplification oct_, float[] sqd_, float pval_, String metrictype, String varup, int clustsize) {
+	public AggregativeOctreeMultiClustering(OctreeMultiClusterSimplification oct_, float[] sqd_, float pval_, String metrictype, String varup, int clustsize, int conn_) {
 		octree = oct_;
 		
 		globalvar = sqd_;
 		
 		pvalue = pval_;
-		connect = 6;
+		connect = conn_;
 		
 		if (metrictype.equals("joint Jensen-Shannon")) metric = JSDIV_SUM;
 		else if (metrictype.equals("max Jensen-Shannon")) metric = JSDIV_MAX;
 		else if (metrictype.equals("exact Jensen-Shannon")) metric = JSDIV_EXACT;
 		else if (metrictype.equals("table Jensen-Shannon")) metric = JSDIV_TABLE;
 		
-		if (metric==JSDIV_TABLE) jsdtable = new JensenShannonDivTable(3.0, 0.01, 0.01);
+		//if (metric==JSDIV_TABLE) jsdtable = new JensenShannonDivTable(3.0, 0.01, 0.01);
+		if (metric==JSDIV_TABLE) jsdtable = new JensenShannonDivTable(6.0, 0.01, 0.01);
 		
 		if (varup.equals("Maximum")) varupdate = VARMAX;
 		else if (varup.equals("Linear")) varupdate = VARLIN;
-		else varupdate = VARZERO;
+		else if (varup.equals("Zero")) varupdate = VARZERO;
+		else varupdate = VARCONST;
 		
 		clustersize = clustsize;
 	}
@@ -239,11 +242,15 @@ public class AggregativeOctreeMultiClustering {
 				int nb=0;
 				for (int n=0;n<connect;n++) {
 					int xyzngb = xyz+xoff[n]+yoff[n]+zoff[n];
-					if (labeling[xyzngb]>0) {
-						ngb[nb] = new Ngb(labeling[xyzngb], ngbfactor[n]*jsDiv(octree.getSum(level)[xyz], octree.getSum(level)[xyzngb], 
-																			  octree.getSqd(level)[xyz], octree.getSqd(level)[xyzngb], 
-																			  octree.getNpt(level)[xyz], octree.getNpt(level)[xyzngb] ) );
-						nb++;						
+					if (x+xoff[n]>=0 && x+xoff[n]<nx 
+						&& nx*y+yoff[n]>=0 && nx*y+yoff[n]<nx*ny 
+						&& nx*ny*z+zoff[n]>=0 && nx*ny*z+zoff[n]<nx*ny*nz) {
+						if (labeling[xyzngb]>0) {
+							ngb[nb] = new Ngb(labeling[xyzngb], ngbfactor[n]*jsDiv(octree.getSum(level)[xyz], octree.getSum(level)[xyzngb], 
+																				  octree.getSqd(level)[xyz], octree.getSqd(level)[xyzngb], 
+																				  octree.getNpt(level)[xyz], octree.getNpt(level)[xyzngb] ) );
+							nb++;						
+						}
 					}
 				}
 								
@@ -339,21 +346,23 @@ public class AggregativeOctreeMultiClustering {
 				int nb=0;
 				for (int n=0;n<connect;n++) {
 					int xyzngb = xyz+xoff[n]+yoff[n]+zoff[n];
-					//if (x+xoff[n]>=0 && x+xoff[n]<nx && y+yoff[n]>=0 && y+yoff[n]<ny && z+zoff[n]>=0 && z+zoff[n]<nz) {
-					if (labeling[xyzngb]>prevlb) {
-						ngb[nb] = new Ngb(labeling[xyzngb], ngbfactor[n]*jsDiv(octree.getSum(level)[xyz], octree.getSum(level)[xyzngb], 
-																			   octree.getSqd(level)[xyz], octree.getSqd(level)[xyzngb], 
-																			   octree.getNpt(level)[xyz], octree.getNpt(level)[xyzngb] ) );
-						nb++;						
-					} else 
-					// allow relationships to previous labels of course
-					if (labeling[xyzngb]>0) {
-						ngb[nb] = new Ngb(labeling[xyzngb], ngbfactor[n]*jsDiv(octree.getSum(level)[xyz], octree.getSum(level)[xyzngb], 
-																			   octree.getSqd(level)[xyz], octree.getSqd(level)[xyzngb], 
-																			   octree.getNpt(level)[xyz], octree.getNpt(level)[xyzngb] ) );
-						nb++;						
+					if (x+xoff[n]>=0 && x+xoff[n]<nx 
+						&& nx*y+yoff[n]>=0 && nx*y+yoff[n]<nx*ny 
+						&& nx*ny*z+zoff[n]>=0 && nx*ny*z+zoff[n]<nx*ny*nz) {
+						if (labeling[xyzngb]>prevlb) {
+							ngb[nb] = new Ngb(labeling[xyzngb], ngbfactor[n]*jsDiv(octree.getSum(level)[xyz], octree.getSum(level)[xyzngb], 
+																				   octree.getSqd(level)[xyz], octree.getSqd(level)[xyzngb], 
+																				   octree.getNpt(level)[xyz], octree.getNpt(level)[xyzngb] ) );
+							nb++;						
+						} else 
+						// allow relationships to previous labels of course
+						if (labeling[xyzngb]>0) {
+							ngb[nb] = new Ngb(labeling[xyzngb], ngbfactor[n]*jsDiv(octree.getSum(level)[xyz], octree.getSum(level)[xyzngb], 
+																				   octree.getSqd(level)[xyz], octree.getSqd(level)[xyzngb], 
+																				   octree.getNpt(level)[xyz], octree.getNpt(level)[xyzngb] ) );
+							nb++;						
+						}
 					}
-					//}
 				}
 								
 				// store the values: new instance!
@@ -380,6 +389,8 @@ public class AggregativeOctreeMultiClustering {
 	
 	public final int hierarchicalClustering(int k0, boolean recompute, float recomputeratio, float sizeratio) {
 		
+		float mincost = - 0.1f*pvalue;
+		
 		if (debug) System.out.println("hierarchical clustering : normal distribution distances");
 		
 		// 1. Build a binary tree for the delta values
@@ -400,7 +411,7 @@ public class AggregativeOctreeMultiClustering {
 				for (int b=1;b<node.length;b++) {
 					if (node[b].delta>node[best].delta) best = b;
 				}
-				if (node[best].delta>0) {
+				if (node[best].delta>mincost) {
 					//if (debug) System.out.print(""+node[best].delta+",");
 					maxtree.addValue(node[best].delta, list[lb].id, best);
 					ntree++;
@@ -484,7 +495,7 @@ public class AggregativeOctreeMultiClustering {
 
 					// recompute score (?) if lower re-insert into the tree and skip
 					boolean merge = true;
-					if (recompute) {
+					if (recompute && bcost>=0) {
 						// build the divergence metric (with built-in threshold and geometric factor)
 						float metric = jsDiv(bNodeC.sum, pNodeC.sum, 
 											 bNodeC.sqd, pNodeC.sqd, 
@@ -498,7 +509,33 @@ public class AggregativeOctreeMultiClustering {
 							maxtree.addValue(metric, lbest, nbest);
 							merge = false;
 						}
+					} else if (recompute) {
+						// build the divergence metric (with built-in threshold and geometric factor)
+						float metric = jsDiv(bNodeC.sum, pNodeC.sum, 
+											 bNodeC.sqd, pNodeC.sqd, 
+											 bNodeC.size, pNodeC.size);
+						
+						if (metric<0.0f) {
+							// stopping criterion								
+							System.out.println(iter+" / "+nclusters+": c= "+bcost
+																	+" ("+maxtree.getCurrentSize()+"|"
+																	+bNodeN.length+", "+pNodeN.length+")");	
+							stop = true;
+							merge = false;
+						} else {
+							// now positive: continue
+							merge = true;
+						}
+					} else {
+						// stopping criterion								
+					   System.out.println(iter+" / "+nclusters+": c= "+bcost
+																	+" ("+maxtree.getCurrentSize()+"|"
+																	+bNodeN.length+", "+pNodeN.length+")");	
+					   stop = true;
+					   merge = false;
 					}
+
+	
 					if (merge) {
 						
 						// do the regular merging
@@ -683,6 +720,7 @@ public class AggregativeOctreeMultiClustering {
 							depthsearchtime = 0;
 							widthsearchtime = 0;
 						}
+						/*
 						// stopping criterion								
 						if (bcost<0) {
 						   System.out.println(iter+" / "+nclusters+": c= "+bcost
@@ -692,7 +730,8 @@ public class AggregativeOctreeMultiClustering {
 						   //first=false;
 						   //if (firststop) stop = true;
 						   stop = true;
-						}								
+						}
+						*/
 						// add the new values to list, binary tree
 						list[id] = aNodeC;
 						assoc[id] = aNodeN;
@@ -704,7 +743,7 @@ public class AggregativeOctreeMultiClustering {
 								if (aNodeN[b].delta>aNodeN[best].delta) best = b;
 							}
 							// always add, or stop before the first negative?
-							if (aNodeN[best].delta>0)
+							if (aNodeN[best].delta>mincost)
 								maxtree.addValue(aNodeN[best].delta, id, best);
 						}
 						
@@ -755,6 +794,10 @@ public class AggregativeOctreeMultiClustering {
 				// prior only for t=0
 				if (sqd1[t]==0) v1 = globalvar[t]; else v1 = sqd1[t]/npt1;
 				if (sqd2[t]==0) v2 = globalvar[t]; else v2 = sqd2[t]/npt2;
+			} else if (varupdate==VARCONST) {
+				// prior only for t=0
+				v1 = globalvar[t];
+				v2 = globalvar[t];
 			}
 			
 			if (metric==JSDIV_EXACT) {
@@ -899,7 +942,7 @@ public class AggregativeOctreeMultiClustering {
 		float beta = ImageStatistics.robustExponentialFit(scale, true, ncluster);
 
 		float threshold = beta*(float)FastMath.log(maxscale/beta);
-		BasicInfo.displayMessage("cluster threshold "+threshold+"\n");
+		Interface.displayMessage("cluster threshold "+threshold+"\n");
 		
 		return Numerics.ceil(threshold);
 	}
