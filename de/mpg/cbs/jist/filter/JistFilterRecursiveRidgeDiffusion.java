@@ -545,22 +545,35 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		Interface.displayMessage("exponential parameter estimates: median "+median+", beta "+beta+",\n");
 		
 		// model the filter response as something more interesting, e.g. log-normal (removing the bg samples)
+		
+		// use a median / percentile approach instead? or just trim the highest values too
+		/*
+		int nfg=0;
+		for (int b=0;b<nb;b++) {
+			double weight = (1.0-FastMath.exp( -response[b]/beta));
+			if (weight
+			response[b] = FastMath.log(response[b]);
+		}
+		double fmed = measure.evaluate(response, 50.0);
+		double frng = measure.evaluate(response, 25.0);
+		*/
+		double rmax = measure.evaluate(response, 99.0);
 		double fmean = 0.0;
 		double fsum = 0.0;
 		for (int b=0;b<nb;b++) { 
-			double weight = (1.0-FastMath.exp( -response[b]/beta));
-			fmean += weight*FastMath.log(response[b]);
+			double weight = (1.0-FastMath.exp( -Numerics.min(response[b],rmax)/beta));
+			fmean += weight*FastMath.log(Numerics.min(response[b],rmax));
 			fsum += weight;
 		}
 		fmean /= fsum;
 		double fvar = 0.0;
 		for (int b=0;b<nb;b++) { 
-			double weight = (1.0-FastMath.exp( -response[b]/beta));
-			fvar += weight*Numerics.square(FastMath.log(response[b])-fmean);
+			double weight = (1.0-FastMath.exp( -Numerics.min(response[b],rmax)/beta));
+			fvar += weight*Numerics.square(FastMath.log(Numerics.min(response[b],rmax))-fmean);
 		}
 		fvar /= fsum;
 		
-		Interface.displayMessage("Log-normal parameter estimates: mean = "+fmean+", stdev = "+FastMath.sqrt(fvar)+",\n");
+		Interface.displayMessage("Log-normal parameter estimates: mean = "+FastMath.exp(fmean)+", stdev = "+FastMath.exp(FastMath.sqrt(fvar))+",\n");
 		
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++){
 			int xyz = x + nx*y + nx*ny*z;
