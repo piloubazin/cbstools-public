@@ -846,6 +846,77 @@ public class ImageStatistics {
 	}
 
 	/**
+     *    Percentile estimation when samples have weights
+     */
+    public static final double weightedPercentile(double[] image, double[] weight, double ratio, int nxyz) {
+		double Imin,Imax,value;
+		int Nbins = 10;
+		int scales = 5;
+		double[] bins = new double[Nbins];
+		double count;
+		
+		// find first min, max
+		Imin = image[0];
+		Imax = image[0];
+		double Nweight = 0.0;
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			if (image[xyz]>Imax) Imax = image[xyz];
+			if (image[xyz]<Imin) Imin = image[xyz];
+			Nweight += weight[xyz];
+		}
+		// ratio: global value
+		ratio = ratio*Nweight/100.0;
+		
+		value = Imin;
+		
+		for (int t=0;t<scales;t++) {
+			
+			value = Imin;
+			
+			// compute coarse histogram
+			for (int n=0;n<Nbins;n++) bins[n] = 0;
+			
+			for (int xyz=0;xyz<nxyz;xyz++) {
+				// first one include both boundaries 
+				if (  (image[xyz] >= Imin )
+					&&(image[xyz] <= Imin + 1.0/(double)Nbins*(Imax-Imin) ) ) bins[0]+=weight[xyz];
+				for (int n=1;n<Nbins;n++) {
+					if (  (image[xyz] >  Imin + (double)n/(double)Nbins*(Imax-Imin) )
+						&&(image[xyz] <= Imin + (double)(n+1)/(double)Nbins*(Imax-Imin) ) ) bins[n]+=weight[xyz];	
+				}
+			}
+			/* debug
+			System.out.print("histogram: \n");
+			for (n=0;n<Nbins;n++) System.out.print(" | "+bins[n]);
+			System.out.print("\n");
+			*/
+			
+			// find the value corresponding to the ratio
+			count = bins[0];
+			int n = 0;
+			while ( (count < ratio) && (n<Nbins) ) {
+				n++;
+				count +=bins[n];
+			}
+			value = Imin + (double)(n+0.5)/(double)Nbins*(Imax-Imin);
+			
+			//System.out.print("robust maximum: "+Rmax+" ("+n+", "+ratio+", "+count+")\n");		
+
+			// new boundaries
+			double I0 = Imin + (double)n/(double)Nbins*(Imax-Imin);
+			double I1 = Imin + (double)(n+1)/(double)Nbins*(Imax-Imin);
+			
+			Imin = I0;
+			Imax = I1;
+			
+			// new ratio
+			if (n<Nbins) ratio = ratio - (count-bins[n]);			
+		}
+		
+		return value;
+	}
+
+	/**
      *    Robust half gaussian distribution fit
      *    @param 	outliers	boolean: iterates the estimation to account for outliers (uniformly distributed)
 	 *	  @param	nx,ny,nz	image dimensions
@@ -1041,4 +1112,6 @@ public class ImageStatistics {
 		}
 		return (float)beta;
 	}
+	
+
 }
