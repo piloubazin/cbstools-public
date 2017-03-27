@@ -194,7 +194,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		if (orientation.equals("parallel") || orientation.equals("orthogonal")) {
 			BasicInfo.displayMessage("...load surface orientation(s)\n");
 			nc = Interface.getComponents(surfaceImage);
-			surface = Interface.getFloatImage4D(surfaceImage);
+			if (nc>1) surface = Interface.getFloatImage4D(surfaceImage);
+			else surface = Interface.getFloatImage3D(surfaceImage);
 		}
 		
 		// load masking, if used
