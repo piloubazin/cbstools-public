@@ -8,6 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
+import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
@@ -93,75 +94,53 @@ public class JistCortexIterativeSmoothing extends ProcessingAlgorithm{
 		// import the image data
 		System.out.println("\n Import data");
 		
+		ImageHeader header = dataImage.getImageData().getHeader();
+		String name = dataImage.getImageData().getName();
+		
 		ImageDataFloat dataImg = new ImageDataFloat(dataImage.getImageData());
 		
 		int nx = dataImg.getRows();
 		int ny = dataImg.getCols();
 		int nz = dataImg.getSlices();
-		int nlayers = dataImg.getComponents()-1;
+		int nt = dataImg.getComponents();
 		int nxyz = nx*ny*nz;
 		float rx = dataImg.getHeader().getDimResolutions()[0];
 		float ry = dataImg.getHeader().getDimResolutions()[1];
 		float rz = dataImg.getHeader().getDimResolutions()[2];
 		
-		float[] data = new float[nxyz];
-		float[][][] buffer = dataImg.toArray3d();
 		
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			int xyz = x+nx*y+nx*ny*z;
-			data[xyz] = buffer[x][y][z];
-		}
-		buffer = null;
+		float[] data = null;
+		if (nt>1) data = Interface.getFloatImage4D(dataImage);
+		else data = Interface.getFloatImage3D(dataImage);
+		
 		dataImg.dispose();
 		dataImage.dispose();
 		
-		ImageDataFloat gwbImg = new ImageDataFloat(gwbImage.getImageData());
-		ImageDataFloat cgbImg = new ImageDataFloat(cgbImage.getImageData());
-		float[][][] gwb = gwbImg.toArray3d();
-		float[][][] cgb = cgbImg.toArray3d();
-		gwbImg.dispose();
-		cgbImg.dispose();
+		float[] gwb = Interface.getFloatImage3D(gwbImage);
+		float[] cgb = Interface.getFloatImage3D(cgbImage);
+		
 		gwbImage.dispose();
 		cgbImage.dispose();
 
-		boolean[] mask = new boolean[nxyz];
-		if(maskImage.getImageData() != null) {
-			ImageDataUByte maskImg = new ImageDataUByte(maskImage.getImageData());
-			byte[][][] bytebuffer = maskImg.toArray3d();
-			
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-				int xyz = x+nx*y+nx*ny*z;
-				
-				if (x<=1 || x>=nx-2 || y<=1 || y>=ny-2 || z<=1 || z>=nz-2) {
-					mask[xyz] = false;
-				} else {
-					if (gwb[x][y][z]>=(0.0f) && cgb[x][y][z]<=(0.0f)) {
-						mask[xyz] = true;
-					} else {
-						mask[xyz] = false;
-					}
-				}
-			}
-			bytebuffer = null;
-			maskImg.dispose();
-			maskImage.dispose();
+		byte[] mask = null;
+		if (Interface.isValid(maskImage)) {
+			mask = Interface.getUByteImage3D(maskImage);
 		} else {
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-				int xyz = x+nx*y+nx*ny*z;
-				mask[xyz] = true;
-			}
+			mask = new byte[nxyz];
+			for (int xyz=0;xyz<nxyz;xyz++) mask[xyz] = 1;
 		}
 		
+		// remove image boundaries
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;
 			
 			if (x<=1 || x>=nx-2 || y<=1 || y>=ny-2 || z<=1 || z>=nz-2) {
-				mask[xyz] = false;
+				mask[xyz] = 0;
 			} else {
-				if (mask[xyz] && gwb[x][y][z]>=(0.0f) && cgb[x][y][z]<=(0.0f)) {
-					mask[xyz] = true;
+				if (mask[xyz]>0 && gwb[xyz]>=(0.0f) && cgb[xyz]<=(0.0f)) {
+					mask[xyz] = 1;
 				} else {
-					mask[xyz] = false;
+					mask[xyz] = 0;
 				}
 			}
 		}
@@ -173,8 +152,8 @@ public class JistCortexIterativeSmoothing extends ProcessingAlgorithm{
 		yoff = new int[]{0, 0, nx, -nx, 0, 0};
 		zoff = new int[]{0, 0, 0, 0, nx*ny, -nx*ny};
 		
-		BitSet white = new BitSet(nx*ny*nz);
-		BitSet black = new BitSet(nx*ny*nz);
+		BitSet white = new BitSet(nxyz);
+		BitSet black = new BitSet(nxyz);
 		
 		//int count;
 		float[] sdata = new float[nxyz];
@@ -188,8 +167,8 @@ public class JistCortexIterativeSmoothing extends ProcessingAlgorithm{
 		// set voxels in mask as either white or black checks.
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;	
-			if (mask[xyz]) {
-				sdata[xyz] = data[xyz];
+			if (mask[xyz]>0) {
+				for (int t=0;t<nt;t++) sdata[xyz+nxyz*t] = data[xyz+nxyz*t];
 				if (xyz%2 == 0) {
 					white.set(xyz);
 				} else {
@@ -206,13 +185,13 @@ public class JistCortexIterativeSmoothing extends ProcessingAlgorithm{
 				sumweight = 1.0f;
 				for (int k=0; k<6; k++) {
 					int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
-					if (mask[xyzn]) {
-						sdata[xyz] += weight * sdata[xyzn];
+					if (mask[xyzn]>0) {
+						for (int t=0;t<nt;t++) sdata[xyz+nxyz*t] += weight * sdata[xyzn+nxyz*t];
 						sumweight += weight;
 						//count++;
 					}
 				}
-				sdata[xyz] /= sumweight;
+				for (int t=0;t<nt;t++) sdata[xyz+nxyz*t] /= sumweight;
 			}
 			
 			for (int xyz = black.nextSetBit(0); xyz >= 0; xyz = black.nextSetBit(xyz+1)) {
@@ -220,13 +199,13 @@ public class JistCortexIterativeSmoothing extends ProcessingAlgorithm{
 				sumweight = 1.0f;
 				for (int k=0; k<6; k++) {
 					int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
-					if (mask[xyzn]) {
-						sdata[xyz] += weight * sdata[xyzn];
+					if (mask[xyzn]>0) {
+						for (int t=0;t<nt;t++) sdata[xyz+nxyz*t] += weight * sdata[xyzn+nxyz*t];
 						sumweight += weight;
 						//count++;
 					}
 				}
-				sdata[xyz] /= sumweight;
+				for (int t=0;t<nt;t++) sdata[xyz+nxyz*t] /= sumweight;
 			}
 		}
 		
@@ -234,18 +213,7 @@ public class JistCortexIterativeSmoothing extends ProcessingAlgorithm{
         System.out.println("\n done!");
         System.out.println("\n Outputting data");
 		
-		
-        float[][][] smoothData = new float[nx][ny][nz];
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			int xyz = x+nx*y+nx*ny*z;
-			smoothData[x][y][z] = sdata[xyz];
-		}
-		
-		
-		ImageDataFloat smoothDataImg = new ImageDataFloat(smoothData);		
-		smoothDataImg.setHeader(dataImage.getImageData().getHeader());
-		smoothDataImg.setName(dataImage.getImageData().getName()+"_boundary");
-		smoothDataImage.setValue(smoothDataImg);
-		
+		if (nt>1) Interface.setFloatImage4D(sdata, new int[]{nx,ny,nz}, nt, smoothDataImage, name+"_boundary", header);
+		else Interface.setFloatImage3D(sdata, new int[]{nx,ny,nz}, smoothDataImage, name+"_boundary", header);
 	}
 }

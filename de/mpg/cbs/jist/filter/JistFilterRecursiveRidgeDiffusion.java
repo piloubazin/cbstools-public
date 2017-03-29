@@ -55,7 +55,6 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	
 	private ParamVolume locationImage;
 	
-	private ParamFloat scalingParam;
 	private ParamInteger nscalesParam;
 	
 	//private ParamFloat thresholdParam;
@@ -65,8 +64,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	
 	private ParamOption propagationParam;
 	private static final String[] propagationTypes = {"diffusion","belief","SUR","flooding","growing","labeling","none"};
-	private ParamFloat factorParam;
-	private ParamFloat diffParam;
+	private ParamFloat difffactorParam;
+	private ParamFloat simscaleParam;
 	private ParamInteger ngbParam;
 	private ParamInteger iterParam;
 	private ParamFloat maxdiffParam;
@@ -132,18 +131,18 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		inputParams.add(surfaceImage = new ParamVolume("Surface(s) level sets"));
 		surfaceImage.setMandatory(false);
 		inputParams.add(orientationParam = new ParamOption("Orientation relative to surface", orientationTypes));
-		inputParams.add(scalingParam = new ParamFloat("Angular factor", 0.0f, 10.0f, 1.0f));
+		inputParams.add(angleParam = new ParamFloat("Angular factor", 0.1f, 10.0f, 1.0f));
 		
 		inputParams.add(locationImage = new ParamVolume("Location prior (opt)"));
 		locationImage.setMandatory(false);
 		
 		//inputParams.add(thresholdParam = new ParamFloat("Probability threshold", 0.0, 1.0, 0.5));
-		//inputParams.add(scalingParam = new ParamFloat("Scale factor ", 0.25f, 2.0f, 1.0f));
+		//inputParams.add(angleParam = new ParamFloat("Scale factor ", 0.25f, 2.0f, 1.0f));
 		inputParams.add(nscalesParam = new ParamInteger("Number of scales ", 0, 10, 3));
 
 		inputParams.add(propagationParam = new ParamOption("Propagation model", propagationTypes));
-		inputParams.add(factorParam = new ParamFloat("Diffusion factor", 0.0f, 100.0f, 1.0f));
-		inputParams.add(diffParam = new ParamFloat("Similarity scale", 0.0f, 100.0f, 0.1f));
+		inputParams.add(difffactorParam = new ParamFloat("Diffusion factor", 0.0f, 100.0f, 1.0f));
+		inputParams.add(simscaleParam = new ParamFloat("Similarity scale", 0.0f, 100.0f, 0.1f));
 		inputParams.add(ngbParam = new ParamInteger("Neighborhood size", 0, 26, 4));
 		inputParams.add(iterParam = new ParamInteger("Max iterations", 0, 1000, 100));
 		inputParams.add(maxdiffParam = new ParamFloat("Max difference", 0.0f, 1.0f, 0.001f));
@@ -206,7 +205,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		
 		// load scale values
 		nscales = nscalesParam.getValue().intValue();
-		float scaling = scalingParam.getValue().floatValue();
+		//float angle = angleParam.getValue().floatValue();
 		
 		boolean[] mask = new boolean[nxyz];
 		float minI = 1e9f;
@@ -279,11 +278,16 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			}
 		}
 		
+		// Equalize histogram (Exp Median)
+		BasicInfo.displayMessage("...normalization into probabilities\n");
+		float[] proba = new float[nxyz];
+		probabilityFromRecursiveRidgeFilter(maxresponse, proba);	
+		
 		// Attenuate response according to orientation
 		float[] correction = new float[nxyz];
 		if (orientation.equals("parallel") || orientation.equals("orthogonal")) {
 			BasicInfo.displayMessage("...orientation response filtering\n");
-			float factor = scalingParam.getValue().floatValue();
+			float anglefactor = angleParam.getValue().floatValue();
 			for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
 				float[] vec = directionVector(maxdirection[xyz]);
 				// find the closest surfaces; weighted mean
@@ -325,13 +329,13 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 				double angle = 2.0*FastMath.acos(grad[X]*vec[X]+grad[Y]*vec[Y]+grad[Z]*vec[Z])/FastMath.PI;
 				angle = Numerics.min(angle,2.0-angle);
 				if (orientation.equals("parallel") && filterParam.getValue().equals("1D")) {
-					correction[xyz] = (float)FastMath.pow(angle, factor);
+					correction[xyz] = (float)FastMath.pow(angle, anglefactor);
 				} else if (orientation.equals("parallel") && filterParam.getValue().equals("2D")) {
-					correction[xyz] = (float)FastMath.pow(1.0-angle, factor);
+					correction[xyz] = (float)FastMath.pow(1.0-angle, anglefactor);
 				} else if (orientation.equals("orthogonal") && filterParam.getValue().equals("1D")) {
-					correction[xyz] = (float)FastMath.pow(1.0-angle, factor);
+					correction[xyz] = (float)FastMath.pow(1.0-angle, anglefactor);
 				} else if (orientation.equals("orthogonal") && filterParam.getValue().equals("2D")) {
-					correction[xyz] = (float)FastMath.pow(angle, factor);
+					correction[xyz] = (float)FastMath.pow(angle, anglefactor);
 				} else {
 					correction[xyz] = 1.0f;
 				}
@@ -344,10 +348,12 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			for (int xyz=0;xyz<nxyz;xyz++) maxresponse[xyz] *= location[xyz];
 		}
 
+		/* to be done beofre the other prior selection, in order to maintain the noise / response structure?
 		// Equalize histogram (Exp Median)
 		BasicInfo.displayMessage("...normalization into probabilities\n");
 		float[] proba = new float[nxyz];
 		probabilityFromRecursiveRidgeFilter(maxresponse, proba);	
+		*/
 		
 		// generate a direction vector
 		float[][] direction = new float[3][nxyz];
@@ -361,29 +367,29 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		// 3. diffuse the data to neighboring structures with SUR
 		BasicInfo.displayMessage("...diffusion\n");
 		int ngbsize = ngbParam.getValue().intValue();
-		float scale = diffParam.getValue().floatValue();
-		float factor = factorParam.getValue().floatValue();
+		float simscale = simscaleParam.getValue().floatValue();
+		float difffactor = difffactorParam.getValue().floatValue();
 		int iter = iterParam.getValue().intValue();
 		float maxdiff = maxdiffParam.getValue().floatValue();
 		
 		if (propagationParam.getValue().equals("SUR")) {
-			if (filterParam.getValue().equals("1D"))  proba = spatialUncertaintyRelaxation1D(proba, maxdirection, ngbsize, scale, factor, iter);
-			else if (filterParam.getValue().equals("2D"))  proba = spatialUncertaintyRelaxation2D(proba, maxdirection, ngbsize, scale, factor, iter);
+			if (filterParam.getValue().equals("1D"))  proba = spatialUncertaintyRelaxation1D(proba, maxdirection, ngbsize, simscale, difffactor, iter);
+			else if (filterParam.getValue().equals("2D"))  proba = spatialUncertaintyRelaxation2D(proba, maxdirection, ngbsize, simscale, difffactor, iter);
 		} else if  (propagationParam.getValue().equals("diffusion")) {
-			if (filterParam.getValue().equals("1D"))  proba = probabilisticDiffusion1D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
-			else if (filterParam.getValue().equals("2D"))  proba = probabilisticDiffusion2D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
+			if (filterParam.getValue().equals("1D"))  proba = probabilisticDiffusion1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
+			else if (filterParam.getValue().equals("2D"))  proba = probabilisticDiffusion2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 		} else if  (propagationParam.getValue().equals("belief")) {
-			if (filterParam.getValue().equals("1D"))  proba = beliefPropagation1D(proba, maxdirection, ngbsize, scale, iter, maxdiff);
-			else if (filterParam.getValue().equals("2D"))  proba = beliefPropagation2D(proba, maxdirection, ngbsize, scale, iter, maxdiff);
+			if (filterParam.getValue().equals("1D"))  proba = beliefPropagation1D(proba, maxdirection, ngbsize, simscale, iter, maxdiff);
+			else if (filterParam.getValue().equals("2D"))  proba = beliefPropagation2D(proba, maxdirection, ngbsize, simscale, iter, maxdiff);
 		} else if  (propagationParam.getValue().equals("flooding")) {
-			if (filterParam.getValue().equals("1D"))  proba = probabilisticDiffusion1D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
-			else if (filterParam.getValue().equals("2D"))  proba = probabilisticFlooding2D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
+			if (filterParam.getValue().equals("1D"))  proba = probabilisticDiffusion1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
+			else if (filterParam.getValue().equals("2D"))  proba = probabilisticFlooding2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 		} else if  (propagationParam.getValue().equals("growing")) {
-			if (filterParam.getValue().equals("1D"))  proba = regionGrowing1D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
-			else if (filterParam.getValue().equals("2D"))  proba = regionGrowing2D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
+			if (filterParam.getValue().equals("1D"))  proba = regionGrowing1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
+			else if (filterParam.getValue().equals("2D"))  proba = regionGrowing2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 		} else if  (propagationParam.getValue().equals("labeling")) {
-			if (filterParam.getValue().equals("1D"))  proba = regionLabeling1D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
-			else if (filterParam.getValue().equals("2D"))  proba = regionLabeling2D(proba, maxdirection, ngbsize, maxdiff, scale, factor, iter);
+			if (filterParam.getValue().equals("1D"))  proba = regionLabeling1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
+			else if (filterParam.getValue().equals("2D"))  proba = regionLabeling2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 		} 				
 		// Output
 		BasicInfo.displayMessage("...output images\n");
@@ -1617,7 +1623,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		// build a similarity function from aligned neighbors
 		float[][] similarity = new float[ngbsize][nxyz];
 		byte[][] neighbor = new byte[ngbsize][nxyz];
-    		estimateSimpleDiffusionSimilarity1D(dir, proba, ngbsize, neighbor, similarity, angle);
+    	estimateSimpleDiffusionSimilarity1D(dir, proba, ngbsize, neighbor, similarity, angle);
 		
 		// run the diffusion process
 		float[] diffused = new float[nxyz];

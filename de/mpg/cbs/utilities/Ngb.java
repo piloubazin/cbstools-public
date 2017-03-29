@@ -46,6 +46,8 @@ public class Ngb {
 	
 	private static final	float	INVSQRT2 = (float)(1.0/FastMath.sqrt(2.0));
 	private static final	float	INVSQRT3 = (float)(1.0/FastMath.sqrt(3.0));
+	private static final	float	SQRT2 = (float)FastMath.sqrt(2.0);
+	private static final	float	SQRT3 = (float)FastMath.sqrt(3.0);
 
 	public static final int neighborIndex(byte d, int id, int nx, int ny, int nz) {
 		switch (d) {
@@ -77,6 +79,12 @@ public class Ngb {
 			case mXpYmZ	:	return id-1+nx-nx*ny;
 			default		:	return id;
 		}
+	}
+
+	public static final float neighborDistance(byte d) {
+		if (d<6) return 1.0f;
+		else if (d<18) return SQRT2;
+		else return SQRT3;
 	}
 
 	public static final int neighborhoodDifferences6C(double[] sample, float[][][] img, boolean[][][] mask, int x, int y, int z) {
