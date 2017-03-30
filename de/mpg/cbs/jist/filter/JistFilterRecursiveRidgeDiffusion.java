@@ -72,6 +72,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	
 	private ParamVolume filterImage;
 	private ParamVolume probaImage;
+	private ParamVolume propagImage;
 	private ParamVolume scaleImage;
 	private ParamVolume directionImage;
 	private ParamVolume correctImage;
@@ -165,6 +166,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	protected void createOutputParameters(ParamCollection outputParams) {
 		outputParams.add(filterImage = new ParamVolume("Filter response",VoxelType.FLOAT,-1,-1,-1,-1));
 		outputParams.add(probaImage = new ParamVolume("Probability response",VoxelType.FLOAT,-1,-1,-1,-1));
+		outputParams.add(propagImage = new ParamVolume("Propagated response",VoxelType.FLOAT,-1,-1,-1,-1));
 		outputParams.add(scaleImage = new ParamVolume("Detection scale",VoxelType.BYTE,-1,-1,-1,-1));
 		outputParams.add(directionImage = new ParamVolume("Ridge direction",VoxelType.FLOAT,-1,-1,-1,-1));
 		outputParams.add(correctImage = new ParamVolume("Directional correction",VoxelType.FLOAT,-1,-1,-1,-1));
@@ -339,21 +341,27 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 				} else {
 					correction[xyz] = 1.0f;
 				}
-				maxresponse[xyz] *= correction[xyz];
+				//maxresponse[xyz] *= correction[xyz];
+				proba[xyz] *= correction[xyz];
 			}
 		}
 		
 		// mask response with location prior before equalization
 		if (location!=null) {
-			for (int xyz=0;xyz<nxyz;xyz++) maxresponse[xyz] *= location[xyz];
+			//for (int xyz=0;xyz<nxyz;xyz++) maxresponse[xyz] *= location[xyz];
+			for (int xyz=0;xyz<nxyz;xyz++) proba[xyz] *= location[xyz];
 		}
 
-		/* to be done beofre the other prior selection, in order to maintain the noise / response structure?
+		/* to be done before the other prior selection, in order to maintain the noise / response structure?
 		// Equalize histogram (Exp Median)
 		BasicInfo.displayMessage("...normalization into probabilities\n");
 		float[] proba = new float[nxyz];
 		probabilityFromRecursiveRidgeFilter(maxresponse, proba);	
 		*/
+		
+		// rescale the probability response
+		float pmax = ImageStatistics.robustMaximum(proba, 0.0001f, 5, nx, ny, nz);
+		if (pmax>0) for (int xyz=0;xyz<nxyz;xyz++) proba[xyz] = Numerics.min(proba[xyz]/pmax,1.0f);
 		
 		// generate a direction vector
 		float[][] direction = new float[3][nxyz];
@@ -372,24 +380,25 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		int iter = iterParam.getValue().intValue();
 		float maxdiff = maxdiffParam.getValue().floatValue();
 		
+		float[] propag = new float[nxyz];
 		if (propagationParam.getValue().equals("SUR")) {
-			if (filterParam.getValue().equals("1D"))  proba = spatialUncertaintyRelaxation1D(proba, maxdirection, ngbsize, simscale, difffactor, iter);
-			else if (filterParam.getValue().equals("2D"))  proba = spatialUncertaintyRelaxation2D(proba, maxdirection, ngbsize, simscale, difffactor, iter);
+			if (filterParam.getValue().equals("1D"))  propag = spatialUncertaintyRelaxation1D(proba, maxdirection, ngbsize, simscale, difffactor, iter);
+			else if (filterParam.getValue().equals("2D"))  propag = spatialUncertaintyRelaxation2D(proba, maxdirection, ngbsize, simscale, difffactor, iter);
 		} else if  (propagationParam.getValue().equals("diffusion")) {
-			if (filterParam.getValue().equals("1D"))  proba = probabilisticDiffusion1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
-			else if (filterParam.getValue().equals("2D"))  proba = probabilisticDiffusion2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
+			if (filterParam.getValue().equals("1D"))  propag = probabilisticDiffusion1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
+			else if (filterParam.getValue().equals("2D"))  propag = probabilisticDiffusion2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 		} else if  (propagationParam.getValue().equals("belief")) {
-			if (filterParam.getValue().equals("1D"))  proba = beliefPropagation1D(proba, maxdirection, ngbsize, simscale, iter, maxdiff);
-			else if (filterParam.getValue().equals("2D"))  proba = beliefPropagation2D(proba, maxdirection, ngbsize, simscale, iter, maxdiff);
+			if (filterParam.getValue().equals("1D"))  propag = beliefPropagation1D(proba, maxdirection, ngbsize, simscale, iter, maxdiff);
+			else if (filterParam.getValue().equals("2D"))  propag = beliefPropagation2D(proba, maxdirection, ngbsize, simscale, iter, maxdiff);
 		} else if  (propagationParam.getValue().equals("flooding")) {
-			if (filterParam.getValue().equals("1D"))  proba = probabilisticDiffusion1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
-			else if (filterParam.getValue().equals("2D"))  proba = probabilisticFlooding2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
+			if (filterParam.getValue().equals("1D"))  propag = probabilisticDiffusion1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
+			else if (filterParam.getValue().equals("2D"))  propag = probabilisticFlooding2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 		} else if  (propagationParam.getValue().equals("growing")) {
-			if (filterParam.getValue().equals("1D"))  proba = regionGrowing1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
-			else if (filterParam.getValue().equals("2D"))  proba = regionGrowing2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
+			if (filterParam.getValue().equals("1D"))  propag = regionGrowing1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
+			else if (filterParam.getValue().equals("2D"))  propag = regionGrowing2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 		} else if  (propagationParam.getValue().equals("labeling")) {
-			if (filterParam.getValue().equals("1D"))  proba = regionLabeling1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
-			else if (filterParam.getValue().equals("2D"))  proba = regionLabeling2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
+			if (filterParam.getValue().equals("1D"))  propag = regionLabeling1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
+			else if (filterParam.getValue().equals("2D"))  propag = regionLabeling2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 		} 				
 		// Output
 		BasicInfo.displayMessage("...output images\n");
@@ -418,6 +427,16 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		resData.setHeader(outheader);
 		resData.setName(outname+"_proba");
 		probaImage.setValue(resData);
+		
+		result = new float[nx][ny][nz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int id = x + nx*y + nx*ny*z;
+			result[x][y][z] = propag[id];
+		}					
+		resData = new ImageDataFloat(result);	
+		resData.setHeader(outheader);
+		resData.setName(outname+"_propag");
+		propagImage.setValue(resData);
 		
 		byte[][][] resultb = new byte[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
