@@ -82,7 +82,7 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 		//inputParams.add(imageParams);
 			
 		inputParams.setPackage("CBS Tools");
-		inputParams.setCategory("Laminar Analysis");
+		inputParams.setCategory("Laminar Analysis.devel");
 		inputParams.setLabel("ROI Spatial GLM");
 		inputParams.setName("ROISpatialGLM");
 
@@ -157,11 +157,14 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 			int[] roilabels = Interface.getIntegerImage3D(roiImage);
 			roilist = ObjectLabeling.listLabels(roilabels, nx, ny, nz);
 			for (int r=0;r<roilist.length;r++) if (roilist[r]>0) nroi++;
+			System.out.println("number of ROIs found: "+nroi+" ("+roilist.length+")\n");
 			rois = new boolean[nroi][nxyz];
-			for (int r=0;r<nroi;r++) if (roilist[r]>0) {
+			int rp=0;
+			for (int r=0;r<roilist.length;r++) if (roilist[r]>0) {
 				for (int xyz=0;xyz<nxyz;xyz++) {
-					rois[r][xyz] = (ctxmask[xyz] && roilabels[xyz]==roilist[r]);
+					rois[rp][xyz] = (ctxmask[xyz] && roilabels[xyz]==roilist[r]);
 				}
+				rp++;
 			}
 			roilabels = null;
 		}
@@ -198,15 +201,19 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 		for (int r=0;r<nroi;r++) {
 			int nsample = 0;
 			for (int xyz=0;xyz<nxyz;xyz++) if (rois[r][xyz]) nsample++;
+			System.out.println("ROI "+(r+1)+": "+nsample+" samples\n");
 			
-			double[][] glm = new double[nlayers][nsample];
+			// GLM*VAL = SAMPLES
+			// nsamples x layers * nlayers x nt = nsamples x nt
+			double[][] glm = new double[nsample][nlayers];
 			double[][] samples = new double[nsample][nt];
 			
 			int n=0;
 			for (int xyz=0;xyz<nxyz;xyz++) if (rois[r][xyz]) {
 				// different version for bold integration
-				for (int l=0;l<nlayers;l++) glm[l][n] = (pvol[l+1][xyz]-pvol[l][xyz]);
+				for (int l=0;l<nlayers;l++) glm[n][l] = Numerics.max(pvol[l+1][xyz]-pvol[l][xyz],0.0f);
 				for (int t=0;t<nt;t++) samples[n][t] = data[xyz+nxyz*t];
+				n++;
 			}
 			// invert the linear model
 			Matrix mtx = new Matrix(glm);
@@ -227,7 +234,7 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 		for (int xyz=0;xyz<nxyz;xyz++) if (ctxmask[xyz]) {
 			for (int r=0;r<nroi;r++) if (rois[r][xyz]) {
 				for (int l=0;l<nlayers;l++) {
-					pvolmap[xyz+nxyz*l] =  (pvol[l+1][xyz]-pvol[l][xyz]);
+					pvolmap[xyz+nxyz*l] =  Numerics.max(pvol[l+1][xyz]-pvol[l][xyz], 0.0f);
 					for (int t=0;t<nt;t++) {
 						glmdata[xyz+t*nxyz] += pvolmap[xyz+nxyz*l]*estimates[r][l][t];
 					}

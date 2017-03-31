@@ -17,5 +17,5 @@ PLUGINS=/home/ThisUser/mipav/plugins
 CODE=/home/ThisUser/github/cbstools-public
 
 # mipav command
-$JAVAC -classpath $CODE:$JAVALIB/*:$MIPAV:$MIPAV/lib/*:$PLUGINS:$PLUGINS/library/* -server -g -O -deprecation -encoding UTF-8 $CODE/de/mpg/cbs/*/*.java $CODE/de/mpg/cbs/core/*/*.java $CODE/de/mpg/cbs/jist/*/*.java $CODE/edu/jhu/ece/iacl/jist/*/*.java
+$JAVAC -classpath $CODE:$CODE/lib/*:$JAVALIB/*:$MIPAV:$MIPAV/lib/*:$PLUGINS:$PLUGINS/library/* -server -g -O -deprecation -encoding UTF-8 $CODE/de/mpg/cbs/*/*.java $CODE/de/mpg/cbs/core/*/*.java $CODE/de/mpg/cbs/jist/*/*.java $CODE/edu/jhu/ece/iacl/jist/*/*.java
 

@@ -14,7 +14,8 @@ public class LaminarProfileSampling {
 	private float[] layersImage;
 	private float[] intensityImage;
 	private byte[] maskImage=null;
-		
+	private String interpParam="linear";	
+	
 	private int nx, ny, nz, nt, nxyz;
 	private float rx, ry, rz;
 
@@ -30,6 +31,7 @@ public class LaminarProfileSampling {
 	public final void setProfileSurfaceImage(float[] val) { layersImage = val; }
 	public final void setIntensityImage(float[] val) { intensityImage = val; }
 	public final void setCortexMask(byte[] val) { maskImage = val; }
+	public final void setInterpolation(String val) { interpParam = val; }
 	
 	public final void setDimensions(int x, int y, int z, int t) { nx=x; ny=y; nz=z; nt=t; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nt=dim[3]; nxyz=nx*ny*nz; }
@@ -82,6 +84,11 @@ public class LaminarProfileSampling {
 		// main algorithm
 		CorticalProfile profile = new CorticalProfile(nlayers, nx, ny, nz, rx, ry, rz);
 		
+		byte LINEAR = 1;
+		byte NEAREST = 2;
+		byte interp = LINEAR;
+		if (interpParam.equals("nearest")) interp = NEAREST;
+		
 		float maskval = 1e13f;
 		float[][][][] mapping = new float[nx][ny][nz][nlayers+1];
 		byte[][][][] mappingmask = new byte[nx][ny][nz][nlayers+1];
@@ -92,9 +99,15 @@ public class LaminarProfileSampling {
 				
 				for (int l=0;l<=nlayers;l++) {
 					// interpolate the contrast
-					mapping[x][y][z][l] = ImageInterpolation.linearInterpolation(intensity, ctxmask, maskval, 
+					if (interp==NEAREST) {
+						mapping[x][y][z][l] = ImageInterpolation.nearestNeighborInterpolation(intensity, ctxmask, maskval, 
 																					profile.getPt(l)[X], profile.getPt(l)[Y], profile.getPt(l)[Z], 
 																					nx, ny, nz);
+					} else {
+						mapping[x][y][z][l] = ImageInterpolation.linearInterpolation(intensity, ctxmask, maskval, 
+																					profile.getPt(l)[X], profile.getPt(l)[Y], profile.getPt(l)[Z], 
+																					nx, ny, nz);
+					}
 					if (mapping[x][y][z][l]==maskval) {
 						mappingmask[x][y][z][l] = (byte)0;
 						mapping[x][y][z][l] = 0.0f;

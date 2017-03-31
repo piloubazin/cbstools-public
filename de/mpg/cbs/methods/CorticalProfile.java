@@ -21,7 +21,7 @@ public class CorticalProfile {
 	private float[][] profile;
 	
 	private int nlayers;
-	private int nx, ny, nz;
+	private int nx, ny, nz, nxyz;
 	private float rx, ry, rz;
 
 	private static final byte X = 0;
@@ -40,6 +40,7 @@ public class CorticalProfile {
 		nx = nx_;
 		ny = ny_;
 		nz = nz_;
+		nxyz = nx*ny*nz;
 		rx = rx_;
 		ry = ry_;
 		rz = rz_;
@@ -151,6 +152,103 @@ public class CorticalProfile {
 		return (float)res;
 	}
 	
+	private final float projectToLevelset(float[] levelset, int offset, float[] pt0, float[] pt) {
+		
+		// best gradient approximation among various choices (most regular)
+		double I = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt0[X], pt0[Y], pt0[Z], nx, ny, nz);
+		double Imx = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt0[X]-1.0f, pt0[Y], pt0[Z], nx, ny, nz);
+		double Ipx = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt0[X]+1.0f, pt0[Y], pt0[Z], nx, ny, nz);
+		double Imy = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt0[X], pt0[Y]-1.0f, pt0[Z], nx, ny, nz);
+		double Ipy = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt0[X], pt0[Y]+1.0f, pt0[Z], nx, ny, nz);
+		double Imz = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt0[X], pt0[Y], pt0[Z]-1.0f, nx, ny, nz);
+		double Ipz = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt0[X], pt0[Y], pt0[Z]+1.0f, nx, ny, nz);
+		
+		//if (Double.isNaN(I) || Double.isNaN(Imx) || Double.isNaN(Ipx) || Double.isNaN(Imy) || Double.isNaN(Ipy) || Double.isNaN(Imz) || Double.isNaN(Ipz))
+		//	System.out.println("NaN: levelset ("+pt0[X]+", "+pt0[Y]+", "+pt0[Z]+")");
+		
+		double length = I;
+
+		double Dx = 0.5*(Ipx-Imx);
+		double Dy = 0.5*(Ipy-Imy);
+		double Dz = 0.5*(Ipz-Imz);
+		
+		double grad = FastMath.sqrt(Dx*Dx + Dy*Dy + Dz*Dz);
+		
+		//if (Double.isNaN(grad)) System.out.println("NaN: gradient ("+Dx+", "+Dy+", "+Dz+")");
+
+		double res = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt0[X], pt0[Y], pt0[Z], nx, ny, nz);
+		
+		int t=0;
+
+		if (grad > 0.01) {
+			// closed form approximation to the closest point on the N-th layer surface 
+			// (accurate if close enough to approximate the surface by a plane)
+			pt[X] = (float)(pt0[X] - length*Dx/grad);
+			pt[Y] = (float)(pt0[Y] - length*Dy/grad);
+			pt[Z] = (float)(pt0[Z] - length*Dz/grad);
+			
+			//if (Float.isNaN(pt[X]) || Float.isNaN(pt[Y]) || Float.isNaN(pt[Z]))
+			//	System.out.println("NaN: coord ("+pt0[X]+","+pt0[Y]+", "+pt0[Z]+"| "+length+"x "+Dx+", "+Dy+", "+Dz+" / "+grad);
+			
+			// correction: go back halfway and recompute gradient, etc: should converge toward the surface
+			// approaches using small steps are not very good (unstable)
+			// approaches doing the full correction from the new solution are not very stable either
+			res = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt[X], pt[Y], pt[Z], nx, ny, nz);
+			while (res*res>0.0001 && t<100 && grad>0.01) {
+				t++;
+				//System.out.print(".");
+				
+				// correction: come back halfway, recompute (going further back does not improve the result)
+				pt[X] = (float)(pt[X] + 0.5*length*Dx/grad);
+				pt[Y] = (float)(pt[Y] + 0.5*length*Dy/grad);
+				pt[Z] = (float)(pt[Z] + 0.5*length*Dz/grad);
+				
+				//if (Float.isNaN(pt[X]) || Float.isNaN(pt[Y]) || Float.isNaN(pt[Z]))
+				//	System.out.println("NaN: coord 0.5 ("+pt[X]+","+pt[Y]+", "+pt[Z]+"| "+length+"x "+Dx+", "+Dy+", "+Dz+" / "+grad);
+			
+				// correction: project once more onto the curve (with / without minimization of distance to origin point)
+				I = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt[X], pt[Y], pt[Z], nx, ny, nz);
+				Imx = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt[X]-1.0f, pt[Y], pt[Z], nx, ny, nz);
+				Ipx = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt[X]+1.0f, pt[Y], pt[Z], nx, ny, nz);
+				Imy = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt[X], pt[Y]-1.0f, pt[Z], nx, ny, nz);
+				Ipy = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt[X], pt[Y]+1.0f, pt[Z], nx, ny, nz);
+				Imz = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt[X], pt[Y], pt[Z]-1.0f, nx, ny, nz);
+				Ipz = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt[X], pt[Y], pt[Z]+1.0f, nx, ny, nz);
+				
+				//if (Double.isNaN(I) || Double.isNaN(Imx) || Double.isNaN(Ipx) || Double.isNaN(Imy) || Double.isNaN(Ipy) || Double.isNaN(Imz) || Double.isNaN(Ipz))
+				//	System.out.println("NaN: levelset ("+pt[X]+", "+pt[Y]+", "+pt[Z]+")");
+
+				length = I;
+				Dx = 0.5*(Ipx-Imx);
+				Dy = 0.5*(Ipy-Imy);
+				Dz = 0.5*(Ipz-Imz);
+				
+				grad = FastMath.sqrt(Dx*Dx + Dy*Dy + Dz*Dz);
+				//if (Double.isNaN(grad)) System.out.println("NaN: gradient ("+Dx+", "+Dy+", "+Dz+")");
+
+				if (grad > 0.01) {
+					pt[X] = (float)(pt[X] - length*Dx/grad);
+					pt[Y] = (float)(pt[Y] - length*Dy/grad);
+					pt[Z] = (float)(pt[Z] - length*Dz/grad);
+				
+					//if (Float.isNaN(pt[X]) || Float.isNaN(pt[Y]) || Float.isNaN(pt[Z]))
+					//	System.out.println("NaN: coord 2 ("+pt[X]+","+pt[Y]+", "+pt[Z]+"| "+length+"x "+Dx+", "+Dy+", "+Dz+" / "+grad);
+				}
+				res = ImageInterpolation.linearInterpolation(levelset, offset, 0.0f, pt[X], pt[Y], pt[Z], nx, ny, nz);
+			}
+
+		} else {
+			//System.err.print(".");
+			pt[X] = pt0[X];
+			pt[Y] = pt0[Y];
+			pt[Z] = pt0[Z];
+		}
+		mtrial += t;
+		if (t>Mtrial) Mtrial = t;
+		
+		return (float)res;
+	}
+	
 	public final float computeTrajectory(float[][] layers, int x, int y, int z) {
 		int xyz = x + nx*y + nx*ny*z;
 		
@@ -171,6 +269,33 @@ public class CorticalProfile {
 		}
 		for (int l=l1+1;l<=nlayers;l++) {
 			float newres = projectToLevelset(layers[l], profile[l-1], profile[l]);
+			if (newres>res) res = newres;
+		}
+		mtrial /= (nlayers+1);
+		
+		return res;
+	}
+	
+	public final float computeTrajectory(float[] layers, int x, int y, int z) {
+		int xyz = x + nx*y + nx*ny*z;
+		
+		mtrial = 0;
+		Mtrial = 0;
+		
+		// first, find the closest surface to the point
+		int l1=0;
+		for (int l=1;l<=nlayers;l++) {
+			if (Numerics.abs(layers[l*nxyz+xyz]) < Numerics.abs(layers[l1*nxyz+xyz]) ) l1 = l;
+		}
+		// first propagation l1 -> 0
+		float res = projectToLevelset(layers, l1*nxyz, new float[]{x,y,z}, profile[l1]);
+
+		for (int l=l1-1;l>=0;l--) {
+			float newres = projectToLevelset(layers, l*nxyz, profile[l+1], profile[l]);
+			if (newres>res) res = newres;
+		}
+		for (int l=l1+1;l<=nlayers;l++) {
+			float newres = projectToLevelset(layers, l*nxyz, profile[l-1], profile[l]);
 			if (newres>res) res = newres;
 		}
 		mtrial /= (nlayers+1);

@@ -38,6 +38,8 @@ public class JistLaminarProfileSampling extends ProcessingAlgorithm {
 	private ParamVolume layersImage;
 	private ParamVolume intensityImage;
 	private ParamVolume maskImage;
+	private ParamOption interpParam;
+	private static final String[] interpTypes = {"linear", "nearest"};
 		
 	private ParamVolume mappedImage;
 	private ParamVolume mappedmaskImage;
@@ -56,6 +58,7 @@ public class JistLaminarProfileSampling extends ProcessingAlgorithm {
 		imageParams.add(intensityImage = new ParamVolume("Intensity Image",null,-1,-1,-1,-1));
 		imageParams.add(maskImage = new ParamVolume("Cortex Mask (opt)",null,-1,-1,-1,-1));
 		maskImage.setMandatory(false);
+		imageParams.add(interpParam = new ParamOption("Interpolation", interpTypes));
 		
 		inputParams.add(imageParams);
 			
@@ -105,6 +108,7 @@ public class JistLaminarProfileSampling extends ProcessingAlgorithm {
 		algorithm.setDimensions(dims);
 		algorithm.setResolutions(res);
 
+		algorithm.setInterpolation(interpParam.getValue());
 		algorithm.execute();
 		
 		// output

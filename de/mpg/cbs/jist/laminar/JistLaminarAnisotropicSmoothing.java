@@ -85,7 +85,7 @@ public class JistLaminarAnisotropicSmoothing extends ProcessingAlgorithm {
 		//inputParams.add(imageParams);
 			
 		inputParams.setPackage("CBS Tools");
-		inputParams.setCategory("Laminar Analysis");
+		inputParams.setCategory("Laminar Analysis.devel");
 		inputParams.setLabel("Anisotropic Smoothing");
 		inputParams.setName("AnisotropicSmoothing");
 

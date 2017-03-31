@@ -206,6 +206,24 @@ public class ImageInterpolation {
 	/**
 	 *	linear interpolation, with given value outside the image
 	 */
+	public static float nearestNeighborInterpolation(float[] image, boolean[] mask, float zero, float x, float y, float z, int nx, int ny, int nz) {
+		int x0,y0,z0;
+		
+        // if out of boundary, replace all with zero
+        if ( (x<0) || (x>nx-1) || (y<0) || (y>ny-1) || (z<0) || (z>nz-1) ) {
+			return zero;
+        }
+		
+		x0 = Numerics.round(x);
+		y0 = Numerics.round(y);
+		z0 = Numerics.round(z);
+
+		if (mask[x0+nx*y0+nx*ny*z0]) return image[x0+nx*y0+nx*ny*z0];
+		else return zero;
+	}
+	/**
+	 *	linear interpolation, with given value outside the image
+	 */
 	public static float[] nearestNeighborInterpolation(float[][] image, float x, float y, float z, int nx, int ny, int nz, int nd) {
 		int x0,y0,z0;
 		float[] val = new float[3];
@@ -471,6 +489,43 @@ public class ImageInterpolation {
 			+ nalpha*beta*gamma*image[xyz0+nx+nx*ny] 
 			+ alpha*nbeta*gamma*image[xyz0+1+nx*ny] 
 			+ alpha*beta*gamma*image[xyz0+1+nx+nx*ny];
+
+		return val;
+	}
+	/**
+	 *	linear interpolation, with value outside the image
+	 */
+	public static float linearInterpolation(float[] image, int offset, float value, float x, float y, float z, int nx, int ny, int nz) {
+		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		int x0,y0,z0;
+
+		x0 = Numerics.floor(x);
+		y0 = Numerics.floor(y);
+		z0 = Numerics.floor(z);
+
+        // if out of boundary, replace all with zero
+        if ( (x0<0) || (x0>nx-2) || (y0<0) || (y0>ny-2) || (z0<0) || (z0>nz-2) ) 
+            return value;
+        
+		alpha = x - x0;
+		nalpha = 1.0f - alpha;
+
+		beta = y - y0;
+		nbeta = 1.0f - beta;
+
+		gamma = z - z0;
+		ngamma = 1.0f - gamma;
+
+		int xyz0 = x0 + y0*nx + z0*nx*ny;
+		
+		val = nalpha*nbeta*ngamma*image[offset+xyz0] 
+			+ alpha*nbeta*ngamma*image[offset+xyz0+1] 
+			+ nalpha*beta*ngamma*image[offset+xyz0+nx] 
+			+ nalpha*nbeta*gamma*image[offset+xyz0+nx*ny] 
+			+ alpha*beta*ngamma*image[offset+xyz0+1+nx] 
+			+ nalpha*beta*gamma*image[offset+xyz0+nx+nx*ny] 
+			+ alpha*nbeta*gamma*image[offset+xyz0+1+nx*ny] 
+			+ alpha*beta*gamma*image[offset+xyz0+1+nx+nx*ny];
 
 		return val;
 	}

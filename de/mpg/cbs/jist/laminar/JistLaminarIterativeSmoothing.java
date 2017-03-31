@@ -60,9 +60,9 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 		inputParams.add(fwhmParam = new ParamDouble("FWHM (mm)", 0.0, 50.0, 5.0));
 		
 		inputParams.setPackage("CBS Tools");
-		inputParams.setCategory("Cortex Processing.devel");
-		inputParams.setLabel("Iterative Cortical Smoothing");
-		inputParams.setName("IterativeCorticalSmoothing");
+		inputParams.setCategory("Laminar Analysis.devel");
+		inputParams.setLabel("Laminar Iterative Smoothing");
+		inputParams.setName("LaminarIterativeSmoothing");
 
 		AlgorithmInformation info = getAlgorithmInformation();
 		info.add(new AlgorithmAuthor("Pierre-Louis Bazin", "bazin@cbs.mpg.de","http://www.cbs.mpg.de/"));
@@ -75,10 +75,10 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 
 
 	protected void createOutputParameters(ParamCollection outputParams) {
-		outputParams.add(smoothDataImage = new ParamVolume("Smoothed Data",VoxelType.FLOAT));
+		outputParams.add(smoothDataImage = new ParamVolume("Smoothed Data",null,-1,-1,-1,-1));
 		
-		outputParams.setName("SmoothedData");
-		outputParams.setLabel("Smoothed Data");
+		outputParams.setName("LaminarSmoothedData");
+		outputParams.setLabel("Laminar Smoothed Data");
 	}
 
 	
@@ -90,8 +90,9 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 		String intensname = Interface.getName(dataImage);
 		ImageHeader header = Interface.getHeader(dataImage);
 		
-		int[] dims = Interface.getDimensions(layersImage);
-		float[] res = Interface.getResolutions(layersImage);
+		int[] dims = Interface.getDimensions(dataImage);
+		float[] res = Interface.getResolutions(dataImage);
+		
 		int nlayers = Interface.getComponents(layersImage)-1;
 		int nxyz = dims[X]*dims[Y]*dims[Z];
 		int nx = dims[X]; int ny = dims[Y]; int nz = dims[Z]; 
@@ -106,6 +107,7 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 		} else {
 			data = Interface.getFloatImage3D(dataImage);
 		}
+		System.out.println("\n data: "+nt);
 		
 		// create a set of ROI masks for all the regions and also outside of the area where layer 1 is > 0 and layer 2 is < 0
 		boolean[] ctxmask = new boolean[nxyz];
@@ -127,13 +129,22 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 			}
 		}
 		
+		// mask size
+		int nctx=0;
+		for (int xyz=0;xyz<nxyz;xyz++) if (ctxmask[xyz]) nctx++;
+		System.out.println("\n cortex mask size: "+nctx+" voxels");
+		System.out.println("\n layers: "+nlayers);
+		
 		// get estimates for partial voluming of each layer
+		System.out.println("\n Define partial volume coefficients");
 		float[][] pvol = new float[nlayers+1][nxyz];
-		for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
-			int xyz = x + nx*y + nx*ny*z;
-			if (ctxmask[xyz]) {
-				for (int l=0;l<=nlayers;l++) {
-					pvol[l][xyz] = fastApproxPartialVolumeFromSurface(x, y, z, layers, l*nxyz, nx, ny, nz);
+		for (int l=0;l<=nlayers;l++) {
+			for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
+				int xyz = x + nx*y + nx*ny*z;
+				if (ctxmask[xyz]) {
+				//System.out.print(".");
+					//pvol[l][xyz] = fastApproxPartialVolumeFromSurface(x, y, z, layers, l*nxyz, nx, ny, nz);
+					pvol[l][xyz] =  Numerics.bounded(0.5f-layers[xyz+l*nxyz],0.0f,1.0f);
 					//else pvol[l][xyz] = partialVolumeFromSurface(x, y, z, layers, l*nxyz, nx, ny, nz);
 				}
 			}
@@ -152,7 +163,8 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 		double layersum = 0.0;
 	
 		for (int itr=0; itr<iterations; itr++) {
-			
+			System.out.println("\n iteration "+(itr+1));
+		
 			// here we assume a linear combination across neighbors and layers
 			// other options could be to keep only the layer with largest pv
 			// note that the smoothing happens only parallel to the layers here
@@ -160,7 +172,7 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 				double sumweight = 0.0;
 				for (int t=0;t<nt;t++) sdata[xyz+nxyz*t] = 0.0f;
 				for (int l=0;l<nlayers;l++) {
-					double pvweight = pvol[l+1][xyz]-pvol[l][xyz];
+					double pvweight = Numerics.max(pvol[l+1][xyz]-pvol[l][xyz],0.0f);
 					if (pvweight>0) {
 						for (int t=0;t<nt;t++) layerval[t] = pvweight*data[xyz+nxyz*t];
 						layersum = pvweight;
@@ -168,7 +180,7 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 							int xyzn = Ngb.neighborIndex(k, xyz, nx, ny, nz);
 							float dw = 1.0f/Ngb.neighborDistance(k);
 							if (ctxmask[xyzn]) {
-								double pv = pvol[l+1][xyzn]-pvol[l][xyzn];
+								double pv = Numerics.max(pvol[l+1][xyzn]-pvol[l][xyzn],0.0f);
 								for (int t=0;t<nt;t++) layerval[t] += pv*weight*dw*data[xyzn+nxyz*t];
 								layersum += pv*weight*dw;
 							}
@@ -186,10 +198,15 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 			}
 		}
 				
-		if (nt>1) Interface.setFloatImage4D(sdata, new int[]{nx,ny,nz}, nt, smoothDataImage, intensname+"_boundary", header);
-		else Interface.setFloatImage3D(sdata, new int[]{nx,ny,nz}, smoothDataImage, intensname+"_boundary", header);
+		System.out.println("\n Output");
+		if (nt>1) Interface.setFloatImage4D(sdata, dims, nt, smoothDataImage, intensname+"_smoothed", header);
+		else Interface.setFloatImage3D(sdata, dims, smoothDataImage, intensname+"_smoothed", header);
+		
+		System.out.println("\n Done");
+		
+		return;
 	}
-	
+	/*
 	float partialVolumeFromSurface(int x0, int y0, int z0, float[] levelset, int offset, int nx, int ny, int nz) {
 		int xyz0 = x0+nx*y0+nx*ny*z0;
 		double phi0 = levelset[xyz0+offset];
@@ -220,5 +237,6 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 
 	float fastApproxPartialVolumeFromSurface(int x0, int y0, int z0, float[] levelset, int offset, int nx, int ny, int nz) {
 		return Numerics.bounded(0.5f-levelset[x0+nx*y0+nx*ny*z0+offset],0.0f,1.0f);
-	}	
+	}
+	*/
 }

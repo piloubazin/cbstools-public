@@ -69,7 +69,7 @@ public class JistLaminarProfileSpatialGLM extends ProcessingAlgorithm {
 		//inputParams.add(imageParams);
 			
 		inputParams.setPackage("CBS Tools");
-		inputParams.setCategory("Laminar Analysis");
+		inputParams.setCategory("Laminar Analysis.devel");
 		inputParams.setLabel("Local Spatial GLM Profile");
 		inputParams.setName("LocalSpatialGLMProfile");
 

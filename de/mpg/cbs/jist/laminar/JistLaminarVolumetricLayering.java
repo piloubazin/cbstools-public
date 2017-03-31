@@ -85,7 +85,7 @@ public class JistLaminarVolumetricLayering extends ProcessingAlgorithm {
 		inputParams.add(imageParams);
 		
 		mainParams=new ParamCollection("Parameters");
-		mainParams.add(layersParam = new ParamInteger("Number of layers", 2, 50, 10)); // min=2, max=100, default=2
+		mainParams.add(layersParam = new ParamInteger("Number of layers", 1, 50, 10)); // min=2, max=100, default=2
 		mainParams.add(iterationParamNarrowBand = new ParamInteger("Max iterations for narrow band evolution", 0, 100000, 500)); 
 		mainParams.add(minimumParamNarrowBand = new ParamDouble("Min change ratio for narrow band evolution", 0, 0.05, 0.0005)); 
 		
