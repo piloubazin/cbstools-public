@@ -85,7 +85,7 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 	protected void execute(CalculationMonitor monitor) throws AlgorithmRuntimeException {
 		
 		// import the image data
-		System.out.println("\n Import data");
+		System.out.println("Import data");
 		
 		String intensname = Interface.getName(dataImage);
 		ImageHeader header = Interface.getHeader(dataImage);
@@ -107,7 +107,7 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 		} else {
 			data = Interface.getFloatImage3D(dataImage);
 		}
-		System.out.println("\n data: "+nt);
+		System.out.println("data: "+nt);
 		
 		// create a set of ROI masks for all the regions and also outside of the area where layer 1 is > 0 and layer 2 is < 0
 		boolean[] ctxmask = new boolean[nxyz];
@@ -132,11 +132,11 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 		// mask size
 		int nctx=0;
 		for (int xyz=0;xyz<nxyz;xyz++) if (ctxmask[xyz]) nctx++;
-		System.out.println("\n cortex mask size: "+nctx+" voxels");
-		System.out.println("\n layers: "+nlayers);
+		System.out.println("cortex mask size: "+nctx+" voxels");
+		System.out.println("layers: "+nlayers);
 		
 		// get estimates for partial voluming of each layer
-		System.out.println("\n Define partial volume coefficients");
+		System.out.println("Define partial volume coefficients");
 		float[][] pvol = new float[nlayers+1][nxyz];
 		for (int l=0;l<=nlayers;l++) {
 			for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
@@ -146,16 +146,20 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 					//pvol[l][xyz] = fastApproxPartialVolumeFromSurface(x, y, z, layers, l*nxyz, nx, ny, nz);
 					pvol[l][xyz] =  Numerics.bounded(0.5f-layers[xyz+l*nxyz],0.0f,1.0f);
 					//else pvol[l][xyz] = partialVolumeFromSurface(x, y, z, layers, l*nxyz, nx, ny, nz);
-				}
-			}
+				}	}
 		}
 		
-		// iterations: number of voxels needed to reach the boundary (currently imprecise)	
-		double sigma = 0.5;
-		float weight = (float) FastMath.exp((double) -(res[0]*res[0])/(2*sigma*sigma));
-		int iterations = (int) FastMath.round(FastMath.pow(fwhmParam.getValue().doubleValue()/(2*FastMath.sqrt(FastMath.log(4.0))), 2)/sigma);
-		System.out.println("\n Number of iterations with sigma = 1: "+iterations);
-		System.out.println("\n Neighbour weight = "+weight);
+		// iterations: number of voxels needed to reach the boundary, assuming that N times G_sigma0 approx. G_sigma1 if sigma1^2 = N sigma0^2 (ok if weight <<1)
+		double sigma0 = 0.5;
+		double sigma1 = fwhmParam.getValue().doubleValue()/res[0]/(2.0*FastMath.sqrt(FastMath.log(4.0)));
+		int iterations = Numerics.ceil( (sigma1*sigma1)/(sigma0*sigma0) );
+		// re-compute sigma0 to be exact
+		sigma0 = sigma1/FastMath.sqrt(iterations);
+		
+		double weight = FastMath.exp(-1.0/(2.0*sigma0*sigma0));
+		System.out.println("Standard deviation (voxels): "+sigma1);
+		System.out.println("Number of iterations (sigma: "+sigma0+"): "+iterations);
+		System.out.println("Neighbour weight = "+weight);
 		
 		// no black & white iterations: the layers are generally too thin
 		float[] sdata = new float[nxyz*nt];
@@ -163,7 +167,7 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 		double layersum = 0.0;
 	
 		for (int itr=0; itr<iterations; itr++) {
-			System.out.println("\n iteration "+(itr+1));
+			//System.out.println("iteration "+(itr+1));
 		
 			// here we assume a linear combination across neighbors and layers
 			// other options could be to keep only the layer with largest pv
@@ -198,11 +202,11 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 			}
 		}
 				
-		System.out.println("\n Output");
+		System.out.println("Output");
 		if (nt>1) Interface.setFloatImage4D(sdata, dims, nt, smoothDataImage, intensname+"_smoothed", header);
 		else Interface.setFloatImage3D(sdata, dims, smoothDataImage, intensname+"_smoothed", header);
 		
-		System.out.println("\n Done");
+		System.out.println("Done");
 		
 		return;
 	}

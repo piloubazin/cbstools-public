@@ -97,7 +97,7 @@ public class JistLaminarProfileParcels extends ProcessingAlgorithm {
 	protected void execute(CalculationMonitor monitor){
 		
 		// import the image data into 1D arrays : TO DO
-		System.out.println("\n Import data");
+		System.out.println("Import data");
 		
 		String name = Interface.getName(layersImage);
 		ImageHeader header = Interface.getHeader(layersImage);
@@ -122,12 +122,23 @@ public class JistLaminarProfileParcels extends ProcessingAlgorithm {
 			byte[] mask = Interface.getUByteImage3D(maskImage);
 			for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]==0) ctxmask[xyz] = false;
 		}
-				
+		
+		// find if we risk reaching an image boundary
+		boolean checkBoundaries = false;
+		int bdist = 3;
+		for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z=0; z<nz; z++) {
+			int xyz = x + nx*y + nx*ny*z;
+			if (ctxmask[xyz]) {
+				if (x<bdist || x>=nx-bdist || y<bdist || y>=bdist || z<bdist || z>=bdist) checkBoundaries = true;
+			}
+		}
+		if (checkBoundaries) System.out.println("systematically check for image boundaries");
+		
 		// main algorithm
 		float delta = paramExtent.getValue().floatValue()/Numerics.min(rx,ry,rz);
 		float thickness = 10.0f/Numerics.min(rx,ry,rz);
 		
-		System.out.println("\n Define parcels (size: "+delta+")\n");
+		System.out.println("Define parcels (size: "+delta+")\n");
 		/*
 		CorticalProfile profile = new CorticalProfile(nlayers, nx, ny, nz, rx, ry, rz);
 		
@@ -169,8 +180,8 @@ public class JistLaminarProfileParcels extends ProcessingAlgorithm {
 		// 1. estimate the number of needed parcels from voxel coverage of middle layer(s) in cubes of +/- delta in size
 		int zero = Numerics.ceil(delta);
 		int step = 2*zero;
-		System.out.println("\n spacing: "+step);
-		System.out.println("\n max labels: "+nxyz/(step*step*step));
+		System.out.println("spacing: "+step);
+		System.out.println("max labels: "+nxyz/(step*step*step));
 		
 		BitSet sampled = new BitSet(nx*ny*nz);
 		for (int x=zero; x<nx-zero; x+=step) for (int y=zero; y<ny-zero; y+=step) for (int z=zero; z<nz-zero; z+=step) {
@@ -202,8 +213,9 @@ public class JistLaminarProfileParcels extends ProcessingAlgorithm {
 		
 		int nctx = 0;
 		for (int xyz=0;xyz<nx*ny*nz;xyz++) if (ctxmask[xyz]) nctx++;
-		System.out.println("\n cortex mask size: "+nctx+" voxels");
-		System.out.println("\n layers: "+nlayers);
+		System.out.println("cortex mask size: "+nctx+" voxels");
+		System.out.println("layers: "+nlayers);
+		System.out.flush();
 		
 		BinaryHeapPair heap = new BinaryHeapPair(nctx, BinaryHeapPair.MINTREE);
 		
@@ -212,6 +224,7 @@ public class JistLaminarProfileParcels extends ProcessingAlgorithm {
 			// get the next non-zero value
 			idx = sampled.nextSetBit(idx+1);
 		
+			/*
 			int zs = Numerics.floor(idx/(nx*ny));
 			int ys = Numerics.floor((idx-nx*ny*zs)/nx);
 			int xs = idx-nx*ys-nx*ny*zs;
@@ -224,7 +237,8 @@ public class JistLaminarProfileParcels extends ProcessingAlgorithm {
 				int xyzs = Numerics.round(profile.getPt(l)[X]) + nx*Numerics.round(profile.getPt(l)[Y]) + nx*ny*Numerics.round(profile.getPt(l)[Z]);
 				if (ctxmask[xyzs]) heap.addValue(0.0f,xyzs,(n+1));
 			}
-			
+			*/
+			heap.addValue(0.0f,idx,(n+1));
 		}
 		
 		// grow all the heap points until fully sampled
@@ -238,10 +252,12 @@ public class JistLaminarProfileParcels extends ProcessingAlgorithm {
 			
 			// for points selected multiple times
 			if (!sampled.get(xyz)) {
+				//System.out.print(".");
 				// add to sampled values
 				parcels[xyz] = lb;
 				distance[xyz] = curdist;
 				sampled.set(xyz);
+				/*
 				for (byte d=0;d<26;d++) {
 					int ngb = Ngb.neighborIndex(d,xyz,nx,ny,nz);
 					int zn = Numerics.floor(ngb/(nx*ny));
@@ -255,8 +271,65 @@ public class JistLaminarProfileParcels extends ProcessingAlgorithm {
 							heap.addValue(newdist, ngb, lb);
 						}
 					}
+				}*/
+				// add full profile to sampled values
+				int zs = Numerics.floor(xyz/(nx*ny));
+				int ys = Numerics.floor((xyz-nx*ny*zs)/nx);
+				int xs = xyz-nx*ys-nx*ny*zs;
+			
+				// compute profile centered on point of interest
+				profile.computeTrajectory(layers, xs, ys, zs);
+		
+				// add the underlying voxels to the labelled region
+				for (int l=0;l<=nlayers;l++) {
+					int xyzs = Numerics.round(profile.getPt(l)[X]) + nx*Numerics.round(profile.getPt(l)[Y]) + nx*ny*Numerics.round(profile.getPt(l)[Z]);
+					if (checkBoundaries) {
+						int zn = Numerics.floor(xyzs/(nx*ny));
+						int yn = Numerics.floor((xyzs-nx*ny*zn)/nx);
+						int xn = xyzs-nx*yn-nx*ny*zn;
+						if (xn>=0 && xn<nx && yn>=0 && yn<ny && zn>=0 && zn<nz) {
+							if (ctxmask[xyzs] && !sampled.get(xyzs)) {
+								parcels[xyzs] = lb;
+								distance[xyzs] = curdist;
+								sampled.set(xyzs);
+							}
+						}
+					} else {
+						if (ctxmask[xyzs] && !sampled.get(xyzs)) {
+							parcels[xyzs] = lb;
+							distance[xyzs] = curdist;
+							sampled.set(xyzs);
+						}
+					}
 				}
 				
+				// add neighbors, prefer ones further from boundaries
+				for (byte d=0;d<26;d++) {
+					int ngb = Ngb.neighborIndex(d,xyz,nx,ny,nz);
+					if (checkBoundaries) {
+						int zn = Numerics.floor(ngb/(nx*ny));
+						int yn = Numerics.floor((ngb-nx*ny*zn)/nx);
+						int xn = ngb-nx*yn-nx*ny*zn;
+						if (xn>=0 && xn<nx && yn>=0 && yn<ny && zn>=0 && zn<nz) {
+							if (!sampled.get(ngb) && ctxmask[ngb]) {
+								// add to the tree no matter what (guarantees to fill the brain with labels)
+								float newdist = curdist+Ngb.neighborDistance(d)+Numerics.abs(layers[ngb+nlayers*nxyz]-layers[ngb])/Numerics.max(0.1f,layers[ngb+nlayers*nxyz]-layers[ngb]);
+								//float newdist = curdist+Ngb.neighborDistance(d);
+								//if (newdist<delta) 
+								heap.addValue(newdist, ngb, lb);
+							}
+						}
+					} else {
+						if (!sampled.get(ngb) && ctxmask[ngb]) {
+							// add to the tree no matter what (guarantees to fill the brain with labels)
+							float newdist = curdist+Ngb.neighborDistance(d)+Numerics.abs(layers[ngb+nlayers*nxyz]-layers[ngb])/Numerics.max(0.1f,layers[ngb+nlayers*nxyz]-layers[ngb]);
+							//float newdist = curdist+Ngb.neighborDistance(d);
+							//if (newdist<delta) 
+							heap.addValue(newdist, ngb, lb);
+						}
+					}
+				}
+
 			}
 		}
 
