@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<ExtModuleXML>
+<ModuleName>N4Correction</ModuleName>
+<ModuleScriptFile>/SCR/mipav/jist-ext-modules/N4Correction.sh</ModuleScriptFile>
+<ConvertInputImgsToType>nii</ConvertInputImgsToType>
+<InputParams>
+<Param>
+<ParamName>Input Image</ParamName>
+<ParamType>VOLUME</ParamType>
+</Param>
+<Param>
+<ParamName>Shrink Factor</ParamName>
+<ParamType>INTEGER</ParamType>
+<InputDefault>4</InputDefault>
+</Param>
+</InputParams>
+<OutputParams>
+<Param>
+<ParamName>Corrected Result</ParamName>
+<ParamType>VOLUME</ParamType>
+<OutputFileName>Corrected.nii</OutputFileName>
+</Param>
+<Param>
+<ParamName>Bias Field</ParamName>
+<ParamType>VOLUME</ParamType>
+<OutputFileName>BiasField.nii</OutputFileName>
+</Param>
+</OutputParams>
+</ExtModuleXML>

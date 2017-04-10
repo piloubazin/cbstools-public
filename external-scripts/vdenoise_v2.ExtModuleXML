@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<ExtModuleXML>
+<ModuleName>vDenoise</ModuleName>
+<ModuleScriptFile>/SCR/mipav/jist-ext-modules/vdenoise_v2.sh</ModuleScriptFile>
+<ConvertInputImgsToType>nii</ConvertInputImgsToType>
+<InputParams>
+<Param>
+<ParamName>Input Image</ParamName>
+<ParamType>VOLUME</ParamType>
+</Param>
+<Param>
+<ParamName>Filtering level</ParamName>
+<ParamType>DOUBLE</ParamType>
+<InputDefault>0.5</InputDefault>
+</Param>
+<Param>
+<ParamName>Speckle reduction iterations</ParamName>
+<ParamType>INTEGER</ParamType>
+<InputDefault>5</InputDefault>
+</Param>
+</InputParams>
+<OutputParams>
+<Param>
+<ParamName>Denoised Image</ParamName>
+<ParamType>VOLUME</ParamType>
+<OutputFileName>::Input Image::_vdenoise.nii</OutputFileName>
+</Param>
+</OutputParams>
+</ExtModuleXML>
