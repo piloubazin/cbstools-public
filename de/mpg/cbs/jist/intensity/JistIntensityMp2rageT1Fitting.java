@@ -3,7 +3,7 @@ package de.mpg.cbs.jist.intensity;
 import edu.jhu.ece.iacl.jist.pipeline.AlgorithmRuntimeException;
 import edu.jhu.ece.iacl.jist.pipeline.CalculationMonitor;
 import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
@@ -27,34 +27,52 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 	private IntensityMp2rageT1Fitting algorithm;
 	
 	// jist containers
-	private ParamVolume inv1Image;
-	private ParamVolume inv2Image;
-	private ParamFloat repetitionTimeParam;
-	private ParamFloat inversionTime1Param;
-	private ParamFloat inversionTime2Param;
-	private ParamFloat flipAngle1Param;
-	private ParamFloat flipAngle2Param;
+	private ParamCollection	imgParam;
+	private ParamCollection	mrParam;
+	private ParamCollection scaleParam;
+	
+	private ParamVolume 	inv1Image;
+	private ParamVolume 	inv2Image;
+	private ParamFloat 		invertRepTimeParam;
+	private ParamFloat 		exciteRepTimeParam;
+	private ParamInteger 	exciteNumberParam;
+	private ParamFloat 		inversionTime1Param;
+	private ParamFloat 		inversionTime2Param;
+	private ParamFloat 		flipAngle1Param;
+	private ParamFloat 		flipAngle2Param;
+	private ParamFloat 		invertEffParam;
 	//private ParamOption methodParam;
 	
 	private ParamVolume uniformImage;
 	private ParamVolume t1mapImage;
 	private ParamVolume relativeSnrImage;
+	private ParamVolume lutImage;
+	private ParamVolume invlutImage;
 	
 	// parameters
 	//private		static final String[]	methods = IntensityMp2rageT1Fitting.methods;
 	//private		String		method = "normal";
 	
 	protected void createInputParameters(ParamCollection inputParams) {
-		inputParams.add(inv1Image = new ParamVolume("First Inversion Image"));
-		inputParams.add(inv2Image = new ParamVolume("Second Inversion Image"));
 		
-		inputParams.add(repetitionTimeParam = new ParamFloat("Repetition time (TR)", 0.0f, 10000.0f, 1.0f));
-		inputParams.add(inversionTime1Param = new ParamFloat("First inversion time (TI1)", 0.0f, 10000.0f, 1.0f));
-		inputParams.add(inversionTime2Param = new ParamFloat("Second inversion time (TI2)", 0.0f, 10000.0f, 1.0f));
-		inputParams.add(flipAngle1Param = new ParamFloat("First flip angle (deg)", 0.0f, 180.0f, 1.0f));
-		inputParams.add(flipAngle2Param = new ParamFloat("Second flip angle (deg)", 0.0f, 180.0f, 1.0f));
+		imgParam = new ParamCollection("images");
+		imgParam.add(inv1Image = new ParamVolume("First Inversion Image (4D:mag+phs)"));
+		imgParam.add(inv2Image = new ParamVolume("Second Inversion Image (4D:mag+phs)"));
+		inputParams.add(imgParam);
 		
-		algorithm = new IntensityMp2ragerT1Fitting();
+		mrParam = new ParamCollection("MR parameters");
+		mrParam.add(inversionTime1Param = new ParamFloat("First inversion time (sec)", 0.0f, 10000.0f, 0.8f));
+		mrParam.add(inversionTime2Param = new ParamFloat("Second inversion time (sec)", 0.0f, 10000.0f, 2.7f));
+		mrParam.add(flipAngle1Param = new ParamFloat("First flip angle (deg)", 0.0f, 180.0f, 7.0f));
+		mrParam.add(flipAngle2Param = new ParamFloat("Second flip angle (deg)", 0.0f, 180.0f, 5.0f));
+		mrParam.add(invertEffParam = new ParamFloat("Inversion efficiency", 0.0f, 1.0f, 0.96f));
+		
+		mrParam.add(invertRepTimeParam = new ParamFloat("Inversion repetition time (sec)", 0.0f, 10000.0f, 5.5f));
+		mrParam.add(exciteRepTimeParam = new ParamFloat("Excitation repetition time (sec)", 0.0f, 10000.0f, 0.0062f));
+		mrParam.add(exciteNumberParam = new ParamInteger("Number of excitations", 0, 10000, 160));
+		inputParams.add(mrParam);
+		
+		algorithm = new IntensityMp2rageT1Fitting();
 		
 		inputParams.setPackage(algorithm.getPackage());
 		inputParams.setCategory(algorithm.getCategory());
@@ -77,6 +95,9 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 		outputParams.add(t1mapImage = new ParamVolume("Quantitative T1 map Image",VoxelType.FLOAT));
 		outputParams.add(relativeSnrImage = new ParamVolume("SNR Ratio Image",VoxelType.FLOAT));
 		
+		//outputParams.add(lutImage = new ParamVolume("T1 LUT Image",VoxelType.FLOAT));
+		//outputParams.add(invlutImage = new ParamVolume("UNI LUT Image",VoxelType.FLOAT));
+		
 		outputParams.setName("reconstructed images");
 		outputParams.setLabel("reconstructed images");
 	}
@@ -94,22 +115,29 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 		
 		algorithm.setFirstInversionImage(Interface.getFloatImage4D(inv1Image));
 		algorithm.setSecondInversionImage(Interface.getFloatImage4D(inv2Image));
-		if (Interface.isValid(maskImage)) algorithm.setInputMask(Interface.getUByteImage3D(maskImage));
 		
 		algorithm.setDimensions(dims);
 		algorithm.setResolutions(res);
 
-		algorithm.setRepetitionTime(repetitionTime1Param.getValue().floatValue());
 		algorithm.setFirstInversionTime(inversionTime1Param.getValue().floatValue());
 		algorithm.setSecondInversionTime(inversionTime2Param.getValue().floatValue());
 		algorithm.setFirstFlipAngle(flipAngle1Param.getValue().floatValue());
 		algorithm.setSecondFlipAngle(flipAngle2Param.getValue().floatValue());
+		algorithm.setInversionEfficiency(invertEffParam.getValue().floatValue());
+		
+		algorithm.setInversionRepetitionTime(invertRepTimeParam.getValue().floatValue());
+		algorithm.setExcitationRepetitionTime(exciteRepTimeParam.getValue().floatValue());
+		algorithm.setNumberExcitations(exciteNumberParam.getValue().intValue());
 		
 		algorithm.execute();
 
 		Interface.setFloatImage3D(algorithm.getUniformT1weightedImage(), dims, uniformImage, name+"_uni", header);
 		Interface.setFloatImage3D(algorithm.getQuantitativeT1mapImage(), dims, t1mapImage, name+"_qt1", header);
 		Interface.setFloatImage3D(algorithm.getRelativeSnrImage(), dims, relativeSnrImage, name+"_snr", header);
+		
+		//Interface.setFloatImage2D(algorithm.generateT1LookupImage(), new int[]{200,200}, lutImage, name+"_lut", header);
+		//Interface.setFloatImage2D(algorithm.generateUniLookupImage(), new int[]{200,200}, invlutImage, name+"_invlut", header);
+		
 	}
 
 

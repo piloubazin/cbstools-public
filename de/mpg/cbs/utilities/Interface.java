@@ -26,6 +26,7 @@ import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataByte;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataInt;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
+import edu.jhu.ece.iacl.jist.structures.image.ImageDataDouble;
 import edu.jhu.ece.iacl.jist.structures.image.VoxelType;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.geom.EmbeddedSurface;
@@ -676,4 +677,46 @@ public class Interface {
 		
 		return;
 	}
+
+
+	// outputs
+	public static final void setFloatImage2D(float[] image, int[] dimensions, ParamVolume container, String name, ImageHeader header) {
+		int nx = dimensions[0];
+		int ny = dimensions[1];
+		//int nxyz = nx*ny*nz;
+		
+		float[][] buffer = new float[nx][ny];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) {
+			int xyz = x+nx*y;
+			buffer[x][y] = image[xyz];
+		}
+		
+		ImageDataFloat bufferData = new ImageDataFloat(buffer);
+		bufferData.setHeader(header);
+		bufferData.setName(name);
+		container.setValue(bufferData);
+		
+		return;
+	}
+	// outputs
+	public static final void setDoubleImage2D(double[] image, int[] dimensions, ParamVolume container, String name, ImageHeader header) {
+		int nx = dimensions[0];
+		int ny = dimensions[1];
+		//int nxyz = nx*ny*nz;
+		
+		double[][] buffer = new double[nx][ny];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) {
+			int xyz = x+nx*y;
+			buffer[x][y] = image[xyz];
+		}
+		
+		ImageDataDouble bufferData = new ImageDataDouble(buffer);
+		bufferData.setHeader(header);
+		bufferData.setName(name);
+		container.setValue(bufferData);
+		
+		return;
+	}
+	
+
 }
