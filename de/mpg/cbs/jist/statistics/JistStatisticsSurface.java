@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurface;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 
@@ -249,13 +249,13 @@ public class JistStatisticsSurface extends ProcessingAlgorithm {
 		
 					for (int n=0;n<nlabels;n++) {
 						if (segList[p1]==lbid[n]) {
-							surface[n] += area/3.0;
+							surface[n] += area/3.0f;
 						}
 						if (segList[p2]==lbid[n]) {
-							surface[n] += area/3.0;
+							surface[n] += area/3.0f;
 						}
 						if (segList[p3]==lbid[n]) {
-							surface[n] += area/3.0;
+							surface[n] += area/3.0f;
 						}
 					}
 					/* does not include borders
@@ -286,13 +286,13 @@ public class JistStatisticsSurface extends ProcessingAlgorithm {
 		
 					for (int n=0;n<nlabels;n++) {
 						if (segList[p1]==lbid[n]) {
-							surface[n] += area/3.0;
+							surface[n] += area/3.0f;
 						}
 						if (segList[p2]==lbid[n]) {
-							surface[n] += area/3.0;
+							surface[n] += area/3.0f;
 						}
 						if (segList[p3]==lbid[n]) {
-							surface[n] += area/3.0;
+							surface[n] += area/3.0f;
 						}
 					}
 					/* does not include borders

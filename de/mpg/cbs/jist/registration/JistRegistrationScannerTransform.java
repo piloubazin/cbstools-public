@@ -12,7 +12,7 @@ import edu.jhu.ece.iacl.jist.pipeline.DevelopmentStatus;
 import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamMatrix;
@@ -318,8 +318,8 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
 		int x0 = 0, y0 = 0, z0 = 0;
 		if (scannerBoolean.getValue()) {
 			// 1. find image extents from deformed ones	
-			Matrix spt = new Matrix(4,1, 0.0); spt.set(3,0, 1);
-			Matrix tpt = new Matrix(4,1, 0.0); tpt.set(3,0, 1);
+			Matrix spt = new Matrix(4,1, 0.0f); spt.set(3,0, 1);
+			Matrix tpt = new Matrix(4,1, 0.0f); tpt.set(3,0, 1);
 			Matrix pt = null;
 			
 			// source bounding box
@@ -458,7 +458,7 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
 			float[][][] mapdtrg = new float[nsx][nsy][nsz];
 			
 			// 2. map everything
-			Matrix pt = new Matrix(4,1, 0.0);
+			Matrix pt = new Matrix(4,1, 0.0f);
 			for (int x=0;x<ntx;x++) for (int y=0;y<nty;y++) for (int z=0;z<ntz;z++) {
 				pt.set(0,0, x);
 				pt.set(1,0, y);
@@ -499,9 +499,9 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
 			// modify the inverse, then re-invert
 			
 			// convolve the x0,y0,z0 vector before changing anything
-			Matrix pt = new Matrix(4,1, 0.0); pt.set(3,0, 1);
-			Matrix spt = new Matrix(4,1, 0.0); spt.set(3,0, 1);
-			Matrix tpt = new Matrix(4,1, 0.0); tpt.set(3,0, 1);
+			Matrix pt = new Matrix(4,1, 0.0f); pt.set(3,0, 1);
+			Matrix spt = new Matrix(4,1, 0.0f); spt.set(3,0, 1);
+			Matrix tpt = new Matrix(4,1, 0.0f); tpt.set(3,0, 1);
 			
 			pt.set(0,0, x0);
 			pt.set(1,0, y0);
@@ -575,7 +575,7 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
         axisOrientation[0] = FileInfoBase.ORI_UNKNOWN_TYPE;
         val = Math.sqrt((xi * xi) + (yi * yi) + (zi * zi));
 
-        if (val == 0.0) {
+        if (val == 0.0f) {
             return axisOrientation; /* stupid input */
         }
 
@@ -587,7 +587,7 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
 
         val = Math.sqrt((xj * xj) + (yj * yj) + (zj * zj));
 
-        if (val == 0.0) {
+        if (val == 0.0f) {
             return axisOrientation; /* stupid input */
         }
 
@@ -605,7 +605,7 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
             zj -= val * zi;
             val = Math.sqrt((xj * xj) + (yj * yj) + (zj * zj)); /* must renormalize */
 
-            if (val == 0.0) {
+            if (val == 0.0f) {
                 return axisOrientation; /* j was parallel to i? */
             }
 
@@ -618,7 +618,7 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
 
         val = Math.sqrt((xk * xk) + (yk * yk) + (zk * zk));
 
-        if (val == 0.0) {
+        if (val == 0.0f) {
             xk = (yi * zj) - (zi * yj);
             yk = (zi * xj) - (zj * xi);
             zk = (xi * yj) - (yi * xj);
@@ -638,7 +638,7 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
             zk -= val * zi;
             val = Math.sqrt((xk * xk) + (yk * yk) + (zk * zk));
 
-            if (val == 0.0) {
+            if (val == 0.0f) {
                 return axisOrientation; /* bad */
             }
 
@@ -657,7 +657,7 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
             zk -= val * zj;
             val = Math.sqrt((xk * xk) + (yk * yk) + (zk * zk));
 
-            if (val == 0.0) {
+            if (val == 0.0f) {
                 return axisOrientation; /* bad */
             }
 
@@ -682,8 +682,8 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
 
         detQ = Q.det();
 
-        if (detQ == 0.0) {
-            Interface.displayError("detQ == 0.0 in getAxisOrientation");
+        if (detQ == 0.0f) {
+            Interface.displayError("detQ == 0.0f in getAxisOrientation");
 
             return axisOrientation;
         }
@@ -696,7 +696,7 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
         /* Despite the formidable looking 6 nested loops, there are
          *only 3*3*3*2*2*2 = 216 passes, which will run very quickly. */
 
-        vbest = -666.0;
+        vbest = -666.0f;
         ibest = pbest = qbest = rbest = 1;
         jbest = 2;
         kbest = 3;
@@ -715,15 +715,15 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
                         continue;
                     }
 
-                    P.set(0, 0, 0.0);
-                    P.set(0, 1, 0.0);
-                    P.set(0, 2, 0.0);
-                    P.set(1, 0, 0.0);
-                    P.set(1, 1, 0.0);
-                    P.set(1, 2, 0.0);
-                    P.set(2, 0, 0.0);
-                    P.set(2, 1, 0.0);
-                    P.set(2, 2, 0.0);
+                    P.set(0, 0, 0.0f);
+                    P.set(0, 1, 0.0f);
+                    P.set(0, 2, 0.0f);
+                    P.set(1, 0, 0.0f);
+                    P.set(1, 1, 0.0f);
+                    P.set(1, 2, 0.0f);
+                    P.set(2, 0, 0.0f);
+                    P.set(2, 1, 0.0f);
+                    P.set(2, 2, 0.0f);
 
                     for (p = -1; p <= 1; p += 2) { /* p,q,r are -1 or +1      */
 
@@ -735,13 +735,13 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
                                 P.set(2, k - 1, r);
                                 detP = P.det(); /* sign of permutation */
 
-                                if ((detP * detQ) <= 0.0) {
+                                if ((detP * detQ) <= 0.0f) {
                                     continue; /* doesn't match sign of Q */
                                 }
 
                                 M = P.times(Q);
 
-                                /* angle of M rotation = 2.0*acos(0.5*sqrt(1.0+trace(M)))       */
+                                /* angle of M rotation = 2.0f*acos(0.5f*sqrt(1.0f+trace(M)))       */
                                 /* we want largest trace(M) == smallest angle == M nearest to I */
 
                                 val = M.get(0, 0) + M.get(1, 1) + M.get(2, 2); /* trace */
@@ -876,7 +876,7 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
     private Matrix mat33_polar(Matrix A) {
         Matrix X, Y, Z;
         double alp, bet, gam, gmi;
-        double dif = 1.0;
+        double dif = 1.0f;
         int k = 0;
         double val;
 
@@ -886,8 +886,8 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
         // force matrix to be nonsingular
         gam = X.det();
 
-        while (gam == 0.0) { // perturb matrix
-            gam = 0.00001 * (0.001 + mat33_rownorm(X));
+        while (gam == 0.0f) { // perturb matrix
+            gam = 0.00001 * (0.001f + mat33_rownorm(X));
             val = X.get(0, 0);
             X.set(0, 0, val + gam);
             val = X.get(1, 1);
@@ -900,24 +900,24 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
         while (true) {
             Y = X.inverse();
 
-            if (dif > 0.3) { // far from convergence
+            if (dif > 0.3f) { // far from convergence
                 alp = Math.sqrt(mat33_rownorm(X) * mat33_colnorm(X));
                 bet = Math.sqrt(mat33_rownorm(Y) * mat33_colnorm(Y));
                 gam = Math.sqrt(bet / alp);
-                gmi = 1.0 / gam;
+                gmi = 1.0f / gam;
             } else {
-                gam = gmi = 1.0; // close to convergence
+                gam = gmi = 1.0f; // close to convergence
             }
 
-            Z.set(0, 0, 0.5 * ((gam * X.get(0, 0)) + (gmi * Y.get(0, 0))));
-            Z.set(0, 1, 0.5 * ((gam * X.get(0, 1)) + (gmi * Y.get(1, 0))));
-            Z.set(0, 2, 0.5 * ((gam * X.get(0, 2)) + (gmi * Y.get(2, 0))));
-            Z.set(1, 0, 0.5 * ((gam * X.get(1, 0)) + (gmi * Y.get(0, 1))));
-            Z.set(1, 1, 0.5 * ((gam * X.get(1, 1)) + (gmi * Y.get(1, 1))));
-            Z.set(1, 2, 0.5 * ((gam * X.get(1, 2)) + (gmi * Y.get(2, 1))));
-            Z.set(2, 0, 0.5 * ((gam * X.get(2, 0)) + (gmi * Y.get(0, 2))));
-            Z.set(2, 1, 0.5 * ((gam * X.get(2, 1)) + (gmi * Y.get(1, 2))));
-            Z.set(2, 2, 0.5 * ((gam * X.get(2, 2)) + (gmi * Y.get(2, 2))));
+            Z.set(0, 0, 0.5f * ((gam * X.get(0, 0)) + (gmi * Y.get(0, 0))));
+            Z.set(0, 1, 0.5f * ((gam * X.get(0, 1)) + (gmi * Y.get(1, 0))));
+            Z.set(0, 2, 0.5f * ((gam * X.get(0, 2)) + (gmi * Y.get(2, 0))));
+            Z.set(1, 0, 0.5f * ((gam * X.get(1, 0)) + (gmi * Y.get(0, 1))));
+            Z.set(1, 1, 0.5f * ((gam * X.get(1, 1)) + (gmi * Y.get(1, 1))));
+            Z.set(1, 2, 0.5f * ((gam * X.get(1, 2)) + (gmi * Y.get(2, 1))));
+            Z.set(2, 0, 0.5f * ((gam * X.get(2, 0)) + (gmi * Y.get(0, 2))));
+            Z.set(2, 1, 0.5f * ((gam * X.get(2, 1)) + (gmi * Y.get(1, 2))));
+            Z.set(2, 2, 0.5f * ((gam * X.get(2, 2)) + (gmi * Y.get(2, 2))));
 
             dif = Math.abs(Z.get(0, 0) - X.get(0, 0)) + Math.abs(Z.get(0, 1) - X.get(0, 1)) +
                   Math.abs(Z.get(0, 2) - X.get(0, 2)) + Math.abs(Z.get(1, 0) - X.get(1, 0)) +
@@ -927,7 +927,7 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
 
             k = k + 1;
 
-            if ((k > 100) || (dif < 3.0e-6)) {
+            if ((k > 100) || (dif < 3.0e-6f)) {
                 break; // convergence or exhaustion
             }
 

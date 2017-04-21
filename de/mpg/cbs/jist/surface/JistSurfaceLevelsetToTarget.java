@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -37,11 +37,11 @@ public class JistSurfaceLevelsetToTarget extends ProcessingAlgorithm {
 	private ParamVolume targetGdmImage;
 	private ParamVolume resultGdmImage;
 	
-	private	ParamDouble 	balloonParam;
-	private ParamDouble 	curvParam;
+	private	ParamFloat 	balloonParam;
+	private ParamFloat 	curvParam;
 	
 	private ParamInteger 	iterationParam;
-	private ParamDouble 	changeParam;
+	private ParamFloat 	changeParam;
 	
 	private ParamOption 	topologyParam;
 	
@@ -52,11 +52,11 @@ public class JistSurfaceLevelsetToTarget extends ProcessingAlgorithm {
 		inputParams.add(initGdmImage = new ParamVolume("Initial Level Set Surface"));
 		inputParams.add(targetGdmImage = new ParamVolume("Target Level Set Surface"));
 		
-		inputParams.add(balloonParam = new ParamDouble("Data weight", -1E10, 1E10, 0.5));
-		inputParams.add(curvParam = new ParamDouble("Curvature weight", -1E10, 1E10, 0.2));
+		inputParams.add(balloonParam = new ParamFloat("Data weight", -1E10f, 1E10f, 0.5f));
+		inputParams.add(curvParam = new ParamFloat("Curvature weight", -1E10f, 1E10f, 0.2f));
 		
 		inputParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
-		inputParams.add(changeParam = new ParamDouble("Min change", 0, 1, 0.001));
+		inputParams.add(changeParam = new ParamFloat("Min change", 0, 1, 0.001f));
 			
 		inputParams.add(topologyParam = new ParamOption("Topology", topoTypes));
 		topologyParam.setValue("wcs");

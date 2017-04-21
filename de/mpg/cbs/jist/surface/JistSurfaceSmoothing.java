@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurface;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 
@@ -39,7 +39,7 @@ import org.apache.commons.math3.util.FastMath;
 public class JistSurfaceSmoothing  extends ProcessingAlgorithm{
 	ParamSurface 	inputSurface;
 	ParamInteger 	iterationsParam;
-	ParamDouble		lambdaParam;
+	ParamFloat		lambdaParam;
 	
 	ParamSurface 	outputSurface;
 	    
@@ -47,7 +47,7 @@ public class JistSurfaceSmoothing  extends ProcessingAlgorithm{
 	protected void createInputParameters(ParamCollection inputParams) {
 		inputParams.add(inputSurface = new ParamSurface("Input Surface"));
 		inputParams.add(iterationsParam = new ParamInteger("Number of smoothing iterations", 0, 100, 0));
-		inputParams.add(lambdaParam = new ParamDouble("Lambda", 0.0, 1.0, 0.75));
+		inputParams.add(lambdaParam = new ParamFloat("Lambda", 0.0f, 1.0f, 0.75f));
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Surfaces");

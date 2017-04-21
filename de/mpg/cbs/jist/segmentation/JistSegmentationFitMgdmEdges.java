@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -42,13 +42,13 @@ public class JistSegmentationFitMgdmEdges extends ProcessingAlgorithm {
 	private ParamVolume intensityImage;
 	private ParamVolume maskImage;
 	
-	private	ParamDouble 	balloonParam;
-	private	ParamDouble 	edgeParam;
-	private ParamDouble 	curvParam;
-	private ParamDouble 	spatialParam;
+	private	ParamFloat 	balloonParam;
+	private	ParamFloat 	edgeParam;
+	private ParamFloat 	curvParam;
+	private ParamFloat 	spatialParam;
 	
 	private ParamInteger 	iterationParam;
-	private ParamDouble 	changeParam;
+	private ParamFloat 	changeParam;
 	
 	private ParamOption 	topologyParam;
 	
@@ -71,13 +71,13 @@ public class JistSegmentationFitMgdmEdges extends ProcessingAlgorithm {
 		inputParams.add(imageParams);
 		
 		mainParams=new ParamCollection("Parameters");
-		mainParams.add(edgeParam = new ParamDouble("Image edge weight", -1E10, 1E10, 0.5));
-		mainParams.add(balloonParam = new ParamDouble("Original boundary weight", -1E10, 1E10, 0.1));
-		mainParams.add(curvParam = new ParamDouble("Curvature weight", -1E10, 1E10, 0.1));
-		mainParams.add(spatialParam = new ParamDouble("Spatial extent (mm)", -1E10, 1E10, 2.0));
+		mainParams.add(edgeParam = new ParamFloat("Image edge weight", -1E10f, 1E10f, 0.5f));
+		mainParams.add(balloonParam = new ParamFloat("Original boundary weight", -1E10f, 1E10f, 0.1f));
+		mainParams.add(curvParam = new ParamFloat("Curvature weight", -1E10f, 1E10f, 0.1f));
+		mainParams.add(spatialParam = new ParamFloat("Spatial extent (mm)", -1E10f, 1E10f, 2.0f));
 		
 		mainParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
-		mainParams.add(changeParam = new ParamDouble("Min change", 0, 1, 0.001));
+		mainParams.add(changeParam = new ParamFloat("Min change", 0, 1, 0.001f));
 			
 		mainParams.add(topologyParam = new ParamOption("Topology", topoTypes));
 		topologyParam.setValue("wcs");

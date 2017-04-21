@@ -4,7 +4,7 @@ import edu.jhu.ece.iacl.jist.pipeline.AlgorithmRuntimeException;
 import edu.jhu.ece.iacl.jist.pipeline.CalculationMonitor;
 import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;

@@ -54,9 +54,9 @@ public class JistLaminarProfileCalculator extends ProcessingAlgorithm {
 		inputParams.add(maxParam=new ParamFloat("Maximum depth", 0, 1, 1.0f));
 		maxParam.setDescription("maximum depth included in measurement");
 		
-		//inputParams.add(centerParam=new ParamDouble("Center (for Gaussian)", -2, 2, 0.0));
+		//inputParams.add(centerParam=new ParamFloat("Center (for Gaussian)", -2, 2, 0.0f));
 		//centerParam.setDescription("center parameter for Gaussian filtering (profiles normalized in [-1;+1])");
-		//inputParams.add(scaleParam=new ParamDouble("Scaling (for Gaussian)", 0, 5, 0.3));
+		//inputParams.add(scaleParam=new ParamFloat("Scaling (for Gaussian)", 0, 5, 0.3f));
 		//scaleParam.setDescription("scale parameter for Gaussian filtering (profiles normalized in [-1;+1])");
 		
 		inputParams.setPackage("CBS Tools");
@@ -114,7 +114,7 @@ public class JistLaminarProfileCalculator extends ProcessingAlgorithm {
 		if (maskImage.getImageData()==null) {
 			// create a mask for regions of value 0 on center image (kinda arbitrary..)
 			for (int xyz=0;xyz<nx*ny*nz;xyz++) for (int l=minlayer;l<=maxlayer;l++) {
-				layermask[l][xyz] = (intensity[nlayers/2][xyz]!=0.0);
+				layermask[l][xyz] = (intensity[nlayers/2][xyz]!=0.0f);
 			}
 		} else {
 			ImageDataUByte	maskImg = new ImageDataUByte(maskImage.getImageData());
@@ -159,23 +159,23 @@ public class JistLaminarProfileCalculator extends ProcessingAlgorithm {
 			for (int l=0;l<=nlayers;l++) {
 				float x = (l - nlayers/2.0f)/(nlayers/2.0f);
 				
-				filter[l] = (float)(Math.exp( -(x-center)*(x-center)/(2.0*scale*scale) )
-									/(Math.sqrt(2.0*Math.PI)*scale) );
+				filter[l] = (float)(Math.exp( -(x-center)*(x-center)/(2.0f*scale*scale) )
+									/(Math.sqrt(2.0f*Math.PI)*scale) );
 			}
 		} else if (calcParam.getValue().equals("1st_Gauss_deriv")) {
 			for (int l=0;l<=nlayers;l++) {
 				float x = (l - nlayers/2.0f)/(nlayers/2.0f);
 				
-				filter[l] = (float)(Math.exp( -(x-center)*(x-center)/(2.0*scale*scale) )
-									*(x-center)/(Math.sqrt(2.0*Math.PI)*scale*scale*scale) );
+				filter[l] = (float)(Math.exp( -(x-center)*(x-center)/(2.0f*scale*scale) )
+									*(x-center)/(Math.sqrt(2.0f*Math.PI)*scale*scale*scale) );
 			}
 		} else if (calcParam.getValue().equals("2nd_Gauss_deriv")) {
 			for (int l=0;l<=nlayers;l++) {
 				float x = (l - nlayers/2.0f)/(nlayers/2.0f);
 				
-				filter[l] = (float)(Math.exp( -(x-center)*(x-center)/(2.0*scale*scale) )
-									*( (x-center)*(x-center)/(scale*scale) - 1.0)
-									/(Math.sqrt(2.0*Math.PI)*scale*scale*scale) );
+				filter[l] = (float)(Math.exp( -(x-center)*(x-center)/(2.0f*scale*scale) )
+									*( (x-center)*(x-center)/(scale*scale) - 1.0f)
+									/(Math.sqrt(2.0f*Math.PI)*scale*scale*scale) );
 			}
 		}
 		*/

@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -42,20 +42,20 @@ public class JistCortexMyelinatedThickness extends ProcessingAlgorithm {
 	private ParamVolume pwmImage;
 	
 	private ParamBoolean	adjustwmParam;
-	private ParamDouble 	offsetParam;
+	private ParamFloat 	offsetParam;
 	private ParamBoolean	adjustgmParam;
 	
 	private ParamBoolean	fcmwithwmParam;
-	private ParamDouble 	fcmsmoothParam;
+	private ParamFloat 	fcmsmoothParam;
 	private ParamInteger 	fcmiterParam;
-	private ParamDouble 	fcmdiffParam;
+	private ParamFloat 	fcmdiffParam;
 	
-	private	ParamDouble 	gdmballoonParam;
-	private ParamDouble 	gdmcurvParam;
+	private	ParamFloat 	gdmballoonParam;
+	private ParamFloat 	gdmcurvParam;
 	private ParamInteger 	gdmiterParam;
-	private ParamDouble 	gdmdiffParam;
+	private ParamFloat 	gdmdiffParam;
 	private ParamOption 	topologyParam;
-	private ParamDouble 	maxdistParam;
+	private ParamFloat 	maxdistParam;
 	
 	private static final String[] topoTypes = {"26/6", "6/26", "18/6", "6/18", "6/6", "wcs", "wco", "no"};
 	
@@ -85,23 +85,23 @@ public class JistCortexMyelinatedThickness extends ProcessingAlgorithm {
 		
 		mainParams=new ParamCollection("Parameters");
 		mainParams.add(adjustwmParam = new ParamBoolean("Adjust WM boundary", false));
-		mainParams.add(offsetParam = new ParamDouble("WM probability boundary", 0.0, 1.0, 0.33));
+		mainParams.add(offsetParam = new ParamFloat("WM probability boundary", 0.0f, 1.0f, 0.33f));
 		mainParams.add(adjustgmParam = new ParamBoolean("Adjust outer GM boundary", false));
 		
 		mainParams.add(fcmwithwmParam = new ParamBoolean("Include WM in clustering", true));
-		mainParams.add(fcmsmoothParam = new ParamDouble("Fantasm regularization weight", -1E10, 1E10, 0.1));
-		mainParams.add(fcmdiffParam = new ParamDouble("Fantasm min difference", -1E10, 1E10, 0.01));
+		mainParams.add(fcmsmoothParam = new ParamFloat("Fantasm regularization weight", -1E10f, 1E10f, 0.1f));
+		mainParams.add(fcmdiffParam = new ParamFloat("Fantasm min difference", -1E10f, 1E10f, 0.01f));
 		mainParams.add(fcmiterParam = new ParamInteger("Fantasm max iterations", 0, 100000, 50));
 		
-		mainParams.add(gdmballoonParam = new ParamDouble("GDM balloon weight", -1E10, 1E10, 0.4));
-		mainParams.add(gdmcurvParam = new ParamDouble("GDM curvature weight", -1E10, 1E10, 0.05));
-		mainParams.add(gdmdiffParam = new ParamDouble("GDM min difference", -1E10, 1E10, 0.0001));
+		mainParams.add(gdmballoonParam = new ParamFloat("GDM balloon weight", -1E10f, 1E10f, 0.4f));
+		mainParams.add(gdmcurvParam = new ParamFloat("GDM curvature weight", -1E10f, 1E10f, 0.05f));
+		mainParams.add(gdmdiffParam = new ParamFloat("GDM min difference", -1E10f, 1E10f, 0.0001f));
 		mainParams.add(gdmiterParam = new ParamInteger("GDM max iterations", 0, 100000, 500));
 			
 		mainParams.add(topologyParam = new ParamOption("GDM Topology", topoTypes));
 		topologyParam.setValue("wcs");
 
-		mainParams.add(maxdistParam = new ParamDouble("Max distance outside cortex (mm)", -1E10, 1E10, 1.0));
+		mainParams.add(maxdistParam = new ParamFloat("Max distance outside cortex (mm)", -1E10f, 1E10f, 1.0f));
 		
 		inputParams.add(mainParams);
 			

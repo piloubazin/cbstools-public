@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurface;
@@ -51,7 +51,7 @@ public class JistSurfaceMgdmToMeshes extends ProcessingAlgorithm {
 	//private ParamFile atlasParam;
 	//private ParamInteger 	mgdmParam;
 	private ParamBoolean	zeroParam;
-	//private ParamDouble 	distParam;
+	//private ParamFloat 	distParam;
 	ParamOption		topologyParam;
 	
 	private static final String[] topoTypes = {"26/6", "6/26", "18/6", "6/18", "6/6"};

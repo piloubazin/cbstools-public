@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -41,10 +41,10 @@ public class JistCortexExtractionCRUISE extends ProcessingAlgorithm {
 	private ParamVolume gmImage;
 	private ParamVolume csfImage;
 	
-	//private ParamDouble 	edgeParam;
-	private	ParamDouble 	balloonParam;
-	private ParamDouble 	curvParam;
-	//private ParamDouble 	divParam;
+	//private ParamFloat 	edgeParam;
+	private	ParamFloat 	balloonParam;
+	private ParamFloat 	curvParam;
+	//private ParamFloat 	divParam;
 	private ParamInteger 	iterationParam;
 	//private ParamOption 	gwImageParam;
 	//private ParamOption 	cgImageParam;
@@ -70,10 +70,10 @@ public class JistCortexExtractionCRUISE extends ProcessingAlgorithm {
 		inputParams.add(imageParams);
 		
 		mainParams=new ParamCollection("Parameters");
-		//mainParams.add(edgeParam = new ParamDouble("Edge weight", -1E10, 1E10, 0.125));
-		mainParams.add(balloonParam = new ParamDouble("Data weight (balloon force)", -1E10, 1E10, 0.9));
-		mainParams.add(curvParam = new ParamDouble("Regularization weight (curvature)", -1E10, 1E10, 0.1));
-		//mainParams.add(divParam = new ParamDouble("Divergence weight", -1E10, 1E10, 0.05));
+		//mainParams.add(edgeParam = new ParamFloat("Edge weight", -1E10f, 1E10f, 0.1f25));
+		mainParams.add(balloonParam = new ParamFloat("Data weight (balloon force)", -1E10f, 1E10f, 0.9f));
+		mainParams.add(curvParam = new ParamFloat("Regularization weight (curvature)", -1E10f, 1E10f, 0.1f));
+		//mainParams.add(divParam = new ParamFloat("Divergence weight", -1E10f, 1E10f, 0.0f5));
 		mainParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
 			
 		//mainParams.add(gwImageParam = new ParamOption("Image used for WM / GM", opts));
@@ -103,7 +103,7 @@ public class JistCortexExtractionCRUISE extends ProcessingAlgorithm {
 		info.setAffiliation("Max Planck Institute for Human Cognitive and Brain Sciences");
 		info.setDescription("Segments the cortex from a whole brain segmented data set with the CRUISE method.");
 		
-		info.setVersion("2.0");
+		info.setVersion("2.0f");
 		info.setStatus(DevelopmentStatus.RC);
 		info.setEditable(false);
 	}
@@ -174,7 +174,7 @@ public class JistCortexExtractionCRUISE extends ProcessingAlgorithm {
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 				int xyz = x+nx*y+nx*ny*z;
 				float sum = wm[xyz]+gm[xyz]+csf[xyz];
-				if (sum>0.0001) {
+				if (sum>0.0001f) {
 					wm[xyz] /= sum;
 					gm[xyz] /= sum;
 					csf[xyz] /= sum;

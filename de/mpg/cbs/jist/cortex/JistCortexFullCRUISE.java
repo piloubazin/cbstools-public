@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -45,16 +45,16 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 	private ParamVolume csfImage;
 	private ParamVolume vdImage;
 	
-	//private ParamDouble 	edgeParam;
-	private	ParamDouble 	balloonParam;
-	private ParamDouble 	curvParam;
+	//private ParamFloat 	edgeParam;
+	private	ParamFloat 	balloonParam;
+	private ParamFloat 	curvParam;
 	private ParamInteger 	iterationParam;
 	//private ParamOption 	gwImageParam;
 	//private ParamOption 	cgImageParam;
 	private ParamOption 	topologyParam;
 	private ParamBoolean	normalizeParam;
 	private ParamBoolean	pvwmParam;
-	private ParamDouble 	offsetParam;
+	private ParamFloat 	offsetParam;
 	
 	//private static final String[] opts = {"Iso image", "T1 map", "Probabilities", "Iso+Proba", "T1map+Proba", "All"};
 	
@@ -82,9 +82,9 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		inputParams.add(imageParams);
 		
 		mainParams=new ParamCollection("Parameters");
-		//mainParams.add(edgeParam = new ParamDouble("Edge weight", -1E10, 1E10, 0.125));
-		mainParams.add(balloonParam = new ParamDouble("Data weight (balloon force)", -1E10, 1E10, 0.9));
-		mainParams.add(curvParam = new ParamDouble("Regularization weight (curvature)", -1E10, 1E10, 0.1));
+		//mainParams.add(edgeParam = new ParamFloat("Edge weight", -1E10f, 1E10f, 0.1f25));
+		mainParams.add(balloonParam = new ParamFloat("Data weight (balloon force)", -1E10f, 1E10f, 0.9f));
+		mainParams.add(curvParam = new ParamFloat("Regularization weight (curvature)", -1E10f, 1E10f, 0.1f));
 		mainParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
 			
 		//mainParams.add(gwImageParam = new ParamOption("Image used for WM / GM", opts));
@@ -98,7 +98,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 
 		mainParams.add(normalizeParam = new ParamBoolean("Normalize probabilities", true));
 		mainParams.add(pvwmParam = new ParamBoolean("Correct for WM-GM partial voluming", true));
-		mainParams.add(offsetParam = new ParamDouble("WM/GM offset", -1, 1, 0.0));
+		mainParams.add(offsetParam = new ParamFloat("WM/GM offset", -1, 1, 0.0f));
 		
 		inputParams.add(mainParams);
 			
@@ -247,7 +247,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			/*  no normalization anymore?
 			float sum = wm[x][y][z]+gm[x][y][z]+csf[x][y][z];
-			if (sum>0.0001) {
+			if (sum>0.0f001) {
 				wm[x][y][z] *= 254/sum;
 				gm[x][y][z] *= 254/sum;
 				csf[x][y][z] *= 254/sum;
@@ -309,7 +309,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 			
 			pwm[xyz] = Numerics.bounded(wm[x][y][z],0,1);
 			//pgm[xyz] = Numerics.bounded(acegm[x][y][z]-offset,0,1);
-			// offset: decreased in regions where pWM is close to 0.5
+			// offset: decreased in regions where pWM is close to 0.5f
 			//float wmr = Numerics.square((pwm[xyz]-0.5f)/0.5f);
 			
 			pgm[xyz] = Numerics.bounded(acegm[x][y][z]-wmr*offset,0,1);
@@ -418,8 +418,8 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;
 			// only do the masking for the outside
-			//bgmask[xyz] = (gwb[x][y][z]>=-5.0 && cgb[x][y][z]<=5.0);
-			bgmask[xyz] = (cgb[x][y][z]<=5.0);
+			//bgmask[xyz] = (gwb[x][y][z]>=-5.0f && cgb[x][y][z]<=5.0f);
+			bgmask[xyz] = (cgb[x][y][z]<=5.0f);
 			gwb2[xyz] = gwb[x][y][z];
 			ctr2[xyz] = 0.5f*(gwb[x][y][z]+cgb[x][y][z]);
 		}

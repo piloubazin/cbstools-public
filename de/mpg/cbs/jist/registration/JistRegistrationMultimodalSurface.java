@@ -54,11 +54,11 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 	// jist containers
 	private ParamVolume 	sourceLevelsetImage;
 	private ParamVolume 	targetLevelsetImage;
-	private ParamDouble 	wcurvParam;
+	private ParamFloat 	wcurvParam;
 	
 	private ParamVolume 	sourceIntensityImage;
 	private ParamVolume 	targetIntensityImage;
-	private ParamDouble 	wintensParam;
+	private ParamFloat 	wintensParam;
 	
 	private	 ParamFile		synScript1Param;
 	private	 ParamFile		synScript2Param;
@@ -96,8 +96,8 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		inputParams.add(synScript2Param = new ParamFile("external SyN script 2 contrasts"));
 		inputParams.add(synScript3Param = new ParamFile("external SyN script 3 contrasts"));
 		inputParams.add(synScript4Param = new ParamFile("external SyN script 4 contrasts"));
-		inputParams.add(wintensParam = new ParamDouble("Intensity weighting (optional)", 0.0, 2.0, 1.0));
-		inputParams.add(wcurvParam = new ParamDouble("Curvature weighting", 0.0, 2.0, 1.0));
+		inputParams.add(wintensParam = new ParamFloat("Intensity weighting (optional)", 0.0f, 2.0f, 1.0f));
+		inputParams.add(wcurvParam = new ParamFloat("Curvature weighting", 0.0f, 2.0f, 1.0f));
 		inputParams.add(atlasParam = new ParamBoolean("Is the target an atlas?", false));
 		inputParams.add(phase2Param = new ParamBoolean("Align original curvature?", true));
 		inputParams.add(debugParam = new ParamBoolean("Keep intermediate files", true));
@@ -319,7 +319,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		
 		float smoothing = 1.5f/rx;
 		
-		double globalcurv = 0.0;
+		double globalcurv = 0.0f;
 		float maxdist = 0.0f;
 		float maxdist2 = 0.0f;
 		
@@ -352,15 +352,15 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 			
 			if(sintensity != null) {
 				if (sc < nbscales-1) {
-					maxdist = levelsetInflationMapping(slevelset, sintensity, smoothing, smoothiter[sc], smoothiter[sc+1], 0.0);
+					maxdist = levelsetInflationMapping(slevelset, sintensity, smoothing, smoothiter[sc], smoothiter[sc+1], 0.0f);
 				} else {
-					maxdist = levelsetInflationMapping(slevelset, sintensity, smoothing, smoothiter[sc], smoothiter[sc], 0.0);
+					maxdist = levelsetInflationMapping(slevelset, sintensity, smoothing, smoothiter[sc], smoothiter[sc], 0.0f);
 				}
 			} else {
 				if (sc < nbscales-1) {
-					maxdist = levelsetInflation(slevelset, smoothing, smoothiter[sc], smoothiter[sc+1], 0.0);
+					maxdist = levelsetInflation(slevelset, smoothing, smoothiter[sc], smoothiter[sc+1], 0.0f);
 				} else {
-					maxdist = levelsetInflation(slevelset, smoothing, smoothiter[sc], smoothiter[sc], 0.0);
+					maxdist = levelsetInflation(slevelset, smoothing, smoothiter[sc], smoothiter[sc], 0.0f);
 				}
 			}
 			
@@ -385,13 +385,13 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 				if (atlasParam.getValue().booleanValue()) {
 					levelsetInflationMapping(tlevelset, tintensity, smoothing, smoothiter[sc], smoothiter[sc], globalcurv);
 				} else {
-					levelsetInflationMapping(tlevelset, tintensity, smoothing, smoothiter[sc], smoothiter[sc], 0.0);
+					levelsetInflationMapping(tlevelset, tintensity, smoothing, smoothiter[sc], smoothiter[sc], 0.0f);
 				}
 			} else {
 				if (atlasParam.getValue().booleanValue()) {
 					levelsetInflation(tlevelset, smoothing, smoothiter[sc], smoothiter[sc], globalcurv);
 				} else {
-					levelsetInflation(tlevelset, smoothing, smoothiter[sc], smoothiter[sc], 0.0);
+					levelsetInflation(tlevelset, smoothing, smoothiter[sc], smoothiter[sc], 0.0f);
 				}
 			}
 			
@@ -558,14 +558,14 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 	private final float levelsetInflation (float[] levelset, float smoothing, int smoothiter, int smoothiter2, double nominalglobalcurv) {
 		
 		int itr = smoothiter;
-		double realglobalcurv = 0.0;
+		double realglobalcurv = 0.0f;
 		float maxdist = 0.0f;
 		boolean[] surfmask = new boolean[nxyz];
 		
 		// create a mask of a narrowband
 		boolean[] bgmask = new boolean[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			bgmask[xyz] = (FastMath.abs(levelset[xyz]) <= 5.0);
+			bgmask[xyz] = (FastMath.abs(levelset[xyz]) <= 5.0f);
 		}
 		
 		// important: increase the data range (useful for better smoothing)
@@ -576,11 +576,11 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		Interface.displayMessage("re-build levelset...\n");
 		InflateGdm gdm = new InflateGdm(levelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no");
 		
-		double basis = 1.0;
+		double basis = 1.0f;
 		double scale = smoothing;
 		if (smoothiter>1) {
-			basis = Math.pow(2.0*smoothing, 1.0/(smoothiter-1.0));
-			scale = 0.5;
+			basis = Math.pow(2.0f*smoothing, 1.0f/(smoothiter-1.0f));
+			scale = 0.5f;
 		}
 		
 		float[] newlevelset = new float[nxyz];
@@ -609,7 +609,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 			}
 			
 			// check if the global shape metric is the same
-			if (nominalglobalcurv > 0.0) {
+			if (nominalglobalcurv > 0.0f) {
 				
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					if(FastMath.abs(newlevelset[xyz]) < 1.7321f) {
@@ -661,14 +661,14 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 	private final float levelsetInflationMapping(float[] levelset, float[][] intensity, float smoothing, int smoothiter, int smoothiter2, double nominalglobalcurv) {
 		
 		int itr = smoothiter;
-		double realglobalcurv = 0.0;
+		double realglobalcurv = 0.0f;
 		float maxdist = 0.0f;
 		boolean[] surfmask = new boolean[nxyz];
 		
 		// create a mask of a narrowband
 		boolean[] bgmask = new boolean[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			bgmask[xyz] = (FastMath.abs(levelset[xyz])<=5.0);
+			bgmask[xyz] = (FastMath.abs(levelset[xyz])<=5.0f);
 		}
 		// important: increase the data range (useful for better smoothing)
 		int delta = 30;
@@ -690,11 +690,11 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 																bgmask, 0.4f, 0.4f, "no",
 																intensity, intensitymask, nimg);
 		
-		double basis = 1.0;
+		double basis = 1.0f;
 		double scale = smoothing;
 		if (smoothiter>1) {
-			basis = Math.pow(2.0*smoothing, 1.0/(smoothiter-1.0));
-			scale = 0.5;
+			basis = Math.pow(2.0f*smoothing, 1.0f/(smoothiter-1.0f));
+			scale = 0.5f;
 		}
 		
 		float[] newlevelset = new float[nxyz];
@@ -724,7 +724,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 			}
 			
 			// check if the global shape metric is the same
-			if (nominalglobalcurv > 0.0) {
+			if (nominalglobalcurv > 0.0f) {
 				
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					if(FastMath.abs(newlevelset[xyz]) < 1.7321f) {
@@ -811,7 +811,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 			System.out.print(".");
 			for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 				int xyz = x + nx*y + nx*ny*z;
-				lvlProb[x][y][z] = (float)(1.0/(1.0+FastMath.exp(levelset[xyz]*rx/scale)));
+				lvlProb[x][y][z] = (float)(1.0f/(1.0f+FastMath.exp(levelset[xyz]*rx/scale)));
 			}
 		}
 		
@@ -1039,11 +1039,11 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 				comArray[4] = inputSource2.getAbsolutePath();
 				comArray[5] = inputTarget2.getAbsolutePath();
 				comArray[6] = Float.toString(wcurvParam.getValue().floatValue()/2.0f);
-				//comArray[6] = Float.toString(wcurvParam.getValue().floatValue()*(nbscales-(sc/2.0))/nbscales);
+				//comArray[6] = Float.toString(wcurvParam.getValue().floatValue()*(nbscales-(sc/2.0f))/nbscales);
 				comArray[7] = inputSource3.getAbsolutePath();
 				comArray[8] = inputTarget3.getAbsolutePath();
 				comArray[9] = Float.toString(wcurvParam.getValue().floatValue()/2.0f);
-				//comArray[9] = Float.toString(wcurvParam.getValue().floatValue()*(nbscales-(sc/2.0))/nbscales);
+				//comArray[9] = Float.toString(wcurvParam.getValue().floatValue()*(nbscales-(sc/2.0f))/nbscales);
 				count += 6;
 			}
 

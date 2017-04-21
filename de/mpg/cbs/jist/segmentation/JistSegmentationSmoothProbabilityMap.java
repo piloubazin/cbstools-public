@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -40,8 +40,8 @@ public class JistSegmentationSmoothProbabilityMap extends ProcessingAlgorithm {
 	private ParamVolume labelImage;
 	private ParamVolume probaImage;
 	private ParamFile atlasParam;
-	private ParamDouble scaleParam;
-	private ParamDouble factorParam;
+	private ParamFloat scaleParam;
+	private ParamFloat factorParam;
 	
 	private ParamVolume labelSmoothImage;
 	private ParamVolume probaSmoothImage;
@@ -54,8 +54,8 @@ public class JistSegmentationSmoothProbabilityMap extends ProcessingAlgorithm {
 		inputParams.add(labelImage = new ParamVolume("Probability Label Image"));
 		
 		inputParams.add(atlasParam = new ParamFile("Atlas file",new FileExtensionFilter(new String[]{"txt"})));
-		inputParams.add(scaleParam = new ParamDouble("Scale", 0.0f, 100.0f, 0.5f));
-		inputParams.add(factorParam = new ParamDouble("Factor", 0.0f, 100.0f, 0.5f));
+		inputParams.add(scaleParam = new ParamFloat("Scale", 0.0f, 100.0f, 0.5f));
+		inputParams.add(factorParam = new ParamFloat("Factor", 0.0f, 100.0f, 0.5f));
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Segmentation");

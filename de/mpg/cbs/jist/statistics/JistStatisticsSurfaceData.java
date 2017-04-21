@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurface;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 
@@ -106,12 +106,12 @@ public class JistStatisticsSurfaceData  extends ProcessingAlgorithm{
 		double[][] stats = new double[data.length][2];
 		
 		for(int i=0; i<data.length; i++) {
-			stats[i][0] = 0.0;
+			stats[i][0] = 0.0f;
 			for(int n=0; n<N; n++) {
 				stats[i][0] += data[i][n];
 			}
 			stats[i][0] /= N;
-			stats[i][1] = 0.0;
+			stats[i][1] = 0.0f;
 			for(int n=0; n<N; n++) {
 				stats[i][1] += (data[i][n]-stats[i][0])*(data[i][n]-stats[i][0]);
 			}

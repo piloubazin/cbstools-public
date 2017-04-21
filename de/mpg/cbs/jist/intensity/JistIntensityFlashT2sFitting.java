@@ -10,7 +10,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
@@ -29,11 +29,11 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 	ParamVolume vol3Param;
 	ParamVolume vol4Param;
 	ParamVolume vol5Param;
-	ParamDouble te1Param;
-	ParamDouble te2Param;
-	ParamDouble te3Param;
-	ParamDouble te4Param;
-	ParamDouble te5Param;
+	ParamFloat te1Param;
+	ParamFloat te2Param;
+	ParamFloat te3Param;
+	ParamFloat te4Param;
+	ParamFloat te5Param;
 	//ParamBoolean noiseParam;
 	
 	ParamVolume s0Param;
@@ -41,7 +41,7 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 	ParamVolume r2Param;
 	ParamVolume errParam;
 	
-	private static final String cvsversion = "$Revision: 1.10 $";
+	private static final String cvsversion = "$Revision: 1.1f0 $";
 	private static final String revnum = cvsversion.replace("Revision: ", "").replace("$", "").replace(" ", "");
 	private static final String shortDescription = "Fits multiple echos of a T2* sequence with an exponential to get T2* estimates";
 	private static final String longDescription = "";
@@ -49,19 +49,19 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 
 	protected void createInputParameters(ParamCollection inputParams) {
 		inputParams.add(vol1Param=new ParamVolume("Echo 1"));
-		inputParams.add(te1Param=new ParamDouble("TE 1"));
+		inputParams.add(te1Param=new ParamFloat("TE 1"));
 		inputParams.add(vol2Param=new ParamVolume("Echo 2"));
-		inputParams.add(te2Param=new ParamDouble("TE 2"));
+		inputParams.add(te2Param=new ParamFloat("TE 2"));
 		inputParams.add(vol3Param=new ParamVolume("Echo 3"));
-		inputParams.add(te3Param=new ParamDouble("TE 3"));
+		inputParams.add(te3Param=new ParamFloat("TE 3"));
 		vol3Param.setMandatory(false);
 		te3Param.setMandatory(false);
 		inputParams.add(vol4Param=new ParamVolume("Echo 4"));
-		inputParams.add(te4Param=new ParamDouble("TE 4"));
+		inputParams.add(te4Param=new ParamFloat("TE 4"));
 		vol4Param.setMandatory(false);
 		te4Param.setMandatory(false);
 		inputParams.add(vol5Param=new ParamVolume("Echo 5"));
-		inputParams.add(te5Param=new ParamDouble("TE 5"));
+		inputParams.add(te5Param=new ParamFloat("TE 5"));
 		vol5Param.setMandatory(false);
 		te5Param.setMandatory(false);
 		//inputParams.add(noiseParam=new ParamBoolean("Estimate background noise"));
@@ -133,7 +133,7 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 		
 		// fit the exponential
 		double Sx, Sx2, Sy, Sxy, delta;
-		Sx = 0.0; Sx2 = 0.0; delta = 0.0;
+		Sx = 0.0f; Sx2 = 0.0f; delta = 0.0f;
 		for (int i=0;i<nimg;i++) {
 			Sx += -TE[i];
 			Sx2 += Numerics.square(-TE[i]);
@@ -148,8 +148,8 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 			boolean process=true;
 			for (int i=0;i<nimg;i++) if (vol[i][x][y][z]<=0) process=false;
 			if (process) {
-				Sy = 0.0;
-				Sxy = 0.0;
+				Sy = 0.0f;
+				Sxy = 0.0f;
 				for (int i=0;i<nimg;i++) {
 					double ydata = FastMath.log(vol[i][x][y][z]);
 					Sy += ydata;

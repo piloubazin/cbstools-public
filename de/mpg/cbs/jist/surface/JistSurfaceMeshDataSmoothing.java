@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurface;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 
@@ -60,14 +60,14 @@ import edu.jhu.ece.iacl.algorithms.volume.DistanceField;
 
 public class JistSurfaceMeshDataSmoothing  extends ProcessingAlgorithm{
 	ParamSurface 	inputSurface;
-	ParamDouble		fwhmParam;
+	ParamFloat		fwhmParam;
 	
 	ParamSurface 	outputSurface;
 	    
 	
 	protected void createInputParameters(ParamCollection inputParams) {
 		inputParams.add(inputSurface = new ParamSurface("Input Surface"));
-		inputParams.add(fwhmParam = new ParamDouble("FWHM", 0.0, 20.0, 5.0));
+		inputParams.add(fwhmParam = new ParamFloat("FWHM", 0.0f, 20.0f, 5.0f));
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Surfaces.devel");

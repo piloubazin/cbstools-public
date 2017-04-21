@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
@@ -53,15 +53,15 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 	private ParamOption brightParam;
 	private static final String[] brightTypes = {"bright","dark"};
 	
-	private ParamDouble thresholdParam;
+	private ParamFloat thresholdParam;
 	
 	private ParamOption filterParam;
 	private static final String[] filterTypes = {"RRF","Hessian"};
 	
 	private ParamOption propagationParam;
 	private static final String[] propagationTypes = {"diffusion","belief"};
-	private ParamDouble factorParam;
-	private ParamDouble diffParam;
+	private ParamFloat factorParam;
+	private ParamFloat diffParam;
 	private ParamInteger iterParam;
 	
 	private ParamVolume vesselImage;
@@ -82,7 +82,7 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 	private ParamVolume valOut;
 	private ParamVolume probaNew;
 	
-	private ParamDouble thresholdParamProba;
+	private ParamFloat thresholdParamProba;
 	private ParamVolume probaSeg;
 	
 	private ParamVolume diamRange0;
@@ -90,7 +90,7 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 	
 	private ParamVolume diam;	
 		
-	private ParamDouble thresholdParamPv;
+	private ParamFloat thresholdParamPv;
 	private ParamVolume pvEst;
 	private ParamVolume largeSeg;
 	
@@ -106,13 +106,13 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 	int scaleNbr;
 	
 	// numerical quantities
-	private static final	float	INVSQRT2 = (float)(1.0/FastMath.sqrt(2.0));
-	private static final	float	INVSQRT3 = (float)(1.0/FastMath.sqrt(3.0));
-	private static final	float	SQRT2 = (float)FastMath.sqrt(2.0);
-	private static final	float	SQRT3 = (float)FastMath.sqrt(3.0);
-	private static final	float	SQRT2PI = (float)FastMath.sqrt(2.0*(float)Math.PI);
-	private static final	float	PI2 = (float)(Math.PI/2.0);
-	private static final	float   	L2N2=2.0f*(float)(FastMath.sqrt(2.0*(float)(FastMath.log(2.0))));
+	private static final	float	INVSQRT2 = (float)(1.0f/FastMath.sqrt(2.0f));
+	private static final	float	INVSQRT3 = (float)(1.0f/FastMath.sqrt(3.0f));
+	private static final	float	SQRT2 = (float)FastMath.sqrt(2.0f);
+	private static final	float	SQRT3 = (float)FastMath.sqrt(3.0f);
+	private static final	float	SQRT2PI = (float)FastMath.sqrt(2.0f*(float)Math.PI);
+	private static final	float	PI2 = (float)(Math.PI/2.0f);
+	private static final	float   	L2N2=2.0f*(float)(FastMath.sqrt(2.0f*(float)(FastMath.log(2.0f))));
 	
 	// direction labeling		
 	public	static	final	byte	X = 0;
@@ -153,16 +153,16 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 		inputParams.add(inputImage = new ParamVolume("Input Image"));
 		inputParams.add(brightParam = new ParamOption("Vessel intensities", brightTypes));
 		inputParams.add(filterParam = new ParamOption("Shape filter", filterTypes));
-		inputParams.add(thresholdParam = new ParamDouble("Probability threshold", 0.0, 1.0, 0.5));
-		//inputParams.add(thresholdParamProba = new ParamDouble("In Probability threshold", 0.0, 1.0, 0.5));
+		inputParams.add(thresholdParam = new ParamFloat("Probability threshold", 0.0f, 1.0f, 0.5f));
+		//inputParams.add(thresholdParamProba = new ParamFloat("In Probability threshold", 0.0f, 1.0f, 0.5f));
 		//inputParams.add(thresholdReg = new ParamInteger("Clean Estimation threshold", 0, 50, 15));
-		//inputParams.add(thresholdParamPv = new ParamDouble("Partial Voluming threshold", 0.0, 1.0, 0.7));
+		//inputParams.add(thresholdParamPv = new ParamFloat("Partial Voluming threshold", 0.0f, 1.0f, 0.7));
 		inputParams.add(scaleStepParam = new ParamFloat("Scale Step ", 0.25f, 2.0f, 1.0f));
 		inputParams.add(nbrScaleParam = new ParamInteger("Scale number ", 1, 10, 4));
 
 		inputParams.add(propagationParam = new ParamOption("Propagation model", propagationTypes));
-		inputParams.add(factorParam = new ParamDouble("Diffusion factor", 0.0, 100.0, 0.5));
-		inputParams.add(diffParam = new ParamDouble("Max difference", 0.0, 1.0, 0.001));
+		inputParams.add(factorParam = new ParamFloat("Diffusion factor", 0.0f, 100.0f, 0.5f));
+		inputParams.add(diffParam = new ParamFloat("Max difference", 0.0f, 1.0f, 0.001f));
 		inputParams.add(iterParam = new ParamInteger("Max iterations", 0, 1000, 100));
 		
 		inputParams.setPackage("CBS Tools");
@@ -263,7 +263,7 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 			
 			float scale=scaleFactors[i];
 			float[] smoothed = new float[nxyz];
-			if(scale==1.0){
+			if(scale==1.0f){
 				smoothed=image;	
 			}
 			else {
@@ -640,11 +640,11 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 			// Fit to model	
 		double[][][] firstEst=new double[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			firstEst[x][y][z]=0.0;
+			firstEst[x][y][z]=0.0f;
 		}
 		double[][][] pv=new double[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			pv[x][y][z]=0.0;	
+			pv[x][y][z]=0.0f;	
 		}			
 		Interface.displayMessage("Optimization\n");
 		int wtOptim=0;
@@ -684,14 +684,14 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 				jfct.setPointData(x,y,z, rIn,finalDir,  tan1, tan2);
 				
 				
-				double[] init={0.0,0.0,(double)rIn} ;
+				double[] init={0.0f,0.0f,(double)rIn} ;
 				SimplexOptimizer optimizer= new SimplexOptimizer(1e-5,1e-10);
 				MaxEval max=new MaxEval(10000);
 				ObjectiveFunction g=new ObjectiveFunction(jfct);
 				
 				InitialGuess start=new InitialGuess(init);
 				MaxIter mIt = new MaxIter(200); 
-				double[] step={0.01,0.01,0.01};
+				double[] step={0.01f,0.01f,0.01f};
 				NelderMeadSimplex simplex= new NelderMeadSimplex(step);
 				PointValuePair resultPair=optimizer.optimize(max,g, GoalType.MINIMIZE,start,simplex);
 				double[] result= resultPair.getPoint();
@@ -699,7 +699,7 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 				firstEst[x][y][z]=FastMath.abs(result[2]);	
 				float maxDist= (float)rIn+0.5f;
 				if(firstEst[x][y][z]>maxDist){
-					firstEst[x][y][z]=0.0;	
+					firstEst[x][y][z]=0.0f;	
 					wtOptim++;
 				}else{				
 					float xc=FastMath.round(result[0]*tan1[X]+result[1]*tan2[X]);
@@ -710,11 +710,11 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 								float orthTest = finalDir[X]*(float)i+finalDir[Y]*(float)j+finalDir[Z]*(float)k;
 								if(orthTest*orthTest<=1e-6){
 								float dist= (float)FastMath.sqrt( ((float)i-xc)*((float)i-xc) +((float)j-yc)*((float)j-yc) +((float)k-zc)*((float)k-zc)  );	
-								if(dist<=firstEst[x][y][z]-0.5){
+								if(dist<=firstEst[x][y][z]-0.5f){
 									pv[x+i][y+j][z+k]=1;
 								}							
-								else if(dist<=firstEst[x][y][z]+0.5){
-									pv[x+i][y+j][z+k]=FastMath.max(0.5+firstEst[x][y][z]-dist,pv[x+i][y+j][z+k]);
+								else if(dist<=firstEst[x][y][z]+0.5f){
+									pv[x+i][y+j][z+k]=FastMath.max(0.5f+firstEst[x][y][z]-dist,pv[x+i][y+j][z+k]);
 								}
 							}
 						}					
@@ -1032,7 +1032,7 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 	private final void shapeFromRecursiveRidgeFilter( float[] filter, float[] shape) {
 		// normalization: best is the iterative robust exponential (others are removed)
 		int nb = 0;
-		double max = 0.0;
+		double max = 0.0f;
 		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 			int xyz = x + nx*y + nx*ny*z;
 				// keep only the proper sign
@@ -1055,8 +1055,8 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 				}
 		}
 		Percentile measure = new Percentile();
-		double median = measure.evaluate(response, 50.0);
-		double beta = median/FastMath.log(2.0);
+		double median = measure.evaluate(response, 50.0f);
+		double beta = median/FastMath.log(2.0f);
 		
 		Interface.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
 		
@@ -1064,7 +1064,7 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 			int xyz = x + nx*y + nx*ny*z;
 			if (filter[xyz]>0) {
 					double pe = FastMath.exp( -filter[xyz]/beta)/beta;
-					shape[xyz] = (float)(1.0/max/( 1.0/max+pe));
+					shape[xyz] = (float)(1.0f/max/( 1.0f/max+pe));
 			}
 		}
 		return;
@@ -1072,9 +1072,9 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 	private final void shapeFromHessianFilter( float[] filter, float[] shape) {
 		// normalization: best is the iterative robust exponential (others are removed)
 		int nb = 0;
-		double max = 0.0;
-		double sqmean = 0.0;
-		double mean = 0.0;
+		double max = 0.0f;
+		double sqmean = 0.0f;
+		double mean = 0.0f;
 		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 			int xyz = x + nx*y + nx*ny*z;
 			// keep only the proper sign
@@ -1092,13 +1092,13 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 		
 		// half-normal estimates
 		double sigma2 = sqmean;
-		double normg = FastMath.sqrt(2.0/(sigma2*FastMath.PI));
+		double normg = FastMath.sqrt(2.0f/(sigma2*FastMath.PI));
 		
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x + nx*y + nx*ny*z;
 			if (filter[xyz]>0) {
-				double pg = normg*FastMath.exp(-filter[xyz]*filter[xyz]/(2.0*sigma2));
-				shape[xyz] = (float)(1.0/max/( 1.0/max+pg));
+				double pg = normg*FastMath.exp(-filter[xyz]*filter[xyz]/(2.0f*sigma2));
+				shape[xyz] = (float)(1.0f/max/( 1.0f/max+pg));
 			}
 		}
 		
@@ -1109,9 +1109,9 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 
 			sigma2prev = sigma2;
 				
-			mean = 0.0;
-			sqmean = 0.0;
-			double den = 0.0;
+			mean = 0.0f;
+			sqmean = 0.0f;
+			double den = 0.0f;
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 				int xyz = x + nx*y + nx*ny*z;
 				if (filter[xyz]>0) {
@@ -1127,19 +1127,19 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 				
 			// half-normal estimates
 			sigma2 = sqmean;
-			normg = FastMath.sqrt(2.0/(sigma2*FastMath.PI));
+			normg = FastMath.sqrt(2.0f/(sigma2*FastMath.PI));
 				
 			Interface.displayMessage("parameter estimates: sigma "+FastMath.sqrt(sigma2)+"\n");
 				
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++)  {
 				int xyz = x + nx*y + nx*ny*z;
 				if (filter[xyz]>0) {
-					double pg = normg*FastMath.exp(-filter[xyz]*filter[xyz]/(2.0*sigma2));
-					shape[xyz] = (float)(1.0/max/( 1.0/max+pg));
+					double pg = normg*FastMath.exp(-filter[xyz]*filter[xyz]/(2.0f*sigma2));
+					shape[xyz] = (float)(1.0f/max/( 1.0f/max+pg));
 				}
 			}
-			if (2.0*Numerics.abs(FastMath.sqrt(sigma2)-FastMath.sqrt(sigma2prev))
-				/(FastMath.sqrt(sigma2)+FastMath.sqrt(sigma2prev))<0.01) t=1000;
+			if (2.0f*Numerics.abs(FastMath.sqrt(sigma2)-FastMath.sqrt(sigma2prev))
+				/(FastMath.sqrt(sigma2)+FastMath.sqrt(sigma2prev))<0.01f) t=1000;
 		}
 		return;
 	}
@@ -2086,8 +2086,8 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 		
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
-			if (maxiter==0) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
-			else diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0)/(1.0f+2.0f*factor), 0.0f, 1.0f);
+			if (maxiter==0) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0f), 0.0f, 1.0f);
+			else diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0f)/(1.0f+2.0f*factor), 0.0f, 1.0f);
 		}
 		return diffused;
 	}
@@ -2228,7 +2228,7 @@ public class JistSegmentationMultiscaleStriaFiltering extends ProcessingAlgorith
 				if (vals[0]!=0) shape[id] = (float)(-vals[0]*(Numerics.abs(vals[0])-Numerics.abs(vals[2]))/Numerics.abs(vals[0]));
 				
 				// main direction: lowest eigenvalue : approx with closest neighbor
-				double maxcorr = 0.0;
+				double maxcorr = 0.0f;
 				byte maxd = -1;
 				for (byte d=0;d<NC;d++) {
 					float[] dird = directionVector(d);

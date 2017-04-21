@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -39,7 +39,7 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 	private ParamVolume layersImage;
 	private ParamVolume maskImage;
 	
-	private ParamDouble fwhmParam;
+	private ParamFloat fwhmParam;
 	
 	private ParamVolume smoothDataImage;
 	
@@ -48,7 +48,7 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 	private static final byte Y = 1;
 	private static final byte Z = 2;
 
-	private static final float HASQ3 = (float)(FastMath.sqrt(3.0)/2.0);
+	private static final float HASQ3 = (float)(FastMath.sqrt(3.0f)/2.0f);
 
 
 	protected void createInputParameters(ParamCollection inputParams) {
@@ -57,7 +57,7 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 		inputParams.add(maskImage = new ParamVolume("ROI Mask (opt)"));
 		maskImage.setMandatory(false);
 		
-		inputParams.add(fwhmParam = new ParamDouble("FWHM (mm)", 0.0, 50.0, 5.0));
+		inputParams.add(fwhmParam = new ParamFloat("FWHM (mm)", 0.0f, 50.0f, 5.0f));
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Laminar Analysis.devel");
@@ -112,7 +112,7 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 		// create a set of ROI masks for all the regions and also outside of the area where layer 1 is > 0 and layer 2 is < 0
 		boolean[] ctxmask = new boolean[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			ctxmask[xyz] = (layers[xyz]>=0.0 && layers[xyz+nlayers*nxyz]<=0.0);
+			ctxmask[xyz] = (layers[xyz]>=0.0f && layers[xyz+nlayers*nxyz]<=0.0f);
 		}
 		
 		if (Interface.isValid(maskImage)) {
@@ -150,13 +150,13 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 		}
 		
 		// iterations: number of voxels needed to reach the boundary, assuming that N times G_sigma0 approx. G_sigma1 if sigma1^2 = N sigma0^2 (ok if weight <<1)
-		double sigma0 = 0.5;
-		double sigma1 = fwhmParam.getValue().doubleValue()/res[0]/(2.0*FastMath.sqrt(FastMath.log(4.0)));
+		double sigma0 = 0.5f;
+		double sigma1 = fwhmParam.getValue().doubleValue()/res[0]/(2.0f*FastMath.sqrt(FastMath.log(4.0f)));
 		int iterations = Numerics.ceil( (sigma1*sigma1)/(sigma0*sigma0) );
 		// re-compute sigma0 to be exact
 		sigma0 = sigma1/FastMath.sqrt(iterations);
 		
-		double weight = FastMath.exp(-1.0/(2.0*sigma0*sigma0));
+		double weight = FastMath.exp(-1.0f/(2.0f*sigma0*sigma0));
 		System.out.println("Standard deviation (voxels): "+sigma1);
 		System.out.println("Number of iterations (sigma: "+sigma0+"): "+iterations);
 		System.out.println("Neighbour weight = "+weight);
@@ -164,7 +164,7 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 		// no black & white iterations: the layers are generally too thin
 		float[] sdata = new float[nxyz*nt];
 		double[] layerval = new double[nt];
-		double layersum = 0.0;
+		double layersum = 0.0f;
 	
 		for (int itr=0; itr<iterations; itr++) {
 			//System.out.println("iteration "+(itr+1));
@@ -173,7 +173,7 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 			// other options could be to keep only the layer with largest pv
 			// note that the smoothing happens only parallel to the layers here
 			for (int xyz=0;xyz<nxyz;xyz++) if (ctxmask[xyz]) {
-				double sumweight = 0.0;
+				double sumweight = 0.0f;
 				for (int t=0;t<nt;t++) sdata[xyz+nxyz*t] = 0.0f;
 				for (int l=0;l<nlayers;l++) {
 					double pvweight = Numerics.max(pvol[l+1][xyz]-pvol[l][xyz],0.0f);
@@ -219,17 +219,17 @@ public class JistLaminarIterativeSmoothing extends ProcessingAlgorithm{
 		else if (phi0>HASQ3) return 0.0f;
 		
 		// use direction, distance to create a continuous plane model V(X-X0)+phi(X0) = d(X,P)
-		double vx = 0.5*(levelset[xyz0+1+offset]-levelset[xyz0-1+offset]);
-		double vy = 0.5*(levelset[xyz0+nx+offset]-levelset[xyz0-nx+offset]);
-		double vz = 0.5*(levelset[xyz0+nx*ny+offset]-levelset[xyz0-nx*ny+offset]);
+		double vx = 0.5f*(levelset[xyz0+1+offset]-levelset[xyz0-1+offset]);
+		double vy = 0.5f*(levelset[xyz0+nx+offset]-levelset[xyz0-nx+offset]);
+		double vz = 0.5f*(levelset[xyz0+nx*ny+offset]-levelset[xyz0-nx*ny+offset]);
 		double norm = FastMath.sqrt(vx*vx+vy*vy+vz*vz);
 		
 		// integrate the voxel cube over that model
 		
 		// first shot: numerically (other options: Heaviside integration, case-by-case geometric solution?)
-		double volume = 0.0;
-		for (double x=-0.45; x<=0.45; x+=0.1) for (double y=-0.45; y<=0.45; y+=0.1) for (double z=-0.45; z<=0.45; z+=0.1) {
-			if (vx*x+vy*y+vz*z+norm*phi0<=0) volume+=0.001;
+		double volume = 0.0f;
+		for (double x=-0.4f5; x<=0.4f5; x+=0.1f) for (double y=-0.4f5; y<=0.4f5; y+=0.1f) for (double z=-0.4f5; z<=0.4f5; z+=0.1f) {
+			if (vx*x+vy*y+vz*z+norm*phi0<=0) volume+=0.001f;
 		}
 		
 		// second option: with explicit definition of the intersection (~marching cubes!)

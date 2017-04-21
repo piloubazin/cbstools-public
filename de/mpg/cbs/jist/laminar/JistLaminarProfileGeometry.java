@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamPointDouble;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
@@ -38,8 +38,8 @@ public class JistLaminarProfileGeometry extends ProcessingAlgorithm {
 	private ParamCollection mainParams;
 	
 	private ParamVolume 	layersImage;
-	private ParamDouble		extraParam;
-	private	ParamDouble		smoothingParam;
+	private ParamFloat		extraParam;
+	private	ParamFloat		smoothingParam;
 	private ParamOption		calcParam;
 	private ParamOption		regParam;
 	
@@ -71,9 +71,9 @@ public class JistLaminarProfileGeometry extends ProcessingAlgorithm {
 		inputParams.add(calcParam = new ParamOption("computed measure", calcTypes));
 		
 		inputParams.add(regParam = new ParamOption("regularization", regTypes));
-		inputParams.add(smoothingParam=new ParamDouble("smoothing parameter",0,5,0.3));
+		inputParams.add(smoothingParam=new ParamFloat("smoothing parameter",0,5,0.3f));
 		
-		inputParams.add(extraParam=new ParamDouble("outside extension (mm)",0.0,10.0,0.0));
+		inputParams.add(extraParam=new ParamFloat("outside extension (mm)",0.0f,10.0f,0.0f));
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Laminar Analysis");

@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurface;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -157,9 +157,9 @@ public class JistCortexSurfaceMeshMapping extends ProcessingAlgorithm {
 				} else {
 					if (nt>1) {
 						data[i] = new double[nt];
-						for (int t=0;t<nt;t++) data[i][t] = 0.0;
+						for (int t=0;t<nt;t++) data[i][t] = 0.0f;
 					} else {
-						data[i] = new double[]{0.0};
+						data[i] = new double[]{0.0f};
 					}
 				}
 			} else if (mapStyle==LINEAR) {
@@ -194,9 +194,9 @@ public class JistCortexSurfaceMeshMapping extends ProcessingAlgorithm {
 				} else {
 					if (nt>1) {
 						data[i] = new double[nt];
-						for (int t=0;t<nt;t++) data[i][t] = 0.0;
+						for (int t=0;t<nt;t++) data[i][t] = 0.0f;
 					} else {
-						data[i] = new double[]{0.0};
+						data[i] = new double[]{0.0f};
 					}
 				}				
 			} else if (mapStyle==HIGHEST) {
@@ -232,9 +232,9 @@ public class JistCortexSurfaceMeshMapping extends ProcessingAlgorithm {
 				} else {
 					if (nt>1) {
 						data[i] = new double[nt];
-						for (int t=0;t<nt;t++) data[i][t] = 0.0;
+						for (int t=0;t<nt;t++) data[i][t] = 0.0f;
 					} else {
-						data[i] = new double[]{0.0};
+						data[i] = new double[]{0.0f};
 					}
 				}				
 				

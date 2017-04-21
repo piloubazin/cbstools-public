@@ -4,7 +4,7 @@ import edu.jhu.ece.iacl.jist.pipeline.AlgorithmRuntimeException;
 import edu.jhu.ece.iacl.jist.pipeline.CalculationMonitor;
 import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -35,12 +35,12 @@ public class JistBrainMp2rageDuraEstimation extends ProcessingAlgorithm {
 	private ParamVolume maskImage;
 	private ParamVolume resultImage;
 	private ParamOption pvParam;
-	private ParamDouble distParam;
+	private ParamFloat distParam;
 	
 	protected void createInputParameters(ParamCollection inputParams) {
 		inputParams.add(inv2Image = new ParamVolume("Second inversion (Inv2) Image"));
 		inputParams.add(maskImage = new ParamVolume("Skull Stripping Mask"));
-		inputParams.add(distParam = new ParamDouble("Distance to background (mm)", -1E10, 1E10, 5.0));
+		inputParams.add(distParam = new ParamFloat("Distance to background (mm)", -1E10f, 1E10f, 5.0f));
 		inputParams.add(pvParam = new ParamOption("output type", pvtypes));
 		pvParam.setDescription("Outputs an estimate of the dura / CSF boundary or an estimate of the entire dura region.");
 		pvParam.setValue(pvtype);
@@ -150,8 +150,8 @@ public class JistBrainMp2rageDuraEstimation extends ProcessingAlgorithm {
 		}
 		System.out.println("image range: "+min+", "+max);
 
-		double mean = 0.0;
-		double den = 0.0;
+		double mean = 0.0f;
+		double den = 0.0f;
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			if (inv2img[x][y][z]!=0) {
 				mean += inv2img[x][y][z];
@@ -168,12 +168,12 @@ public class JistBrainMp2rageDuraEstimation extends ProcessingAlgorithm {
 			intensmap[x][y][z] = intensmap[x][y][z]/(1.0f+intensmap[x][y][z]);
 		}
 		// loop
-		double diff = 1.0;
+		double diff = 1.0f;
 		for (int t=0;t<itermax && diff>maxdiff;t++) {
 			System.out.println("iteration "+(t+1));
 			diff = mean;
-			mean = 0.0;
-			den = 0.0;
+			mean = 0.0f;
+			den = 0.0f;
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 				if (inv2img[x][y][z]!=0) {
 					mean += intensmap[x][y][z]*inv2img[x][y][z];

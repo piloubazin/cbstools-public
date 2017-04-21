@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -41,7 +41,7 @@ public class JistSurfaceMgdmRepresentation extends ProcessingAlgorithm {
 	private ParamFile atlasParam;
 	private ParamInteger 	mgdmParam;
 	private ParamBoolean	zeroParam;
-	private ParamDouble 	distParam;
+	private ParamFloat 	distParam;
 	//private ParamOption 	typeParam;
 	//private static final String[] actionTypes = {"rebuild"};
 	
@@ -58,7 +58,7 @@ public class JistSurfaceMgdmRepresentation extends ProcessingAlgorithm {
 		atlasParam.setMandatory(false);
         
 		inputParams.add(mgdmParam = new ParamInteger("MGDM degree", 1, 10, 3));
-		inputParams.add(distParam = new ParamDouble("Max. distance (voxels)", -1, 10000, -1));
+		inputParams.add(distParam = new ParamFloat("Max. distance (voxels)", -1, 10000, -1));
 		distParam.setDescription("Maximum distance computed from the boundary (-1 if unlimited).");
 		inputParams.add(zeroParam = new ParamBoolean("Skip zero label", true));
 		

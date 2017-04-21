@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -47,7 +47,7 @@ public class JistCortexIterativeSmoothing extends ProcessingAlgorithm{
 	private ParamVolume cgbImage;
 	private ParamVolume maskImage;
 	
-	private ParamDouble fwhmParam;
+	private ParamFloat fwhmParam;
 	
 	private ParamVolume smoothDataImage;
 	
@@ -62,7 +62,7 @@ public class JistCortexIterativeSmoothing extends ProcessingAlgorithm{
 		inputParams.add(maskImage = new ParamVolume("Cortical Mask"));
 		maskImage.setMandatory(false);
 		
-		inputParams.add(fwhmParam = new ParamDouble("FWHM (mm)", 0.0, 50.0, 5.0));
+		inputParams.add(fwhmParam = new ParamFloat("FWHM (mm)", 0.0f, 50.0f, 5.0f));
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Cortex Processing.devel");
@@ -157,10 +157,10 @@ public class JistCortexIterativeSmoothing extends ProcessingAlgorithm{
 		
 		//int count;
 		float[] sdata = new float[nxyz];
-		double sigma = 0.5;
+		double sigma = 0.5f;
 		float weight = (float) FastMath.exp((double) -(rx*rx)/(2*sigma*sigma));
 		float sumweight;
-		int iterations = (int) FastMath.round(FastMath.pow(fwhmParam.getValue().doubleValue()/(2*FastMath.sqrt(FastMath.log(4.0))), 2)/sigma);
+		int iterations = (int) FastMath.round(FastMath.pow(fwhmParam.getValue().doubleValue()/(2*FastMath.sqrt(FastMath.log(4.0f))), 2)/sigma);
 		System.out.println("\n Number of iterations with sigma = 1: "+iterations);
 		System.out.println("\n Neighbour weight = "+weight);
 		

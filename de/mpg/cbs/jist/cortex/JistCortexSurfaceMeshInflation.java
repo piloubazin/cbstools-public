@@ -7,7 +7,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurface;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 
@@ -44,8 +44,8 @@ public class JistCortexSurfaceMeshInflation extends ProcessingAlgorithm {
 	// jist containers
 	private ParamVolume levelsetImage;
 	
-	ParamDouble sor;
-	ParamDouble err;
+	ParamFloat sor;
+	ParamFloat err;
 	ParamInteger maxiters;
 	ParamInteger step;
 	ParamSurface inSurf;
@@ -62,9 +62,9 @@ public class JistCortexSurfaceMeshInflation extends ProcessingAlgorithm {
 		
 		inputParams.add(levelsetImage = new ParamVolume("Levelset Image"));
 				
-		inputParams.add(sor=new ParamDouble("SOR Parameter",0,1,0.75));
+		inputParams.add(sor=new ParamFloat("SOR Parameter",0f,1f,0.75f));
 
-		inputParams.add(err=new ParamDouble("Mean Curvature Threshold",0,100,8));
+		inputParams.add(err=new ParamFloat("Mean Curvature Threshold",0,100,8));
 		inputParams.add(step=new ParamInteger("Step Size",0,100,50));
 		inputParams.add(maxiters=new ParamInteger("Max Iterations",0,10000000,10000));
 		inputParams.add(lorentzian=new ParamBoolean("Lorentzian Norm",true));

@@ -26,7 +26,7 @@ public class JistCortexACE extends ProcessingAlgorithm {
 	private ParamVolume csfVol;
 
 	/* use defaults of 126.9 
-	private ParamDouble thresh;
+	private ParamFloat thresh;
 	*/
 	
 	private ParamVolume thinSkelVol;
@@ -66,7 +66,7 @@ public class JistCortexACE extends ProcessingAlgorithm {
 		info.setDescription("ACE : Anatomically Consistent Enhancement (enhances deep sulcal CSF based on WM, GM and CSF memberships).");
 		info.setLongDescription("ACE takes WM, GM and CSF memberships. Sometimes sulcal CSF is blurred by partial volume effect, because the thickness of CSF is often quite small. ACE tries to undo the partial volume effect and creates thin CSF to reveal sulcal banks.");
 		info.setWebsite("http://www.iacl.ece.jhu.edu/");
-		info.setVersion("2.0");
+		info.setVersion("2.0f");
 		info.setEditable(false);
 		info.setStatus(DevelopmentStatus.RC);
 		//info.setHelpID("10002");

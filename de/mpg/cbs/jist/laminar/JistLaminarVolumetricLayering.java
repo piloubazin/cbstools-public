@@ -7,7 +7,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
@@ -46,13 +46,13 @@ public class JistLaminarVolumetricLayering extends ProcessingAlgorithm {
 	
 	private ParamInteger 	layersParam;
 	private ParamInteger 	iterationParamNarrowBand;
-	private ParamDouble 	minimumParamNarrowBand;
+	private ParamFloat 	minimumParamNarrowBand;
 	private ParamOption 	algoParam;
 	private ParamOption 	dirParam;
 	private ParamOption 	topologyParam;
 	private ParamInteger	kernelParam;
-	private ParamDouble 	ratioKernelParam;
-	//private ParamDouble 	curvscaleParam;
+	private ParamFloat 	ratioKernelParam;
+	//private ParamFloat 	curvscaleParam;
 	private	ParamBoolean	presmoothParam;
 	
 	private static final String[] algoTypes = {"distance-preserving", "volume-preserving"};
@@ -87,7 +87,7 @@ public class JistLaminarVolumetricLayering extends ProcessingAlgorithm {
 		mainParams=new ParamCollection("Parameters");
 		mainParams.add(layersParam = new ParamInteger("Number of layers", 1, 50, 10)); // min=2, max=100, default=2
 		mainParams.add(iterationParamNarrowBand = new ParamInteger("Max iterations for narrow band evolution", 0, 100000, 500)); 
-		mainParams.add(minimumParamNarrowBand = new ParamDouble("Min change ratio for narrow band evolution", 0, 0.05, 0.0005)); 
+		mainParams.add(minimumParamNarrowBand = new ParamFloat("Min change ratio for narrow band evolution", 0, 0.05f, 0.0005f)); 
 		
 		mainParams.add(algoParam = new ParamOption("Layering method", algoTypes));
 		algoParam.setValue("volume-preserving");
@@ -96,16 +96,16 @@ public class JistLaminarVolumetricLayering extends ProcessingAlgorithm {
 		dirParam.setValue("outward");
 
 		mainParams.add(kernelParam=new ParamInteger("curvature approximation scale (voxels)", 2, 15, 3));
-		mainParams.add(ratioKernelParam=new ParamDouble("ratio smoothing kernel size (voxels)", 0.0, 6.0, 1.0));
+		mainParams.add(ratioKernelParam=new ParamFloat("ratio smoothing kernel size (voxels)", 0.0f, 6.0f, 1.0f));
 		mainParams.add(presmoothParam=new ParamBoolean("pre-smooth cortical surfaces", false));
 		
 		//mainParams.add(iterationParamBisekt = new ParamInteger("Max. iterations for bisection method", 0, 100000, 500));
-		//mainParams.add(minDiffParamBisekt = new ParamDouble("epsilon of bisection method", 0.0f, 1e-3f, 1e-6f));
+		//mainParams.add(minDiffParamBisekt = new ParamFloat("epsilon of bisection method", 0.0f, 1e-3f, 1e-6f));
 		
 		mainParams.add(topologyParam = new ParamOption("Topology", topoTypes));
 		topologyParam.setValue("no");
 
-		//mainParams.add(curvscaleParam=new ParamDouble("Curvature scale", 0.0, 2.0, 1.0));
+		//mainParams.add(curvscaleParam=new ParamFloat("Curvature scale", 0.0f, 2.0f, 1.0f));
 		
 		inputParams.add(mainParams);
 		

@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
@@ -35,7 +35,7 @@ public class JistSurfaceLevelsetToProbability extends ProcessingAlgorithm {
 	// jist containers
 	private ParamVolume lvlImage;
 	
-	private ParamDouble scaleParam;
+	private ParamFloat scaleParam;
 	
 	private ParamVolume probaImage;
 	
@@ -43,7 +43,7 @@ public class JistSurfaceLevelsetToProbability extends ProcessingAlgorithm {
 		
 		inputParams.add(lvlImage = new ParamVolume("Surface Level Set Image"));
 		
-		inputParams.add(scaleParam = new ParamDouble("Scale (mm)", 0.0f, 100.0f, 5.0f));
+		inputParams.add(scaleParam = new ParamFloat("Scale (mm)", 0.0f, 100.0f, 5.0f));
 			
 			
 		inputParams.setPackage("CBS Tools");
@@ -91,7 +91,7 @@ public class JistSurfaceLevelsetToProbability extends ProcessingAlgorithm {
 		float scale = scaleParam.getValue().floatValue();
 		System.out.println("transform data (scale: "+scale);
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			proba[x][y][z] = (float)(1.0/(1.0+FastMath.exp(lvl[x][y][z]*rx/scale)));
+			proba[x][y][z] = (float)(1.0f/(1.0f+FastMath.exp(lvl[x][y][z]*rx/scale)));
 		}
 		System.out.println("\n done");
 		

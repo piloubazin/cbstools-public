@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurface;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
@@ -54,7 +54,7 @@ public class JistSurfaceLabelFileToVolume  extends ProcessingAlgorithm{
 	ParamVolume dataImage;
 	ParamVolume maskImage;
 	ParamBoolean mipavTransform;
-	ParamDouble labelExtension;
+	ParamFloat labelExtension;
 	
 	protected void createInputParameters(ParamCollection inputParams) {
 		inputParams.add(originalSurface=new ParamSurface("Surface Mesh"));
@@ -63,7 +63,7 @@ public class JistSurfaceLabelFileToVolume  extends ProcessingAlgorithm{
 		inputParams.add(labelFile=new ParamFile("Label File"));
 		labelFile.setDescription("File of vertex labels (e.g. from FreeSurfer)");
 		inputParams.add(mipavTransform=new ParamBoolean("Align to MIPAV image space", true));
-		inputParams.add(labelExtension=new ParamDouble("Label Extension Distance", 0.0, 100.0, 5.0));
+		inputParams.add(labelExtension=new ParamFloat("Label Extension Distance", 0.0f, 100.0f, 5.0f));
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Surfaces");

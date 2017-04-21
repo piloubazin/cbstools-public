@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
@@ -38,7 +38,7 @@ public class JistCortexCentralSurface extends ProcessingAlgorithm {
 	private ParamVolume lv2Image;
 	
 	private ParamInteger 	iterationParam;
-	private ParamDouble 	regularizationParam;
+	private ParamFloat 	regularizationParam;
 	private ParamOption 	topologyParam;
 	
 	private static final String[] topoTypes = {"26/6", "6/26", "18/6", "6/18", "6/6", "wcs", "wco", "no"};
@@ -56,7 +56,7 @@ public class JistCortexCentralSurface extends ProcessingAlgorithm {
 		mainParams=new ParamCollection("Parameters");
 		mainParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
 		
-		mainParams.add(regularizationParam = new ParamDouble("Regularization ratio (in [0,1])", 0.0f, 1.0f, 0.1f));
+		mainParams.add(regularizationParam = new ParamFloat("Regularization ratio (in [0,1])", 0.0f, 1.0f, 0.1f));
 			
 		mainParams.add(topologyParam = new ParamOption("Topology", topoTypes));
 		topologyParam.setValue("wcs");
@@ -73,7 +73,7 @@ public class JistCortexCentralSurface extends ProcessingAlgorithm {
 		info.setAffiliation("Max Planck Institute for Human Cognitive and Brain Sciences");
 		info.setDescription("Estimate a central levelset surface from the inner and outer cortical boundaries with consistent topology.");
 		
-		info.setVersion("2.0");
+		info.setVersion("2.0f");
 		info.setStatus(DevelopmentStatus.RC);
 		info.setEditable(false);
 	}
@@ -123,7 +123,7 @@ public class JistCortexCentralSurface extends ProcessingAlgorithm {
 		// create a mask for all the regions outside of the area where layer 1 is > 0 and layer 2 is < 0
 		boolean[] bgmask = new boolean[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			bgmask[xyz] = (lv1[xyz]>=-5.0 && lv2[xyz]<=5.0);
+			bgmask[xyz] = (lv1[xyz]>=-5.0f && lv2[xyz]<=5.0f);
 		}
 		float balloon = 0.8f*(1.0f-regularizationParam.getValue().floatValue());
 		float curv = 0.8f*(regularizationParam.getValue().floatValue());

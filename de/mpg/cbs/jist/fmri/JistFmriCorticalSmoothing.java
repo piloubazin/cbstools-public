@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataMipav;
@@ -44,10 +44,10 @@ public class JistFmriCorticalSmoothing extends ProcessingAlgorithm {
 	private ParamVolume 	dataImage;
 	private ParamVolume 	mapImage;
 	
-	private ParamDouble		fwhmParam;
+	private ParamFloat		fwhmParam;
 	private ParamOption		regionParam;
 	private static final String[] regions = {"full_cortex","central_surface","exclude_pv","inner_band","central_band","outer_band"};
-	private ParamDouble		rangeParam;
+	private ParamFloat		rangeParam;
 	private ParamOption		spaceParam;
 	private static final String[] spaces = {"anatomical","functional"};
 	//private static final String[] spaces = {"anatomical","subsampled_anatomical","functional","oversampled_functional"};
@@ -82,13 +82,13 @@ public class JistFmriCorticalSmoothing extends ProcessingAlgorithm {
 		mapImage.setMandatory(false);
 		mapImage.setLoadAndSaveOnValidate(false);
 				
-		inputParams.add(fwhmParam = new ParamDouble("Gaussian FWHM (mm)", 0.0, 50.0, 5.0));
+		inputParams.add(fwhmParam = new ParamFloat("Gaussian FWHM (mm)", 0.0f, 50.0f, 5.0f));
 		inputParams.add(typeParam = new ParamOption("Smoothing mode", types));
 		typeParam.setValue("anatomy-guided");
 					
 		inputParams.add(regionParam = new ParamOption("Computation region", regions));
 		regionParam.setValue("full_cortex");
-		inputParams.add(rangeParam = new ParamDouble("min boundary distance (mm)", 0.0, 50.0, 1.0));
+		inputParams.add(rangeParam = new ParamFloat("min boundary distance (mm)", 0.0f, 50.0f, 1.0f));
 		
 		inputParams.add(interpParam = new ParamOption("fMRI interpolation method", interps));
 		interpParam.setValue("nearest");
@@ -384,25 +384,25 @@ public class JistFmriCorticalSmoothing extends ProcessingAlgorithm {
 					beta  = Numerics.bounded(mapping[x][y][z][Y]*overstep-yp,0,1);
 					gamma = Numerics.bounded(mapping[x][y][z][Z]*overstep-zp,0,1);
 					
-					weight = (float)( (1.0-alpha)*(1.0-beta)*(1.0-gamma) );
+					weight = (float)( (1.0f-alpha)*(1.0f-beta)*(1.0f-gamma) );
 					for (int n=0;n<nfd;n++) sdata[xp][yp][zp][n] += weight*smoothed[n];
 					sden[xp][yp][zp] += weight;
-					weight = (float)( alpha*(1.0-beta)*(1.0-gamma) );
+					weight = (float)( alpha*(1.0f-beta)*(1.0f-gamma) );
 					for (int n=0;n<nfd;n++) sdata[xp+1][yp][zp][n] += weight*smoothed[n];
 					sden[xp+1][yp][zp] += weight;
-					weight = (float)( (1.0-alpha)*beta*(1.0-gamma) );
+					weight = (float)( (1.0f-alpha)*beta*(1.0f-gamma) );
 					for (int n=0;n<nfd;n++) sdata[xp][yp+1][zp][n] += weight*smoothed[n];
 					sden[xp][yp+1][zp] += weight;
-					weight = (float)( (1.0-alpha)*(1.0-beta)*gamma );
+					weight = (float)( (1.0f-alpha)*(1.0f-beta)*gamma );
 					for (int n=0;n<nfd;n++) sdata[xp][yp][zp+1][n] += weight*smoothed[n];
 					sden[xp][yp][zp+1] += weight;
-					weight = (float)( alpha*beta*(1.0-gamma) );
+					weight = (float)( alpha*beta*(1.0f-gamma) );
 					for (int n=0;n<nfd;n++) sdata[xp+1][yp+1][zp][n] += weight*smoothed[n];
 					sden[xp+1][yp+1][zp] += weight;
-					weight = (float)( (1.0-alpha)*beta*gamma );
+					weight = (float)( (1.0f-alpha)*beta*gamma );
 					for (int n=0;n<nfd;n++) sdata[xp][yp+1][zp+1][n] += weight*smoothed[n];
 					sden[xp][yp+1][zp+1] += weight;
-					weight = (float)( alpha*(1.0-beta)*gamma );
+					weight = (float)( alpha*(1.0f-beta)*gamma );
 					for (int n=0;n<nfd;n++) sdata[xp+1][yp][zp+1][n] += weight*smoothed[n];
 					sden[xp+1][yp][zp+1] += weight;
 					weight = (float)( alpha*beta*gamma );

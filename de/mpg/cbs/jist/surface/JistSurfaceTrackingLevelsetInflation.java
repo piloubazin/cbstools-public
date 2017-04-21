@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
@@ -36,8 +36,8 @@ public class JistSurfaceTrackingLevelsetInflation extends ProcessingAlgorithm {
 	private ParamVolume intens2Image;
 	private ParamVolume intens3Image;
 	
-	private ParamDouble 	smoothingParam;
-	private ParamDouble 	precisionParam;
+	private ParamFloat 	smoothingParam;
+	private ParamFloat 	precisionParam;
 	private ParamInteger 	iterationParam;
 	private ParamInteger 	smoothiterParam;
 	//private ParamInteger 	projectionParam;
@@ -69,10 +69,10 @@ public class JistSurfaceTrackingLevelsetInflation extends ProcessingAlgorithm {
 		intens3Image.setMandatory(false);		
 
 		
-		inputParams.add(smoothingParam = new ParamDouble("Smoothing scale (voxels)", 0.0, 50.0, 1.5));
+		inputParams.add(smoothingParam = new ParamFloat("Smoothing scale (voxels)", 0.0f, 50.0f, 1.5f));
 		inputParams.add(smoothiterParam = new ParamInteger("Smoothing steps", 0, 100000, 10));
 		inputParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
-		inputParams.add(precisionParam = new ParamDouble("Precision", 0, 1E9, 0.001));
+		inputParams.add(precisionParam = new ParamFloat("Precision", 0, 1E9f, 0.001f));
 		//inputParams.add(projectionParam = new ParamInteger("Max. projection", 0, 100000, 20));
 			
 		inputParams.add(topologyParam = new ParamOption("Topology", topoTypes));
@@ -186,7 +186,7 @@ public class JistSurfaceTrackingLevelsetInflation extends ProcessingAlgorithm {
 		// create a mask
 		boolean[] bgmask = new boolean[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			bgmask[xyz] = (levelset[xyz]>=-5.0 && levelset[xyz]<=5.0);
+			bgmask[xyz] = (levelset[xyz]>=-5.0f && levelset[xyz]<=5.0f);
 		}
 		// important: increase the data range (useful for better smoothing)
 		int delta = 30;
@@ -214,11 +214,11 @@ public class JistSurfaceTrackingLevelsetInflation extends ProcessingAlgorithm {
 																	intensity, intensitymask, nimg); 
 			
 			/* seems to work for the inflation part (still a few pbs) */
-			double basis = 1.0;
+			double basis = 1.0f;
 			double scale = smoothingParam.getValue().floatValue();
 			if (smoothiterParam.getValue().floatValue()>1) {
-				basis = Math.pow(2.0*smoothingParam.getValue().floatValue(), 1.0/(smoothiterParam.getValue().floatValue()-1.0));
-				scale = 0.5;
+				basis = Math.pow(2.0f*smoothingParam.getValue().floatValue(), 1.0f/(smoothiterParam.getValue().floatValue()-1.0f));
+				scale = 0.5f;
 			}
 			for (int t=0;t<smoothiterParam.getValue().intValue();t++) {
 				Interface.displayMessage("step "+(t+1)+"\n");

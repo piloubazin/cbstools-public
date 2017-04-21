@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -39,7 +39,7 @@ public class JistCortexSmoothData extends ProcessingAlgorithm {
 	private ParamVolume 	dataImage;
 	private ParamVolume 	maskImage;
 	
-	private ParamDouble		fwhmParam;
+	private ParamFloat		fwhmParam;
 	
 	// ouput
 	private ParamVolume smoothdataImage;
@@ -55,7 +55,7 @@ public class JistCortexSmoothData extends ProcessingAlgorithm {
 		dataImage.setLoadAndSaveOnValidate(false);	
 		maskImage.setMandatory(false);
 		
-		inputParams.add(fwhmParam = new ParamDouble("Gaussian FWHM (mm)", 0.0, 50.0, 5.0));
+		inputParams.add(fwhmParam = new ParamFloat("Gaussian FWHM (mm)", 0.0f, 50.0f, 5.0f));
 			
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Cortex Processing");

@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
@@ -96,7 +96,7 @@ public class JistSurfaceLevelsetReinitialization extends ProcessingAlgorithm {
 		// create a mask for all the regions outside of the area where layer 1 is > 0 and layer 2 is < 0
 		boolean[] bgmask = new boolean[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			bgmask[xyz] = true; //(levelset[xyz]>=-5.0 && levelset[xyz]<=5.0);
+			bgmask[xyz] = true; //(levelset[xyz]>=-5.0f && levelset[xyz]<=5.0f);
 		}
 		// important: increase the data range (useful for better smoothing)
 		//int delta = 30;

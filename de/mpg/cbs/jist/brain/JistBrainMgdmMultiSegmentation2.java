@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.VoxelType;
@@ -53,15 +53,15 @@ public class JistBrainMgdmMultiSegmentation2 extends ProcessingAlgorithm {
 
 	private ParamInteger 	iterationParam;
 	private ParamInteger 	stepParam;
-	private ParamDouble 	changeParam;
-	private	ParamDouble 	forceParam;
-	private ParamDouble 	curvParam;
-	private ParamDouble 	scaleParam;
+	private ParamFloat 	changeParam;
+	private	ParamFloat 	forceParam;
+	private ParamFloat 	curvParam;
+	private ParamFloat 	scaleParam;
 	
 	private ParamBoolean	computePosteriors;
 	private ParamBoolean	adjustIntensPriors;
 	private ParamBoolean	diffuseProbabilities;
-	private ParamDouble		diffuseParam;
+	private ParamFloat		diffuseParam;
 	
 	private ParamOption 	topologyParam;
 	private static final String[] topoTypes = {"26/6", "6/26", "18/6", "6/18", "6/6", "wcs", "wco", "no"};
@@ -115,12 +115,12 @@ public class JistBrainMgdmMultiSegmentation2 extends ProcessingAlgorithm {
 		
 		mainParams=new ParamCollection("Parameters");
 		
-		mainParams.add(forceParam = new ParamDouble("Data weight", -1E10, 1E10, 0.2));
-		mainParams.add(curvParam = new ParamDouble("Curvature weight", -1E10, 1E10, 0.8));
-		mainParams.add(scaleParam = new ParamDouble("Posterior scale (mm)", -1E10, 1E10, 5.0));
+		mainParams.add(forceParam = new ParamFloat("Data weight", -1E10f, 1E10f, 0.1f));
+		mainParams.add(curvParam = new ParamFloat("Curvature weight", -1E10f, 1E10f, 0.4f));
+		mainParams.add(scaleParam = new ParamFloat("Posterior scale (mm)", -1E10f, 1E10f, 5.0f));
 		
 		mainParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
-		mainParams.add(changeParam = new ParamDouble("Min change", 0, 1, 0.001));
+		mainParams.add(changeParam = new ParamFloat("Min change", 0f, 1f, 0.001f));
 		mainParams.add(stepParam = new ParamInteger("Steps", 0, 100000, 5));
 		
 		mainParams.add(topologyParam = new ParamOption("Topology", topoTypes));
@@ -129,7 +129,7 @@ public class JistBrainMgdmMultiSegmentation2 extends ProcessingAlgorithm {
 		mainParams.add(computePosteriors = new ParamBoolean("Compute posteriors", true));
 		mainParams.add(adjustIntensPriors = new ParamBoolean("Adjust intensity priors", true));
 		mainParams.add(diffuseProbabilities = new ParamBoolean("Diffuse probabilities", true));
-		mainParams.add(diffuseParam = new ParamDouble("Diffusion factor", 0, 10, 0.5));
+		mainParams.add(diffuseParam = new ParamFloat("Diffusion factor", 0f, 10f, 0.5f));
 		
 		mainParams.add(outputParam = new ParamOption("Output images", outputTypes));
 		outputParam.setValue("label_memberships");

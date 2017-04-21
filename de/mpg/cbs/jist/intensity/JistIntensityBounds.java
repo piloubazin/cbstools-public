@@ -11,7 +11,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataMipav;
@@ -28,9 +28,9 @@ public class JistIntensityBounds extends ProcessingAlgorithm{
 	ParamVolume resultVolParam;
 	ParamOption operationParam;
 	ParamBoolean normalizeParam;
-	ParamDouble minParam, maxParam;
+	ParamFloat minParam, maxParam;
 	
-	private static final String cvsversion = "$Revision: 1.10 $";
+	private static final String cvsversion = "$Revision: 1.1f0 $";
 	private static final String revnum = cvsversion.replace("Revision: ", "").replace("$", "").replace(" ", "");
 	private static final String shortDescription = "Perform simple intensity thresholding into a [min, max] interval.";
 	private static final String longDescription = "(options allow to use raw intensities, normalized intensities, and robust normalization)";
@@ -39,8 +39,8 @@ public class JistIntensityBounds extends ProcessingAlgorithm{
 	protected void createInputParameters(ParamCollection inputParams) {
 		inputParams.add(volParam=new ParamVolume("Image Volume"));
 		inputParams.add(operationParam=new ParamOption("Bounds definition",new String[]{"raw_intensity","normalized","robust"}));
-		inputParams.add(minParam=new ParamDouble("Min", -1e10, 1e10, 0.0));
-		inputParams.add(maxParam=new ParamDouble("Max", -1e10, 1e10, 1.0));
+		inputParams.add(minParam=new ParamFloat("Min", -1e10f, 1e10f, 0.0f));
+		inputParams.add(maxParam=new ParamFloat("Max", -1e10f, 1e10f, 1.0f));
 		inputParams.add(normalizeParam=new ParamBoolean("Normalize output", false));
 		
 		inputParams.setPackage("CBS Tools");

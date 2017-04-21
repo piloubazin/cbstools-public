@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
@@ -36,7 +36,7 @@ public class JistSurfaceProbabilityToLevelset extends ProcessingAlgorithm {
 	// jist containers
 	private ParamVolume lvlImage;
 	
-	private ParamDouble scaleParam;
+	private ParamFloat scaleParam;
 	
 	private ParamVolume probaImage;
 	
@@ -45,7 +45,7 @@ public class JistSurfaceProbabilityToLevelset extends ProcessingAlgorithm {
 	protected void createInputParameters(ParamCollection inputParams) {
 		
 		inputParams.add(probaImage = new ParamVolume("Probability Image"));
-		inputParams.add(scaleParam = new ParamDouble("Scale (mm)", 0.0f, 100.0f, 5.0f));
+		inputParams.add(scaleParam = new ParamFloat("Scale (mm)", 0.0f, 100.0f, 5.0f));
 			
 		algorithm = new SurfaceProbabilityToLevelset();
 		

@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataByte;
@@ -49,7 +49,7 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 													"HCPT1w", "HCPT2w", "NormMPRAGE", "FLAIR3T",
 													"DWIFA3T", "DWIMD3T",
 													"-- 7T --", "T1MAP7T", "MP2RAGE7T", "T2SW7T", "QSM7T", 
-													"-- 9.4T --", "T1MAP9T", "MP2RAGE9T",
+													"-- 9.4fT --", "T1MAP9T", "MP2RAGE9T",
 													"-- misc --", "Filters", "PVDURA", "none"};
 	
 	private static final String inputTypeInfo = "Currently available contrasts:\n"
@@ -57,8 +57,8 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 			+"MP2RAGE7T: a T1-weighted image from 7T MP2RAGE (UNI), \n"
 			+"T2SW7T: a 7T T2*-weighted image (devel), \n"
 			+"SQSM7T: a 7T quantitative susceptibility map (devel), \n"
-			+"T1MAP9T: a 9.4T quantitative T1 map (devel), \n"
-			+"MP2RAGE9T: a T1-weighted image from 9.4T MP2RAGE (UNI) (devel), \n"
+			+"T1MAP9T: a 9.4fT quantitative T1 map (devel), \n"
+			+"MP2RAGE9T: a T1-weighted image from 9.4fT MP2RAGE (UNI) (devel), \n"
 			+"MPRAGE3T: a 3T T1-weighted MPRAGE image, \n"
 			+"T1MAP3T: a 3T quantitative T1 map, \n"
 			+"MP2RAGE3T: a T1-weighted image from MP2RAGE (UNI), \n"

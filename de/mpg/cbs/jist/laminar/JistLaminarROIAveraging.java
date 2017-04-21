@@ -6,7 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
@@ -106,7 +106,7 @@ public class JistLaminarROIAveraging extends ProcessingAlgorithm {
 		if (maskImage.getImageData()==null) {
 			// create a mask for regions of value 0 on center image (kinda arbitrary..)
 			for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {	
-				ctxmask[x][y][z] = (intensity[x][y][z][nlayers/2]!=0.0);
+				ctxmask[x][y][z] = (intensity[x][y][z][nlayers/2]!=0.0f);
 			}
 		} else {
 			ImageDataUByte	maskImg = new ImageDataUByte(maskImage.getImageData());
@@ -140,8 +140,8 @@ public class JistLaminarROIAveraging extends ProcessingAlgorithm {
 
 		// iterating through all layers
 		for(int t = 0; t <= nlayers; t++){
-			double totalSumInLayer = 0.0;
-			double nrOfVoxelsInLayer = 0.0;
+			double totalSumInLayer = 0.0f;
+			double nrOfVoxelsInLayer = 0.0f;
 
 			// get each single 3D volume
 			for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
@@ -156,7 +156,7 @@ public class JistLaminarROIAveraging extends ProcessingAlgorithm {
 			average[t] = (float)(totalSumInLayer/nrOfVoxelsInLayer);
 			nrVoxelperLayer[t] = (int)nrOfVoxelsInLayer;
 
-			double stdvaluetotal = 0.0;
+			double stdvaluetotal = 0.0f;
 			for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
 				if (ctxmask[x][y][z] && roiMask[x][y][z]!=0) {
 					if (layermask==null || layermask[x][y][z][t]) {
@@ -208,7 +208,7 @@ public class JistLaminarROIAveraging extends ProcessingAlgorithm {
 				float stddev = stddeviation[i];
 				int nrVoxLay = nrVoxelperLayer[i];
 
-				pw.printf(" %.20f \t  %.8f \t ", val, stddev );
+				pw.printf(" %.2f0f \t  %.8f \t ", val, stddev );
 				pw.print(nrVoxLay + "\n");
 
 			}

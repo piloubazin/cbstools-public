@@ -13,7 +13,7 @@ import edu.jhu.ece.iacl.jist.pipeline.CalculationMonitor;
 import edu.jhu.ece.iacl.jist.pipeline.DevelopmentStatus;
 import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamPointInteger;
@@ -127,7 +127,7 @@ public class JistUtilitiesCropToROI extends ProcessingAlgorithm{
 		//maskVol.dispose();
 		
 		Point3i origDim = new Point3i(vol1.getRows(),vol1.getCols(),vol1.getSlices());
-		CropParameters params = cropper.findBoundaries(mask, 0.0, borderSize.getInt());
+		CropParameters params = cropper.findBoundaries(mask, 0.0f, borderSize.getInt());
 		ImageData cvol1= cropper.crop(vol1, params);
 		
 		

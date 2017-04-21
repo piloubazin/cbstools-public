@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurface;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 
@@ -64,7 +64,7 @@ public class JistSurfaceMeshDataToLevelset  extends ProcessingAlgorithm{
 	ParamVolume dataImage;
 	ParamVolume maskImage;
 	ParamBoolean mipavTransform;
-	ParamDouble dataExtension;
+	ParamFloat dataExtension;
 	ParamInteger dataIndex;
 	
 	private static final float	UNKNOWN = -1.0f;
@@ -75,7 +75,7 @@ public class JistSurfaceMeshDataToLevelset  extends ProcessingAlgorithm{
 		inputParams.add(originalImage=new ParamVolume("Reference Volume"));
 		originalImage.setDescription("Reference volume to use for level set representation dimensions.");
 		//inputParams.add(mipavTransform=new ParamBoolean("Align to MIPAV image space", true));
-		inputParams.add(dataExtension=new ParamDouble("Data Extension Distance", 0.0, 100.0, 5.0));
+		inputParams.add(dataExtension=new ParamFloat("Data Extension Distance", 0.0f, 100.0f, 5.0f));
 		inputParams.add(dataIndex=new ParamInteger("Data Index", 0, 10, 0));
 		
 		inputParams.setPackage("CBS Tools");

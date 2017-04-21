@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataInt;
@@ -53,7 +53,7 @@ public class JistBrainMgdmMultiSegmentationUpdate2 extends ProcessingAlgorithm {
 	private static final String[] inputTypes = {"-- 3T --", "MPRAGE3T", "T1MAP3T", "MP2RAGE3T", 
 													"HCPT1w", "HCPT2w", "NormMPRAGE", "FLAIR3T",
 													"-- 7T --", "T1MAP7T", "MP2RAGE7T", "T2SW7T", "QSM7T", 
-													"-- 9.4T --", "T1MAP9T", "MP2RAGE9T",
+													"-- 9.4fT --", "T1MAP9T", "MP2RAGE9T",
 													"-- misc --", "Filters", "PVDURA", "none"};
 	
 	private static final String inputTypeInfo = "Currently available contrasts:\n"
@@ -61,8 +61,8 @@ public class JistBrainMgdmMultiSegmentationUpdate2 extends ProcessingAlgorithm {
 			+"MP2RAGE7T: a T1-weighted image from 7T MP2RAGE (UNI), \n"
 			+"T2SW7T: a 7T T2*-weighted image (devel), \n"
 			+"SQSM7T: a 7T quantitative susceptibility map (devel), \n"
-			+"T1MAP9T: a 9.4T quantitative T1 map (devel), \n"
-			+"MP2RAGE9T: a T1-weighted image from 9.4T MP2RAGE (UNI) (devel), \n"
+			+"T1MAP9T: a 9.4fT quantitative T1 map (devel), \n"
+			+"MP2RAGE9T: a T1-weighted image from 9.4fT MP2RAGE (UNI) (devel), \n"
 			+"MPRAGE3T: a 3T T1-weighted MPRAGE image, \n"
 			+"T1MAP3T: a 3T quantitative T1 map, \n"
 			+"MP2RAGE3T: a T1-weighted image from MP2RAGE (UNI), \n"
@@ -77,15 +77,15 @@ public class JistBrainMgdmMultiSegmentationUpdate2 extends ProcessingAlgorithm {
 
 	private ParamInteger 	iterationParam;
 	private ParamInteger 	stepParam;
-	private ParamDouble 	changeParam;
-	private	ParamDouble 	forceParam;
-	private ParamDouble 	curvParam;
-	private ParamDouble 	scaleParam;
+	private ParamFloat 	changeParam;
+	private	ParamFloat 	forceParam;
+	private ParamFloat 	curvParam;
+	private ParamFloat 	scaleParam;
 	
 	private ParamBoolean	computePosteriors;
 	private ParamBoolean	adjustIntensPriors;
 	private ParamBoolean	diffuseProbabilities;
-	private ParamDouble		diffuseParam;
+	private ParamFloat		diffuseParam;
 	
 	private ParamOption 	topologyParam;
 	private static final String[] topoTypes = {"26/6", "6/26", "18/6", "6/18", "6/6", "wcs", "wco", "no"};
@@ -163,12 +163,12 @@ public class JistBrainMgdmMultiSegmentationUpdate2 extends ProcessingAlgorithm {
 		
 		mainParams=new ParamCollection("Parameters");
 		
-		mainParams.add(forceParam = new ParamDouble("Data weight", -1E10, 1E10, 0.2));
-		mainParams.add(curvParam = new ParamDouble("Curvature weight", -1E10, 1E10, 0.8));
-		mainParams.add(scaleParam = new ParamDouble("Posterior scale (mm)", -1E10, 1E10, 5.0));
+		mainParams.add(forceParam = new ParamFloat("Data weight", -1E10f, 1E10f, 0.1f));
+		mainParams.add(curvParam = new ParamFloat("Curvature weight", -1E10f, 1E10f, 0.4f));
+		mainParams.add(scaleParam = new ParamFloat("Posterior scale (mm)", -1E10f, 1E10f, 5.0f));
 		
 		mainParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
-		mainParams.add(changeParam = new ParamDouble("Min change", 0, 1, 0.001));
+		mainParams.add(changeParam = new ParamFloat("Min change", 0f, 1f, 0.001f));
 		mainParams.add(stepParam = new ParamInteger("Steps", 0, 100000, 5));
 		
 		mainParams.add(topologyParam = new ParamOption("Topology", topoTypes));
@@ -177,7 +177,7 @@ public class JistBrainMgdmMultiSegmentationUpdate2 extends ProcessingAlgorithm {
 		mainParams.add(computePosteriors = new ParamBoolean("Compute posteriors", true));
 		mainParams.add(adjustIntensPriors = new ParamBoolean("Adjust intensity priors", true));
 		mainParams.add(diffuseProbabilities = new ParamBoolean("Diffuse probabilities", true));
-		mainParams.add(diffuseParam = new ParamDouble("Diffusion factor", 0, 10, 0.5));
+		mainParams.add(diffuseParam = new ParamFloat("Diffusion factor", 0f, 10f, 0.5f));
 		
 		mainParams.add(outputParam = new ParamOption("Output images", outputTypes));
 		outputParam.setValue("label_memberships");
@@ -391,7 +391,7 @@ public class JistBrainMgdmMultiSegmentationUpdate2 extends ProcessingAlgorithm {
 
 		/*
 		// minimum scale?
-		float factor = (float)Math.sqrt(3.0)*Numerics.max(rx/atlas.getShapeRes()[0],ry/atlas.getShapeRes()[1],rz/atlas.getShapeRes()[2]);
+		float factor = (float)Math.sqrt(3.0f)*Numerics.max(rx/atlas.getShapeRes()[0],ry/atlas.getShapeRes()[1],rz/atlas.getShapeRes()[2]);
 		Interface.displayMessage("minimum scale: "+factor+"\n");
 		
 		// or full scale?
@@ -439,7 +439,7 @@ public class JistBrainMgdmMultiSegmentationUpdate2 extends ProcessingAlgorithm {
 		atlas.setTemplate(mgdma.getLabeledSegmentation());
 		
 		// minimum scale?
-		factor = 1.0f/((float)Math.sqrt(3.0)*Numerics.max(rx/atlas.getShapeRes()[0],ry/atlas.getShapeRes()[1],rz/atlas.getShapeRes()[2]));
+		factor = 1.0f/((float)Math.sqrt(3.0f)*Numerics.max(rx/atlas.getShapeRes()[0],ry/atlas.getShapeRes()[1],rz/atlas.getShapeRes()[2]));
 		Interface.displayMessage("minimum scale: "+factor+"\n");
 		
 		//short[] counter = mgdma.exportFrozenPointCounter();
@@ -473,7 +473,7 @@ public class JistBrainMgdmMultiSegmentationUpdate2 extends ProcessingAlgorithm {
 				
 			initseg = mgdms.exportScaledSegmentation();
 			// scaling factor must be lower than 1/sqrt(3) to preserve topology
-			factor *= 0.575f;
+			factor *= 0.5f75f;
 			Interface.displayMessage("additional scaling? (new factor: "+factor+")\n");
 		}
 		*/

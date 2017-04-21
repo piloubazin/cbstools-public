@@ -9,7 +9,7 @@ import edu.jhu.ece.iacl.jist.pipeline.DevelopmentStatus;
 import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolumeCollection;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -28,7 +28,7 @@ public class JistBrainFilterStacking extends ProcessingAlgorithm{
 	ParamVolume 		vol1Param;
 	ParamVolume 		vol2Param;
 	ParamVolume 		vol3Param;
-	ParamDouble			bgParam;
+	ParamFloat			bgParam;
 	
 	ParamVolume stackVolParam;
 	
@@ -39,7 +39,7 @@ public class JistBrainFilterStacking extends ProcessingAlgorithm{
 		vol1Param.setMandatory(false);
 		vol2Param.setMandatory(false);
 		vol3Param.setMandatory(false);
-		inputParams.add(bgParam=new ParamDouble("Background threshold [0-1]", 0.0, 1.0, 0.001));
+		inputParams.add(bgParam=new ParamFloat("Background threshold [0-1]", 0.0f, 1.0f, 0.001f));
 		bgParam.setDescription("maps low values from any filter to zero, for visualization purposes only.");
 		
 		inputParams.setPackage("CBS Tools");

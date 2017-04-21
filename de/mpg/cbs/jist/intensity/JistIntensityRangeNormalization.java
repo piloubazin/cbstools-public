@@ -4,7 +4,7 @@ import edu.jhu.ece.iacl.jist.pipeline.AlgorithmRuntimeException;
 import edu.jhu.ece.iacl.jist.pipeline.CalculationMonitor;
 import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
@@ -36,7 +36,7 @@ public class JistIntensityRangeNormalization extends ProcessingAlgorithm {
 	private ParamVolume maskImage;
 	private ParamVolume resultImage;
 	private	ParamOption	 normParam;
-	private ParamDouble	 ratioParam;
+	private ParamFloat	 ratioParam;
 	private ParamBoolean ignoreNegParam;
 	private ParamBoolean ignoreZeroParam;
 	
@@ -47,7 +47,7 @@ public class JistIntensityRangeNormalization extends ProcessingAlgorithm {
 		inputParams.add(normParam = new ParamOption("normalization type", normtypes));
 		normParam.setDescription("linear: use the whole range [Imin,Imax]; robust: use a truncated version of [Imin,Imax]; robust-max: use a truncated version of [0,Imax]");
 		normParam.setValue(normtype);
-		inputParams.add(ratioParam = new ParamDouble("Robustness ratio", 0, 1, 0.01));
+		inputParams.add(ratioParam = new ParamFloat("Robustness ratio", 0, 1, 0.01f));
 		ratioParam.setDescription("ratio of discarded values below Imin and above Imax (in [0,1])");
 		inputParams.add(ignoreNegParam = new ParamBoolean("set negative values to zero", true));
 		inputParams.add(ignoreZeroParam = new ParamBoolean("ignore zero values", true));

@@ -8,7 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -47,17 +47,17 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 	private ParamOption filterParam;
 	private static final String[] filterTypes = {"tubular","strict_tubular","hessian","Frangi","pre-filtered"};
 	
-	//private ParamDouble origParam;
+	//private ParamFloat origParam;
 	//private ParamOption probaParam;
 	//private static final String[] probaTypes = {"GaussianM","GaussianS","ExponentialM","ExponentialS"};
 	private ParamOption similarityParam;
 	private static final String[] similarityTypes = {"full","recomputed","angle","neighbor","constant"};
 	private ParamOption propagationParam;
 	private static final String[] propagationTypes = {"diffusion","belief"};
-	private ParamDouble shapeParam;
-	private ParamDouble thresholdParam;
-	private ParamDouble factorParam;
-	private ParamDouble diffParam;
+	private ParamFloat shapeParam;
+	private ParamFloat thresholdParam;
+	private ParamFloat factorParam;
+	private ParamFloat diffParam;
 	private ParamInteger iterParam;
 	
 	private ParamVolume shapeImage;
@@ -74,11 +74,11 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 	// numerical quantities
 	private static final	float   INF=1e15f;
 	private static final	float   ZERO=1e-15f;
-	private static final	float	PI2 = (float)(Math.PI/2.0);
-	private static final	float	SQRT2 = (float)FastMath.sqrt(2.0);
-	private static final	float	SQRT3 = (float)FastMath.sqrt(3.0);
-	private static final	float	INVSQRT2 = (float)(1.0/FastMath.sqrt(2.0));
-	private static final	float	INVSQRT3 = (float)(1.0/FastMath.sqrt(3.0));
+	private static final	float	PI2 = (float)(Math.PI/2.0f);
+	private static final	float	SQRT2 = (float)FastMath.sqrt(2.0f);
+	private static final	float	SQRT3 = (float)FastMath.sqrt(3.0f);
+	private static final	float	INVSQRT2 = (float)(1.0f/FastMath.sqrt(2.0f));
+	private static final	float	INVSQRT3 = (float)(1.0f/FastMath.sqrt(3.0f));
 	private static final	byte	UNKNOWN = -1;
 	
 	// direction labeling
@@ -125,14 +125,14 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		inputParams.add(inputDirections = new ParamVolume("Input Directions (opt)"));
 		inputDirections.setMandatory(false);
 		
-		//inputParams.add(origParam = new ParamDouble("Original image scaling", 0.0, 10.0, 0.5));
+		//inputParams.add(origParam = new ParamFloat("Original image scaling", 0.0f, 10.0f, 0.5f));
 		//inputParams.add(probaParam = new ParamOption("Filter probability model", probaTypes));
 		inputParams.add(similarityParam = new ParamOption("Filter similarity", similarityTypes));
-		inputParams.add(shapeParam = new ParamDouble("Shape filter scaling", 0.0, 10.0, 1.0));
-		inputParams.add(thresholdParam = new ParamDouble("Probability threshold", 0.0, 1.0, 0.5));
+		inputParams.add(shapeParam = new ParamFloat("Shape filter scaling", 0.0f, 10.0f, 1.0f));
+		inputParams.add(thresholdParam = new ParamFloat("Probability threshold", 0.0f, 1.0f, 0.5f));
 		inputParams.add(propagationParam = new ParamOption("Propagation model", propagationTypes));
-		inputParams.add(factorParam = new ParamDouble("Diffusion factor", 0.0, 100.0, 0.5));
-		inputParams.add(diffParam = new ParamDouble("Max difference", 0.0, 1.0, 0.0001));
+		inputParams.add(factorParam = new ParamFloat("Diffusion factor", 0.0f, 100.0f, 0.5f));
+		inputParams.add(diffParam = new ParamFloat("Max difference", 0.0f, 1.0f, 0.0001f));
 		inputParams.add(iterParam = new ParamInteger("Max iterations", 0, 1000, 100));
 		
 		inputParams.setPackage("CBS Tools");
@@ -416,8 +416,8 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		// 3. threshold, then label each connected component		
 		//float threshold = (1.0f+2.0f*factor)*Numerics.bounded(thresholdParam.getValue().floatValue(), 0.001f, 0.999f);
 		float threshold = 0;
-		if (maxiter==0) threshold = (float)FastMath.log(1.0f+Numerics.bounded(thresholdParam.getValue().floatValue(), 0.000001f, 0.999999f));
-		else threshold = (float)FastMath.log(1.0f+(1.0f+2.0f*factor)*Numerics.bounded(thresholdParam.getValue().floatValue(), 0.000001f, 0.999999f));
+		if (maxiter==0) threshold = (float)FastMath.log(1.0f+Numerics.bounded(thresholdParam.getValue().floatValue(), 0.0f00001f, 0.999999f));
+		else threshold = (float)FastMath.log(1.0f+(1.0f+2.0f*factor)*Numerics.bounded(thresholdParam.getValue().floatValue(), 0.0f00001f, 0.999999f));
 		boolean[] obj = ObjectExtraction.objectFromImage(diffused, nx,ny,nz, threshold, ObjectExtraction.SUPERIOR);
 		int[] vessels = ObjectLabeling.connected26Object3D(obj, nx,ny,nz);
 		
@@ -441,8 +441,8 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		float[][][] result = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
-			if (maxiter==0) result[x][y][z] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
-			else result[x][y][z] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0)/(1.0f+2.0f*factor), 0.0f, 1.0f);
+			if (maxiter==0) result[x][y][z] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0f), 0.0f, 1.0f);
+			else result[x][y][z] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0f)/(1.0f+2.0f*factor), 0.0f, 1.0f);
 			//result[x][y][z] = diffused[id]/(1.0f+2.0f*factor);
 		}
 		diffused = null;
@@ -579,8 +579,8 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
-			if (maxiter==0) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
-			else diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0)/(1.0f+2.0f*factor), 0.0f, 1.0f);
+			if (maxiter==0) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0f), 0.0f, 1.0f);
+			else diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0f)/(1.0f+2.0f*factor), 0.0f, 1.0f);
 		}
 		return diffused;
 	}
@@ -898,9 +898,9 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 				if (img[id]>imax) imax = img[id];
 		    }
 		}
-		double a2 = 2.0*scaling*scaling;
-		double b2 = 2.0*scaling*scaling;
-		double c2 = 2.0*scaling*(imax-imin)*scaling*(imax-imin);
+		double a2 = 2.0f*scaling*scaling;
+		double b2 = 2.0f*scaling*scaling;
+		double c2 = 2.0f*scaling*(imax-imin)*scaling*(imax-imin);
 					
 		
         for (x=1;x<nx-1;x++) for (y=1;y<ny-1;y++) for (z=1;z<nz-1;z++) {
@@ -918,7 +918,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 					double Ra = Numerics.abs(vals[1])/Numerics.abs(vals[0]);
 					double S = FastMath.sqrt(vals[0]*vals[0]+vals[1]*vals[1]+vals[2]*vals[2]);
 					
-					shape[id] = (float)( (1.0-FastMath.exp(-Ra*Ra/a2))*FastMath.exp(-Rb*Rb/b2)*(1-FastMath.exp(-S*S/c2)) );
+					shape[id] = (float)( (1.0f-FastMath.exp(-Ra*Ra/a2))*FastMath.exp(-Rb*Rb/b2)*(1-FastMath.exp(-S*S/c2)) );
 				}
 				
 				// main direction: lowest eigenvalue
@@ -956,9 +956,9 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		}
 
 		// normalization
-		double mean = 0.0;
-		double max = 0.0;
-		double den = 0.0;
+		double mean = 0.0f;
+		double max = 0.0f;
+		double den = 0.0f;
 		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 			int xyz = x + nx*y + nx*ny*z;
 			if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
@@ -975,14 +975,14 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		mean /= den;
 		
 		// exponential fit or gaussian fit ? gaussian seems more sensitive, better for simple tubular filter
-		double normg = 2.0/(mean*FastMath.PI);
+		double normg = 2.0f/(mean*FastMath.PI);
 		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 			int xyz = x + nx*y + nx*ny*z;
 			if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
-				//double pe = FastMath.exp( -0.5*shape[xyz]/mean)/mean;
-				//shape[xyz] = (float)(1.0/max/( 1.0/max+pe));
+				//double pe = FastMath.exp( -0.5f*shape[xyz]/mean)/mean;
+				//shape[xyz] = (float)(1.0f/max/( 1.0f/max+pe));
 				double pg = normg*FastMath.exp(-shape[xyz]*shape[xyz]/(FastMath.PI*mean*mean));
-				shape[xyz] = (float)(1.0/max/( 1.0/max+pg));
+				shape[xyz] = (float)(1.0f/max/( 1.0f/max+pg));
 			}
 		}
 
@@ -991,9 +991,9 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
     
 	private final void shapeDirectionFromTubularFilter(float[] img, boolean[] mask, float[] shape, float[][] direction) {
 		
-		double avg = 0.0;
-		double sig = 0.0;
-		double den = 0.0;
+		double avg = 0.0f;
+		double sig = 0.0f;
+		double den = 0.0f;
 		float[] filter = new float[nx*ny*nz];
 		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 			int xyz = x + nx*y + nx*ny*z;
@@ -1021,7 +1021,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		}
 		// normalization: best is the iterative robust exponential (others are removed)
 		int nb = 0;
-		double max = 0.0;
+		double max = 0.0f;
 		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 			int xyz = x + nx*y + nx*ny*z;
 			if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
@@ -1049,8 +1049,8 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 			}
 		}
 		Percentile measure = new Percentile();
-		double median = measure.evaluate(response, 50.0);
-		double beta = median/FastMath.log(2.0);
+		double median = measure.evaluate(response, 50.0f);
+		double beta = median/FastMath.log(2.0f);
 	
 		Interface.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
 		
@@ -1058,7 +1058,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 			int xyz = x + nx*y + nx*ny*z;
 			if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
 				double pe = FastMath.exp( -filter[xyz]/beta)/beta;
-				shape[xyz] = (float)(1.0/max/( 1.0/max+pe));
+				shape[xyz] = (float)(1.0f/max/( 1.0f/max+pe));
 			}
 		}
 		/*
@@ -1072,7 +1072,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 				int xyz = x + nx*y + nx*ny*z;
 				if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
-					if (filter[xyz]>0 && shape[xyz]<0.5) nb++;
+					if (filter[xyz]>0 && shape[xyz]<0.5f) nb++;
 				}
 			}
 			response = new double[nb];
@@ -1080,24 +1080,24 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 				int xyz = x + nx*y + nx*ny*z;
 				if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
-					if (filter[xyz]>0 && shape[xyz]<0.5) {
+					if (filter[xyz]>0 && shape[xyz]<0.5f) {
 						response[n] = filter[xyz];
 						n++;
 					}
 				}
 			}
-			median = measure.evaluate(response, 50.0);
-			beta = median/FastMath.log(2.0);
+			median = measure.evaluate(response, 50.0f);
+			beta = median/FastMath.log(2.0f);
 			Interface.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
 			
 			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 				int xyz = x + nx*y + nx*ny*z;
 				if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
 					double pe = FastMath.exp( -filter[xyz]/beta)/beta;
-					shape[xyz] = (float)(1.0/max/( 1.0/max+pe));
+					shape[xyz] = (float)(1.0f/max/( 1.0f/max+pe));
 				}
 			}
-			if (2.0*Numerics.abs(beta-betaprev)/(beta+betaprev)<0.01) t=1000;
+			if (2.0f*Numerics.abs(beta-betaprev)/(beta+betaprev)<0.01f) t=1000;
 		}
 		*/
 		return;
@@ -1142,7 +1142,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		
 		// normalization: best is the iterative robust exponential (others are removed)
 		int nb = 0;
-		double max = 0.0;
+		double max = 0.0f;
 		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 			int xyz = x + nx*y + nx*ny*z;
 			//if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
@@ -1171,8 +1171,8 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 			//}
 		}
 		Percentile measure = new Percentile();
-		double median = measure.evaluate(response, 50.0);
-		double beta = median/FastMath.log(2.0);
+		double median = measure.evaluate(response, 50.0f);
+		double beta = median/FastMath.log(2.0f);
 	
 		Interface.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
 		
@@ -1181,7 +1181,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 			if (filter[xyz]>0) {
 			//if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
 				double pe = FastMath.exp( -filter[xyz]/beta)/beta;
-				shape[xyz] = (float)(1.0/max/( 1.0/max+pe));
+				shape[xyz] = (float)(1.0f/max/( 1.0f/max+pe));
 			}
 		}
 		/*
@@ -1195,7 +1195,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 				int xyz = x + nx*y + nx*ny*z;
 				if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
-					if (filter[xyz]>0 && shape[xyz]<0.5) nb++;
+					if (filter[xyz]>0 && shape[xyz]<0.5f) nb++;
 				}
 			}
 			response = new double[nb];
@@ -1203,24 +1203,24 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 				int xyz = x + nx*y + nx*ny*z;
 				if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
-					if (filter[xyz]>0 && shape[xyz]<0.5) {
+					if (filter[xyz]>0 && shape[xyz]<0.5f) {
 						response[n] = filter[xyz];
 						n++;
 					}
 				}
 			}
-			median = measure.evaluate(response, 50.0);
-			beta = median/FastMath.log(2.0);
+			median = measure.evaluate(response, 50.0f);
+			beta = median/FastMath.log(2.0f);
 			Interface.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
 			
 			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 				int xyz = x + nx*y + nx*ny*z;
 				if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
 					double pe = FastMath.exp( -filter[xyz]/beta)/beta;
-					shape[xyz] = (float)(1.0/max/( 1.0/max+pe));
+					shape[xyz] = (float)(1.0f/max/( 1.0f/max+pe));
 				}
 			}
-			if (2.0*Numerics.abs(beta-betaprev)/(beta+betaprev)<0.01) t=1000;
+			if (2.0f*Numerics.abs(beta-betaprev)/(beta+betaprev)<0.01f) t=1000;
 		}
 		*/
 		return;
@@ -1506,7 +1506,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 				
     	// propagate the values : diffusion
     	float maxdiff = 1.0f;
-		for (int t=0;t<iter && maxdiff>0.05f;t++) {
+		for (int t=0;t<iter && maxdiff>0.0f5f;t++) {
 			Interface.displayMessage(".");
 			maxdiff = 0.0f;
 			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
