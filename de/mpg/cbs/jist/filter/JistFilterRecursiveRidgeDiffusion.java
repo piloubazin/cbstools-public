@@ -1650,6 +1650,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			diffused[xyz] = (float)FastMath.log(1.0f + proba[xyz]);
 		}
 
+		factor /= (float)ngbsize;
 		for (int t=0;t<iter;t++) {
 			Interface.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
@@ -1793,10 +1794,6 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 
     private final void estimateSimpleDiffusionSimilarity1D(byte[] dir, float[] proba, int ngbsize, byte[][] neighbor, float[][] similarity, float factor) {
     	
-    	// initialize
-    	neighbor = new byte[ngbsize][nxyz];
-    	similarity = new float[ngbsize][nxyz];
-    	
     	float[][] parallelweight = new float[26][26];
 		for (int d1=0;d1<26;d1++) for (int d2=0;d2<26;d2++) {
 			float[] dir1 = directionVector(d1);
@@ -1844,7 +1841,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		// build a similarity function from aligned neighbors
 		float[][] similarity = new float[ngbsize][nxyz];
 		byte[][] neighbor = new byte[ngbsize][nxyz];
-    		estimateSimpleDiffusionSimilarity2D(dir, proba, ngbsize, neighbor, similarity, angle);
+    	estimateSimpleDiffusionSimilarity2D(dir, proba, ngbsize, neighbor, similarity, angle);
 		
 		// run the diffusion process
 		float[] diffused = new float[nxyz];
@@ -1879,7 +1876,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
-			if (iter==0) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
+			if (iter<2) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
 			else diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0)/(1.0f+2.0f*factor), 0.0f, 1.0f);
 		}
 		return diffused;
@@ -2181,7 +2178,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 
 	private final void estimateSimpleDiffusionSimilarity2D(byte[] dir, float[] proba, int ngbsize, byte[][] neighbor, float[][] similarity, float factor) {
     	
-    		float[][] parallelweight = new float[26][26];
+    	float[][] parallelweight = new float[26][26];
 		float[][] orthogonalweight = new float[26][26];
 		for (int d1=0;d1<26;d1++) for (int d2=0;d2<26;d2++) {
 			float[] dir1 = directionVector(d1);
