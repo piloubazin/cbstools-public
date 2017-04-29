@@ -34,7 +34,8 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 	private ParamVolume 	inv1Image;
 	private ParamVolume 	inv2Image;
 	private ParamFloat 		invertRepTimeParam;
-	private ParamFloat 		exciteRepTimeParam;
+	private ParamFloat 		excite1RepTimeParam;
+	private ParamFloat 		excite2RepTimeParam;
 	private ParamInteger 	exciteNumberParam;
 	private ParamFloat 		inversionTime1Param;
 	private ParamFloat 		inversionTime2Param;
@@ -68,7 +69,8 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 		mrParam.add(invertEffParam = new ParamFloat("Inversion efficiency", 0.0f, 1.0f, 0.96f));
 		
 		mrParam.add(invertRepTimeParam = new ParamFloat("Inversion repetition time (sec)", 0.0f, 10000.0f, 5.5f));
-		mrParam.add(exciteRepTimeParam = new ParamFloat("Excitation repetition time (sec)", 0.0f, 10000.0f, 0.0062f));
+		mrParam.add(excite1RepTimeParam = new ParamFloat("First Excitation repetition time (sec)", 0.0f, 10000.0f, 0.0062f));
+		mrParam.add(excite2RepTimeParam = new ParamFloat("Second Excitation repetition time (sec)", 0.0f, 10000.0f, 0.0062f));
 		mrParam.add(exciteNumberParam = new ParamInteger("Number of excitations", 0, 10000, 160));
 		inputParams.add(mrParam);
 		
@@ -126,7 +128,8 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 		algorithm.setInversionEfficiency(invertEffParam.getValue().floatValue());
 		
 		algorithm.setInversionRepetitionTime(invertRepTimeParam.getValue().floatValue());
-		algorithm.setExcitationRepetitionTime(exciteRepTimeParam.getValue().floatValue());
+		algorithm.setFirstExcitationRepetitionTime(excite1RepTimeParam.getValue().floatValue());
+		algorithm.setSecondExcitationRepetitionTime(excite2RepTimeParam.getValue().floatValue());
 		algorithm.setNumberExcitations(exciteNumberParam.getValue().intValue());
 		
 		algorithm.execute();

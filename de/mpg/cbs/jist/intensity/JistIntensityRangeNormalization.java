@@ -39,6 +39,7 @@ public class JistIntensityRangeNormalization extends ProcessingAlgorithm {
 	private ParamFloat	 ratioParam;
 	private ParamBoolean ignoreNegParam;
 	private ParamBoolean ignoreZeroParam;
+	private ParamFloat	 scalingParam;
 	
 	protected void createInputParameters(ParamCollection inputParams) {
 		inputParams.add(inImage = new ParamVolume("Input Image"));
@@ -51,6 +52,8 @@ public class JistIntensityRangeNormalization extends ProcessingAlgorithm {
 		ratioParam.setDescription("ratio of discarded values below Imin and above Imax (in [0,1])");
 		inputParams.add(ignoreNegParam = new ParamBoolean("set negative values to zero", true));
 		inputParams.add(ignoreZeroParam = new ParamBoolean("ignore zero values", true));
+		inputParams.add(scalingParam = new ParamFloat("Output scaling", 0, 1e10f, 1.0f));
+		scalingParam.setDescription("scaling the output image into [0,S]");
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Intensity");
@@ -134,9 +137,10 @@ public class JistIntensityRangeNormalization extends ProcessingAlgorithm {
 		Interface.displayMessage("image min, max: "+Imin+", "+Imax+"\n");
 			
 		// 2. scale the data
+		float scaling = scalingParam.getValue().floatValue();
 		float[][][] result = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			result[x][y][z] = Numerics.bounded( (image[x][y][z]-Imin)/(Imax-Imin), 0.0f, 1.0f);
+			result[x][y][z] = scaling*Numerics.bounded( (image[x][y][z]-Imin)/(Imax-Imin), 0.0f, 1.0f);
 		}
 
 		ImageDataFloat resultData = new ImageDataFloat(result);		

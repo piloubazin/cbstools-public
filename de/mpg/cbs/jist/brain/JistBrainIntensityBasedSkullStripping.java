@@ -5,6 +5,7 @@ import edu.jhu.ece.iacl.jist.pipeline.CalculationMonitor;
 import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
@@ -45,6 +46,7 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 	
 	private ParamBoolean	skip0Param;
 	private ParamBoolean	slab2dParam;
+	private ParamInteger	dilateParam;
 	
 	private ParamVolume maskImage;
 	private ParamVolume probaImage;
@@ -63,6 +65,8 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 		inputParams.add(iterateParam = new ParamBoolean("Iterative estimation", false));
 		inputParams.add(skip0Param = new ParamBoolean("Skip zero values", false));
 		inputParams.add(slab2dParam = new ParamBoolean("2D slab data", false));
+		inputParams.add(dilateParam = new ParamInteger("Additional mask dilation", -5,5, 0));
+		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Brain Processing");
 		inputParams.setLabel("Intensity-based Skull Stripping");
@@ -74,7 +78,7 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 		info.setDescription("Estimate a brain mask for a dataset with good brain/background intensity separation (e.g. PD-weighted). "
 							+"An extra image can be used to ensure high intensities are preserved (e.g. T1 map, T2-weighted data or a probability map for a ROI");
 		
-		info.setVersion("3.1.0");
+		info.setVersion("3.1.1");
 		info.setStatus(DevelopmentStatus.RC);
 		info.setEditable(false);
 	}
@@ -271,14 +275,20 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 				brainmask[x][y][z] = 0;
 			}
 		}
+		
+		int dilate = dilateParam.getValue().intValue();
+		if (dilate>0) {
+			brainmask = Morphology.dilateObject(brainmask, nx,ny,nz, dilate,dilate,dilate);
+		} else if (dilate<0) {
+			brainmask = Morphology.erodeObject(brainmask, nx,ny,nz, -dilate,-dilate,-dilate);
+		}
 
 		ImageDataUByte resultData = new ImageDataUByte(brainmask);		
 		resultData.setHeader(mainImage.getImageData().getHeader());
 		resultData.setName(mainImage.getImageData().getName()+"_stripmask");
 		maskImage.setValue(resultData);
 		resultData = null;
-		brainmask = null;
-		
+			
 		ImageDataFloat bufferData = new ImageDataFloat(probamask);
 		bufferData.setHeader(mainImage.getImageData().getHeader());
 		bufferData.setName(mainImage.getImageData().getName()+"_probamask");
@@ -288,7 +298,7 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 		buffer = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;
-			if (brain[xyz]>0) buffer[x][y][z] = image[main][xyz];
+			if (brainmask[x][y][z]>0) buffer[x][y][z] = image[main][xyz];
 			else buffer[x][y][z] = 0.0f;
 		}
 		bufferData = new ImageDataFloat(buffer);
@@ -302,7 +312,7 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 			buffer = new float[nx][ny][nz];
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 				int xyz = x+nx*y+nx*ny*z;
-				if (brain[xyz]>0) buffer[x][y][z] = image[extra][xyz];
+				if (brainmask[x][y][z]>0) buffer[x][y][z] = image[extra][xyz];
 				else buffer[x][y][z] = 0.0f;
 			}
 			bufferData = new ImageDataFloat(buffer);

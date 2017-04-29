@@ -20,7 +20,8 @@ public class IntensityMp2rageT1Fitting {
 	private 	float 		rx, ry, rz;
 
 	private		float		TRinversion = 5.50f;
-	private		float		TRexcitation = 0.0062f;
+	private		float		TRexcitation1 = 0.0062f;
+	private		float		TRexcitation2 = 0.0062f;
 	private		float		TI1 = 0.8f;
 	private		float		TI2 = 2.7f;
 	private		float		angle1 = 7.0f;
@@ -28,7 +29,6 @@ public class IntensityMp2rageT1Fitting {
 	private 	int			Nexcitations = 160;
 	private		float		inversionEfficiency = 0.96f;
 	
-	private		float		angleScale = (float)(3142.0f/FastMath.PI);
 	private		float		intensityScale = 1000.0f;
 	private		float		t1mapThreshold = 6.0f;
 	private		int			lutSamples = 100000;
@@ -46,7 +46,9 @@ public class IntensityMp2rageT1Fitting {
 	public final void setSecondInversionImage(float[] in) { inv2 = in; }
 	
 	public final void setInversionRepetitionTime(float in) { TRinversion = in; }
-	public final void setExcitationRepetitionTime(float in) { TRexcitation = in; }
+	public final void setExcitationRepetitionTime(float in) { TRexcitation1 = in; TRexcitation2 = in; }
+	public final void setFirstExcitationRepetitionTime(float in) { TRexcitation1 = in; }
+	public final void setSecondExcitationRepetitionTime(float in) { TRexcitation2 = in; }
 	public final void setNumberExcitations(int in) { Nexcitations = in; }
 	public final void setFirstInversionTime(float in) { TI1 = in; }
 	public final void setSecondInversionTime(float in) { TI2 = in; }
@@ -118,20 +120,24 @@ public class IntensityMp2rageT1Fitting {
 		// we assume 4D images: dim 0 magnitude, dim 1 phase
 		
 		// estimate angular scale (range should be [-PI +PI]
-		float phsmin = inv1[nxyz];
-		float phsmax = inv1[nxyz];
+		float phsmin1 = inv1[nxyz];
+		float phsmax1 = inv1[nxyz];
+		float phsmin2 = inv1[nxyz];
+		float phsmax2 = inv1[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			if (inv1[xyz+nxyz]<phsmin) phsmin = inv1[xyz+nxyz];
-			if (inv2[xyz+nxyz]<phsmin) phsmin = inv2[xyz+nxyz];
-			if (inv1[xyz+nxyz]>phsmax) phsmax = inv1[xyz+nxyz];
-			if (inv2[xyz+nxyz]>phsmax) phsmax = inv2[xyz+nxyz];
+			if (inv1[xyz+nxyz]<phsmin1) phsmin1 = inv1[xyz+nxyz];
+			if (inv1[xyz+nxyz]>phsmax1) phsmax1 = inv1[xyz+nxyz];
+			if (inv2[xyz+nxyz]<phsmin2) phsmin2 = inv2[xyz+nxyz];
+			if (inv2[xyz+nxyz]>phsmax2) phsmax2 = inv2[xyz+nxyz];
 		}
-		angleScale = (float)( (phsmax-phsmin)/(2.0f*FastMath.PI) );
+		double phscale1 = (phsmax1-phsmin1)/(2.0*FastMath.PI);
+		double phscale2 = (phsmax2-phsmin2)/(2.0*FastMath.PI);
+		//System.out.println("Phase scaling: ["+phsmin+", "+phsmax+"] -> [-PI, PI]");
 		
 		uni = new float[nxyz];
 		snr = new float[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			double prod = inv1[xyz]*inv2[xyz]*FastMath.cos((inv1[xyz+nxyz]-inv2[xyz+nxyz])/angleScale);
+			double prod = inv1[xyz]*inv2[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1-inv2[xyz+nxyz]/phscale2);
 			double norm = inv1[xyz]*inv1[xyz] + inv2[xyz]*inv2[xyz];
 			
 			double diff2 = (inv1[xyz]*inv1[xyz] - inv2[xyz]*inv2[xyz])*(inv1[xyz]*inv1[xyz] - inv2[xyz]*inv2[xyz]);
@@ -147,9 +153,9 @@ public class IntensityMp2rageT1Fitting {
 		// for the T1 map, more complicated: first estimate the inv1, inv2 you would get for a range of t1 values, then find the fit?
 		T1lookup = new double[lutSamples];
 		
-		double TA = TI1 - Nexcitations/2.0f*TRexcitation;
-		double TB = TI2 - TI1 - Nexcitations*TRexcitation;
-		double TC = TRinversion - TI2 - Nexcitations/2.0f*TRexcitation;
+		double TA = TI1 - Nexcitations/2.0f*TRexcitation1;
+		double TB = TI2 - TI1 - Nexcitations/2.0f*TRexcitation1 - Nexcitations/2.0f*TRexcitation2;
+		double TC = TRinversion - TI2 - Nexcitations/2.0f*TRexcitation2;
 		
 		System.out.println("timings: TA = "+TA+", TB = "+TB+", TC = "+TC); 
 		
@@ -163,25 +169,41 @@ public class IntensityMp2rageT1Fitting {
 			double qt1 = t*t1mapThreshold/(double)lutSamples;
 			
 			if (qt1>0.1) {
-				double E1 = FastMath.exp(-TRexcitation/qt1);
+				double E1 = FastMath.exp(-TRexcitation1/qt1);
+				double E2 = FastMath.exp(-TRexcitation2/qt1);
+				
 				double EI = FastMath.exp(-TRinversion/qt1);
+				
 				double EA = FastMath.exp(-TA/qt1);
 				double EB = FastMath.exp(-TB/qt1);
 				double EC = FastMath.exp(-TC/qt1);
-				double E1cosA1 = FastMath.cos(a1rad)*E1;
-				double E1cosA2 = FastMath.cos(a2rad)*E1;
-				double E1cosA1n = FastMath.pow( (FastMath.cos(a1rad)*E1), Nexcitations);
-				double E1cosA2n = FastMath.pow( (FastMath.cos(a2rad)*E1), Nexcitations);
-				double E1cosA1n21 = FastMath.pow( (FastMath.cos(a1rad)*E1), Nexcitations/2.0f-1.0f);
-				double E1cosA2n2 = FastMath.pow( (FastMath.cos(a2rad)*E1), Nexcitations/2.0f);
-				double mza = (1.0f-EA)*E1cosA1n + (1.0f-E1)*(1.0f-E1cosA1n)/(1.0f-E1cosA1);
-				double mzb = ( mza*EB + (1.0f-EB) )*E1cosA2n + (1.0f-E1)*(1.0f-E1cosA2n)/(1.0f-E1cosA2);
-				double mzc = ( mzb*EC + (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
-				double mzss = ( ( ( ( (1.0f-EA)*E1cosA1n + (1.0f-E1)*(1.0f-E1cosA1n)/(1.0f-E1cosA1) )*EB + (1.0f-EB) )*E1cosA2n + (1.0f-E1)*(1.0f-E1cosA2n)/(1.0f-E1cosA2) )*EC + (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
 				
-				double gre1 = FastMath.sin(a1rad)*( (-inversionEfficiency*mzss*EA + 1.0f-EA)*E1cosA1n21 + (1.0f-E1)*(1.0f-E1cosA1n21)/(1.0f-E1cosA1) );
-				double gre2 = FastMath.sin(a2rad)*( (mzss-(1.0f-EC))/(EC*E1cosA2n2) - (1.0f-E1)*(1.0f/E1cosA2n2-1.0f)/(1.0f-E1cosA2) );
-		
+				double E1cosA1 = FastMath.cos(a1rad)*E1;
+				double E2cosA2 = FastMath.cos(a2rad)*E2;
+				
+				double E1cosA1n = FastMath.pow( (FastMath.cos(a1rad)*E1), Nexcitations);
+				double E2cosA2n = FastMath.pow( (FastMath.cos(a2rad)*E2), Nexcitations);
+				
+				//double E1cosA1n21 = FastMath.pow( (FastMath.cos(a1rad)*E1), Nexcitations/2.0f-1.0f);
+				double E1cosA1n2 = FastMath.pow( (FastMath.cos(a1rad)*E1), Nexcitations/2.0f);
+				double E2cosA2n2 = FastMath.pow( (FastMath.cos(a2rad)*E2), Nexcitations/2.0f);
+				
+				double mza = (1.0f-EA)*E1cosA1n + (1.0f-E1)*(1.0f-E1cosA1n)/(1.0f-E1cosA1);
+				double mzb = ( mza*EB + (1.0f-EB) )*E2cosA2n + (1.0f-E2)*(1.0f-E2cosA2n)/(1.0f-E2cosA2);
+				double mzc = ( mzb*EC + (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
+				double mzss = ( ( ( ( (1.0f-EA)*E1cosA1n + (1.0f-E1)*(1.0f-E1cosA1n)/(1.0f-E1cosA1) )*EB + (1.0f-EB) )*E2cosA2n + (1.0f-E2)*(1.0f-E2cosA2n)/(1.0f-E2cosA2) )*EC + (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
+				//double mzss = ( ( ( ( (1.0f-EA)*E1cosA1n + (1.0f-E1)*(1.0f-E1cosA1n)/(1.0f-E1cosA1) )*EB + (1.0f-EB) )*E1cosA2n + (1.0f-E1)*(1.0f-E1cosA2n)/(1.0f-E1cosA2) )*EC + (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
+				
+				//double gre1 = FastMath.sin(a1rad)*( (-inversionEfficiency*mzss*EA + 1.0f-EA)*E1cosA1n21 + (1.0f-E1)*(1.0f-E1cosA1n21)/(1.0f-E1cosA1) );
+				//double gre2 = FastMath.sin(a2rad)*( (mzss-(1.0f-EC))/(EC*E1cosA2n2) - (1.0f-E1)*(1.0f/E1cosA2n2-1.0f)/(1.0f-E1cosA2) );
+				
+				double factora = ( (-inversionEfficiency*mzss*EA + 1.0-EA)*E1cosA1n2 + (1.0-E1)*(1.0-E1cosA1n2)/(1.0-E1cosA1) );
+				double factorb = factora*E1cosA1n2 + (1.0-E1)*(1.0-E1cosA1n2)/(1.0-E1cosA1n2);
+				double factorc = (factorb*EB + 1.0-EB)*E2cosA2n2 + (1.0-E2)*(1.0-E2cosA2n2)/(1.0-E2cosA2);
+				
+				double gre1 = FastMath.sin(a1rad)*factora;
+				double gre2 = FastMath.sin(a2rad)*factorc;
+				
 				//T1lookup[t] = intensityScale/2.0f + intensityScale*gre1*gre2/(gre1*gre1+gre2*gre2);
 				T1lookup[t] = gre1*gre2/(gre1*gre1+gre2*gre2);
 			} else {
