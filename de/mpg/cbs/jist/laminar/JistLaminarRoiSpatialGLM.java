@@ -9,6 +9,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFile.DialogType;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
@@ -26,10 +27,7 @@ import de.mpg.cbs.structures.*;
 import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.methods.*;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.FileWriter;
-import java.io.PrintWriter;
+import java.io.*;
 
 import org.apache.commons.math3.util.FastMath;
 import Jama.Matrix;
@@ -50,9 +48,11 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 	private ParamOption 	glmtypeParam;
 	private static final String[] glmTypes = {"local_pv_full", 
 											  "local_pv_fast",
+											  "fast_pv_mean",
 											  "basic_bold_full",
 											  "basic_bold_fast"};
 	private ParamFloat boldratioParam;	
+	private ParamFile  statsParam;
 											  
 	private ParamFile	textFile;
 	private ParamVolume glmImage;
@@ -66,6 +66,8 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 
 	private static final float HASQ3 = (float)(FastMath.sqrt(3.0)/2.0);
 
+	private String delim = ",";
+	
 	
 	protected void createInputParameters(ParamCollection inputParams) {
 		
@@ -78,7 +80,8 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 		glmtypeParam.setDescription("local pv: only taking into account the local layer contribution; basic bold: assumes downstream mixing; full: high precision pve; fast: approximate pve");
 		inputParams.add(boldratioParam = new ParamFloat("Downstream mixing ratio", 0.0f, 1.0f, 0.2f));
 		boldratioParam.setDescription("ratio of mixing in the basic bold model");
-		
+		inputParams.add(statsParam = new ParamFile("Spreadsheet file directory", DialogType.DIRECTORY));
+				
 		//inputParams.add(imageParams);
 			
 		inputParams.setPackage("CBS Tools");
@@ -100,7 +103,7 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 	protected void createOutputParameters(ParamCollection outputParams) {
 		outputParams.add(textFile = new ParamFile("ROI Estimates"));
 
-		outputParams.add(glmImage = new ParamVolume("GLM-based data",null,-1,-1,-1,-1));
+		outputParams.add(glmImage = new ParamVolume("GLM-reconstructed data",null,-1,-1,-1,-1));
 		outputParams.add(resImage = new ParamVolume("GLM residuals",null,-1,-1,-1,-1));
 		outputParams.add(pvolImage = new ParamVolume("partial volume estimates",null,-1,-1,-1,-1));
 		
@@ -155,17 +158,21 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 			roilabels = null;
 		} else {
 			int[] roilabels = Interface.getIntegerImage3D(roiImage);
-			roilist = ObjectLabeling.listLabels(roilabels, nx, ny, nz);
+			roilist = ObjectLabeling.listOrderedLabels(roilabels, nx, ny, nz);
 			for (int r=0;r<roilist.length;r++) if (roilist[r]>0) nroi++;
 			System.out.println("number of ROIs found: "+nroi+" ("+roilist.length+")\n");
+			int[] tmp = new int[nroi];
 			rois = new boolean[nroi][nxyz];
 			int rp=0;
 			for (int r=0;r<roilist.length;r++) if (roilist[r]>0) {
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					rois[rp][xyz] = (ctxmask[xyz] && roilabels[xyz]==roilist[r]);
 				}
+				tmp[rp] = roilist[r];
 				rp++;
 			}
+			roilist = new int[nroi];
+			for (int r=0;r<nroi;r++) roilist[r] = tmp[r];
 			roilabels = null;
 		}
 		// speed-up: get rid of any voxel outside of the ROIs
@@ -179,6 +186,8 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 		// main algorithm
 		boolean fast = false;
 		if (glmtypeParam.getValue().contains("fast")) fast = true;
+		boolean invert = true;
+		if (glmtypeParam.getValue().contains("mean")) invert = false;
 		boolean bold = false;
 		if (glmtypeParam.getValue().contains("basic_bold")) bold = true;
 		float boldratio = boldratioParam.getValue().floatValue();
@@ -215,15 +224,28 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 				for (int t=0;t<nt;t++) samples[n][t] = data[xyz+nxyz*t];
 				n++;
 			}
-			// invert the linear model
-			Matrix mtx = new Matrix(glm);
-			Matrix smp = new Matrix(samples);
-			Matrix val = mtx.solve(smp);
-			for (int l=0;l<nlayers;l++) for (int t=0;t<nt;t++) {
-				estimates[r][l][t] = (float)val.get(l,t);
+			if (invert) {
+				// invert the linear model
+				Matrix mtx = new Matrix(glm);
+				Matrix smp = new Matrix(samples);
+				Matrix val = mtx.solve(smp);
+				for (int l=0;l<nlayers;l++) for (int t=0;t<nt;t++) {
+					estimates[r][l][t] = (float)val.get(l,t);
+				}
+				Matrix err = mtx.times(val).minus(smp);
+				residuals[r] = (float)err.normInf();
+			} else {
+				for (int l=0;l<nlayers;l++) for (int t=0;t<nt;t++) {
+					double num = 0.0;
+					double den = 0.0;
+					for (int s=0;s<nsample;s++) {
+						num += glm[s][l]*samples[s][t];
+						den += glm[s][l];
+					}
+					estimates[r][l][t] = (float)(num/den);
+				}
+				residuals[r] = 0.0f;
 			}
-			Matrix err = mtx.times(val).minus(smp);
-			residuals[r] = (float)err.normInf();
 		}
 		
 		// create an data volume from the estimated GLM and compute the distance (optional, but nice for checking)
@@ -231,6 +253,8 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 		float[] count = new float[nxyz];
 		float[] resmap = new float[nxyz];
 		float[] pvolmap = new float[nxyz*nlayers];
+		float[] roierr = new float[nroi];
+		float[] roicount = new float[nroi];
 		for (int xyz=0;xyz<nxyz;xyz++) if (ctxmask[xyz]) {
 			for (int r=0;r<nroi;r++) if (rois[r][xyz]) {
 				for (int l=0;l<nlayers;l++) {
@@ -247,12 +271,55 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 					resmap[xyz] += Numerics.square(data[xyz+t*nxyz] - glmdata[xyz+t*nxyz]);
 				}
 				resmap[xyz] = (float)FastMath.sqrt(resmap[xyz]/nt);
+				for (int r=0;r<nroi;r++) if (rois[r][xyz]) {
+					roierr[r] += resmap[xyz];
+					roicount[r]++;
+				}
 			}
+		}
+		for (int r=0;r<nroi;r++) {
+			roierr[r] /= roicount[r];
 		}
 				
 		// output
-		String filename = intensname+"_roiglm_"+roiname+".txt";
-		textFile.setValue(writeROIestimateFile(filename, estimates, residuals, roilist, nroi, nlayers, nt));
+		String filename = intensname+"_roiglm_"+roiname+".csv";
+		//textFile.setValue(writeROIestimateFile(filename, estimates, residuals, roilist, nroi, nlayers, nt));
+
+		String line;
+		
+		// standard computations for the object
+		ArrayList<String> output = new ArrayList();
+
+		line = "measure"+delim+"input data"+delim+"ROI";
+		for (int l=0;l<nlayers;l++) for (int t=0;t<nt;t++) line+=(delim+"layer "+(l+1)+" t="+t);
+		line+=(delim+"residuals");
+		line+=(delim+"mean error");
+		line+=("\n");
+		output.add(line);
+		
+		for (int r=0;r<nroi;r++) {
+			line = "GLM Coefficient"+delim+intensname+delim+"label "+roilist[r];
+			for (int l=0;l<nlayers;l++) for (int t=0;t<nt;t++) line+=(delim+estimates[r][l][t]);
+			line+=(delim+residuals[r]);
+			line+=(delim+roierr[r]);
+			line+=("\n");
+			output.add(line);
+		}
+		
+		System.out.println("Result:");
+		System.out.println(output);
+		
+		System.out.println("write image data to: "+statsParam.getURI()+"/"+filename);
+		String outputname = statsParam.getValue().getAbsolutePath()+"/"+filename;
+		
+		// write the output to file
+		//writeStatisticsFile(output, filename);
+		addStatisticsToFile(outputname, output, "");
+			
+		// make a copy in output?
+		
+		textFile.setValue(new File(outputname));
+		
 		
 		Interface.setFloatImage4D(glmdata, dims, nt, glmImage, intensname+"_roiglm_approx", header);
 		
@@ -261,6 +328,109 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 		Interface.setFloatImage4D(pvolmap, dims, nlayers, pvolImage, intensname+"_roiglm_pvol", header);
 	}
 	
+	private final void addStatisticsToFile(String name, ArrayList<String> output, String lbline) {
+		
+		// open the file
+		ArrayList<String> 	previous = loadStatisticsFile(name);
+		
+		// merge the output
+		appendStatistics(previous, output, lbline);
+		
+		// save the result
+		writeStatisticsFile(previous, name);
+	}
+	
+	private	final void appendStatistics(ArrayList<String> main, ArrayList<String> added, String lbline) {
+		for (int n=0;n<added.size();n++) {
+			// extract statistics type
+			String type = added.get(n).substring(0,added.get(n).indexOf(delim,added.get(n).indexOf(delim)+1));
+			System.out.println(added.get(n));
+			System.out.println(type);
+			
+			// find the last line with this type
+			int last=-1;
+			for (int m=0;m<main.size();m++) {
+				if (main.get(m).indexOf(delim)>-1)
+					if (main.get(m).substring(0,main.get(m).indexOf(delim,main.get(m).indexOf(delim)+1)).equals(type)) last = m;
+			}
+			if (last>-1) {
+				main.add(last+1, added.get(n));
+			} else {
+				// add a space after each different statistic as well as labels before
+				main.add(lbline);
+				main.add(added.get(n));
+				main.add(" \n");
+			}
+		}
+	}
+	
+	private final ArrayList<String> loadStatisticsFile(String name) {
+		ArrayList<String> list = new ArrayList();
+		try {
+            System.out.println("reading previous statistic file: "+name);
+            File f = new File(name);
+            FileReader fr = new FileReader(f);
+            BufferedReader br = new BufferedReader(fr);
+            String line = br.readLine();
+			
+			// Exact corresponding template for first line ?
+            if (!line.startsWith("CBSTools Spatial GLM Statistics File")) {
+                System.out.println("not a proper statistics file");
+                br.close();
+                fr.close();
+                return null;
+            }
+			line = br.readLine();
+			while (line!=null) {
+				list.add(line+"\n");
+				line = br.readLine();
+				System.out.println(line);
+			}
+			br.close();
+            fr.close();
+        }
+        catch (FileNotFoundException e) {
+            System.out.println(e.getMessage());
+        }
+        catch (IOException e) {
+            System.out.println(e.getMessage());
+        } 
+		catch (OutOfMemoryError e){
+			System.out.println(e.getMessage());
+		}
+		catch (Exception e) {
+			System.out.println(e.getMessage());
+        }
+		return list;	
+	}
+
+	private final void writeStatisticsFile(ArrayList<String> list, String name) {
+		try {
+            File f = new File(name);
+            FileWriter fw = new FileWriter(f);
+            PrintWriter pw = new PrintWriter( fw );
+			pw.write("CBSTools Spatial GLM Statistics File\n");
+            for (int n=0;n<list.size();n++) {
+				pw.write(list.get(n));
+				System.out.print(list.get(n));
+			}
+			pw.close();
+            fw.close();
+       }
+        catch (FileNotFoundException e) {
+            System.out.println(e.getMessage());
+        }
+        catch (IOException e) {
+            System.out.println(e.getMessage());
+        } 
+		catch (OutOfMemoryError e){
+			System.out.println(e.getMessage());
+		}
+		catch (Exception e) {
+			System.out.println(e.getMessage());
+        }
+	}	
+
 	final File writeROIestimateFile(String filename, float[][][] estimates, float[] residuals, int[] roilist, int nroi, int nlayers, int nt) {
 		File resultFile = null;
 		File destdir = null;
@@ -311,8 +481,6 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 
 		 return resultFile;
 	}
-
-	
 
 	// brute force
 	void findProfileNeighborhood(BitSet sampled, int x, int y, int z, int delta, float[][] layers, CorticalProfile profile, boolean[] ctxmask, int nx, int ny, int nz, int nlayers) {
