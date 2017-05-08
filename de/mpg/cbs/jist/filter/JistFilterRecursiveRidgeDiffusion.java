@@ -76,6 +76,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	private ParamVolume scaleImage;
 	private ParamVolume directionImage;
 	private ParamVolume correctImage;
+	private ParamVolume sizeImage;
 	
 	// global variables
 	int nx, ny, nz, nc, nxyz;
@@ -170,6 +171,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		outputParams.add(scaleImage = new ParamVolume("Detection scale",VoxelType.BYTE,-1,-1,-1,-1));
 		outputParams.add(directionImage = new ParamVolume("Ridge direction",VoxelType.FLOAT,-1,-1,-1,-1));
 		outputParams.add(correctImage = new ParamVolume("Directional correction",VoxelType.FLOAT,-1,-1,-1,-1));
+		outputParams.add(sizeImage = new ParamVolume("Ridge size",VoxelType.FLOAT,-1,-1,-1,-1));
 		
 		outputParams.setName("Recursive Ridge Diffusion");
 		outputParams.setLabel("Recursive Ridge Diffusion");
@@ -400,6 +402,20 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			if (filterParam.getValue().equals("1D"))  propag = regionLabeling1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 			else if (filterParam.getValue().equals("2D"))  propag = regionLabeling2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 		} 				
+		
+		// 4. Measure size of connected region
+		boolean[] detected = ObjectExtraction.objectFromImage(propag, nx, ny, nz, 0.5f, ObjectExtraction.SUPEQUAL);
+		int[] components = ObjectLabeling.connected26Object3D(detected, nx, ny, nz);
+		int Ncomp = ObjectLabeling.countLabels(components, nx, ny, nz);
+		float[] length = new float[Ncomp];
+		for (int xyz=0;xyz<nxyz;xyz++) if (components[xyz]>0) {
+			length[components[xyz]-1] += propag[xyz];
+		}
+		float[] lengthmap = new float[nxyz];
+		for (int xyz=0;xyz<nxyz;xyz++) if (components[xyz]>0) {
+			lengthmap[xyz] = length[components[xyz]-1];
+		}
+		
 		// Output
 		BasicInfo.displayMessage("...output images\n");
 		String outname = Interface.getName(inputImage);
@@ -469,6 +485,16 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		resData.setHeader(outheader);
 		resData.setName(outname+"_correct");
 		correctImage.setValue(resData);
+		
+		result = new float[nx][ny][nz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int id = x + nx*y + nx*ny*z;
+			result[x][y][z] = lengthmap[id];
+		}					
+		resData = new ImageDataFloat(result);	
+		resData.setHeader(outheader);
+		resData.setName(outname+"_size");
+		sizeImage.setValue(resData);
 		
 		return;
 	}

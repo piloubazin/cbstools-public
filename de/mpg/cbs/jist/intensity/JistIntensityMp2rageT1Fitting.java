@@ -46,6 +46,7 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 	
 	private ParamVolume uniformImage;
 	private ParamVolume t1mapImage;
+	private ParamVolume r1mapImage;
 	private ParamVolume relativeSnrImage;
 	private ParamVolume lutImage;
 	private ParamVolume invlutImage;
@@ -95,6 +96,7 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 	protected void createOutputParameters(ParamCollection outputParams) {
 		outputParams.add(uniformImage = new ParamVolume("Uniform T1-weighted Image",VoxelType.FLOAT));
 		outputParams.add(t1mapImage = new ParamVolume("Quantitative T1 map Image",VoxelType.FLOAT));
+		outputParams.add(r1mapImage = new ParamVolume("Quantitative R1 map Image",VoxelType.FLOAT));
 		outputParams.add(relativeSnrImage = new ParamVolume("SNR Ratio Image",VoxelType.FLOAT));
 		
 		//outputParams.add(lutImage = new ParamVolume("T1 LUT Image",VoxelType.FLOAT));
@@ -136,6 +138,7 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 
 		Interface.setFloatImage3D(algorithm.getUniformT1weightedImage(), dims, uniformImage, name+"_uni", header);
 		Interface.setFloatImage3D(algorithm.getQuantitativeT1mapImage(), dims, t1mapImage, name+"_qt1", header);
+		Interface.setFloatImage3D(algorithm.getQuantitativeR1mapImage(), dims, t1mapImage, name+"_qr1", header);
 		Interface.setFloatImage3D(algorithm.getRelativeSnrImage(), dims, relativeSnrImage, name+"_snr", header);
 		
 		//Interface.setFloatImage2D(algorithm.generateT1LookupImage(), new int[]{200,200}, lutImage, name+"_lut", header);

@@ -31,11 +31,13 @@ public class IntensityMp2rageT1Fitting {
 	
 	private		float		intensityScale = 1000.0f;
 	private		float		t1mapThreshold = 6.0f;
+	private		float		r1mapThreshold = 10.0f;
 	private		int			lutSamples = 100000;
 	
 	// output parameters
 	private		float[] uni = null;
 	private		float[] t1map = null;
+	private		float[] r1map = null;
 	private		float[] snr = null;
 	
 	private		double[] T1lookup = null;
@@ -76,6 +78,7 @@ public class IntensityMp2rageT1Fitting {
 	// get outputs
 	public float[] getUniformT1weightedImage() { return uni; }
 	public float[] getQuantitativeT1mapImage() { return t1map; }
+	public float[] getQuantitativeR1mapImage() { return r1map; }
 	public float[] getRelativeSnrImage() { return snr; }
 	
 	// for debug
@@ -239,15 +242,20 @@ public class IntensityMp2rageT1Fitting {
 		}
 		
 		t1map = new float[nxyz];
+		r1map = new float[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			int t = Numerics.round( (uni[xyz]+0.5f)*lutSamples);
 			//int t = Numerics.round(uni[xyz]/intensityScale*lutSamples);
-			if (t>=0 && t<lutSamples)
+			if (t>=0 && t<lutSamples) {
 				t1map[xyz] = (float)unilookup[t];
-			else if (t<0)
+				r1map[xyz] = 1.0f/t1map[xyz];
+			} else if (t<0) {
 				t1map[xyz] = t1mapThreshold;
-			else if (t>=lutSamples)
-				t1map[xyz] = 0.0f;
+				r1map[xyz] = 1.0f/t1mapThreshold;
+			} else if (t>=lutSamples) {
+				t1map[xyz] = 1.0f/r1mapThreshold;
+				r1map[xyz] = r1mapThreshold;
+			}
 		}
 		
 		// rescale the UNI to [0 4000]
@@ -258,6 +266,11 @@ public class IntensityMp2rageT1Fitting {
 		// rescale the T1 map to milliseconds
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			t1map[xyz] = Numerics.bounded(1000.0f*t1map[xyz],0.0f,1000.0f*t1mapThreshold);
+		}
+			
+		// rescale the R1 map to mHz
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			r1map[xyz] = Numerics.bounded(1000.0f*r1map[xyz],0.0f,1000.0f*r1mapThreshold);
 		}
 			
 		return;
