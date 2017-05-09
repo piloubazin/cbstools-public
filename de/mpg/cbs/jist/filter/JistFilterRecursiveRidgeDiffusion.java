@@ -76,6 +76,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	private ParamVolume scaleImage;
 	private ParamVolume directionImage;
 	private ParamVolume correctImage;
+	private ParamVolume sizeImage;
 	
 	// global variables
 	int nx, ny, nz, nc, nxyz;
@@ -170,6 +171,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		outputParams.add(scaleImage = new ParamVolume("Detection scale",VoxelType.BYTE,-1,-1,-1,-1));
 		outputParams.add(directionImage = new ParamVolume("Ridge direction",VoxelType.FLOAT,-1,-1,-1,-1));
 		outputParams.add(correctImage = new ParamVolume("Directional correction",VoxelType.FLOAT,-1,-1,-1,-1));
+		outputParams.add(sizeImage = new ParamVolume("Ridge size",VoxelType.FLOAT,-1,-1,-1,-1));
 		
 		outputParams.setName("Recursive Ridge Diffusion");
 		outputParams.setLabel("Recursive Ridge Diffusion");
@@ -400,6 +402,20 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			if (filterParam.getValue().equals("1D"))  propag = regionLabeling1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 			else if (filterParam.getValue().equals("2D"))  propag = regionLabeling2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 		} 				
+		
+		// 4. Measure size of connected region
+		boolean[] detected = ObjectExtraction.objectFromImage(propag, nx, ny, nz, 0.5f, ObjectExtraction.SUPEQUAL);
+		int[] components = ObjectLabeling.connected26Object3D(detected, nx, ny, nz);
+		int Ncomp = ObjectLabeling.countLabels(components, nx, ny, nz);
+		float[] length = new float[Ncomp];
+		for (int xyz=0;xyz<nxyz;xyz++) if (components[xyz]>0) {
+			length[components[xyz]-1] += propag[xyz];
+		}
+		float[] lengthmap = new float[nxyz];
+		for (int xyz=0;xyz<nxyz;xyz++) if (components[xyz]>0) {
+			lengthmap[xyz] = length[components[xyz]-1];
+		}
+		
 		// Output
 		BasicInfo.displayMessage("...output images\n");
 		String outname = Interface.getName(inputImage);
@@ -469,6 +485,16 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		resData.setHeader(outheader);
 		resData.setName(outname+"_correct");
 		correctImage.setValue(resData);
+		
+		result = new float[nx][ny][nz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int id = x + nx*y + nx*ny*z;
+			result[x][y][z] = lengthmap[id];
+		}					
+		resData = new ImageDataFloat(result);	
+		resData.setHeader(outheader);
+		resData.setName(outname+"_size");
+		sizeImage.setValue(resData);
 		
 		return;
 	}
@@ -1650,6 +1676,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			diffused[xyz] = (float)FastMath.log(1.0f + proba[xyz]);
 		}
 
+		factor /= (float)ngbsize;
 		for (int t=0;t<iter;t++) {
 			Interface.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
@@ -1793,10 +1820,6 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 
     private final void estimateSimpleDiffusionSimilarity1D(byte[] dir, float[] proba, int ngbsize, byte[][] neighbor, float[][] similarity, float factor) {
     	
-    	// initialize
-    	neighbor = new byte[ngbsize][nxyz];
-    	similarity = new float[ngbsize][nxyz];
-    	
     	float[][] parallelweight = new float[26][26];
 		for (int d1=0;d1<26;d1++) for (int d2=0;d2<26;d2++) {
 			float[] dir1 = directionVector(d1);
@@ -1844,7 +1867,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		// build a similarity function from aligned neighbors
 		float[][] similarity = new float[ngbsize][nxyz];
 		byte[][] neighbor = new byte[ngbsize][nxyz];
-    		estimateSimpleDiffusionSimilarity2D(dir, proba, ngbsize, neighbor, similarity, angle);
+    	estimateSimpleDiffusionSimilarity2D(dir, proba, ngbsize, neighbor, similarity, angle);
 		
 		// run the diffusion process
 		float[] diffused = new float[nxyz];
@@ -1879,7 +1902,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
-			if (iter==0) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
+			if (iter<2) diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0), 0.0f, 1.0f);
 			else diffused[id] = Numerics.bounded((float)(FastMath.exp(diffused[id])-1.0)/(1.0f+2.0f*factor), 0.0f, 1.0f);
 		}
 		return diffused;
@@ -2181,7 +2204,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 
 	private final void estimateSimpleDiffusionSimilarity2D(byte[] dir, float[] proba, int ngbsize, byte[][] neighbor, float[][] similarity, float factor) {
     	
-    		float[][] parallelweight = new float[26][26];
+    	float[][] parallelweight = new float[26][26];
 		float[][] orthogonalweight = new float[26][26];
 		for (int d1=0;d1<26;d1++) for (int d2=0;d2<26;d2++) {
 			float[] dir1 = directionVector(d1);

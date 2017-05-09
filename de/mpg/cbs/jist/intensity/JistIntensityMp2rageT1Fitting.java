@@ -34,7 +34,8 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 	private ParamVolume 	inv1Image;
 	private ParamVolume 	inv2Image;
 	private ParamFloat 		invertRepTimeParam;
-	private ParamFloat 		exciteRepTimeParam;
+	private ParamFloat 		excite1RepTimeParam;
+	private ParamFloat 		excite2RepTimeParam;
 	private ParamInteger 	exciteNumberParam;
 	private ParamFloat 		inversionTime1Param;
 	private ParamFloat 		inversionTime2Param;
@@ -45,6 +46,7 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 	
 	private ParamVolume uniformImage;
 	private ParamVolume t1mapImage;
+	private ParamVolume r1mapImage;
 	private ParamVolume relativeSnrImage;
 	private ParamVolume lutImage;
 	private ParamVolume invlutImage;
@@ -68,7 +70,8 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 		mrParam.add(invertEffParam = new ParamFloat("Inversion efficiency", 0.0f, 1.0f, 0.96f));
 		
 		mrParam.add(invertRepTimeParam = new ParamFloat("Inversion repetition time (sec)", 0.0f, 10000.0f, 5.5f));
-		mrParam.add(exciteRepTimeParam = new ParamFloat("Excitation repetition time (sec)", 0.0f, 10000.0f, 0.0062f));
+		mrParam.add(excite1RepTimeParam = new ParamFloat("First Excitation repetition time (sec)", 0.0f, 10000.0f, 0.0062f));
+		mrParam.add(excite2RepTimeParam = new ParamFloat("Second Excitation repetition time (sec)", 0.0f, 10000.0f, 0.0062f));
 		mrParam.add(exciteNumberParam = new ParamInteger("Number of excitations", 0, 10000, 160));
 		inputParams.add(mrParam);
 		
@@ -93,6 +96,7 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 	protected void createOutputParameters(ParamCollection outputParams) {
 		outputParams.add(uniformImage = new ParamVolume("Uniform T1-weighted Image",VoxelType.FLOAT));
 		outputParams.add(t1mapImage = new ParamVolume("Quantitative T1 map Image",VoxelType.FLOAT));
+		outputParams.add(r1mapImage = new ParamVolume("Quantitative R1 map Image",VoxelType.FLOAT));
 		outputParams.add(relativeSnrImage = new ParamVolume("SNR Ratio Image",VoxelType.FLOAT));
 		
 		//outputParams.add(lutImage = new ParamVolume("T1 LUT Image",VoxelType.FLOAT));
@@ -126,13 +130,15 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 		algorithm.setInversionEfficiency(invertEffParam.getValue().floatValue());
 		
 		algorithm.setInversionRepetitionTime(invertRepTimeParam.getValue().floatValue());
-		algorithm.setExcitationRepetitionTime(exciteRepTimeParam.getValue().floatValue());
+		algorithm.setFirstExcitationRepetitionTime(excite1RepTimeParam.getValue().floatValue());
+		algorithm.setSecondExcitationRepetitionTime(excite2RepTimeParam.getValue().floatValue());
 		algorithm.setNumberExcitations(exciteNumberParam.getValue().intValue());
 		
 		algorithm.execute();
 
 		Interface.setFloatImage3D(algorithm.getUniformT1weightedImage(), dims, uniformImage, name+"_uni", header);
 		Interface.setFloatImage3D(algorithm.getQuantitativeT1mapImage(), dims, t1mapImage, name+"_qt1", header);
+		Interface.setFloatImage3D(algorithm.getQuantitativeR1mapImage(), dims, t1mapImage, name+"_qr1", header);
 		Interface.setFloatImage3D(algorithm.getRelativeSnrImage(), dims, relativeSnrImage, name+"_snr", header);
 		
 		//Interface.setFloatImage2D(algorithm.generateT1LookupImage(), new int[]{200,200}, lutImage, name+"_lut", header);
