@@ -54,7 +54,8 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 	private ParamOption 	topologyParam;
 	private ParamBoolean	normalizeParam;
 	private ParamBoolean	pvwmParam;
-	private ParamFloat 	offsetParam;
+	//private ParamFloat 	offsetParam;
+	private ParamFloat 		wmdistParam;
 	
 	//private static final String[] opts = {"Iso image", "T1 map", "Probabilities", "Iso+Proba", "T1map+Proba", "All"};
 	
@@ -98,7 +99,8 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 
 		mainParams.add(normalizeParam = new ParamBoolean("Normalize probabilities", true));
 		mainParams.add(pvwmParam = new ParamBoolean("Correct for WM-GM partial voluming", true));
-		mainParams.add(offsetParam = new ParamFloat("WM/GM offset", -1, 1, 0.0f));
+		//mainParams.add(offsetParam = new ParamFloat("WM/GM offset", -1, 1, 0.0f));
+		mainParams.add(wmdistParam = new ParamFloat("WM drop-off distance", 0.1f, 100.0f, 1.0f));
 		
 		inputParams.add(mainParams);
 			
@@ -117,7 +119,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		info.setDescription("Segments the cortex from a whole brain segmented data set with the CRUISE method \n"
 								+"(includes partial voluming corrections and ACE sulcal enhancement).");
 		
-		info.setVersion("3.0.3");
+		info.setVersion("3.1.1");
 		info.setStatus(DevelopmentStatus.RC);
 		info.setEditable(false);
 	}
@@ -185,7 +187,8 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		
 		// 1. Run partial volume correction on WM membership (opt)
 		float[][][] wmpv = null;;
-		float offset = offsetParam.getValue().floatValue();
+		//float offset = offsetParam.getValue().floatValue();
+		float offset = 0.0f;
 		if (pvwmParam.getValue().booleanValue()) {
 			wmpv = new float[nx][ny][nz];
 			
@@ -362,12 +365,15 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 
 		// use the wm result as the filler mask => guarantees the boundaries never cross
 		init = gdm.getSegmentation();
+		float wmdist = wmdistParam.getValue().floatValue();
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;
 			pgm[xyz] = Numerics.bounded(acegm[x][y][z],0,1);
 			if (vd!=null) csf[x][y][z] = Numerics.max(csf[x][y][z],vd[x][y][z]);
 			csf[x][y][z] = Numerics.bounded(csf[x][y][z],0,1);
 			pcsf[xyz] = csf[x][y][z];
+			// remove WM proba far from current boundary (to help against dura mater problems)
+			if (gwb[x][y][z]>0) pwm[xyz] *= 1.0f/(1.0f+Numerics.square(gwb[x][y][z]/wmdist));
 		}
 		boolean cgbflag = !gwbflag;
 		
