@@ -31,7 +31,7 @@ public class IntensityMp2rageT1Fitting {
 	
 	private		float		intensityScale = 1000.0f;
 	private		float		t1mapThreshold = 6.0f;
-	private		float		r1mapThreshold = 10.0f;
+	private		float		r1mapThreshold = 6.0f;
 	private		int			lutSamples = 100000;
 	
 	// output parameters

@@ -256,15 +256,20 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 				csf[x][y][z] *= 254/sum;
 			}
 			*/
-			wm[x][y][z] *= 254;
-			gm[x][y][z] *= 254;
-			csf[x][y][z] *= 254;
-			
-			if (wm[x][y][z]<gm[x][y][z] && wm[x][y][z]<csf[x][y][z]) wmace[x][y][z] = 0.0f;
-			else wmace[x][y][z] = wm[x][y][z];
-			
-			if (gm[x][y][z]<wm[x][y][z] && gm[x][y][z]<csf[x][y][z]) gmace[x][y][z] = 0.0f;
-			else gmace[x][y][z] = gm[x][y][z];
+			//wm[x][y][z] *= 254;
+			//gm[x][y][z] *= 254;
+			//csf[x][y][z] *= 254;
+			float sum = wm[x][y][z]+gm[x][y][z]+csf[x][y][z];
+			if (sum>0.0001f) {
+				if (wm[x][y][z]<gm[x][y][z] && wm[x][y][z]<csf[x][y][z]) wmace[x][y][z] = 0.0f;
+				else wmace[x][y][z] = 254.0f*wm[x][y][z]/sum;
+				
+				if (gm[x][y][z]<wm[x][y][z] && gm[x][y][z]<csf[x][y][z]) gmace[x][y][z] = 0.0f;
+				else gmace[x][y][z] = 254.0f*gm[x][y][z]/sum;
+			} else {
+				wmace[x][y][z] = 0.0f;
+				gmace[x][y][z] = 0.0f;
+			}
 		}
 		
 		// main algorithm
@@ -279,11 +284,11 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		ImageDataFloat aceGmImg = (ImageDataFloat)ace.getEnhancedGM();
 		float[][][] acegm = aceGmImg.toArray3d();
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			csf[x][y][z] += gmace[x][y][z]-acegm[x][y][z];
+			csf[x][y][z] += (gmace[x][y][z]-acegm[x][y][z])/254.0f;
 			
-			wm[x][y][z] /= 254;
+			//wm[x][y][z] /= 254;
 			acegm[x][y][z] /= 254;
-			csf[x][y][z] /= 254;
+			//csf[x][y][z] /= 254;
 		}
 		ace = null;
 		aceGmImg = null;
