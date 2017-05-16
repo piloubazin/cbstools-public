@@ -242,7 +242,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		}
 		
 		// 2. Run ACE on CSF
-		
+
 		// pre-process: scale into [0,254]
 		// and set the lowest value to zero (so that sum=1)
 		float[][][] wmace = new float[nx][ny][nz];
@@ -256,22 +256,55 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 				csf[x][y][z] *= 254/sum;
 			}
 			*/
-			//wm[x][y][z] *= 254;
-			//gm[x][y][z] *= 254;
-			//csf[x][y][z] *= 254;
-			float sum = wm[x][y][z]+gm[x][y][z]+csf[x][y][z];
-			if (sum>0.0001f) {
-				if (wm[x][y][z]<gm[x][y][z] && wm[x][y][z]<csf[x][y][z]) wmace[x][y][z] = 0.0f;
-				else wmace[x][y][z] = 254.0f*wm[x][y][z]/sum;
-				
-				if (gm[x][y][z]<wm[x][y][z] && gm[x][y][z]<csf[x][y][z]) gmace[x][y][z] = 0.0f;
-				else gmace[x][y][z] = 254.0f*gm[x][y][z]/sum;
-			} else {
-				wmace[x][y][z] = 0.0f;
-				gmace[x][y][z] = 0.0f;
-			}
+			wm[x][y][z] *= 254;
+			gm[x][y][z] *= 254;
+			csf[x][y][z] *= 254;
+			
+			if (wm[x][y][z]<gm[x][y][z] && wm[x][y][z]<csf[x][y][z]) wmace[x][y][z] = 0.0f;
+			else wmace[x][y][z] = Numerics.bounded(wm[x][y][z], 0.0f, 254.0f);
+			
+			if (gm[x][y][z]<wm[x][y][z] && gm[x][y][z]<csf[x][y][z]) gmace[x][y][z] = 0.0f;
+			else gmace[x][y][z] = Numerics.bounded(gm[x][y][z], 0.0f, 254.0f);
 		}
 		
+		// get WM mask
+		ImageDataUByte initImg = new ImageDataUByte(initImage.getImageData());
+		byte[][][] bytebuffer = initImg.toArray3d();
+		byte[] init = new byte[nxyz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			init[xyz] = bytebuffer[x][y][z];
+		}
+		initImg = null;
+		bytebuffer = null;
+		// compute distance factor
+		float wmdist = wmdistParam.getValue().floatValue();
+		float[] factor = new float[nxyz];
+		float[] update = new float[nxyz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (init[xyz]>0) factor[xyz] = 1.0f;
+		}
+		float scaling = 1.0f/(1.0f+Numerics.square(1.0f/wmdist));
+		for (int t=0;t<2*wmdist;t++) {
+			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+				int xyz = x+nx*y+nx*ny*z;
+				if (factor[xyz]==0) {
+					for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int l=-1;l<=1;l++) if (i*i+j*j+l*l==1) {
+						if (factor[xyz+i+j*nx+l*nx*ny]>0) update[xyz] = Numerics.max(update[xyz], scaling*factor[xyz+i+j*nx+l*nx*ny]);
+					}
+				}
+			}
+			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+				int xyz = x+nx*y+nx*ny*z;
+				if (update[xyz]>0) factor[xyz] = update[xyz];
+			}
+		}
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			wmace[x][y][z] *= factor[xyz];
+		}
+
 		// main algorithm
 		AnatomicallyConsistentEnhancement ace = new AnatomicallyConsistentEnhancement();
 		monitor.observe(ace);
@@ -284,11 +317,11 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		ImageDataFloat aceGmImg = (ImageDataFloat)ace.getEnhancedGM();
 		float[][][] acegm = aceGmImg.toArray3d();
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			csf[x][y][z] += (gmace[x][y][z]-acegm[x][y][z])/254.0f;
+			csf[x][y][z] += gmace[x][y][z]-acegm[x][y][z];
 			
-			//wm[x][y][z] /= 254;
+			wm[x][y][z] /= 254;
 			acegm[x][y][z] /= 254;
-			//csf[x][y][z] /= 254;
+			csf[x][y][z] /= 254;
 		}
 		ace = null;
 		aceGmImg = null;
@@ -297,16 +330,6 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		gm = null;
 		
 		// 3. run CRUISE
-		ImageDataUByte initImg = new ImageDataUByte(initImage.getImageData());
-		byte[][][] bytebuffer = initImg.toArray3d();
-		byte[] init = new byte[nxyz];
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			int xyz = x+nx*y+nx*ny*z;
-			init[xyz] = bytebuffer[x][y][z];
-		}
-		initImg = null;
-		bytebuffer = null;
-		
 		float[] pwm = new float[nxyz];
 		float[] pgm = new float[nxyz];
 		float[] pcsf = new float[nxyz];
@@ -370,7 +393,6 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 
 		// use the wm result as the filler mask => guarantees the boundaries never cross
 		init = gdm.getSegmentation();
-		float wmdist = wmdistParam.getValue().floatValue();
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;
 			pgm[xyz] = Numerics.bounded(acegm[x][y][z],0,1);
