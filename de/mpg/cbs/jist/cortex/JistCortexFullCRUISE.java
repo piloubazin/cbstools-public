@@ -260,11 +260,21 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 			gm[x][y][z] *= 254;
 			csf[x][y][z] *= 254;
 			
+			/*
 			if (wm[x][y][z]<gm[x][y][z] && wm[x][y][z]<csf[x][y][z]) wmace[x][y][z] = 0.0f;
 			else wmace[x][y][z] = Numerics.bounded(wm[x][y][z], 0.0f, 254.0f);
 			
 			if (gm[x][y][z]<wm[x][y][z] && gm[x][y][z]<csf[x][y][z]) gmace[x][y][z] = 0.0f;
 			else gmace[x][y][z] = Numerics.bounded(gm[x][y][z], 0.0f, 254.0f);
+			*/
+			// ACE: maximum separation between WM, CSF? better not to normalize...
+			wmace[x][y][z] = Numerics.bounded(wm[x][y][z], 0.0f, 254.0f);
+			gmace[x][y][z] = Numerics.bounded(gm[x][y][z], 0.0f, 254.0f);
+			/* not good for ACE, but useful later on
+			wmace[x][y][z] = Numerics.bounded(254.0f*wm[x][y][z]/(wm[x][y][z] + gm[x][y][z] + csf[x][y][z]), 0.0f, 254.0f);
+			float csface = Numerics.bounded(254.0f*csf[x][y][z]/(wm[x][y][z] + gm[x][y][z] + csf[x][y][z]), 0.0f, 254.0f);
+			gmace[x][y][z] = Numerics.bounded(254.0f-Numerics.max(wmace[x][y][z],csface), 0.0f, 254.0f);
+			*/
 		}
 		
 		// get WM mask
@@ -287,7 +297,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		}
 		float scaling = 1.0f/(1.0f+Numerics.square(1.0f/wmdist));
 		for (int t=0;t<2*wmdist;t++) {
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
 				int xyz = x+nx*y+nx*ny*z;
 				if (factor[xyz]==0) {
 					for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int l=-1;l<=1;l++) if (i*i+j*j+l*l==1) {
@@ -350,8 +360,17 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 			else pgm[xyz] = Numerics.bounded(acegm[x][y][z],0,1);
 			*/
 			pcsf[xyz] = Numerics.bounded(csf[x][y][z],0,1);
+			/*
+			// normalize?
+			float sum = pgm[xyz]+pwm[xyz]+pcsf[xyz];
+			if (sum>0.001) {
+				pgm[xyz] /= sum;
+				pwm[xyz] /= sum;
+				pcsf[xyz] /= sum;
+			}
+			*/
 		}
-		wm = null;
+		//wm = null;
 		//csf = null;
 		
 		// intermediate result: ACE- and PVWM- modified GM probability
@@ -400,7 +419,20 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 			csf[x][y][z] = Numerics.bounded(csf[x][y][z],0,1);
 			pcsf[xyz] = csf[x][y][z];
 			// remove WM proba far from current boundary (to help against dura mater problems)
-			if (gwb[x][y][z]>0) pwm[xyz] *= 1.0f/(1.0f+Numerics.square(gwb[x][y][z]/wmdist));
+			if (gwb[x][y][z]>0) pwm[xyz] = Numerics.bounded(wm[x][y][z],0,1)/(1.0f+Numerics.square(gwb[x][y][z]/wmdist));
+			else pwm[xyz] = Numerics.bounded(wm[x][y][z],0,1);
+			
+			// merge WM and GM
+			pgm[xyz] = Numerics.bounded(pgm[xyz]+pwm[xyz],0,1);
+			/*
+			// normalize
+			float sum = pgm[xyz]+pwm[xyz]+pcsf[xyz];
+			if (sum>0.001) {
+				pgm[xyz] /= sum;
+				pwm[xyz] /= sum;
+				pcsf[xyz] /= sum;
+			}
+			*/
 		}
 		boolean cgbflag = !gwbflag;
 		
