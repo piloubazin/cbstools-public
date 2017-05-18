@@ -46,7 +46,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	// jist containers
 	private ParamVolume inputImage;
 	private ParamOption brightParam;
-	private static final String[] brightTypes = {"bright","dark"};
+	private static final String[] brightTypes = {"bright","dark","both"};
 	
 	private ParamVolume surfaceImage;
 	private ParamOption	orientationParam;
@@ -232,7 +232,11 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 				image[xyz] = (image[xyz]-minI)/(maxI-minI);
 			else if (brightParam.getValue().equals("dark"))
 				image[xyz] = (maxI-image[xyz])/(maxI-minI);
+			else 
+				image[xyz] = (image[xyz]-minI)/(maxI-minI);
 		}
+		boolean unidirectional = true;
+		if (brightParam.getValue().equals("both")) unidirectional = false;
 		
 		// Compute filter at different scales
 		// new filter response from raw image		
@@ -242,8 +246,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		
 		BasicInfo.displayMessage("...first filter response\n");
 		
-		if (filterParam.getValue().equals("1D")) directionFromRecursiveRidgeFilter1D(image, mask, maxresponse, maxdirection);
-		else if (filterParam.getValue().equals("2D")) directionFromRecursiveRidgeFilter2D(image, mask, maxresponse, maxdirection);
+		if (filterParam.getValue().equals("1D")) directionFromRecursiveRidgeFilter1D(image, mask, maxresponse, maxdirection, unidirectional);
+		else if (filterParam.getValue().equals("2D")) directionFromRecursiveRidgeFilter2D(image, mask, maxresponse, maxdirection, unidirectional);
 			
 		for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
 			if (maxresponse[xyz]>0) {
@@ -269,8 +273,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 
 			byte[] direction = new byte[nxyz];
 			float[] response = new float[nxyz];
-			if (filterParam.getValue().equals("1D")) directionFromRecursiveRidgeFilter1D(smoothed, mask, response, direction);
-			else if (filterParam.getValue().equals("2D")) directionFromRecursiveRidgeFilter2D(smoothed, mask, response, direction);
+			if (filterParam.getValue().equals("1D")) directionFromRecursiveRidgeFilter1D(smoothed, mask, response, direction, unidirectional);
+			else if (filterParam.getValue().equals("2D")) directionFromRecursiveRidgeFilter2D(smoothed, mask, response, direction, unidirectional);
 			
 			//Combine scales: keep maximum response
 			for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
@@ -499,7 +503,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		return;
 	}
 	
-	private final void directionFromRecursiveRidgeFilter1D(float[] img, boolean[] mask, float[] filter,byte[] direction) {
+	private final void directionFromRecursiveRidgeFilter1D(float[] img, boolean[] mask, float[] filter, byte[] direction, boolean unidirectional) {
 			
 			// get the tubular filter response
 			float[][][] planescore = new float[nx][ny][nz];
@@ -522,7 +526,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 					if (planescore[x][y][z]*linescore>0) {
 						filter[xyz] = Numerics.sign(linescore)*Numerics.sqrt(planescore[x][y][z]*linescore);
 						direction[xyz] = linedir[x][y][z];
-						if(filter[xyz]<0) { filter[xyz]=0; direction[xyz] = -1; }
+						if(filter[xyz]<0) if (unidirectional) { filter[xyz]=0; direction[xyz] = -1; } else filter[xyz]*=-1.0f;
 					} else {
 						filter[xyz] = 0.0f;
 						direction[xyz] = -1;
@@ -535,7 +539,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			image = null;
 			return;
 	}
-	private final void directionFromRecursiveRidgeFilter2D(float[] img, boolean[] mask, float[] filter,byte[] direction) {
+	private final void directionFromRecursiveRidgeFilter2D(float[] img, boolean[] mask, float[] filter,byte[] direction, boolean unidirectional) {
 			
 			// get the tubular filter response
 			float[][][] planescore = new float[nx][ny][nz];
@@ -554,7 +558,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 					minmaxplaneScore(image, planescore, planedir, x,y,z, 13);
 					filter[xyz] = planescore[x][y][z];
 					direction[xyz] = planedir[x][y][z];
-					if (filter[xyz]<0) { filter[xyz]=0; direction[xyz] = -1; }
+					if (filter[xyz]<0) if (unidirectional) { filter[xyz]=0; direction[xyz] = -1; } else filter[xyz]*=-1.0f;
 				}
 			}
 			planescore = null;
