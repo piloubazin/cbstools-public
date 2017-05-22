@@ -54,7 +54,8 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 	private ParamOption 	topologyParam;
 	private ParamBoolean	normalizeParam;
 	private ParamBoolean	pvwmParam;
-	private ParamFloat 	offsetParam;
+	//private ParamFloat 	offsetParam;
+	private ParamFloat 		wmdistParam;
 	
 	//private static final String[] opts = {"Iso image", "T1 map", "Probabilities", "Iso+Proba", "T1map+Proba", "All"};
 	
@@ -98,7 +99,8 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 
 		mainParams.add(normalizeParam = new ParamBoolean("Normalize probabilities", true));
 		mainParams.add(pvwmParam = new ParamBoolean("Correct for WM-GM partial voluming", true));
-		mainParams.add(offsetParam = new ParamFloat("WM/GM offset", -1, 1, 0.0f));
+		//mainParams.add(offsetParam = new ParamFloat("WM/GM offset", -1, 1, 0.0f));
+		mainParams.add(wmdistParam = new ParamFloat("WM drop-off distance", 0.1f, 100.0f, 1.0f));
 		
 		inputParams.add(mainParams);
 			
@@ -117,7 +119,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		info.setDescription("Segments the cortex from a whole brain segmented data set with the CRUISE method \n"
 								+"(includes partial voluming corrections and ACE sulcal enhancement).");
 		
-		info.setVersion("3.0.3");
+		info.setVersion("3.1.1");
 		info.setStatus(DevelopmentStatus.RC);
 		info.setEditable(false);
 	}
@@ -185,7 +187,8 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		
 		// 1. Run partial volume correction on WM membership (opt)
 		float[][][] wmpv = null;;
-		float offset = offsetParam.getValue().floatValue();
+		//float offset = offsetParam.getValue().floatValue();
+		float offset = 0.0f;
 		if (pvwmParam.getValue().booleanValue()) {
 			wmpv = new float[nx][ny][nz];
 			
@@ -239,7 +242,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		}
 		
 		// 2. Run ACE on CSF
-		
+
 		// pre-process: scale into [0,254]
 		// and set the lowest value to zero (so that sum=1)
 		float[][][] wmace = new float[nx][ny][nz];
@@ -257,13 +260,61 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 			gm[x][y][z] *= 254;
 			csf[x][y][z] *= 254;
 			
+			/*
 			if (wm[x][y][z]<gm[x][y][z] && wm[x][y][z]<csf[x][y][z]) wmace[x][y][z] = 0.0f;
-			else wmace[x][y][z] = wm[x][y][z];
+			else wmace[x][y][z] = Numerics.bounded(wm[x][y][z], 0.0f, 254.0f);
 			
 			if (gm[x][y][z]<wm[x][y][z] && gm[x][y][z]<csf[x][y][z]) gmace[x][y][z] = 0.0f;
-			else gmace[x][y][z] = gm[x][y][z];
+			else gmace[x][y][z] = Numerics.bounded(gm[x][y][z], 0.0f, 254.0f);
+			*/
+			// ACE: maximum separation between WM, CSF? better not to normalize...
+			wmace[x][y][z] = Numerics.bounded(wm[x][y][z], 0.0f, 254.0f);
+			gmace[x][y][z] = Numerics.bounded(gm[x][y][z], 0.0f, 254.0f);
+			/* not good for ACE, but useful later on
+			wmace[x][y][z] = Numerics.bounded(254.0f*wm[x][y][z]/(wm[x][y][z] + gm[x][y][z] + csf[x][y][z]), 0.0f, 254.0f);
+			float csface = Numerics.bounded(254.0f*csf[x][y][z]/(wm[x][y][z] + gm[x][y][z] + csf[x][y][z]), 0.0f, 254.0f);
+			gmace[x][y][z] = Numerics.bounded(254.0f-Numerics.max(wmace[x][y][z],csface), 0.0f, 254.0f);
+			*/
 		}
 		
+		// get WM mask
+		ImageDataUByte initImg = new ImageDataUByte(initImage.getImageData());
+		byte[][][] bytebuffer = initImg.toArray3d();
+		byte[] init = new byte[nxyz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			init[xyz] = bytebuffer[x][y][z];
+		}
+		initImg = null;
+		bytebuffer = null;
+		// compute distance factor
+		float wmdist = wmdistParam.getValue().floatValue();
+		float[] factor = new float[nxyz];
+		float[] update = new float[nxyz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (init[xyz]>0) factor[xyz] = 1.0f;
+		}
+		float scaling = 1.0f/(1.0f+Numerics.square(1.0f/wmdist));
+		for (int t=0;t<2*wmdist;t++) {
+			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
+				int xyz = x+nx*y+nx*ny*z;
+				if (factor[xyz]==0) {
+					for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int l=-1;l<=1;l++) if (i*i+j*j+l*l==1) {
+						if (factor[xyz+i+j*nx+l*nx*ny]>0) update[xyz] = Numerics.max(update[xyz], scaling*factor[xyz+i+j*nx+l*nx*ny]);
+					}
+				}
+			}
+			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+				int xyz = x+nx*y+nx*ny*z;
+				if (update[xyz]>0) factor[xyz] = update[xyz];
+			}
+		}
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			wmace[x][y][z] *= factor[xyz];
+		}
+
 		// main algorithm
 		AnatomicallyConsistentEnhancement ace = new AnatomicallyConsistentEnhancement();
 		monitor.observe(ace);
@@ -289,16 +340,6 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		gm = null;
 		
 		// 3. run CRUISE
-		ImageDataUByte initImg = new ImageDataUByte(initImage.getImageData());
-		byte[][][] bytebuffer = initImg.toArray3d();
-		byte[] init = new byte[nxyz];
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			int xyz = x+nx*y+nx*ny*z;
-			init[xyz] = bytebuffer[x][y][z];
-		}
-		initImg = null;
-		bytebuffer = null;
-		
 		float[] pwm = new float[nxyz];
 		float[] pgm = new float[nxyz];
 		float[] pcsf = new float[nxyz];
@@ -319,8 +360,17 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 			else pgm[xyz] = Numerics.bounded(acegm[x][y][z],0,1);
 			*/
 			pcsf[xyz] = Numerics.bounded(csf[x][y][z],0,1);
+			/*
+			// normalize?
+			float sum = pgm[xyz]+pwm[xyz]+pcsf[xyz];
+			if (sum>0.001) {
+				pgm[xyz] /= sum;
+				pwm[xyz] /= sum;
+				pcsf[xyz] /= sum;
+			}
+			*/
 		}
-		wm = null;
+		//wm = null;
 		//csf = null;
 		
 		// intermediate result: ACE- and PVWM- modified GM probability
@@ -368,6 +418,21 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 			if (vd!=null) csf[x][y][z] = Numerics.max(csf[x][y][z],vd[x][y][z]);
 			csf[x][y][z] = Numerics.bounded(csf[x][y][z],0,1);
 			pcsf[xyz] = csf[x][y][z];
+			// remove WM proba far from current boundary (to help against dura mater problems)
+			if (gwb[x][y][z]>0) pwm[xyz] = Numerics.bounded(wm[x][y][z],0,1)/(1.0f+Numerics.square(gwb[x][y][z]/wmdist));
+			else pwm[xyz] = Numerics.bounded(wm[x][y][z],0,1);
+			
+			// merge WM and GM
+			pgm[xyz] = Numerics.bounded(pgm[xyz]+pwm[xyz],0,1);
+			/*
+			// normalize
+			float sum = pgm[xyz]+pwm[xyz]+pcsf[xyz];
+			if (sum>0.001) {
+				pgm[xyz] /= sum;
+				pwm[xyz] /= sum;
+				pcsf[xyz] /= sum;
+			}
+			*/
 		}
 		boolean cgbflag = !gwbflag;
 		

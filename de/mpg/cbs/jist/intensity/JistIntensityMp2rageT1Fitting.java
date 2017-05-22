@@ -138,7 +138,7 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 
 		Interface.setFloatImage3D(algorithm.getUniformT1weightedImage(), dims, uniformImage, name+"_uni", header);
 		Interface.setFloatImage3D(algorithm.getQuantitativeT1mapImage(), dims, t1mapImage, name+"_qt1", header);
-		Interface.setFloatImage3D(algorithm.getQuantitativeR1mapImage(), dims, t1mapImage, name+"_qr1", header);
+		Interface.setFloatImage3D(algorithm.getQuantitativeR1mapImage(), dims, r1mapImage, name+"_qr1", header);
 		Interface.setFloatImage3D(algorithm.getRelativeSnrImage(), dims, relativeSnrImage, name+"_snr", header);
 		
 		//Interface.setFloatImage2D(algorithm.generateT1LookupImage(), new int[]{200,200}, lutImage, name+"_lut", header);

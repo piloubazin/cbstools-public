@@ -30,8 +30,8 @@ public class IntensityMp2rageT1Fitting {
 	private		float		inversionEfficiency = 0.96f;
 	
 	private		float		intensityScale = 1000.0f;
-	private		float		t1mapThreshold = 6.0f;
-	private		float		r1mapThreshold = 10.0f;
+	private		float		t1mapThreshold = 5.0f;
+	private		float		r1mapThreshold = 2.0f;
 	private		int			lutSamples = 100000;
 	
 	// output parameters
@@ -187,7 +187,6 @@ public class IntensityMp2rageT1Fitting {
 				double E1cosA1n = FastMath.pow( (FastMath.cos(a1rad)*E1), Nexcitations);
 				double E2cosA2n = FastMath.pow( (FastMath.cos(a2rad)*E2), Nexcitations);
 				
-				//double E1cosA1n21 = FastMath.pow( (FastMath.cos(a1rad)*E1), Nexcitations/2.0f-1.0f);
 				double E1cosA1n2 = FastMath.pow( (FastMath.cos(a1rad)*E1), Nexcitations/2.0f);
 				double E2cosA2n2 = FastMath.pow( (FastMath.cos(a2rad)*E2), Nexcitations/2.0f);
 				
@@ -195,7 +194,6 @@ public class IntensityMp2rageT1Fitting {
 				double mzb = ( mza*EB + (1.0f-EB) )*E2cosA2n + (1.0f-E2)*(1.0f-E2cosA2n)/(1.0f-E2cosA2);
 				double mzc = ( mzb*EC + (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
 				double mzss = ( ( ( ( (1.0f-EA)*E1cosA1n + (1.0f-E1)*(1.0f-E1cosA1n)/(1.0f-E1cosA1) )*EB + (1.0f-EB) )*E2cosA2n + (1.0f-E2)*(1.0f-E2cosA2n)/(1.0f-E2cosA2) )*EC + (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
-				//double mzss = ( ( ( ( (1.0f-EA)*E1cosA1n + (1.0f-E1)*(1.0f-E1cosA1n)/(1.0f-E1cosA1) )*EB + (1.0f-EB) )*E1cosA2n + (1.0f-E1)*(1.0f-E1cosA2n)/(1.0f-E1cosA2) )*EC + (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
 				
 				//double gre1 = FastMath.sin(a1rad)*( (-inversionEfficiency*mzss*EA + 1.0f-EA)*E1cosA1n21 + (1.0f-E1)*(1.0f-E1cosA1n21)/(1.0f-E1cosA1) );
 				//double gre2 = FastMath.sin(a2rad)*( (mzss-(1.0f-EC))/(EC*E1cosA2n2) - (1.0f-E1)*(1.0f/E1cosA2n2-1.0f)/(1.0f-E1cosA2) );
