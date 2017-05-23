@@ -17,9 +17,11 @@ import edu.jhu.ece.iacl.jist.pipeline.AlgorithmInformation.AlgorithmAuthor;
 import edu.jhu.ece.iacl.jist.pipeline.AlgorithmInformation.Citation;
 import edu.jhu.ece.iacl.jist.pipeline.AlgorithmInformation;
 
+import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.utilities.*;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
+import org.apache.commons.math3.special.Erf;
 
 
 /*
@@ -28,7 +30,7 @@ import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 
 	// parameters
-	private		static final String[]	probatypes = {"Gaussian","Exponential"};
+	private		static final String[]	probatypes = {"Gaussian","Exponential","Exp+Log-normal"};
 	private		String		probatype = "Gaussian";
 	private		static final String[]	measuretypes = {"median","mean","mean-iterated","median-iterated"};
 	private		String		measuretype = "median";
@@ -137,7 +139,7 @@ public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 		
 		
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) if (image[x][y][z]>0) {
-			if (model.equals("Exponential")) {
+			if (model.startsWith("Exp")) {
 				double pe = FastMath.exp( -image[x][y][z]/beta)/beta;
 				result[x][y][z] = (float)(1.0/max/( 1.0/max+pe));
 			} else if (model.equals("Gaussian")) {
@@ -202,7 +204,7 @@ public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 				Interface.displayMessage("parameter estimates: sigma "+FastMath.sqrt(sigma2)+"\n");
 				
 				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) if (image[x][y][z]>0) {
-					if (model.equals("Exponential")) {
+					if (model.startsWith("Exp")) {
 						double pe = FastMath.exp( -image[x][y][z]/beta)/beta;
 						result[x][y][z] = (float)(1.0/max/( 1.0/max+pe));
 					} else if (model.equals("Gaussian")) {
@@ -210,15 +212,56 @@ public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 						result[x][y][z] = (float)(1.0/max/( 1.0/max+pg));
 					}
 				}
-				if (model.equals("Exponential") && 2.0*Numerics.abs(beta-betaprev)/(beta+betaprev)<0.01) t=1000;
+				if (model.startsWith("Exp") && 2.0*Numerics.abs(beta-betaprev)/(beta+betaprev)<0.01) t=1000;
 				if (model.equals("Gaussian") && 2.0*Numerics.abs(FastMath.sqrt(sigma2)-FastMath.sqrt(sigma2prev))
 												/(FastMath.sqrt(sigma2)+FastMath.sqrt(sigma2prev))<0.01) t=1000;
 			} 
 
 		}
+		
+		if (model.equals("Exp+Log-normal")) {
+			
+			// model the filter response as something more interesting, e.g. log-normal (removing the bg samples)
+			nb=0;
+			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) if (image[x][y][z]>0) {
+				nb++;
+			}
+			response = new double[nb];
+			n=0;
+			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) if (image[x][y][z]>0) {
+				response[n] = image[x][y][z];
+				n++;
+			}
+			double[] weights = new double[nb];
+			for (int b=0;b<nb;b++) { 
+				weights[b] = (1.0-FastMath.exp( -response[b]/beta));
+				response[b] = FastMath.log(response[b]);
+			}
+			
+			double fmean = ImageStatistics.weightedPercentile(response,weights,50.0,nb);
+			
+			// stdev: 50% +/- 1/2*erf(1/sqrt(2)) (~0.341344746..)
+			double dev = 100.0*0.5*Erf.erf(1.0/FastMath.sqrt(2.0));
+			double fdev = 0.5*(ImageStatistics.weightedPercentile(response,weights,50.0+dev,nb) - ImageStatistics.weightedPercentile(response,weights,50.0-dev,nb));
+			
+			Interface.displayMessage("Log-normal parameter estimates: mean = "+FastMath.exp(fmean)+", stdev = "+FastMath.exp(fdev)+",\n");
+			
+			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++){
+				int xyz = x + nx*y + nx*ny*z;
+				if (image[x][y][z]>0) {
+					double pe = FastMath.exp( -image[x][y][z]/beta)/beta;
+					double plg = FastMath.exp(-Numerics.square(FastMath.log(image[x][y][z])-fmean)/(2.0*fdev*fdev))/FastMath.sqrt(2.0*FastMath.PI*fdev*fdev);
+					result[x][y][z] = (float)(plg/(plg+pe));
+				}
+			}
+			
+		}
+		
+		
 		String suffix = "_";
-		if (model.equals("Exponential")) suffix += "e";
+		if (model.startsWith("Exp")) suffix += "e";
 		else suffix += "g";
+		if (model.endsWith("Log-normal")) suffix += "l";
 		if (metric.startsWith("median")) suffix += "r";
 		else suffix += "m";
 		if (metric.endsWith("iterated")) suffix += "i";

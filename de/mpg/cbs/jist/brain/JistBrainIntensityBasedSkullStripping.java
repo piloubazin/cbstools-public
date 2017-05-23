@@ -26,6 +26,7 @@ import de.mpg.cbs.methods.*;
 
 import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
+import org.apache.commons.math3.special.Erf;
 
 /*
  * @author Pierre-Louis Bazin
@@ -38,11 +39,13 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 	
 	private ParamOption	 bgParam;
 	private String		bgType = "exponential";
-	private 	static final String[]	bgTypes = {"exponential","half-normal"};
+	private 	static final String[]	bgTypes = {"exponential","half-normal","exp+log-normal","half+log-normal"};
 	private ParamBoolean	iterateParam;
 	
 	private		static final byte	HNORM = 101;
 	private		static final byte	EXP = 102;
+	private		static final byte	UNI = 21;
+	private		static final byte	LOGN = 22;
 	
 	private ParamBoolean	skip0Param;
 	private ParamBoolean	slab2dParam;
@@ -160,13 +163,47 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 		double pi = Math.PI;
 		
 		byte model = EXP;
-		if (bgParam.getValue().equals("half-normal")) model = HNORM;
+		if (bgParam.getValue().startsWith("half")) model = HNORM;
+		byte fgmodel = UNI;
+		if (bgParam.getValue().endsWith("log-normal")) fgmodel = LOGN;
 		boolean iterate = iterateParam.getValue().booleanValue();
 		
 		if (model==EXP) mean = ImageStatistics.robustExponentialFit(data, iterate, ndata);
 		else if (model==HNORM) mean = ImageStatistics.robustHalfGaussianFit(data, iterate, ndata);
 		
 		Interface.displayMessage("background mean: "+mean+"\n");
+		
+		double fmean = 0.0;
+		double fdev = 0.0;
+		if (fgmodel==LOGN) {
+			// model the filter response as something more interesting, e.g. log-normal (removing the bg samples)
+			int nb=0;
+			for (int xyz=0;xyz<nxyz;xyz++) if (image[main][xyz]>0) {
+				// only count positive values
+				nb++;
+			}
+			double[] response = new double[nb];
+			n=0;
+			for (int xyz=0;xyz<nxyz;xyz++) if (image[main][xyz]>0) {
+				response[n] = image[main][xyz];
+				n++;
+			}
+			double[] weights = new double[nb];
+			for (int b=0;b<nb;b++) { 
+				if (model==EXP) weights[b] = (1.0-FastMath.exp( -response[b]/mean));
+				else if (model==HNORM)  weights[b] = (1.0-Math.exp(-response[b]*response[b]/(pi*mean*mean)));
+				else weights[b] = 1.0;
+				response[b] = FastMath.log(response[b]);
+			}
+		
+			fmean = ImageStatistics.weightedPercentile(response,weights,50.0,nb);
+		
+			// stdev: 50% +/- 1/2*erf(1/sqrt(2)) (~0.341344746..)
+			double dev = 100.0*0.5*Erf.erf(1.0/FastMath.sqrt(2.0));
+			fdev = 0.5*(ImageStatistics.weightedPercentile(response,weights,50.0+dev,nb) - ImageStatistics.weightedPercentile(response,weights,50.0-dev,nb));
+		
+			Interface.displayMessage("Log-normal parameter estimates: mean = "+FastMath.exp(fmean)+", stdev = "+FastMath.exp(fdev)+",\n");
+		}
 		
 		// re-normalized probability map
 		float[] proba = new float[nxyz];
@@ -177,8 +214,14 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 			else if (model==EXP)
 				// exponential model
 				proba[xyz] = (float)(Math.exp(-image[main][xyz]/mean)/mean);
+				
+				
 			// bg vs. outlier test : proba is p(xyz is background)
-			proba[xyz] = (float)max*proba[xyz]/(1.0f+(float)max*proba[xyz]);
+			if (fgmodel==UNI) proba[xyz] = (float)max*proba[xyz]/(1.0f+(float)max*proba[xyz]);
+			else if (fgmodel==LOGN) {
+				double plg = FastMath.exp(-Numerics.square(FastMath.log(image[main][xyz])-fmean)/(2.0*fdev*fdev))/FastMath.sqrt(2.0*FastMath.PI*fdev*fdev);
+				proba[xyz] = (float)(proba[xyz]/(plg+proba[xyz]));
+			}
 		}
 
 		Interface.displayMessage("background-based skull stripping");

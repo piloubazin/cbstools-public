@@ -109,7 +109,7 @@ Regularization Factor:
 BG	DUR	ART	CSF	VEN	VEN	VEN	VEN	CPL	CPR	SIN	CBG	CGL	CGR	AMG	AMG	HIP	HIP	CAU	CAU	THA	THA	PUT	PUT	GPA	GPA	BST	CBW	CWL	CWR
 5.0	8.0	1.0	1.0	2.0	2.0	2.0	2.0	1.0	1.0	8.0	1.0	1.0	1.0	5.0	5.0	2.0	2.0	5.0	5.0	5.0	5.0	5.0	5.0	5.0	5.0	2.0	1.0	1.0	1.0
  
-Intensity Prior Lists:	20
+Intensity Prior Lists:	23
  
 Intensity Prior:	DWIFA3T
 Background		0.00	0.10	1.00
@@ -722,7 +722,7 @@ Cerebrum-WMR	69.0	10.0	1.00
 Intensity Prior:	mpmMT3T
 Background		0.00	0.30	1.00
 Dura			2.00	1.00	1.00
-Arteries			0.10	0.30	1.00
+Arteries		0.10	0.30	1.00
 Sulcal-CSF		0.05	0.15	1.00
 VentricleL		0.05	0.15	1.00
 VentricleR		0.05	0.15	1.00
@@ -754,7 +754,7 @@ Cerebrum-WMR	1.70	0.30	1.00
 Intensity Prior:	mpmR13T
 Background		0.00	100.0	1.00
 Dura			1000.0	500.0	0.50
-Arteries			400.0	300.0	1.00
+Arteries		400.0	300.0	1.00
 Sulcal-CSF		300.0	300.0	1.00
 VentricleL		250.0	200.0	1.00
 VentricleR		250.0	200.0	1.00
@@ -786,7 +786,7 @@ Cerebrum-WMR	950.0	200.0	1.00
 Intensity Prior:	mpmR2s3T
 Background		0.000	0.005	1.00
 Dura			0.065	0.030	1.00
-Arteries			0.080	0.030	1.00
+Arteries		0.080	0.030	1.00
 Sulcal-CSF		0.008	0.01	1.00
 VentricleL		0.001	0.01	1.00
 VentricleR		0.001	0.01	1.00
@@ -814,4 +814,36 @@ Brainstem		0.021	0.005	1.00
 Cerebellum-WM	0.021	0.005	1.00
 Cerebrum-WML	0.021	0.005	1.00
 Cerebrum-WMR	0.021	0.005	1.00
+ 
+Intensity Prior:	FLAIR3T
+Background		0.00	0.05	1.00
+Dura			0.35	0.30	1.00
+Arteries		0.05	0.20	1.00
+Sulcal-CSF		0.15	0.20	1.00
+VentricleL		0.15	0.20 	1.00
+VentricleR		0.15	0.20	1.00
+Ventricle3		0.15	0.20	1.00
+Ventricle4		0.15	0.20 	1.00
+ChoroidPlexusL	0.75	0.35	1.00
+ChoroidPlexusR	0.75	0.35	1.00
+Sinuses			0.05	0.15	1.00
+Cerebellum-GM	0.85	0.20	1.00
+Cerebrum-GML	0.85	0.20	1.00
+Cerebrum-GMR	0.85	0.20	1.00
+AmygdalaL		0.90	0.10	1.00
+AmygdalaR		0.90	0.10	1.00
+CaudateL		0.85	0.20	1.00
+CaudateR		0.85	0.20	1.00
+HippocampusL	0.90	0.10	1.00
+HippocampusR	0.90	0.10	1.00
+PutamenL		0.75	0.30	1.00
+PutamenR		0.75	0.30	1.00
+ThalamusL		0.75	0.30	1.00
+ThalamusR		0.75	0.30	1.00
+GlobusPallidusL	0.45	0.20	1.00
+GlobusPallidusR	0.45	0.20	1.00
+Brainstem		0.60	0.20	1.00
+Cerebellum-WM	0.60	0.20	1.00
+Cerebrum-WML	0.60	0.20	1.00
+Cerebrum-WMR	0.60	0.20	1.00
  
