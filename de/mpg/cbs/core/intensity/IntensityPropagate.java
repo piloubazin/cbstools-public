@@ -112,11 +112,8 @@ public class IntensityPropagate {
 				}
 			}
 			for (int xyz=0;xyz<nxyz;xyz++) for (int c=0;c<nc;c++) {
-				if (merge==MEAN) {
-					if (count[xyz]>0) inputImage[xyz+nxyz*c] = resultImage[xyz+nxyz*c]/(1.0f+count[xyz]);
-				} else {
-					inputImage[xyz+nxyz*c] = resultImage[xyz+nxyz*c];
-				}
+				if (merge==MEAN) resultImage[xyz+nxyz*c] /= (1.0f+count[xyz]);
+				inputImage[xyz+nxyz*c] = resultImage[xyz+nxyz*c];
 			}
 		}
 	}
