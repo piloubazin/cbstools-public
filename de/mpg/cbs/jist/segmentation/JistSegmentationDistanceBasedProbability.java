@@ -112,7 +112,10 @@ public class JistSegmentationDistanceBasedProbability extends ProcessingAlgorith
 		}
 		// pass the input parameters
 		if (segImage.getValue()!=null) algorithm.setSegmentationImage(Interface.getIntegerImage3D(segImage));
-		if (priorImage.getValue()!=null) algorithm.setPriorProbabilityImage(Interface.getFloatImage4D(priorImage));
+		if (priorImage.getValue()!=null) {
+			if (Interface.isImage4D(priorImage)) algorithm.setPriorProbabilityImage(Interface.getFloatImage4D(priorImage));
+			else  algorithm.setPriorProbabilityImage(Interface.getFloatImage3D(priorImage));
+		}
 		algorithm.setDistanceRatio(ratioParam.getValue().floatValue());
 		algorithm.setBackgroundDistance_mm(bgscaleParam.getValue().floatValue());
 		algorithm.setBackgroundProbability(bgprobaParam.getValue().floatValue());
