@@ -894,13 +894,13 @@ public class ImageStatistics {
 			// find the value corresponding to the ratio
 			count = bins[0];
 			int n = 0;
-			while ( (count < ratio) && (n<Nbins) ) {
+			while ( (count < ratio) && (n<Nbins-1) ) {
 				n++;
 				count +=bins[n];
 			}
 			value = Imin + (double)(n+0.5)/(double)Nbins*(Imax-Imin);
 			
-			//System.out.print("robust maximum: "+Rmax+" ("+n+", "+ratio+", "+count+")\n");		
+			//System.out.print("estimated value: "+value+" ("+n+", "+ratio+", "+count+")\n");		
 
 			// new boundaries
 			double I0 = Imin + (double)n/(double)Nbins*(Imax-Imin);
@@ -910,7 +910,7 @@ public class ImageStatistics {
 			Imax = I1;
 			
 			// new ratio
-			if (n<Nbins) ratio = ratio - (count-bins[n]);			
+			if (n<Nbins) ratio = ratio - (count-bins[n]);
 		}
 		
 		return value;

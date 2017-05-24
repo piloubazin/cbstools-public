@@ -3,9 +3,9 @@ package jist.modules;
 public class JistDefaultBase implements JistModulesLocation {
 
 	final static String[] default_paths = new String[]{
-		"de.mpg.cbs.jist"
+		"de.mpg.cbs.jist",
 		"edu.jhu.ece.iacl.jist.plugins",
-		"edu.jhu.ece.iacl.plugins",
+		"edu.jhu.ece.iacl.plugins"
 		};
 	
 	@Override
