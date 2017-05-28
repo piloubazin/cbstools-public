@@ -622,6 +622,12 @@ public class ObjectTransforms {
 		
 		return dist;
 	}
-	
-}//ObjectProcessing class
+
+	public static final float[] fastMarchingDistanceFunction(boolean[] obj, int nx, int ny, int nz) {
+		Gdm3d gdm = new Gdm3d(obj, nx, ny, nz, 1.0f, 1.0f, 1.0f, null, null, 0.0f, 0.0f, 0.0f, "no");
+		gdm.fastMarchingReinitialization(false);
+		
+		return gdm.getLevelSet();
+	}
+}//ObjectTransforms class
 
