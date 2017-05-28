@@ -103,12 +103,12 @@ public class ObjectMorphology {
 
         for (x=0;x<nx;x++) for (y=0;y<ny;y++) for (z=0;z<nz;z++) {
 			
-			eroded[x*nx*y+nx*ny*z] = true;
+			eroded[x+nx*y+nx*ny*z] = true;
 			for (i=-dx;i<=dx;i++) for (j=-dy;j<=dy;j++) for (k=-dz;k<=dz;k++) {
 				
 				if ( (x+i>=0) && (x+i<nx) && (y+j>=0) && (y+j<ny) && (z+k>=0) && (z+k<nz) ) {
 			
-					if (img[x+i*nx*(y+j)+nx*ny*(z+k)]==false) { 
+					if (img[(x+i)+nx*(y+j)+nx*ny*(z+k)]==false) { 
 						eroded[x+nx*y+nx*ny*z] = false;
 						break;
 					}
