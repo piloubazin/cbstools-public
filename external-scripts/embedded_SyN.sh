@@ -58,7 +58,7 @@ then
 fi
 
 # Make sure the used version of ANTS is correct (not clean; should be an afs version instead, but that needs to be tested)
-export ANTSPATH=/scr/armstrong1/bazin/Software/ANTs-1.9.x-Linux/bin/
+export ANTSPATH=/home/piloubazin/Software/ants-2.1.0-redhat/ANTS/
 
 export PATH=$ANTSPATH:$PATH
 

@@ -34,9 +34,12 @@ public class JistRegistrationTargetBasedReorientation extends ProcessingAlgorith
 	private ParamVolume extraImage;
 	private ParamVolume targetImage;
 	private ParamFloat distanceParam;
+	private ParamOption neckdirParam;
 	
 	private ParamVolume reorientImage;
 	private ParamVolume locatorImage;
+	
+	private		static final String[]	dirtypes = {"none","-X","+X","-Y","+Y","-Z","+Z"};
 	
 	protected void createInputParameters(ParamCollection inputParams) {
 		inputParams.add(headImage = new ParamVolume("Head Probability Image"));
@@ -44,6 +47,7 @@ public class JistRegistrationTargetBasedReorientation extends ProcessingAlgorith
 		inputParams.add(targetImage = new ParamVolume("Target Region Image"));
 		
 		inputParams.add(distanceParam = new ParamFloat("Distance to target (mm)", 0.0f, 100.0f, 3.5f));
+		inputParams.add(neckdirParam = new ParamOption("Neck extension direction", dirtypes));
 		
 		algorithm = new RegistrationTargetBasedReorientation();
 		
@@ -88,6 +92,13 @@ public class JistRegistrationTargetBasedReorientation extends ProcessingAlgorith
 		algorithm.setDimensions(dims);
 		algorithm.setResolutions(res);
 		algorithm.setDistance_mm(distanceParam.getValue().floatValue());
+		
+		     if (neckdirParam.getValue().equals("-X")) algorithm.setNeckDirection(algorithm.mX);
+		else if (neckdirParam.getValue().equals("+X")) algorithm.setNeckDirection(algorithm.pX);
+		else if (neckdirParam.getValue().equals("-Y")) algorithm.setNeckDirection(algorithm.mY);
+		else if (neckdirParam.getValue().equals("+Y")) algorithm.setNeckDirection(algorithm.pY);
+		else if (neckdirParam.getValue().equals("-Z")) algorithm.setNeckDirection(algorithm.mZ);
+		else if (neckdirParam.getValue().equals("+Z")) algorithm.setNeckDirection(algorithm.pZ);
 		
 		algorithm.execute();
 

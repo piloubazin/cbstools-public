@@ -20,7 +20,16 @@ public class RegistrationTargetBasedReorientation {
 	private float[]	extraImage;
 	private byte[] targetImage;
 	
-	private float distanceParam = 5.0f;
+	private float distanceParam = 35.0f;
+	private float sizeParam = 30.0f;
+	
+	public final byte mX = 1; 
+	public final byte pX = 2; 
+	public final byte mY = 3; 
+	public final byte pY = 4; 
+	public final byte mZ = 5; 
+	public final byte pZ = 6; 
+	private byte neckdirParam = 0;
 	
 	private float[] reorientImage = null;
 	private byte[] locatorImage = null;
@@ -35,6 +44,7 @@ public class RegistrationTargetBasedReorientation {
 	public final void setExtraImage(float[] val) { extraImage = val; }
 	public final void setTargetImage(byte[] val) { targetImage = val; }
 	public final void setDistance_mm(float val) { distanceParam = val; }
+	public final void setNeckDirection(byte val) { neckdirParam = val; }
 	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
@@ -72,12 +82,96 @@ public class RegistrationTargetBasedReorientation {
 		}
 
 		// 2. Get level set surfaces
-		boolean[] bgmain = ObjectLabeling.largestObject(bgmask, nx, ny, nz, 6);
-		boolean[] eroded = ObjectMorphology.erodeObject(bgmain, nx,ny,nz, 3,3,3);
-		boolean[] ermain = ObjectLabeling.largestObject(eroded, nx, ny, nz, 6);
-		boolean[] bggrow = ObjectMorphology.dilateObject(ermain, nx,ny,nz, 3,3,3);
-		for (int xyz=0;xyz<nxyz;xyz++) bggrow[xyz] = (!bggrow[xyz]);
-		float[] bgdist = ObjectTransforms.fastMarchingDistanceFunction(bggrow, nx, ny, nz);
+		
+		// main background piece
+		bgmask = ObjectLabeling.largestObject(bgmask, nx, ny, nz, 6);
+		bgmask = ObjectMorphology.erodeObject(bgmask, nx,ny,nz, 3,3,3);
+		bgmask = ObjectLabeling.largestObject(bgmask, nx, ny, nz, 6);
+		bgmask = ObjectMorphology.dilateObject(bgmask, nx,ny,nz, 3,3,3);
+		
+		// erase small protrusions
+		bgmask = ObjectMorphology.dilateObject(bgmask, nx,ny,nz, 3,3,3);
+		bgmask = ObjectMorphology.erodeObject(bgmask, nx,ny,nz, 3,3,3);
+		for (int xyz=0;xyz<nxyz;xyz++) bgmask[xyz] = (!bgmask[xyz]);
+		
+		// gdm smoothing?
+		float[] gdm = ObjectTransforms.fastMarchingDistanceFunction(bgmask, nx, ny, nz);
+	
+		boolean[] mask = ObjectMorphology.dilateObject(bgmask, nx,ny,nz, 3,3,3);
+		SmoothGdm evolve = new SmoothGdm(gdm, gdm, nx, ny, nz, rx, ry, rz, mask, 0.1f, 0.4f, "no",null);
+		evolve.fastMarchingReinitialization(true);
+		Interface.displayMessage("level set segmentation...\n");
+		evolve.evolveNarrowBand(500, 0.001f);
+		
+		gdm = evolve.getLevelSet();	
+		for (int xyz=0;xyz<nxyz;xyz++) bgmask[xyz] = (gdm[xyz]<0);
+		
+		// extend to avoid target placement in the neck
+		if (neckdirParam>0) {
+			if (neckdirParam==mX) {
+				for (int y=0;y<ny;y++) for (int z=0;z<nz;z++){
+					boolean max = false;
+					for (int x=nx-1;x>=0;x--) {
+						int xyz = x+nx*y+nx*ny*z;
+						if (bgmask[xyz]) max = bgmask[xyz];
+						bgmask[xyz] = max;
+					}
+				}
+			} else
+			if (neckdirParam==pX) {
+				for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+					boolean max = false;
+					for (int x=0;x<nx;x++) {
+						int xyz = x+nx*y+nx*ny*z;
+						if (bgmask[xyz]) max = bgmask[xyz];
+						bgmask[xyz] = max;
+					}
+				}
+			}
+			if (neckdirParam==mY) {
+				for (int z=0;z<nz;z++) for (int x=0;x<nx;x++) {
+					boolean max = false;
+					for (int y=ny-1;y>=0;y--) {
+						int xyz = x+nx*y+nx*ny*z;
+						if (bgmask[xyz]) max = bgmask[xyz];
+						bgmask[xyz] = max;
+					}
+				}
+			} else
+			if (neckdirParam==pY) {
+				for (int z=0;z<nz;z++) for (int x=0;x<nx;x++) {
+					boolean max = false;
+					for (int y=0;y<ny;y++) {
+						int xyz = x+nx*y+nx*ny*z;
+						if (bgmask[xyz]) max = bgmask[xyz];
+						bgmask[xyz] = max;
+					}
+				}
+			}
+			if (neckdirParam==mZ) {
+				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) {
+					boolean max = false;
+					for (int z=nz-1;z>=0;z--) {
+						int xyz = x+nx*y+nx*ny*z;
+						if (bgmask[xyz]) max = bgmask[xyz];
+						bgmask[xyz] = max;
+					}
+				}
+			} else
+			if (neckdirParam==pZ) {
+				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) {
+					boolean max = false;
+					for (int z=0;z<nz;z++) {
+						int xyz = x+nx*y+nx*ny*z;
+						if (bgmask[xyz]) max = bgmask[xyz];
+						bgmask[xyz] = max;
+					}
+				}
+			}
+			
+			
+		}
+		float[] bgdist = ObjectTransforms.fastMarchingDistanceFunction(bgmask, nx, ny, nz);
 		
 		boolean[] tgmask = new boolean[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) if (targetImage[xyz]>0) tgmask[xyz] = true;
@@ -137,6 +231,16 @@ public class RegistrationTargetBasedReorientation {
 		xc = p0[X];
 		yc = p0[Y];
 		zc = p0[Z];
+		
+		// build a circular target patch
+		boolean[] pcmask = new boolean[nxyz];
+		float pcdist2 = Numerics.square(0.5f*sizeParam/rx);
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (Numerics.abs(bgdist[xyz])<1.0f) if ( (x-xc)*(x-xc)+(y-yc)*(y-yc)+(z-zc)*(z-zc) < pcdist2) {
+				pcmask[xyz] = true;
+			}
+		}
 		
 		// move target to match distance
 		float dist0 = (float)FastMath.sqrt( (xc-xt)*(xc-xt) + (yc-yt)*(yc-yt) + (zc-zt)*(zc-zt) );	
@@ -222,17 +326,17 @@ public class RegistrationTargetBasedReorientation {
 			//reorientImage[xyz] = bgdist[xyz];
 			/* reoriented or initial */
 			// get the head outline
-			boolean bgval = ImageInterpolation.nearestNeighborInterpolation(bggrow, false, xr, yr, zr, nx, ny, nz);
+			boolean bgval = ImageInterpolation.nearestNeighborInterpolation(bgmask, false, xr, yr, zr, nx, ny, nz);
 			//float phead = ImageInterpolation.linearInterpolation(bgdist, 1.0f, xr, yr, zr, nx, ny, nz);
 			if (bgval==true) locatorImage[xyz] = 1;
 			// paste the target
 			byte tgval = ImageInterpolation.nearestNeighborInterpolation(targetImage, (byte)0, xr, yr, zr, nx, ny, nz);
 			if (tgval>0) locatorImage[xyz] = 2;
 			// add the intersection roi
-			boolean roival = ImageInterpolation.nearestNeighborInterpolation(roi, false, xr, yr, zr, nx, ny, nz);
-			if (roival) locatorImage[xyz] = 3;
+			boolean pcval = ImageInterpolation.nearestNeighborInterpolation(pcmask, false, xr, yr, zr, nx, ny, nz);
+			if (pcval) locatorImage[xyz] = 3;
 			/*
-			if (bggrow[xyz]) locatorImage[xyz] = 1;
+			if (bgmask[xyz]) locatorImage[xyz] = 1;
 			if (targetImage[xyz]>0) locatorImage[xyz] = 2;
 			if (roi[xyz]) locatorImage[xyz] = 3;
 			*/
