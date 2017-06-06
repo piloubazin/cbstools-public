@@ -629,5 +629,12 @@ public class ObjectTransforms {
 		
 		return gdm.getLevelSet();
 	}
+
+	public static final float[] fastMarchingDistanceFunction(float[] lvl, int nx, int ny, int nz) {
+		Gdm3d gdm = new Gdm3d(lvl, 1.0f, nx, ny, nz, 1.0f, 1.0f, 1.0f, null, null, 0.0f, 0.0f, 0.0f, "no");
+		gdm.fastMarchingReinitialization(false);
+		
+		return gdm.getLevelSet();
+	}
 }//ObjectTransforms class
 
