@@ -18,6 +18,7 @@ import de.mpg.cbs.utilities.*;
 
 import org.apache.commons.math3.stat.descriptive.rank.*;
 import org.apache.commons.math3.util.*;
+import org.apache.commons.math3.special.Erf;
 
 /*
  * @author Pierre-Louis bazin (bazin@cbs.mpg.de)
@@ -33,7 +34,7 @@ public class JistIntensity4DCombination extends ProcessingAlgorithm{
 		inputParams.add(volParam=new ParamVolume("4D Volume"));
 		inputParams.add(weightParam=new ParamVolume("4D Weight (opt)"));
 		weightParam.setMandatory(false);
-		inputParams.add(operation=new ParamOption("Operation",new String[]{"average","median","maximum","minimum","weighted_avg","max_weight"}));
+		inputParams.add(operation=new ParamOption("Operation",new String[]{"average","median","maximum","minimum","weighted_avg","max_weight","stdev","robustdev"}));
 
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Intensity");
@@ -62,6 +63,8 @@ public class JistIntensity4DCombination extends ProcessingAlgorithm{
 		int cols=vol.getCols();
 		int slices=vol.getSlices();
 		int comps = vol.getComponents();
+		
+		double dev = 100.0*0.5*Erf.erf(1.0/FastMath.sqrt(2.0));
 		
 		String resultName = vol.getName();
 		if (operation.getValue().equals("average")) {
@@ -112,19 +115,30 @@ public class JistIntensity4DCombination extends ProcessingAlgorithm{
 								maxwid = l;
 							}
 						}
-						if (operation.getValue().equals("average")) {
-							resultVol.set(i, j, k, sum/comps);
-						} else if (operation.getValue().equals("median")) {
-							resultVol.set(i, j, k, l, measure.evaluate(vals, 0, comps, 50.0));
-						} else if (operation.getValue().equals("maximum")) {
-							resultVol.set(i, j, k, max);
-						} else if (operation.getValue().equals("minimum")) {
-							resultVol.set(i, j, k, min);
-						} else if (operation.getValue().equals("weighted_avg")) {
-							resultVol.set(i, j, k, wsum/wden);
-						} else if (operation.getValue().equals("max_weight")) {
-							resultVol.set(i, j, k, vals[maxwid]);
+					}
+					if (operation.getValue().equals("average")) {
+						resultVol.set(i, j, k, sum/comps);
+					} else if (operation.getValue().equals("median")) {
+						resultVol.set(i, j, k, measure.evaluate(vals, 0, comps, 50.0));
+					} else if (operation.getValue().equals("maximum")) {
+						resultVol.set(i, j, k, max);
+					} else if (operation.getValue().equals("minimum")) {
+						resultVol.set(i, j, k, min);
+					} else if (operation.getValue().equals("weighted_avg")) {
+						resultVol.set(i, j, k, wsum/wden);
+					} else if (operation.getValue().equals("max_weight")) {
+						resultVol.set(i, j, k, vals[maxwid]);
+					} else if (operation.getValue().equals("stdev")) {
+						double var=0.0;
+						double mean=sum/comps;
+						for (int l = 0; l < comps; l++) {
+							tmp=vol.getDouble(i, j, k, l);
+							var+=(tmp-mean)*(tmp-mean);
 						}
+						resultVol.set(i,j,k, FastMath.sqrt(var/comps));
+					}  else if (operation.getValue().equals("stdev")) {
+						double fdev = 0.5*(measure.evaluate(vals, 0, comps, 50.0+dev) - measure.evaluate(vals, 0, comps, 50.0-dev));
+						resultVol.set(i,j,k, fdev);
 					}
 				}
 			}

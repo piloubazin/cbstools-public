@@ -108,6 +108,7 @@ public class RegistrationTargetBasedReorientation {
 		
 		// extend to avoid target placement in the neck
 		if (neckdirParam>0) {
+			bgmask = ObjectMorphology.erodeObject(bgmask, nx,ny,nz, 3,3,3);
 			if (neckdirParam==mX) {
 				for (int y=0;y<ny;y++) for (int z=0;z<nz;z++){
 					boolean max = false;
@@ -168,8 +169,7 @@ public class RegistrationTargetBasedReorientation {
 					}
 				}
 			}
-			
-			
+			bgmask = ObjectMorphology.dilateObject(bgmask, nx,ny,nz, 3,3,3);
 		}
 		float[] bgdist = ObjectTransforms.fastMarchingDistanceFunction(bgmask, nx, ny, nz);
 		
@@ -237,7 +237,7 @@ public class RegistrationTargetBasedReorientation {
 		float pcdist2 = Numerics.square(0.5f*sizeParam/rx);
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;
-			if (Numerics.abs(bgdist[xyz])<1.0f) if ( (x-xc)*(x-xc)+(y-yc)*(y-yc)+(z-zc)*(z-zc) < pcdist2) {
+			if (Numerics.abs(bgdist[xyz])<1.8f) if ( (x-xc)*(x-xc)+(y-yc)*(y-yc)+(z-zc)*(z-zc) < pcdist2) {
 				pcmask[xyz] = true;
 			}
 		}
