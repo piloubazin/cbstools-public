@@ -142,6 +142,27 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 
 		// main algorithm
 
+		boolean is2d = slab2dParam.getValue().booleanValue();
+		/*
+		byte off = 4;
+		if (is2d) {
+			// pad all images to avoid boundary problems	
+			int nxyzp = (nx+2*off)*(ny+2*off)*(nz+2*off);
+			float[][] tmp = new float[nimg][nxyzp];
+			for (int i=0;i<nimg;i++) {
+				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+					int xyz = x + nx*y + nx*ny*z;
+					int xyzp = x+off + (nx+2*off)*(y+off) + (nx+2*off)*(ny+2*off)*(z+off);
+					tmp[i][xyzp] = image[i][xyz];
+				}
+			}
+			image = tmp;
+			nx = nx+2*off;
+			ny = ny+2*off;
+			nz = nz+2*off;
+			nxyz = nxyzp;
+		}
+		*/
 		boolean skip0 = skip0Param.getValue().booleanValue();
 		
 		int ndata=0;
@@ -227,7 +248,6 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 		Interface.displayMessage("background-based skull stripping");
 		
 		// start from the bg mask
-		boolean is2d = slab2dParam.getValue().booleanValue();
 		
 		MinMaxFiltering minmax = new MinMaxFiltering(proba, nx,ny,nz, rx,ry,rz);
 		
@@ -326,6 +346,34 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 			brainmask = Morphology.erodeObject(brainmask, nx,ny,nz, -dilate,-dilate,-dilate);
 		}
 
+		/*		
+		if (is2d) {
+			// un-pad all images
+			int nxyzu = (nx-2*off)*(ny-2*off)*(nz-2*off);
+			float[][] tmp = new float[nimg][nxyzu];
+			float[][][] tmp3d = new float[nx-2*off][ny-2*off][nz-2*off];
+			byte[][][] tmp3db = new byte[nx-2*off][ny-2*off][nz-2*off];
+			for (int i=0;i<nimg;i++) {
+				for (int x=off;x<nx-2*off;x++) for (int y=off;y<ny-2*off;y++) for (int z=off;z<nz-2*off;z++) {
+					int xyz = x + nx*y + nx*ny*z;
+					int xyzu = x-off + (nx-2*off)*(y-off) + (nx-2*off)*(ny-2*off)*(z-off);
+					tmp[i][xyzu] = image[i][xyz];
+				}
+			}
+			for (int x=off;x<nx-2*off;x++) for (int y=off;y<ny-2*off;y++) for (int z=off;z<nz-2*off;z++) {
+				tmp3d[x-off][y-off][z-off] = probamask[x][y][z];
+				tmp3db[x-off][y-off][z-off] = brainmask[x][y][z];
+			}
+			image = tmp;
+			probamask = tmp3d;
+			brainmask = tmp3db;
+			nx = nx-2*off;
+			ny = ny-2*off;
+			nz = nz-2*off;
+			nxyz = nxyzu;
+		}
+		*/
+		
 		ImageDataUByte resultData = new ImageDataUByte(brainmask);		
 		resultData.setHeader(mainImage.getImageData().getHeader());
 		resultData.setName(mainImage.getImageData().getName()+"_stripmask");

@@ -34,7 +34,7 @@ public class JistIntensity4DCombination extends ProcessingAlgorithm{
 		inputParams.add(volParam=new ParamVolume("4D Volume"));
 		inputParams.add(weightParam=new ParamVolume("4D Weight (opt)"));
 		weightParam.setMandatory(false);
-		inputParams.add(operation=new ParamOption("Operation",new String[]{"average","median","maximum","minimum","weighted_avg","max_weight","stdev","robustdev"}));
+		inputParams.add(operation=new ParamOption("Operation",new String[]{"average","median","maximum","minimum","weighted_avg","max_weight","stdev","robust_dev"}));
 
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Intensity");
@@ -84,6 +84,12 @@ public class JistIntensity4DCombination extends ProcessingAlgorithm{
 		} else
 		if (operation.getValue().equals("max_weight")) {
 			resultName+= "_maxw";
+		} else
+		if (operation.getValue().equals("stdev")) {
+			resultName+= "_std";
+		} else
+		if (operation.getValue().equals("robust_dev")) {
+			resultName+= "_rstd";
 		}
 		ImageDataFloat resultVol=new ImageDataFloat(resultName,rows,cols,slices);
 		
@@ -136,7 +142,7 @@ public class JistIntensity4DCombination extends ProcessingAlgorithm{
 							var+=(tmp-mean)*(tmp-mean);
 						}
 						resultVol.set(i,j,k, FastMath.sqrt(var/comps));
-					}  else if (operation.getValue().equals("stdev")) {
+					}  else if (operation.getValue().equals("robust_dev")) {
 						double fdev = 0.5*(measure.evaluate(vals, 0, comps, 50.0+dev) - measure.evaluate(vals, 0, comps, 50.0-dev));
 						resultVol.set(i,j,k, fdev);
 					}
