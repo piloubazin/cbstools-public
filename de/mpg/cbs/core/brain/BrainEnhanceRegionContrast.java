@@ -9,6 +9,7 @@ import de.mpg.cbs.structures.*;
 import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.methods.*;
 import org.apache.commons.math3.util.FastMath;
+import org.apache.commons.math3.special.Erf;
 
 
 /*
@@ -26,15 +27,17 @@ public class BrainEnhanceRegionContrast {
 
 	private String atlasParam;
 	private String regionParam;
-	private static final String[] regionTypes = {"crwm", "csf", "cbwm"};
+	public static final String[] regionTypes = {"crwm", "csf", "cbwm"};
 	private String backgroundParam;
-	private static final String[] backgroundTypes = {"crgm", "brain", "cbgm"};
+	public static final String[] backgroundTypes = {"crgm", "brain", "cbgm"};
 	private float	distanceParam = 1.0f;
-	private boolean includeBg = false;
 		
 	private byte[] regionImage;
+	private byte[] backgroundImage;
 	private float[] probaRegionImage;
 	private float[] probaBackgroundImage;
+	private float[] pvRegionImage;
+	private float[] pvBackgroundImage;
 		
 	private String regionName;
 	private String backgroundName;
@@ -58,7 +61,6 @@ public class BrainEnhanceRegionContrast {
 	public final void setEnhancedRegion(String val) { regionParam = val; }
 	public final void setContrastBackground(String val) { backgroundParam = val; }
 	public final void setPartialVolumingDistance(float val) { distanceParam = val; }
-	public final void setIncludeBackground(boolean val) { includeBg = val; }
 		
 	public final String getPackage() { return "CBS Tools"; }
 	public final String getCategory() { return "Brain Processing.devel"; }
@@ -73,8 +75,11 @@ public class BrainEnhanceRegionContrast {
 
 	// output parameters
 	public final byte[] getRegionMask() { return regionImage; }
+	public final byte[] getBackgroundMask() { return backgroundImage; }
 	public final float[] getRegionProbability() { return probaRegionImage; }
 	public final float[] getBackgroundProbability() { return probaBackgroundImage; }
+	public final float[] getRegionPartialVolume() { return pvRegionImage; }
+	public final float[] getBackgroundPartialVolume() { return pvBackgroundImage; }
 	
 	public final String getRegionName() { return regionName; }
 	public final String getBackgroundName() { return backgroundName; }
@@ -95,8 +100,7 @@ public class BrainEnhanceRegionContrast {
 		
 		BitSet isRegion = new BitSet(maxlb);
 		BitSet isBackground = new BitSet(maxlb);
-		structureName = null; 
-		insideName = null;
+		regionName = null; 
 		backgroundName = null;
 		if (regionParam.equals("crwm")) {
 			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
@@ -122,130 +126,81 @@ public class BrainEnhanceRegionContrast {
 		System.out.println("(output extensions: "+regionName+", "+backgroundName+")");
 		
 		// 1. define regions of interest
-		
+		System.out.println("region mask");
+		regionImage = new byte[nxyz];
+		backgroundImage = new byte[nxyz];
+		for (int xyz=0;xyz<nxyz;xyz++) if (segImage[xyz]>-1) {
+			if (isRegion.get(segImage[xyz])) {
+				regionImage[xyz] = 1;
+			} 
+			if (isBackground.get(segImage[xyz])) {
+				backgroundImage[xyz] = 1;
+			}
+		}
 		
 		// 2. estimate pv factors
-		
+		System.out.println("region mask");
+		pvRegionImage = new float[nxyz];
+		pvBackgroundImage = new float[nxyz];
+		// build levelset boundaries
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			if (regionImage[xyz]>0) pvRegionImage[xyz] = -mgdmImage[xyz];
+			else pvRegionImage[xyz] = mgdmImage[xyz];
+			
+			if (backgroundImage[xyz]>0) pvBackgroundImage[xyz] = -mgdmImage[xyz];
+			else pvBackgroundImage[xyz] = mgdmImage[xyz];
+		}
+		pvRegionImage = ObjectTransforms.fastMarchingDistanceFunction(pvRegionImage,nx,ny,nz);
+		pvBackgroundImage =  ObjectTransforms.fastMarchingDistanceFunction(pvBackgroundImage,nx,ny,nz);
+		// map back to linear PV values
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			pvRegionImage[xyz] = Numerics.bounded(0.5f - 0.5f*pvRegionImage[xyz]/distanceParam, 0.0f, 1.0f);
+			pvBackgroundImage[xyz] = Numerics.bounded(0.5f - 0.5f*pvBackgroundImage[xyz]/distanceParam, 0.0f, 1.0f);
+		}
 		
 		// 3. build contrast maps
+		int nreg = 0;
+		for (int xyz=0;xyz<nxyz;xyz++) if (regionImage[xyz]>0) nreg++;
+		int nbkg = 0;
+		for (int xyz=0;xyz<nxyz;xyz++) if (backgroundImage[xyz]>0) nbkg++;
 		
+		double[] reg = new double[nreg];
+		double[] bkg = new double[nbkg];
+		double[] wreg = new double[nreg];
+		double[] wbkg = new double[nbkg];
+		int nr=0;
+		int nb=0;
+		for (int xyz=0;xyz<nxyz;xyz++) if (regionImage[xyz]>0) {
+			reg[nr] = intensImage[xyz];
+			wreg[nr] = pvRegionImage[xyz];
+			nr++;
+		} 
+		for (int xyz=0;xyz<nxyz;xyz++) if (backgroundImage[xyz]>0) {
+			bkg[nr] = intensImage[xyz];
+			wbkg[nr] = pvBackgroundImage[xyz];
+			nb++;
+		}
+		// robust statistics
+		double dev = 100.0*0.5*Erf.erf(1.0/FastMath.sqrt(2.0));
 		
+		double regmed = ImageStatistics.weightedPercentile(reg, wreg, 50.0, nreg);
+		double regstd = 0.5*(ImageStatistics.weightedPercentile(reg,wreg,50.0+dev,nreg) - ImageStatistics.weightedPercentile(reg,wreg,50.0-dev,nreg));
+		Interface.displayMessage("Region parameter estimates: mean = "+regmed+", stdev = "+regstd+",\n");
+		
+		double bkgmed = ImageStatistics.weightedPercentile(bkg, wbkg, 50.0, nbkg);
+		double bkgstd = 0.5*(ImageStatistics.weightedPercentile(bkg,wbkg,50.0+dev,nbkg) - ImageStatistics.weightedPercentile(bkg,wbkg,50.0-dev,nbkg));
+		Interface.displayMessage("Background parameter estimates: mean = "+bkgmed+", stdev = "+bkgstd+",\n");
 		
 		// process the data: probabilities
-		probaStructureImage = new float[nx*ny*nz];
-		probaInsideImage = new float[nx*ny*nz];
-		probaBackgroundImage = new float[nx*ny*nz];
-		System.out.println("Computing extracted probabilities");
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			int xyz = x+nx*y+nx*ny*z;
-			probaStructureImage[xyz] = 0.0f;
-			probaInsideImage[xyz] = 0.0f;
-			probaBackgroundImage[xyz] = 0.0f;
-			for (int c=0;c<nc;c++) {
-				int xyzc = x+nx*y+nx*ny*z+nx*ny*nz*c;
-				if (labelImage[xyzc]>-1) {
-					if (isStructure.get(labelImage[xyzc])) {
-						probaStructureImage[xyz] = Numerics.max(probaStructureImage[xyz], functionImage[xyzc]);
-					} else if (isInside.get(labelImage[xyzc])) {
-						probaInsideImage[xyz] = Numerics.max(probaInsideImage[xyz], functionImage[xyzc]);
-					} else if (isBackground.get(labelImage[xyzc])) {
-						probaBackgroundImage[xyz] = Numerics.max(probaBackgroundImage[xyz], functionImage[xyzc]);
-					}
-				}
-			}
-			if (densityParam) {
-				// modulate by a sigmoid to lower or higher values away from the boundaries
-				// find the closest label for each region
-				boolean done = false;
-				float factorS = -1;
-				float factorI = -1;
-				float factorB = -1;
-				float dist = 0.0f;
-				for (int n=0;n<nmgdm && !done;n++) {
-					if (n==0) dist = -mgdmfull.getFunctions()[n][xyz];
-					else if (n==1) dist *= -1;
-					else dist += mgdmfull.getFunctions()[n-1][xyz];
-					
-					if (factorS==-1 && isStructure.get(atlas.getLabels()[mgdmfull.getLabels()[n][xyz]])) {
-						factorS = (float)(2.0/(1.0+FastMath.exp(dist/scalingParam) ) );
-					}
-					if (factorI==-1 && isInside.get(atlas.getLabels()[mgdmfull.getLabels()[n][xyz]])) {
-						factorI = (float)(2.0/(1.0+FastMath.exp(dist/scalingParam) ) );
-					}
-					if (factorB==-1 && isBackground.get(atlas.getLabels()[mgdmfull.getLabels()[n][xyz]])) {
-						factorB = (float)(2.0/(1.0+FastMath.exp(dist/scalingParam) ) );
-					}
-					if (factorS!=-1 && factorI !=-1 && factorB!=-1) done = true;
-				}
-				if (factorS!=-1) probaStructureImage[xyz] *= factorS;
-				if (factorI!=-1) probaInsideImage[xyz] *= factorI;
-				if (factorB!=-1) probaBackgroundImage[xyz] *= factorB;
-			}
-			if (normalizeParam) {
-				if (isStructure.get(segImage[xyz]) ) {
-					float sum = Numerics.max(1e-3f,probaStructureImage[xyz]+probaInsideImage[xyz],probaStructureImage[xyz]+probaBackgroundImage[xyz]);
-					probaStructureImage[xyz] /= sum;
-					probaInsideImage[xyz] /= sum;
-					probaBackgroundImage[xyz] /= sum;
-				} else
-				if (isInside.get(segImage[xyz]) ) {
-					float sum = Numerics.max(1e-3f,probaInsideImage[xyz]+probaStructureImage[xyz],probaInsideImage[xyz]+probaBackgroundImage[xyz]);
-					probaStructureImage[xyz] /= sum;
-					probaInsideImage[xyz] /= sum;
-					probaBackgroundImage[xyz] /= sum;
-				} else
-				if (isBackground.get(segImage[xyz]) ) {
-					float sum = Numerics.max(1e-3f,probaBackgroundImage[xyz]+probaInsideImage[xyz],probaBackgroundImage[xyz]+probaStructureImage[xyz]);
-					probaStructureImage[xyz] /= sum;
-					probaInsideImage[xyz] /= sum;
-					probaBackgroundImage[xyz] /= sum;
-				} else {
-					probaStructureImage[xyz] = 0.0f;
-					probaInsideImage[xyz] = 0.0f;
-					probaBackgroundImage[xyz] = 0.0f;
-				}					
-			}
-			// remap everything into [0,1] in case it's not there
-			probaStructureImage[xyz] = Numerics.bounded(probaStructureImage[xyz], 0.0f, 1.0f);
-			probaInsideImage[xyz] = Numerics.bounded(probaInsideImage[xyz], 0.0f, 1.0f);
-			probaBackgroundImage[xyz] = Numerics.bounded(probaBackgroundImage[xyz], 0.0f, 1.0f);
-		}
+		probaRegionImage = new float[nxyz];
+		probaBackgroundImage = new float[nxyz];
+		System.out.println("Probabilities");
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			double preg = FastMath.exp(-0.5*(intensImage[xyz]-regmed)*(intensImage[xyz]-regmed)/regstd/regstd)/regstd;
+			double pbkg = FastMath.exp(-0.5*(intensImage[xyz]-bkgmed)*(intensImage[xyz]-bkgmed)/bkgstd/bkgstd)/bkgstd;
 		
-		// process the data: segmentation
-		System.out.println("Computing extracted segmentations");
-		segStructureImage = new byte[nx*ny*nz];
-		segInsideImage = new byte[nx*ny*nz];
-		segBackgroundImage = new byte[nx*ny*nz];
-		for (int xyz=0;xyz<nxyz;xyz++) if (segImage[xyz]>-1) {
-			if (isStructure.get(segImage[xyz])) {
-				segStructureImage[xyz] = 1;
-			} else if (isInside.get(segImage[xyz])) {
-				segInsideImage[xyz] = 1;
-			} else if (isBackground.get(segImage[xyz])) {
-				segBackgroundImage[xyz] = 1;
-			}
-		}
-
-		// process the data: levelsets 
-		// TODO: (could use the full representation and/or reinitialize => do it before the probabilities)
-		System.out.println("Computing extracted level sets");
-		lvlStructureImage = new float[nxyz];
-		lvlInsideImage = new float[nxyz];
-		lvlBackgroundImage = new float[nxyz];
-		for (int xyz=0;xyz<nxyz;xyz++) if (segImage[xyz]>-1) {
-			if (isStructure.get(segImage[xyz])) {
-				lvlStructureImage[xyz] = -mgdmImage[xyz];
-				lvlInsideImage[xyz] = mgdmImage[xyz];
-				lvlBackgroundImage[xyz] = mgdmImage[xyz];
-			} else if (isInside.get(segImage[xyz])) {
-				lvlStructureImage[xyz] = mgdmImage[xyz];
-				lvlInsideImage[xyz] = -mgdmImage[xyz];
-				lvlBackgroundImage[xyz] = mgdmImage[xyz];
-			} else if (isBackground.get(segImage[xyz])) {
-				lvlStructureImage[xyz] = mgdmImage[xyz];
-				lvlInsideImage[xyz] = mgdmImage[xyz];
-				lvlBackgroundImage[xyz] = -mgdmImage[xyz];
-			}
+			probaRegionImage[xyz] = (float)(preg/(preg+pbkg));
+			probaBackgroundImage[xyz] = (float)(pbkg/(pbkg+preg));
 		}
 
 		return;
