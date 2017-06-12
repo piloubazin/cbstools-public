@@ -38,6 +38,8 @@ public class BrainEnhanceRegionContrast {
 	private float[] probaBackgroundImage;
 	private float[] pvRegionImage;
 	private float[] pvBackgroundImage;
+	private float[] lvlRegionImage;
+	private float[] lvlBackgroundImage;
 		
 	private String regionName;
 	private String backgroundName;
@@ -78,8 +80,8 @@ public class BrainEnhanceRegionContrast {
 	public final byte[] getBackgroundMask() { return backgroundImage; }
 	public final float[] getRegionProbability() { return probaRegionImage; }
 	public final float[] getBackgroundProbability() { return probaBackgroundImage; }
-	public final float[] getRegionPartialVolume() { return pvRegionImage; }
-	public final float[] getBackgroundPartialVolume() { return pvBackgroundImage; }
+	public final float[] getRegionPartialVolume() { return lvlRegionImage; }
+	public final float[] getBackgroundPartialVolume() { return lvlBackgroundImage; }
 	
 	public final String getRegionName() { return regionName; }
 	public final String getBackgroundName() { return backgroundName; }
@@ -96,7 +98,7 @@ public class BrainEnhanceRegionContrast {
 			if (atlas.getLabels()[nobj]>maxlb) maxlb = atlas.getLabels()[nobj];
 		}
 		
-		System.out.println("Extracting region: "+regionParam);
+		System.out.println("Enhancing region: "+regionParam);
 		
 		BitSet isRegion = new BitSet(maxlb);
 		BitSet isBackground = new BitSet(maxlb);
@@ -144,18 +146,20 @@ public class BrainEnhanceRegionContrast {
 		pvBackgroundImage = new float[nxyz];
 		// build levelset boundaries
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			if (regionImage[xyz]>0) pvRegionImage[xyz] = -mgdmImage[xyz];
-			else pvRegionImage[xyz] = mgdmImage[xyz];
+			if (mgdmImage[xyz]==-1) pvRegionImage[xyz] = distanceParam+1.0f;
+			else if (regionImage[xyz]>0) pvRegionImage[xyz] = -mgdmImage[xyz];
+			else pvRegionImage[xyz] = Numerics.max(0.001f, mgdmImage[xyz]);
 			
-			if (backgroundImage[xyz]>0) pvBackgroundImage[xyz] = -mgdmImage[xyz];
-			else pvBackgroundImage[xyz] = mgdmImage[xyz];
+			if (mgdmImage[xyz]==-1) pvBackgroundImage[xyz] = distanceParam+1.0f;
+			else if (backgroundImage[xyz]>0) pvBackgroundImage[xyz] = -mgdmImage[xyz];
+			else pvBackgroundImage[xyz] = Numerics.max(0.001f, mgdmImage[xyz]);
 		}
-		pvRegionImage = ObjectTransforms.fastMarchingDistanceFunction(pvRegionImage,nx,ny,nz);
-		pvBackgroundImage =  ObjectTransforms.fastMarchingDistanceFunction(pvBackgroundImage,nx,ny,nz);
+		lvlRegionImage = ObjectTransforms.fastMarchingDistanceFunction(pvRegionImage,nx,ny,nz);
+		lvlBackgroundImage =  ObjectTransforms.fastMarchingDistanceFunction(pvBackgroundImage,nx,ny,nz);
 		// map back to linear PV values
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			pvRegionImage[xyz] = Numerics.bounded(0.5f - 0.5f*pvRegionImage[xyz]/distanceParam, 0.0f, 1.0f);
-			pvBackgroundImage[xyz] = Numerics.bounded(0.5f - 0.5f*pvBackgroundImage[xyz]/distanceParam, 0.0f, 1.0f);
+			pvRegionImage[xyz] = Numerics.bounded(0.5f - 0.5f*lvlRegionImage[xyz]/distanceParam, 0.0f, 1.0f);
+			pvBackgroundImage[xyz] = Numerics.bounded(0.5f - 0.5f*lvlBackgroundImage[xyz]/distanceParam, 0.0f, 1.0f);
 		}
 		
 		// 3. build contrast maps
@@ -169,15 +173,15 @@ public class BrainEnhanceRegionContrast {
 		double[] wreg = new double[nreg];
 		double[] wbkg = new double[nbkg];
 		int nr=0;
-		int nb=0;
 		for (int xyz=0;xyz<nxyz;xyz++) if (regionImage[xyz]>0) {
 			reg[nr] = intensImage[xyz];
 			wreg[nr] = pvRegionImage[xyz];
 			nr++;
 		} 
+		int nb=0;
 		for (int xyz=0;xyz<nxyz;xyz++) if (backgroundImage[xyz]>0) {
-			bkg[nr] = intensImage[xyz];
-			wbkg[nr] = pvBackgroundImage[xyz];
+			bkg[nb] = intensImage[xyz];
+			wbkg[nb] = pvBackgroundImage[xyz];
 			nb++;
 		}
 		// robust statistics
@@ -191,16 +195,69 @@ public class BrainEnhanceRegionContrast {
 		double bkgstd = 0.5*(ImageStatistics.weightedPercentile(bkg,wbkg,50.0+dev,nbkg) - ImageStatistics.weightedPercentile(bkg,wbkg,50.0-dev,nbkg));
 		Interface.displayMessage("Background parameter estimates: mean = "+bkgmed+", stdev = "+bkgstd+",\n");
 		
-		// process the data: probabilities
+		// process the data: probabilities or arbitrary enhancement?
 		probaRegionImage = new float[nxyz];
 		probaBackgroundImage = new float[nxyz];
 		System.out.println("Probabilities");
+		//double pbkgMed = 1.0/bkgmed - FastMath.exp(-0.5*(bkgmed-regmed)*(bkgmed-regmed)/regstd/regstd)/regstd;
+		//double pregMed = 1.0/regmed - FastMath.exp(-0.5*(regmed-bkgmed)*(regmed-bkgmed)/bkgstd/bkgstd)/bkgstd;
+		//double crossing = (regmed/regstd + bkgmed/bkgstd)/(1.0/regstd + 1.0/bkgstd);
+		//double crossdev = 2.0*regstd*bkgstd/(regstd+bkgstd);
+		double sqrt2 = FastMath.sqrt(2.0);
 		for (int xyz=0;xyz<nxyz;xyz++) {
+			if (regmed<bkgmed) {
+				/*
+				double sigreg = 1.0/(1.0 + FastMath.exp((intensImage[xyz]-regmed)/regstd));
+				double sigbkg = 1.0/(1.0 + FastMath.exp((bkgmed-intensImage[xyz])/bkgstd));
+				probaRegionImage[xyz] = (float)(sigreg/(sigreg+sigbkg));
+				probaBackgroundImage[xyz] = (float)(sigbkg/(sigreg+sigbkg));
+				*/
+				double cumulreg = 0.5*(1.0 + Erf.erf((regmed-intensImage[xyz])/(sqrt2*regstd)));
+				double cumulbkg = 0.5*(1.0 + Erf.erf((intensImage[xyz]-bkgmed)/(sqrt2*bkgstd)));
+				//probaRegionImage[xyz] = (float)(cumulreg/(cumulreg+cumulbkg));
+				//probaBackgroundImage[xyz] = (float)(cumulbkg/(cumulreg+cumulbkg));			
+				probaRegionImage[xyz] = (float)(0.5 + 0.5*(cumulreg-cumulbkg));
+				probaBackgroundImage[xyz] = (float)(0.5 + 0.5*(cumulbkg-cumulreg));			
+				
+				
+			} else {
+				/*
+				double sigreg = 1.0/(1.0 + FastMath.exp((regmed-intensImage[xyz])/regstd));
+				double sigbkg = 1.0/(1.0 + FastMath.exp((intensImage[xyz]-bkgmed)/bkgstd));
+				probaRegionImage[xyz] = (float)(sigreg/(sigreg+sigbkg));
+				probaBackgroundImage[xyz] = (float)(sigbkg/(sigreg+sigbkg));
+				*/
+				double cumulreg = 0.5*(1.0 + Erf.erf((intensImage[xyz]-regmed)/(sqrt2*regstd)));
+				double cumulbkg = 0.5*(1.0 + Erf.erf((bkgmed-intensImage[xyz])/(sqrt2*bkgstd)));
+				//probaRegionImage[xyz] = (float)(cumulreg/(cumulreg+cumulbkg));
+				//probaBackgroundImage[xyz] = (float)(cumulbkg/(cumulreg+cumulbkg));
+				probaRegionImage[xyz] = (float)(0.5 + 0.5*(cumulreg-cumulbkg));
+				probaBackgroundImage[xyz] = (float)(0.5 + 0.5*(cumulbkg-cumulreg));			
+				
+			}
+			/*
 			double preg = FastMath.exp(-0.5*(intensImage[xyz]-regmed)*(intensImage[xyz]-regmed)/regstd/regstd)/regstd;
 			double pbkg = FastMath.exp(-0.5*(intensImage[xyz]-bkgmed)*(intensImage[xyz]-bkgmed)/bkgstd/bkgstd)/bkgstd;
 		
+			
+			if (regmed>bkgmed) {
+				if (intensImage[xyz]>regmed) probaRegionImage[xyz] = (float)(0.75f + (pregMed-preg+pbkg)/pregMed*0.25f);
+				else if (intensImage[xyz]<bkgmed) probaRegionImage[xyz] = (float)(0.25f - (pbkgMed-pbkg+preg)/pbkgMed*0.25f);
+				else {
+					//probaRegionImage[xyz] = 0.5f*(0.75f - (pregMed-preg)/pregMed*0.25f + 0.25f + (pbkgMed-pbkg)/pbkgMed*0.25f);
+					probaRegionImage[xyz] = (float)(0.5f - (pregMed-preg+pbkg)/pregMed*0.125f + (pbkgMed-pbkg+preg)/pbkgMed*0.125f);
+				}
+			} else {
+				if (intensImage[xyz]<regmed) probaRegionImage[xyz] = (float)(0.75f + (pregMed-preg+pbkg)/pregMed*0.25f);
+				else if (intensImage[xyz]>bkgmed) probaRegionImage[xyz] = (float)(0.25f - (pbkgMed-pbkg+preg)/pbkgMed*0.25f);
+				else {
+					//probaRegionImage[xyz] = 0.5f*(0.75f - (pregMed-preg)/pregMed*0.25f + 0.25f + (pbkgMed-pbkg)/pbkgMed*0.25f);
+					probaRegionImage[xyz] = (float)(0.5f - (pregMed-preg+pbkg)/pregMed*0.125f + (pbkgMed-pbkg+preg)/pbkgMed*0.125f);
+				}
+			}
 			probaRegionImage[xyz] = (float)(preg/(preg+pbkg));
 			probaBackgroundImage[xyz] = (float)(pbkg/(pbkg+preg));
+			*/
 		}
 
 		return;

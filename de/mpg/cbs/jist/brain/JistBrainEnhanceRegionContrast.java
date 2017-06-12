@@ -62,7 +62,7 @@ public class JistBrainEnhanceRegionContrast extends ProcessingAlgorithm {
 		inputParams.add(atlasParam = new ParamFile("Atlas file",new FileExtensionFilter(new String[]{"txt"})));
 		
 		inputParams.add(regionParam = new ParamOption("Enhanced Region", BrainEnhanceRegionContrast.regionTypes));
-		inputParams.add(regionParam = new ParamOption("Contrast Background", BrainEnhanceRegionContrast.backgroundTypes));
+		inputParams.add(backgroundParam = new ParamOption("Contrast Background", BrainEnhanceRegionContrast.backgroundTypes));
 		inputParams.add(distanceParam = new ParamFloat("Partial voluming distance (voxels)", 0.0f, 10.0f, 1.0f));
 		
 		algorithm = new BrainEnhanceRegionContrast();
