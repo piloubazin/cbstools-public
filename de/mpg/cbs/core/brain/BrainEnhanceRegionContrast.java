@@ -38,8 +38,6 @@ public class BrainEnhanceRegionContrast {
 	private float[] probaBackgroundImage;
 	private float[] pvRegionImage;
 	private float[] pvBackgroundImage;
-	private float[] lvlRegionImage;
-	private float[] lvlBackgroundImage;
 		
 	private String regionName;
 	private String backgroundName;
@@ -80,8 +78,8 @@ public class BrainEnhanceRegionContrast {
 	public final byte[] getBackgroundMask() { return backgroundImage; }
 	public final float[] getRegionProbability() { return probaRegionImage; }
 	public final float[] getBackgroundProbability() { return probaBackgroundImage; }
-	public final float[] getRegionPartialVolume() { return lvlRegionImage; }
-	public final float[] getBackgroundPartialVolume() { return lvlBackgroundImage; }
+	public final float[] getRegionPartialVolume() { return pvRegionImage; }
+	public final float[] getBackgroundPartialVolume() { return pvBackgroundImage; }
 	
 	public final String getRegionName() { return regionName; }
 	public final String getBackgroundName() { return backgroundName; }
@@ -142,24 +140,28 @@ public class BrainEnhanceRegionContrast {
 		
 		// 2. estimate pv factors
 		System.out.println("region mask");
-		pvRegionImage = new float[nxyz];
-		pvBackgroundImage = new float[nxyz];
+		float[] lvlreg = new float[nxyz];
+		float[] lvlbkg = new float[nxyz];
 		// build levelset boundaries
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			if (mgdmImage[xyz]==-1) pvRegionImage[xyz] = distanceParam+1.0f;
-			else if (regionImage[xyz]>0) pvRegionImage[xyz] = -mgdmImage[xyz];
-			else pvRegionImage[xyz] = Numerics.max(0.001f, mgdmImage[xyz]);
+			if (mgdmImage[xyz]==-1) lvlreg[xyz] = distanceParam+1.0f;
+			else if (regionImage[xyz]>0) lvlreg[xyz] = -mgdmImage[xyz];
+			else lvlreg[xyz] = Numerics.max(0.001f, mgdmImage[xyz]);
 			
-			if (mgdmImage[xyz]==-1) pvBackgroundImage[xyz] = distanceParam+1.0f;
-			else if (backgroundImage[xyz]>0) pvBackgroundImage[xyz] = -mgdmImage[xyz];
-			else pvBackgroundImage[xyz] = Numerics.max(0.001f, mgdmImage[xyz]);
+			if (mgdmImage[xyz]==-1) lvlbkg[xyz] = distanceParam+1.0f;
+			else if (backgroundImage[xyz]>0) lvlbkg[xyz] = -mgdmImage[xyz];
+			else lvlbkg[xyz] = Numerics.max(0.001f, mgdmImage[xyz]);
 		}
-		lvlRegionImage = ObjectTransforms.fastMarchingDistanceFunction(pvRegionImage,nx,ny,nz);
-		lvlBackgroundImage =  ObjectTransforms.fastMarchingDistanceFunction(pvBackgroundImage,nx,ny,nz);
+		lvlreg = ObjectTransforms.fastMarchingDistanceFunction(lvlreg,nx,ny,nz);
+		lvlbkg =  ObjectTransforms.fastMarchingDistanceFunction(lvlbkg,nx,ny,nz);
 		// map back to linear PV values
+		pvRegionImage = new float[nxyz];
+		pvBackgroundImage = new float[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			pvRegionImage[xyz] = Numerics.bounded(0.5f - 0.5f*lvlRegionImage[xyz]/distanceParam, 0.0f, 1.0f);
-			pvBackgroundImage[xyz] = Numerics.bounded(0.5f - 0.5f*lvlBackgroundImage[xyz]/distanceParam, 0.0f, 1.0f);
+			//pvRegionImage[xyz] = Numerics.bounded(0.5f - 0.5f*lvlreg[xyz]/distanceParam, 0.0f, 1.0f);
+			//pvBackgroundImage[xyz] = Numerics.bounded(0.5f - 0.5f*lvlbkg[xyz]/distanceParam, 0.0f, 1.0f);
+			pvRegionImage[xyz] = -lvlreg[xyz]/distanceParam;
+			pvBackgroundImage[xyz] = -lvlbkg[xyz]/distanceParam;
 		}
 		
 		// 3. build contrast maps

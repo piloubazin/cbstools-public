@@ -783,7 +783,7 @@ public class ObjectTransforms {
 				int xyzn = Ngb.neighborIndex(k, xyz, nx, ny, nz);
 				
 				// must be in outside the object or its processed neighborhood
-				if (!processed[xyzn]) {
+				if (!processed[xyzn]) if (object[xyzn]==object[xyz]) {
 					// compute new distance based on processed neighbors for the same object
 					for (byte l=0; l<6; l++) {
 						nbdist[l] = -1.0f;
@@ -839,9 +839,14 @@ public class ObjectTransforms {
 		}
          // count must be greater than zero since there must be at least one processed pt in the neighbors
         if (count==0) System.err.print("!");
-        
-        tmp = (s+(float) FastMath.sqrt((double) (s*s-count*(s2-1.0f))))/count;
-
+        if (s*s-count*(s2-1.0)<0) {
+        	System.err.print(":");
+        	tmp = 0;
+        	for (int n=0;n<6;n++) if (flag[n]) tmp = Numerics.max(tmp,val[n]);
+        	for (int n=0;n<6;n++) if (flag[n]) tmp = Numerics.min(tmp,val[n]);
+        } else {
+			tmp = (s + (float)FastMath.sqrt((double) (s*s-count*(s2-1.0))))/count;
+		}
         // The larger root
         return tmp;
     }
