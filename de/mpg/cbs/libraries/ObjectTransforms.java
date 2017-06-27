@@ -644,6 +644,7 @@ public class ObjectTransforms {
         // computation variables
         float[] levelset = new float[nx*ny*nz]; // note: using a byte instead of boolean for the second pass
 		boolean[] processed = new boolean[nx*ny*nz]; // note: using a byte instead of boolean for the second pass
+		boolean[] mask = new boolean[nx*ny*nz]; // note: using a byte instead of boolean for the second pass
 		float[] nbdist = new float[6];
 		boolean[] nbflag = new boolean[6];
 		BinaryHeap2D heap = new BinaryHeap2D(nx*ny+ny*nz+nz*nx, BinaryHeap2D.MINTREE);
@@ -652,13 +653,17 @@ public class ObjectTransforms {
         //if (debug) BasicInfo.displayMessage("fast marching\n");		
         heap.reset();
         // initialize mask and processing domain
+		float maxlvl = Numerics.max(nx/2.0f,ny/2.0f,nz/2.0f);
 		for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
 			int xyz = x+nx*y+nx*ny*z;
         	if (object[xyz]) levelset[xyz]=-0.5f;
         	else levelset[xyz] = 0.5f;
-        	
-			if (x>0 && x<nx-1 && y>0 && y<ny-1 && z>0 && z<nz-1) processed[x+nx*y+nx*ny*z] = false;
-			else processed[x+nx*y+nx*ny*z] = true;
+			if (x>0 && x<nx-1 && y>0 && y<ny-1 && z>0 && z<nz-1) mask[x+nx*y+nx*ny*z] = true;
+			else mask[x+nx*y+nx*ny*z] = false;
+			if (!mask[xyz]) { // inside the masked region: either fully inside or fully outside
+				if (object[xyz]) levelset[xyz] = -maxlvl;
+				else levelset[xyz] = maxlvl;
+			}
 		}
 		// initialize the heap from boundaries
 		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
@@ -700,14 +705,14 @@ public class ObjectTransforms {
 				int xyzn = Ngb.neighborIndex(k, xyz, nx, ny, nz);
 				
 				// must be in outside the object or its processed neighborhood
-				if (!processed[xyzn]) {
+				if (mask[xyzn] && !processed[xyzn]) if (object[xyzn]==object[xyz]) {
 					// compute new distance based on processed neighbors for the same object
 					for (byte l=0; l<6; l++) {
 						nbdist[l] = -1.0f;
 						nbflag[l] = false;
 						int xyznb = Ngb.neighborIndex(l, xyzn, nx, ny, nz);
 						// note that there is at most one value used here
-						if (processed[xyznb]) if (object[xyznb]==object[xyz]) {
+						if (mask[xyznb] && processed[xyznb]) if (object[xyznb]==object[xyz]) {
 							nbdist[l] = Numerics.abs(levelset[xyznb]);
 							nbflag[l] = true;
 						}			
@@ -729,6 +734,7 @@ public class ObjectTransforms {
         // computation variables
         boolean[] object = new boolean[nx*ny*nz]; // note: using a byte instead of boolean for the second pass
 		boolean[] processed = new boolean[nx*ny*nz]; // note: using a byte instead of boolean for the second pass
+		boolean[] mask = new boolean[nx*ny*nz]; // note: using a byte instead of boolean for the second pass
 		float[] nbdist = new float[6];
 		boolean[] nbflag = new boolean[6];
 		BinaryHeap2D heap = new BinaryHeap2D(nx*ny+ny*nz+nz*nx, BinaryHeap2D.MINTREE);
@@ -737,15 +743,21 @@ public class ObjectTransforms {
         //if (debug) BasicInfo.displayMessage("fast marching\n");		
         heap.reset();
         // initialize mask and processing domain
+        float maxlvl = Numerics.max(nx/2.0f,ny/2.0f,nz/2.0f);
 		for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
 			int xyz = x+nx*y+nx*ny*z;
         	object[xyz] = (levelset[xyz]<=0);
-			if (x>0 && x<nx-1 && y>0 && y<ny-1 && z>0 && z<nz-1) processed[x+nx*y+nx*ny*z] = false;
-			else processed[x+nx*y+nx*ny*z] = true;
+			if (x>0 && x<nx-1 && y>0 && y<ny-1 && z>0 && z<nz-1) mask[x+nx*y+nx*ny*z] = true;
+			else mask[x+nx*y+nx*ny*z] = false;
+			if (!mask[xyz]) { // inside the masked region: either fully inside or fully outside
+				if (object[xyz]) levelset[xyz] = -maxlvl;
+				else levelset[xyz] = maxlvl;
+			}
 		}
 		// initialize the heap from boundaries
 		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
         	int xyz = x+nx*y+nx*ny*z;
+        	processed[xyz] = false;
         	// search for boundaries
         	for (byte k = 0; k<6; k++) {
 				int xyzn = Ngb.neighborIndex(k, xyz, nx, ny, nz);
@@ -783,14 +795,14 @@ public class ObjectTransforms {
 				int xyzn = Ngb.neighborIndex(k, xyz, nx, ny, nz);
 				
 				// must be in outside the object or its processed neighborhood
-				if (!processed[xyzn]) if (object[xyzn]==object[xyz]) {
+				if (mask[xyzn] && !processed[xyzn]) if (object[xyzn]==object[xyz]) {
 					// compute new distance based on processed neighbors for the same object
 					for (byte l=0; l<6; l++) {
 						nbdist[l] = -1.0f;
 						nbflag[l] = false;
 						int xyznb = Ngb.neighborIndex(l, xyzn, nx, ny, nz);
 						// note that there is at most one value used here
-						if (processed[xyznb]) if (object[xyznb]==object[xyz]) {
+						if (mask[xyznb] && processed[xyznb]) if (object[xyznb]==object[xyz]) {
 							nbdist[l] = Numerics.abs(levelset[xyznb]);
 							nbflag[l] = true;
 						}			
