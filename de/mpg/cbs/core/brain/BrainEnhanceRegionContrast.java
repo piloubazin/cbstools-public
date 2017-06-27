@@ -158,10 +158,10 @@ public class BrainEnhanceRegionContrast {
 		pvRegionImage = new float[nxyz];
 		pvBackgroundImage = new float[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			//pvRegionImage[xyz] = Numerics.bounded(0.5f - 0.5f*lvlreg[xyz]/distanceParam, 0.0f, 1.0f);
-			//pvBackgroundImage[xyz] = Numerics.bounded(0.5f - 0.5f*lvlbkg[xyz]/distanceParam, 0.0f, 1.0f);
-			pvRegionImage[xyz] = -lvlreg[xyz]/distanceParam;
-			pvBackgroundImage[xyz] = -lvlbkg[xyz]/distanceParam;
+			pvRegionImage[xyz] = Numerics.bounded(0.5f - 0.5f*lvlreg[xyz]/distanceParam, 0.0f, 1.0f);
+			pvBackgroundImage[xyz] = Numerics.bounded(0.5f - 0.5f*lvlbkg[xyz]/distanceParam, 0.0f, 1.0f);
+			//pvRegionImage[xyz] = -lvlreg[xyz]/distanceParam;
+			//pvBackgroundImage[xyz] = -lvlbkg[xyz]/distanceParam;
 		}
 		
 		// 3. build contrast maps
