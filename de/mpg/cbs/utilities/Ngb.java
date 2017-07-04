@@ -87,6 +87,12 @@ public class Ngb {
 		else return SQRT3;
 	}
 
+	public static final float neighborDistanceRatio(byte d) {
+		if (d<6) return 1.0f;
+		else if (d<18) return 1.0f/SQRT2;
+		else return 1.0f/SQRT3;
+	}
+
 	public static final int neighborhoodDifferences6C(double[] sample, float[][][] img, boolean[][][] mask, int x, int y, int z) {
 		int n=0;
 		for (int dx=-1;dx<=1;dx++) for (int dy=-1;dy<=1;dy++) if (mask[x+dx][y+dy][z]) {
