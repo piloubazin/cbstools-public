@@ -87,7 +87,7 @@ public class SegmentationLesionExtraction {
 	public final void execute(){
 				
 		// load mask and build boolean signature for each region
-		Interface.displayMessage("Load atlas\n");
+		BasicInfo.displayMessage("Load atlas\n");
 	
 		SimpleShapeAtlas2 atlas = new SimpleShapeAtlas2(atlasParam);
 

@@ -88,7 +88,7 @@ public class JistSegmentationRelabel extends ProcessingAlgorithm {
 		int nz = segImg.getSlices();
 		int nc = segImg.getComponents();
 		int nxyz = nx*ny*nz;
-		Interface.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"; "+nc+"\n");
+		BasicInfo.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"; "+nc+"\n");
 		float rx = segImg.getHeader().getDimResolutions()[0];
 		float ry = segImg.getHeader().getDimResolutions()[1];
 		float rz = segImg.getHeader().getDimResolutions()[2];
@@ -107,7 +107,7 @@ public class JistSegmentationRelabel extends ProcessingAlgorithm {
 		int[] lbid = null;
 		int[] lbnew = null;
 		
-		Interface.displayMessage("Load labeling file\n");
+		BasicInfo.displayMessage("Load labeling file\n");
 	
 		try {
             File f = new File(labelsParam.getValue().getAbsolutePath());

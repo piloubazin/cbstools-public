@@ -98,13 +98,13 @@ public class JistSurfaceMeshDataSmoothing  extends ProcessingAlgorithm{
 		float fwhm = fwhmParam.getValue().floatValue();
 		int nbIterations = FastMath.round((fwhm/1.25f)*(fwhm/1.25f));
 		
-		Interface.displayMessage("Number of iterations = "+nbIterations+"\n");
+		BasicInfo.displayMessage("Number of iterations = "+nbIterations+"\n");
 		
 		surf.buildAllTables();
 		int[][] neighbors = surf.getNeighborVertexVertexTable();
 		
 		for (int i=0; i<nbIterations; i++) {
-			Interface.displayMessage("iter "+(i+1)+"\n");
+			BasicInfo.displayMessage("iter "+(i+1)+"\n");
 			double[][] sdata = surf.getVertexData();
 			
 			for(int v=0; v<surf.getVertexCount(); v++) {

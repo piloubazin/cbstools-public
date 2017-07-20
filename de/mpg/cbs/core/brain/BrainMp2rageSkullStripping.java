@@ -138,7 +138,7 @@ public class BrainMp2rageSkullStripping {
 			}
 		}
 
-		Interface.displayMessage("background-based skull stripping");
+		BasicInfo.displayMessage("background-based skull stripping");
 		
 		// start from the bg mask
 		MinMaxFiltering minmax = new MinMaxFiltering(proba, nx,ny,nz, rx,ry,rz);

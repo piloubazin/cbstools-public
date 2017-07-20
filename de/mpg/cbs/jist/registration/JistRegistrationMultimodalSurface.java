@@ -133,7 +133,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		
 		// import the image data
 		//-----------------------
-		Interface.displayMessage("Importing data.\n");
+		BasicInfo.displayMessage("Importing data.\n");
 		ImageDataFloat	slevelsetImg = new ImageDataFloat(sourceLevelsetImage.getImageData());
 		ImageDataFloat	tlevelsetImg = new ImageDataFloat(targetLevelsetImage.getImageData());
 		
@@ -207,7 +207,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		
 		// Initializing deformations
 		//----------------------------
-		Interface.displayMessage("Initializing deformations\n");
+		BasicInfo.displayMessage("Initializing deformations\n");
 		
 		// deform = Id; invdeform = Id;
 		float[][] mapping = new float[3][nxyz];
@@ -233,7 +233,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		
 		// reinit the source and target levelset (only needed once)
 		//----------------------------------------------------------
-		Interface.displayMessage("Levelset reinitialization\n");
+		BasicInfo.displayMessage("Levelset reinitialization\n");
 		
 		boolean[] bgmask = new boolean[nxyz];
 		boolean[] bgmask2 = new boolean[nxyz];
@@ -336,7 +336,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		
 		for (int sc=0; sc<nbscales; sc++) {
 											
-			Interface.displayMessage("Registration scale "+(sc+1)+" of "+nbscales+"\n");
+			BasicInfo.displayMessage("Registration scale "+(sc+1)+" of "+nbscales+"\n");
 			
 			slevelset = initslevelset.clone();
 			tlevelset = inittlevelset.clone();
@@ -348,7 +348,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 			
 			// 1. inflate source and target levelsets
 			//----------------------------------------
-			Interface.displayMessage("Surface inflation ("+smoothiter[sc]+" iter)\n");
+			BasicInfo.displayMessage("Surface inflation ("+smoothiter[sc]+" iter)\n");
 			
 			if(sintensity != null) {
 				if (sc < nbscales-1) {
@@ -364,7 +364,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 				}
 			}
 			
-			Interface.displayMessage("max. distance = "+maxdist+" voxels\n"); 
+			BasicInfo.displayMessage("max. distance = "+maxdist+" voxels\n"); 
 
 			for (int xyz=0;xyz<nxyz;xyz++) {
 				if(FastMath.abs(slevelset[xyz])<2.0f*1.7321f) {
@@ -379,7 +379,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 			globalcurv = ImageStatistics.mean(ImageGeometry.squaredMeanCurvature(smoothslevelset, nx, ny, nz, smask), smask, nx, ny, nz);
 			smoothslevelset = null;
 			
-			Interface.displayMessage("nominalglobalcurv = "+globalcurv+"\n");
+			BasicInfo.displayMessage("nominalglobalcurv = "+globalcurv+"\n");
 			
 			if(sintensity != null) {
 				if (atlasParam.getValue().booleanValue()) {
@@ -442,7 +442,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 			// 3. deform the source data
 			//----------------------------
 			if (sc>0) {
-				Interface.displayMessage("combine with current deformation\n");
+				BasicInfo.displayMessage("combine with current deformation\n");
 				
 				float[] dlevelset = new float[nxyz];
 				float[][] dcurv = null;
@@ -482,7 +482,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 			
 			// 4. Find the scale of distance between levelsets
 			//--------------------------------------------------
-			Interface.displayMessage("compute distance parameter:\n");
+			BasicInfo.displayMessage("compute distance parameter:\n");
 			maxdist2 = 0.0f;
 			float dist;
 			
@@ -498,13 +498,13 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 				}
 			}
 			
-			Interface.displayMessage("max. distance 2 = "+maxdist2+" voxels\n"); 
+			BasicInfo.displayMessage("max. distance 2 = "+maxdist2+" voxels\n"); 
 			maxdist = Numerics.max(maxdist, maxdist2);		
-			Interface.displayMessage("final max. distance = "+maxdist+" voxels\n"); 
+			BasicInfo.displayMessage("final max. distance = "+maxdist+" voxels\n"); 
 
 			// 5. create leveset-based contrasts
 			//------------------------------------
-			Interface.displayMessage("normalized registration contrasts\n");
+			BasicInfo.displayMessage("normalized registration contrasts\n");
 			
 			slvlProb = new float[nx][ny][nz];
 			if(scurv != null) scurvProb = new float[2][nx][ny][nz];
@@ -528,7 +528,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		
 		// Output
 		//----------
-		Interface.displayMessage("Output...\n");
+		BasicInfo.displayMessage("Output...\n");
 			
 		float[][][][] map = new float[nx][ny][nz][3];
 		float[][][][] invmap = new float[nx][ny][nz][3];
@@ -573,7 +573,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		ObjectMorphology.fastDilateObject(bgmask, nx, ny, nz, delta);
 
 		// main algorithm
-		Interface.displayMessage("re-build levelset...\n");
+		BasicInfo.displayMessage("re-build levelset...\n");
 		InflateGdm gdm = new InflateGdm(levelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no");
 		
 		double basis = 1.0f;
@@ -592,7 +592,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		int ks = (kernel[0].length-1)/2;
 		
 		for (int t=0;t<smoothiter;t++) {
-			Interface.displayMessage(".");
+			BasicInfo.displayMessage(".");
 			
 			gdm.smoothLevelset((float) scale);
 			gdm.evolveNarrowBand(500, 0.001f);
@@ -605,7 +605,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					nextlevelset[xyz] = newlevelset[xyz];
 				}
-				Interface.displayMessage("t = "+t+"\n");
+				BasicInfo.displayMessage("t = "+t+"\n");
 			}
 			
 			// check if the global shape metric is the same
@@ -623,7 +623,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 				smoothlevelset = ImageFilters.separableConvolution(newlevelset, nx, ny, nz, kernel, ks, ks, ks);
 								
 				realglobalcurv = ImageStatistics.mean(ImageGeometry.squaredMeanCurvature(smoothlevelset, nx, ny, nz, surfmask), surfmask, nx, ny, nz);
-				Interface.displayMessage("realglobalcurv = "+realglobalcurv+"\n");
+				BasicInfo.displayMessage("realglobalcurv = "+realglobalcurv+"\n");
 				
 				if (realglobalcurv<nominalglobalcurv) {
 					itr = t+1;
@@ -637,7 +637,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		
 		// calculate max distance between current and next smoothing scale levelsets
 		if (smoothiter2 < smoothiter) {
-			Interface.displayMessage("calculate max distance \n");
+			BasicInfo.displayMessage("calculate max distance \n");
 			float dist;
 			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
 				int xyz = x + nx*y + nx*ny*z;
@@ -683,7 +683,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 			}
 		}
 		
-		Interface.displayMessage("re-build levelset...\n");
+		BasicInfo.displayMessage("re-build levelset...\n");
 
 		// main algorithm
 		CorticalInflationGdm gdm = new CorticalInflationGdm(levelset, nx, ny, nz, rx, ry, rz, 
@@ -706,7 +706,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		int ks = (kernel[0].length-1)/2;
 		
 		for (int t=0;t<smoothiter;t++) {
-			Interface.displayMessage(".");
+			BasicInfo.displayMessage(".");
 			
 			gdm.computeSmoothedLevelset((float)scale, false);
 			//gdm.evolveNarrowBandMapping(500, 0.001f);
@@ -720,7 +720,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					nextlevelset[xyz] = newlevelset[xyz];
 				}
-				Interface.displayMessage("t = "+t+"\n");
+				BasicInfo.displayMessage("t = "+t+"\n");
 			}
 			
 			// check if the global shape metric is the same
@@ -738,7 +738,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 				smoothlevelset = ImageFilters.separableConvolution(newlevelset, nx, ny, nz, kernel, ks, ks, ks);
 								
 				realglobalcurv = ImageStatistics.mean(ImageGeometry.squaredMeanCurvature(smoothlevelset, nx, ny, nz, surfmask), surfmask, nx, ny, nz);
-				Interface.displayMessage("realglobalcurv = "+realglobalcurv+"\n");
+				BasicInfo.displayMessage("realglobalcurv = "+realglobalcurv+"\n");
 				
 				if (realglobalcurv<nominalglobalcurv) {
 					itr = t+1;
@@ -755,7 +755,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		
 		// calculate max distance between current and next smoothing scale levelsets
 		if (smoothiter2 < smoothiter) {
-			Interface.displayMessage("calculate max distance \n");
+			BasicInfo.displayMessage("calculate max distance \n");
 			float dist;
 			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
 				int xyz = x + nx*y + nx*ny*z;

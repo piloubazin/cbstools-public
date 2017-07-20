@@ -140,7 +140,7 @@ public class JistCortexCentralSurface extends ProcessingAlgorithm {
 		//												bgmask, balloon, curv, topologyParam.getValue());
 			
 
-		Interface.displayMessage("average estimation...\n");
+		BasicInfo.displayMessage("average estimation...\n");
 		//gdm.setFraction(0.5f);
 		gdm.evolveNarrowBand(iterationParam.getValue().intValue(), 0.001f);
 		float[] average = gdm.exportLevelset();

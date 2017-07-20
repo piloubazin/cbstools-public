@@ -394,7 +394,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 														topologyParam.getValue(),useProbas, gwbflag);
 		
 		if (iterationParam.getValue().intValue()>0) {
-			Interface.displayMessage("level set segmentation...\n");
+			BasicInfo.displayMessage("level set segmentation...\n");
 			
 			gdm.evolveNarrowBand(iterationParam.getValue().intValue(), 0.001f);
 		}
@@ -453,7 +453,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 									topologyParam.getValue(),useProbas, cgbflag);
 		
 		if (iterationParam.getValue().intValue()>0) {
-			Interface.displayMessage("level set segmentation...\n");
+			BasicInfo.displayMessage("level set segmentation...\n");
 			
 			gdm.evolveNarrowBand(iterationParam.getValue().intValue(), 0.001f);
 		}
@@ -494,7 +494,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 										bgmask, balloonParam.getValue().floatValue(), 
 										curvParam.getValue().floatValue(), topologyParam.getValue(), null);
 
-		Interface.displayMessage("average estimation...\n");
+		BasicInfo.displayMessage("average estimation...\n");
 		gdm2.evolveNarrowBand(iterationParam.getValue().intValue(), 0.001f);
 		float[][][] avg = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {

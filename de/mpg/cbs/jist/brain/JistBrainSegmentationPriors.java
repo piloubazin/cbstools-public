@@ -198,15 +198,15 @@ public class JistBrainSegmentationPriors extends ProcessingAlgorithm {
 		}			
 		
 		// main algorithm
-		Interface.displayMessage("Load atlas\n");
+		BasicInfo.displayMessage("Load atlas\n");
 
 		SimpleShapeAtlas2 atlas = new SimpleShapeAtlas2(atlasParam.getValue().getAbsolutePath());
 		
 		//adjust modalities to canonical names
-		Interface.displayMessage("Image contrasts:\n");
+		BasicInfo.displayMessage("Image contrasts:\n");
 		for (n=0;n<nimg;n++) {
 			modality[n] = atlas.displayContrastName(atlas.contrastId(modality[n]));
-			Interface.displayMessage(modality[n]+"\n");
+			BasicInfo.displayMessage(modality[n]+"\n");
 		}
 		
 		atlas.setImageInfo(nx, ny, nz, rx, ry, rz, orient, orx, ory, orz);
@@ -214,18 +214,18 @@ public class JistBrainSegmentationPriors extends ProcessingAlgorithm {
 			
 		atlas.initShapeMapping();
 		
-		Interface.displayMessage("Compute tissue classification\n");
+		BasicInfo.displayMessage("Compute tissue classification\n");
 
 		ShapeAtlasClassification2 classif = new ShapeAtlasClassification2(image, modality, 
 																		  nimg, nx,ny,nz, rx,ry,rz, atlas);
 		classif.initialAtlasTissueCentroids();
 		classif.computeMemberships();
 		
-		Interface.displayMessage("First alignment\n");
+		BasicInfo.displayMessage("First alignment\n");
 		
 		atlas.alignObjectCenter(classif.getMemberships()[ShapeAtlasClassification.WM], "wm");
 		atlas.refreshShapeMapping();
-		Interface.displayMessage("transform: "+atlas.displayTransform(atlas.getTransform()));
+		BasicInfo.displayMessage("transform: "+atlas.displayTransform(atlas.getTransform()));
 			
 		classif.computeMemberships();
 		
@@ -233,12 +233,12 @@ public class JistBrainSegmentationPriors extends ProcessingAlgorithm {
 			float diff = 1.0f;
 			for (int t=0;t<20 && diff>0.01f;t++) {
 				diff = classif.computeCentroids();
-				Interface.displayMessage("iteration "+t+", max diff: "+diff+"\n");
+				BasicInfo.displayMessage("iteration "+t+", max diff: "+diff+"\n");
 				classif.computeMemberships();
 			}
 		}
 		
-		Interface.displayMessage("Rigid alignment\n");
+		BasicInfo.displayMessage("Rigid alignment\n");
 		
 		BasicRigidRegistration rigid = new BasicRigidRegistration(atlas.generateObjectImage("wm"), 
 																	classif.getMemberships()[ShapeAtlasClassification.WM], 
@@ -260,7 +260,7 @@ public class JistBrainSegmentationPriors extends ProcessingAlgorithm {
 			float diff = 1.0f;
 			for (int t=0;t<20 && diff>0.01f;t++) {
 				diff = classif.computeCentroids();
-				Interface.displayMessage("iteration "+t+", max diff: "+diff+"\n");
+				BasicInfo.displayMessage("iteration "+t+", max diff: "+diff+"\n");
 				classif.computeMemberships();
 			}
 		}
@@ -269,7 +269,7 @@ public class JistBrainSegmentationPriors extends ProcessingAlgorithm {
 		byte[][][] tissueseg = classif.exportClassificationByte();
 		
 		// first order warping
-		Interface.displayMessage("NL warping\n");
+		BasicInfo.displayMessage("NL warping\n");
 		
 		BasicDemonsWarping warp1 = new BasicDemonsWarping(atlas.generateDifferentialObjectSegmentation("wm","mask"), 
 															classif.getDifferentialSegmentation(classif.WM, classif.BG),
@@ -317,7 +317,7 @@ public class JistBrainSegmentationPriors extends ProcessingAlgorithm {
 			subjectlabel[x][y][z] = ImageInterpolation.nearestNeighborInterpolation(label, (byte)0, XA[0],XA[1],XA[2],nax,nay,naz);
 		}
 		// outputs
-		Interface.displayMessage("generating outputs...\n");
+		BasicInfo.displayMessage("generating outputs...\n");
 			
 		String imgname = in1Img.getName();
 		
@@ -327,7 +327,7 @@ public class JistBrainSegmentationPriors extends ProcessingAlgorithm {
 		segData.setName(imgname+"_lbl");
 		labelImage.setValue(segData);
 		segData = null;
-		Interface.displayMessage("labels");
+		BasicInfo.displayMessage("labels");
 		
 		ImageDataFloat regionData = new ImageDataFloat(subjectregion);	
 		subjectregion = null;
@@ -335,7 +335,7 @@ public class JistBrainSegmentationPriors extends ProcessingAlgorithm {
 		regionData.setName(imgname+"_reg");
 		regionImage.setValue(regionData);
 		regionData = null;
-		Interface.displayMessage(".. boundaries");
+		BasicInfo.displayMessage(".. boundaries");
 
 		return;
 	}

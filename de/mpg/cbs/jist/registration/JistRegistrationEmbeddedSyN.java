@@ -143,7 +143,7 @@ public class JistRegistrationEmbeddedSyN extends ProcessingAlgorithm {
 		float[][][] target = tImg.toArray3d();
 		tImg = null;
 		
-		Interface.displayMessage("Init deformations\n");
+		BasicInfo.displayMessage("Init deformations\n");
 
 		// init coordinates for SyN processing
 		float[][][][] scoord = new float[nsx][nsy][nsz][3];

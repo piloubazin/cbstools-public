@@ -305,10 +305,10 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 			float[] filter= new float[nxyz];
 			
 			if (filterParam.getValue().equals("Hessian")) {
-				Interface.displayMessage("estimate diffusion tensor from Hessian\n");
+				BasicInfo.displayMessage("estimate diffusion tensor from Hessian\n");
 				directionFromHessian(smoothed, mask, filter, direction);
 			} else {		
-				Interface.displayMessage("estimate diffusion tensor from RRF\n");
+				BasicInfo.displayMessage("estimate diffusion tensor from RRF\n");
 				directionFromRecursiveRidgeFilter(smoothed, mask, filter,direction);
 			}
 			response[i]=filter;	
@@ -360,7 +360,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		
 		// 3. diffuse the data to neighboring structures
 		// compute neighborhood structure
-		Interface.displayMessage("compute neighborhood structure\n");
+		BasicInfo.displayMessage("compute neighborhood structure\n");
 		float[] similarity1 = new float[nxyz];
 		float[] similarity2 = new float[nxyz];
 		byte[] neighbor1 = new byte[nxyz];
@@ -392,12 +392,12 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		
 		if (propagationParam.getValue().equals("diffusion")) {
 			// diffuse along the tensor
-			Interface.displayMessage("diffusion smoothing ("+factorParam.getValue().floatValue()+")\n");
+			BasicInfo.displayMessage("diffusion smoothing ("+factorParam.getValue().floatValue()+")\n");
 		
 			proba = probaDiffusion(proba, similarity1, similarity2, neighbor1, neighbor2, maskCort, nxyz, maxiter, maxdiff, factor);
 		} else if (propagationParam.getValue().equals("belief")) {
 			// belief propagation
-			Interface.displayMessage("belief propagation\n");
+			BasicInfo.displayMessage("belief propagation\n");
 		
 			proba = beliefPropagation(proba, similarity1, similarity2, neighbor1, neighbor2, maskCort, nxyz, maxiter, maxdiff);
 			//proba = basicBeliefPropagation(proba, similarity1, similarity2, neighbor1, neighbor2, mask, nxyz, maxiter, maxdiff);
@@ -408,7 +408,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		boolean[] objdiff = ObjectExtraction.objectFromImage(proba, nx,ny,nz, threshold, ObjectExtraction.SUPERIOR);
 		
 		// 4. estimate diameters
-		Interface.displayMessage("Vessel Intensity \n");
+		BasicInfo.displayMessage("Vessel Intensity \n");
 		// in and out vessels intensity initialisation
 		float Iin=0.0f;
 		int nIn=0;
@@ -428,7 +428,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		}
 		Iin=Iin/(float)nIn;
 		
-		Interface.displayMessage("Ring \n");
+		BasicInfo.displayMessage("Ring \n");
 		boolean[] maskOut=new boolean[nxyz];
 		boolean[] maskVote=new boolean[nxyz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
@@ -488,7 +488,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 			}
 		}
 				
-		Interface.displayMessage("Background Intensity \n");
+		BasicInfo.displayMessage("Background Intensity \n");
 		float Iout=0.0f;
 		int nOut=0;
 		float minOut = 1e9f;
@@ -510,9 +510,9 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		if(debug){
 			// mean and dev calculus
 			float[] vectIn=new float[nIn];
-			Interface.displayMessage("nIn ="+nIn+" \n");
+			BasicInfo.displayMessage("nIn ="+nIn+" \n");
 			float[] vectOut=new float[nOut];
-			Interface.displayMessage("nOut ="+nOut+" \n");
+			BasicInfo.displayMessage("nOut ="+nOut+" \n");
 	
 			int no=0;       
 			int ni=0;
@@ -536,8 +536,8 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 			}
 			sigmaOut/=(float)(nOut-1);
 			sigmaOut=(float)FastMath.sqrt(sigmaOut);
-			Interface.displayMessage("med = "+medOut+"\n");
-			Interface.displayMessage("sigma = "+sigmaOut+"\n");
+			BasicInfo.displayMessage("med = "+medOut+"\n");
+			BasicInfo.displayMessage("sigma = "+sigmaOut+"\n");
 			
 			float medIn=Iin;
 			float sigmaIn=0.0f;
@@ -546,8 +546,8 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 			}
 			sigmaIn/=(float)(nIn-1);
 			sigmaIn=(float)FastMath.sqrt(sigmaIn);
-			Interface.displayMessage("med = "+medIn+"\n");
-			Interface.displayMessage("sigma = "+sigmaIn+"\n");
+			BasicInfo.displayMessage("med = "+medIn+"\n");
+			BasicInfo.displayMessage("sigma = "+sigmaIn+"\n");
 		}
 				
 		// in probability map
@@ -575,7 +575,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		
 		// Estime diameter 
 			// Estime window size
-		Interface.displayMessage("Diameter profile\n");
+		BasicInfo.displayMessage("Diameter profile\n");
 		float[][][] diamEst= new float[nx][ny][nz];
 		int[][][] voisNbr= new int[nx][ny][nz];
 		boolean[][] obj2=new boolean[nxyz][5]; 
@@ -608,7 +608,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		
 		float[][][][] diamEst2= new float[nx][ny][nz][4];
 		for(int s=1;s<5;s++){
-		Interface.displayMessage("Initial search "+s+"\n");
+		BasicInfo.displayMessage("Initial search "+s+"\n");
 		int rIn=1+s;
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
@@ -646,7 +646,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			pv[x][y][z]=0.0f;	
 		}			
-		Interface.displayMessage("Optimization\n");
+		BasicInfo.displayMessage("Optimization\n");
 		int wtOptim=0;
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id=x+nx*y+nx*ny*z;
@@ -677,7 +677,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 				tan2[Y]=tan1[Z]*finalDir[X]-tan1[X]*finalDir[Z];
 				tan2[Z]=tan1[X]*finalDir[Y]-tan1[Y]*finalDir[X];
 				
-				Interface.displayMessage(".");
+				BasicInfo.displayMessage(".");
 		
 				VesselDiameterCostFunction jfct= new VesselDiameterCostFunction();
 				jfct.setImagesData(probaInImg,nx,ny,nz);
@@ -723,7 +723,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 			}
 		}
 		/*
-		Interface.displayMessage("Post-processing\n");
+		BasicInfo.displayMessage("Post-processing\n");
 		
 		boolean[] objLarge=new boolean[nxyz];
 					
@@ -736,7 +736,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		int[] vesselsPv = ObjectLabeling.connected26Object3D(objLarge, nx,ny,nz);
 		int lbNbr=ObjectLabeling.countLabels(vesselsPv,nx,ny,nz);
 		
-		Interface.displayMessage("Number of labeled region : "+lbNbr+"\n");
+		BasicInfo.displayMessage("Number of labeled region : "+lbNbr+"\n");
 		
 		int[] labelRegionSize=new int[lbNbr];
 		float[] regionVote = new float[lbNbr];
@@ -747,7 +747,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		}
 		for(int i=0;i<lbNbr;i++){
 			//regionVote[i]/=labelRegionSize[i];
-			Interface.displayMessage("Region : "+i+" score "+regionVote[i]+"\n");
+			BasicInfo.displayMessage("Region : "+i+" score "+regionVote[i]+"\n");
 		}
 		
 		int thresholdVote = thresholdReg.getValue().intValue();
@@ -785,7 +785,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		int[] vesselsizes = ObjectStatistics.volumes(vessels, ObjectLabeling.countLabels(vessels, nx,ny,nz), nx,ny,nz);
 		
 		// Output
-		Interface.displayMessage("Prepare output images\n");
+		BasicInfo.displayMessage("Prepare output images\n");
 		String outname = inputImg.getName();
 		
 		if (filterParam.getValue().equals("Hessian")) outname+="_hsn";
@@ -848,7 +848,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		cleanLargeVesselData.setName(outname+"_"+scaleNbr+"_CleanLargeSeg");
 		cleanLargeSeg.setValue(cleanLargeVesselData);
 		
-		Interface.displayMessage("diam est \n");		
+		BasicInfo.displayMessage("diam est \n");		
 				
 		ImageDataFloat windowData = new ImageDataFloat(diamEst);	
 		windowData.setHeader(inputImg.getHeader());
@@ -860,7 +860,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		windowData2.setName(outname+"_diamEst2");
 		diamRange.setValue(windowData2);
 		
-		Interface.displayMessage("Proba in \n");
+		BasicInfo.displayMessage("Proba in \n");
 	
 			ImageDataFloat imProbaIn = new ImageDataFloat(probaInImg);
 			imProbaIn.setHeader(inputImg.getHeader());
@@ -868,21 +868,21 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 			probaNew.setValue(imProbaIn);	
 		
 		if(debug){
-			Interface.displayMessage("In values \n");
+			BasicInfo.displayMessage("In values \n");
 	
 			ImageDataFloat imIn = new ImageDataFloat(inVal);
 			imIn.setHeader(inputImg.getHeader());
 			imIn.setName(outname+"_In");
 			valIn.setValue(imIn);	
 			
-			Interface.displayMessage("Out values \n");
+			BasicInfo.displayMessage("Out values \n");
 	
 			ImageDataFloat imOut = new ImageDataFloat(outVal);
 			imOut.setHeader(inputImg.getHeader());
 			imOut.setName(outname+"_Out");
 			valOut.setValue(imOut);
 			
-			Interface.displayMessage("Scale Map \n");
+			BasicInfo.displayMessage("Scale Map \n");
 			
 			float[][][] imSc= new float[nx][ny][nz]; 
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
@@ -898,7 +898,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 			scaleMap.setValue(imSData);
 		}
 		*/
-		Interface.displayMessage("seg \n");		
+		BasicInfo.displayMessage("seg \n");		
 		byte[][][] seg = new byte[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
@@ -911,7 +911,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		vesselData.setName(outname+"_"+scaleNbr+"_seg");
 		vesselImage.setValue(vesselData);
 		
-		Interface.displayMessage("filter out\n");
+		BasicInfo.displayMessage("filter out\n");
 		float[][][] result = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
@@ -922,7 +922,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		resData.setName(outname+"_filter");
 		filterImage.setValue(resData);
 		
-		Interface.displayMessage("proba out\n");
+		BasicInfo.displayMessage("proba out\n");
 		result = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
@@ -933,7 +933,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		resData.setName(outname+"_proba");
 		probaImage.setValue(resData);
 		
-		Interface.displayMessage("partial volume out\n");
+		BasicInfo.displayMessage("partial volume out\n");
 		result = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
@@ -944,7 +944,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		resData.setName(outname+"_pv");
 		pvImage.setValue(resData);
 		
-		Interface.displayMessage("scale out\n");
+		BasicInfo.displayMessage("scale out\n");
 		result = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
@@ -955,7 +955,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		resData.setName(outname+"_scale");
 		scaleImage.setValue(resData);
 		
-		Interface.displayMessage("diameter out\n");
+		BasicInfo.displayMessage("diameter out\n");
 		result = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
@@ -967,7 +967,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		resData.setName(outname+"_diam");
 		diameterImage.setValue(resData);
 		
-		Interface.displayMessage("length out\n");
+		BasicInfo.displayMessage("length out\n");
 		result = new float[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
@@ -979,7 +979,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		lengthImage.setValue(resData);
 		
 		/*
-		Interface.displayMessage("label out\n");
+		BasicInfo.displayMessage("label out\n");
 		int[][][] vasc = new int[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int id = x + nx*y + nx*ny*z;
@@ -1058,7 +1058,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		double median = measure.evaluate(response, 50.0f);
 		double beta = median/FastMath.log(2.0f);
 		
-		Interface.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
+		BasicInfo.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
 		
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++){
 			int xyz = x + nx*y + nx*ny*z;
@@ -1105,7 +1105,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		// iterate
 		double sigma2prev;
 		for (int t=0;t<20;t++) {
-			Interface.displayMessage("iteration "+(t+1)+"\n");
+			BasicInfo.displayMessage("iteration "+(t+1)+"\n");
 
 			sigma2prev = sigma2;
 				
@@ -1123,13 +1123,13 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 			mean /= den;
 			sqmean /= den;
 				
-			Interface.displayMessage("parameter estimates: mean "+mean+", sq mean "+FastMath.sqrt(sqmean)+"\n");
+			BasicInfo.displayMessage("parameter estimates: mean "+mean+", sq mean "+FastMath.sqrt(sqmean)+"\n");
 				
 			// half-normal estimates
 			sigma2 = sqmean;
 			normg = FastMath.sqrt(2.0f/(sigma2*FastMath.PI));
 				
-			Interface.displayMessage("parameter estimates: sigma "+FastMath.sqrt(sigma2)+"\n");
+			BasicInfo.displayMessage("parameter estimates: sigma "+FastMath.sqrt(sigma2)+"\n");
 				
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++)  {
 				int xyz = x + nx*y + nx*ny*z;
@@ -1926,7 +1926,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		
 		// message passing
 		for (int t=0;t<iter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			//float prev;
 			int ngb;
@@ -2000,7 +2000,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 				message2fg[xyz] = newmsg2fg[xyz];
 				message2bg[xyz] = newmsg2bg[xyz];
 			}
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff < maxdiff) t = iter;
 		}
 		
@@ -2036,7 +2036,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 		}
 		
 		for (int t=0;t<maxiter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			/*
 			float globalw = 0.0f;
@@ -2080,7 +2080,7 @@ public class JistSegmentationMultiscaleVesselFiltering extends ProcessingAlgorit
 				if (Numerics.abs(prev-diffused[xyz])>diff) diff = Numerics.abs(prev-diffused[xyz]);
 			}
 			
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff<maxdiff) t=maxiter;
 		}
 		

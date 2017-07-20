@@ -127,13 +127,13 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 		
 		float[][][] sum = new float[nx][ny][nz];
 		
-		//Interface.displayMessage("Repairing degenerate triangles.\n");
+		//BasicInfo.displayMessage("Repairing degenerate triangles.\n");
 		//surf.repairDegenerateTriangles(0.01f,0.005f);
 		
-		Interface.displayMessage("Number of faces/triangles = "+surf.getFaceCount()+"\n");
+		BasicInfo.displayMessage("Number of faces/triangles = "+surf.getFaceCount()+"\n");
 		surf.buildAllTables();
 		
-		Interface.displayMessage("Calculate face normals. Looping through triangles...\n");
+		BasicInfo.displayMessage("Calculate face normals. Looping through triangles...\n");
 		EmbeddedSurface.Face[] faces = surf.getFaces();
 		Vector3f[] faceNormals = new Vector3f[surf.getFaceCount()];
 		Vector3f edge0 = new Vector3f();  
@@ -148,7 +148,7 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 			faceNormals[fid].normalize();
 		}
 		
-		Interface.displayMessage("Calculate edge normals. Looping through edges...\n");
+		BasicInfo.displayMessage("Calculate edge normals. Looping through edges...\n");
 		Vector3f[] edgeNormals = new Vector3f[surf.getIndexCount()/2];
 		EmbeddedSurface.Face[][] neighborEdgeFaceTable = surf.getNeighborEdgeFaceTable();
 		for(int eid=0; eid<surf.getIndexCount()/2; eid++) {
@@ -159,7 +159,7 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 			edgeNormals[eid].scale((float) FastMath.PI);
 		}
 		
-		Interface.displayMessage("Calculate vertex normals. Looping through vertices...\n");
+		BasicInfo.displayMessage("Calculate vertex normals. Looping through vertices...\n");
 		Vector3f[] vertexNormals = new Vector3f[surf.getVertexCount()];
 		EmbeddedSurface.Face[][] neighborVertexFaceTable = surf.getNeighborVertexFaceTable();
 		for(int i=0; i<surf.getVertexCount(); i++) {
@@ -187,7 +187,7 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 		}
 		
 		
-		Interface.displayMessage("Calculating distance field. Looping through triangles...\n");
+		BasicInfo.displayMessage("Calculating distance field. Looping through triangles...\n");
 		//For each triangle/face of the mesh, calculate distance of each voxel within a bounding box to plane, vertices and edges
 		//fid: face Id		
 		
@@ -318,8 +318,8 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 		
 		}
 		
-		Interface.displayMessage("done.\n");
-		Interface.displayMessage("Adding sign to distance field.\n");
+		BasicInfo.displayMessage("done.\n");
+		BasicInfo.displayMessage("Adding sign to distance field.\n");
 		//add sign to distance field
 		float[] sdf = new float[nx*ny*nz];
 		boolean[] bgmask = new boolean[nx*ny*nz];
@@ -339,7 +339,7 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 		
 		sdf = cleanupSign(sdf, datamask, 26, nx, ny, nz);
 		
-		Interface.displayMessage("Padding levelset.\n");
+		BasicInfo.displayMessage("Padding levelset.\n");
 		sdf = padLevelset(sdf, datamask, 6, nx, ny, nz);
 		
 		
@@ -350,22 +350,22 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 		}
 		
 		
-		Interface.displayMessage("Clean up sign 2.\n");
+		BasicInfo.displayMessage("Clean up sign 2.\n");
 		sdf = cleanupSign2(sdf, 26, nx, ny, nz);
 		
-		Interface.displayMessage("Evolving narrow band.\n");
+		BasicInfo.displayMessage("Evolving narrow band.\n");
 		InflateGdm gdm = new InflateGdm(sdf, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no");
 		gdm.evolveNarrowBand(0, 1.0f);
 		
 		/*
-		Interface.displayMessage("Clean up sign.\n");
+		BasicInfo.displayMessage("Clean up sign.\n");
 		sdf = cleanupSign(gdm.getLevelSet(), datamask, 26, nx, ny, nz);
 		
 		gdm = new InflateGdm(sdf, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no");
 		gdm.evolveNarrowBand(0, 1.0f);
 		*/
 		
-		Interface.displayMessage("Output.\n");
+		BasicInfo.displayMessage("Output.\n");
 		
 		ImageDataFloat resultData = new ImageDataFloat(gdm.exportLevelset());		
 		//ImageDataFloat resultData = new ImageDataFloat(df);
@@ -428,7 +428,7 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 		
 		// if neighbour is 100 (PADDING value), can't have a negative sign
 		for (int i=0;i<5;i++) {
-			Interface.displayMessage("Iteration "+itrs);
+			BasicInfo.displayMessage("Iteration "+itrs);
 			itrs++;
 			count = 0;
 			change = false;
@@ -453,7 +453,7 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 					cleansdf[xyz] = sdf[xyz];
 				}
 			}
-			Interface.displayMessage(" Count = "+count+"\n");
+			BasicInfo.displayMessage(" Count = "+count+"\n");
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 				int xyz = x+nx*y+nx*ny*z;
 				sdf[xyz] = cleansdf[xyz];
@@ -465,7 +465,7 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 	}
 		
 	private final float[] padLevelset(float[] data, boolean[] datamask, int connectivity, int nx, int ny, int nz) {
-		Interface.displayMessage("Pad levelset.\n");
+		BasicInfo.displayMessage("Pad levelset.\n");
 		
 		float[] dilData = new float[nx*ny*nz];
 		
@@ -478,7 +478,7 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
         BitSet used = new BitSet(nx*ny*nz);
         BitSet nextused = new BitSet(nx*ny*nz);
         
-        Interface.displayMessage("\n Set initial processed data");
+        BasicInfo.displayMessage("\n Set initial processed data");
         //set initial used
         for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;	

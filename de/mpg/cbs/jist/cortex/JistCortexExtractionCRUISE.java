@@ -195,7 +195,7 @@ public class JistCortexExtractionCRUISE extends ProcessingAlgorithm {
 														topologyParam.getValue(),useProbas, gwbflag);
 		
 		if (iterationParam.getValue().intValue()>0) {
-			Interface.displayMessage("level set segmentation...\n");
+			BasicInfo.displayMessage("level set segmentation...\n");
 			
 			gdm.evolveNarrowBand(iterationParam.getValue().intValue(), 0.001f);
 		}
@@ -225,7 +225,7 @@ public class JistCortexExtractionCRUISE extends ProcessingAlgorithm {
 									topologyParam.getValue(),useProbas, cgbflag);
 		
 		if (iterationParam.getValue().intValue()>0) {
-			Interface.displayMessage("level set segmentation...\n");
+			BasicInfo.displayMessage("level set segmentation...\n");
 			
 			gdm.evolveNarrowBand(iterationParam.getValue().intValue(), 0.001f);
 		}

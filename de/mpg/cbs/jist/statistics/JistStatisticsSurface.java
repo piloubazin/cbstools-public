@@ -125,7 +125,7 @@ public class JistStatisticsSurface extends ProcessingAlgorithm {
 		
 		// turn into label lists
 		int nlist = segData.length;
-		Interface.displayMessage("Mesh size: "+nlist+"\n");
+		BasicInfo.displayMessage("Mesh size: "+nlist+"\n");
 		
 		int[] segList = new int[nlist];
 		for (int n=0;n<nlist;n++) segList[n] = (int)segData[n][0];
@@ -146,7 +146,7 @@ public class JistStatisticsSurface extends ProcessingAlgorithm {
 		int[] lbid;
 		
 		if (atlasParam.getValue()!=null && atlasParam.getValue().length()>0) {
-			Interface.displayMessage("Load atlas\n");
+			BasicInfo.displayMessage("Load atlas\n");
 	
 			SimpleShapeAtlas atlas = new SimpleShapeAtlas(atlasParam.getValue().getAbsolutePath());
 			

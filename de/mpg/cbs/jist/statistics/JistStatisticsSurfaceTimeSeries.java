@@ -110,8 +110,8 @@ public class JistStatisticsSurfaceTimeSeries extends ProcessingAlgorithm {
 		int nt = surfdata.getVertexData(0).length;
 		surfdata = null;
 		
-		Interface.displayMessage("n vertex = "+nv+"\n");
-		Interface.displayMessage("n time series = "+nt+"\n");
+		BasicInfo.displayMessage("n vertex = "+nv+"\n");
+		BasicInfo.displayMessage("n time series = "+nt+"\n");
 		
 		// get label list from atlas or label map
 		int nlabels;
@@ -126,7 +126,7 @@ public class JistStatisticsSurfaceTimeSeries extends ProcessingAlgorithm {
 		surflabels = null;
 		
 		if (atlasParam.getValue()!=null && atlasParam.getValue().length()>0) {
-			Interface.displayMessage("Load atlas\n");
+			BasicInfo.displayMessage("Load atlas\n");
 	
 			SimpleShapeAtlas atlas = new SimpleShapeAtlas(atlasParam.getValue().getAbsolutePath());
 			

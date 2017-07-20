@@ -132,7 +132,7 @@ public class JistSurfaceLevelsetToTarget extends ProcessingAlgorithm {
 		
 		evolve.fastMarchingReinitialization(true);
 		if (iterationParam.getValue().intValue()>0) {
-			Interface.displayMessage("level set segmentation...\n");
+			BasicInfo.displayMessage("level set segmentation...\n");
 			evolve.evolveNarrowBand(iterationParam.getValue().intValue(),changeParam.getValue().floatValue());
 		}
 		
