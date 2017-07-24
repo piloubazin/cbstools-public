@@ -134,7 +134,7 @@ public class JistIntensityRangeNormalization extends ProcessingAlgorithm {
 			Imin = 0.0f;
 			Imax = ImageStatistics.robustMaximum(image, mask, ratioParam.getValue().floatValue(), 4, nx, ny, nz);
 		}
-		Interface.displayMessage("image min, max: "+Imin+", "+Imax+"\n");
+		BasicInfo.displayMessage("image min, max: "+Imin+", "+Imax+"\n");
 			
 		// 2. scale the data
 		float scaling = scalingParam.getValue().floatValue();

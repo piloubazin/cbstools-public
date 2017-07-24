@@ -192,7 +192,7 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 		if (model==EXP) mean = ImageStatistics.robustExponentialFit(data, iterate, ndata);
 		else if (model==HNORM) mean = ImageStatistics.robustHalfGaussianFit(data, iterate, ndata);
 		
-		Interface.displayMessage("background mean: "+mean+"\n");
+		BasicInfo.displayMessage("background mean: "+mean+"\n");
 		
 		double fmean = 0.0;
 		double fdev = 0.0;
@@ -223,7 +223,7 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 			double dev = 100.0*0.5*Erf.erf(1.0/FastMath.sqrt(2.0));
 			fdev = 0.5*(ImageStatistics.weightedPercentile(response,weights,50.0+dev,nb) - ImageStatistics.weightedPercentile(response,weights,50.0-dev,nb));
 		
-			Interface.displayMessage("Log-normal parameter estimates: mean = "+FastMath.exp(fmean)+", stdev = "+FastMath.exp(fdev)+",\n");
+			BasicInfo.displayMessage("Log-normal parameter estimates: mean = "+FastMath.exp(fmean)+", stdev = "+FastMath.exp(fdev)+",\n");
 		}
 		
 		// re-normalized probability map
@@ -245,7 +245,7 @@ public class JistBrainIntensityBasedSkullStripping extends ProcessingAlgorithm {
 			}
 		}
 
-		Interface.displayMessage("background-based skull stripping");
+		BasicInfo.displayMessage("background-based skull stripping");
 		
 		// start from the bg mask
 		

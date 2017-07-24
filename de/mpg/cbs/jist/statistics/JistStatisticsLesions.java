@@ -120,7 +120,7 @@ public class JistStatisticsLesions extends ProcessingAlgorithm {
 		int nz = lesionImg.getSlices();
 		int nc = lesionImg.getComponents();
 		int nxyz = nx*ny*nz;
-		Interface.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"; "+nc+"\n");
+		BasicInfo.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"; "+nc+"\n");
 		float rx = lesionImg.getHeader().getDimResolutions()[0];
 		float ry = lesionImg.getHeader().getDimResolutions()[1];
 		float rz = lesionImg.getHeader().getDimResolutions()[2];

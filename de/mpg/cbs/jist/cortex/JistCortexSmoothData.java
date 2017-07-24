@@ -183,7 +183,7 @@ public class JistCortexSmoothData extends ProcessingAlgorithm {
 				if (npt%(pts/100)==0) {
 					iter++;
 					long newtime = System.currentTimeMillis();
-					Interface.displayMessage("iter "+iter+", t="+(newtime-looptime)+", "+npt+" pts\n");
+					BasicInfo.displayMessage("iter "+iter+", t="+(newtime-looptime)+", "+npt+" pts\n");
 					System.out.println("iter "+iter+", t="+(newtime-looptime)+", "+npt+" pts\n");
 					looptime = newtime;
 				}

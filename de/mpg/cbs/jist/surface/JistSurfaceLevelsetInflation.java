@@ -103,7 +103,7 @@ public class JistSurfaceLevelsetInflation extends ProcessingAlgorithm {
 		buffer = null;
 		levelsetImg = null;
 		
-		Interface.displayMessage("mask creation...\n");
+		BasicInfo.displayMessage("mask creation...\n");
 
 		// create a mask for all the regions outside of the area where layer 1 is > 0 and layer 2 is < 0
 		boolean[] bgmask = new boolean[nxyz];
@@ -114,7 +114,7 @@ public class JistSurfaceLevelsetInflation extends ProcessingAlgorithm {
 		int delta = 30;
 		ObjectMorphology.fastDilateObject(bgmask, nx, ny, nz, delta);
 		
-		Interface.displayMessage("re-build levelset...\n");
+		BasicInfo.displayMessage("re-build levelset...\n");
 
 		// main algorithm
 		InflateGdm gdm = new InflateGdm(levelset, nx, ny, nz, rx, ry, rz, 
@@ -129,15 +129,15 @@ public class JistSurfaceLevelsetInflation extends ProcessingAlgorithm {
 			scale = 0.5f;
 		}
 		for (int t=0;t<smoothiterParam.getValue().intValue();t++) {
-			Interface.displayMessage("step "+(t+1)+"\n");
+			BasicInfo.displayMessage("step "+(t+1)+"\n");
 			
-			Interface.displayMessage("input smoothing ("+scale+")...\n");
+			BasicInfo.displayMessage("input smoothing ("+scale+")...\n");
 			gdm.smoothLevelset((float)scale);
     		
-			Interface.displayMessage("inflated surface estimation...\n");
+			BasicInfo.displayMessage("inflated surface estimation...\n");
 			gdm.evolveNarrowBand(iterationParam.getValue().intValue(), precisionParam.getValue().floatValue());
 			
-			Interface.displayMessage("copy target...\n");
+			BasicInfo.displayMessage("copy target...\n");
 			gdm.updateTarget();
 			scale *= basis;
 		}

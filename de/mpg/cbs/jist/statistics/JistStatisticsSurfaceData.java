@@ -100,7 +100,7 @@ public class JistStatisticsSurfaceData  extends ProcessingAlgorithm{
 			
 		int N = surfdata.getVertexData(0).length;
 		
-		Interface.displayMessage("N = "+N+"\n");
+		BasicInfo.displayMessage("N = "+N+"\n");
 		
 		double[][] data = surfdata.getVertexData();
 		double[][] stats = new double[data.length][2];

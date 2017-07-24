@@ -169,7 +169,7 @@ public class JistSegmentationFitMgdmEdges extends ProcessingAlgorithm {
 		
 		// spatial st.dev
 		float stdev = 0.33f*spatialParam.getValue().floatValue()/rx;
-		Interface.displayMessage("spatial stdev: "+stdev+" voxels \n");
+		BasicInfo.displayMessage("spatial stdev: "+stdev+" voxels \n");
 				
 		// MGDM evolution		
 		MgdmSegmentationRefinement refine = new MgdmSegmentationRefinement(intensity, mask, nx, ny, nz, rx, ry, rz,
@@ -181,7 +181,7 @@ public class JistSegmentationFitMgdmEdges extends ProcessingAlgorithm {
 																			topologyParam.getValue());
 		
 		if (iterationParam.getValue().intValue()>0) {
-			Interface.displayMessage("level set segmentation...\n");
+			BasicInfo.displayMessage("level set segmentation...\n");
 			refine.evolveNarrowBand(iterationParam.getValue().intValue(),changeParam.getValue().floatValue());
 		}
 		
@@ -198,7 +198,7 @@ public class JistSegmentationFitMgdmEdges extends ProcessingAlgorithm {
 		segData.setName(intensityImg.getName()+"_reseg");
 		newlabelImage.setValue(segData);
 		segData = null;
-		Interface.displayMessage("segmentation");
+		BasicInfo.displayMessage("segmentation");
 		
 		float[][][] lvl = new float[nx][ny][nz];
 		float[] fcn = refine.getFunctions()[0];
@@ -212,7 +212,7 @@ public class JistSegmentationFitMgdmEdges extends ProcessingAlgorithm {
 		lvlData.setName(intensityImg.getName()+"_remgdm");
 		newmgdmImage.setValue(lvlData);
 		lvlData = null;
-		Interface.displayMessage(".. boundaries");
+		BasicInfo.displayMessage(".. boundaries");
 		
 		float[][][] grad = refine.exportEdgeNorm();
 		ImageDataFloat gradData = new ImageDataFloat(grad);	
@@ -221,7 +221,7 @@ public class JistSegmentationFitMgdmEdges extends ProcessingAlgorithm {
 		gradData.setName(intensityImg.getName()+"_edges");
 		gradientImage.setValue(gradData);
 		gradData = null;
-		Interface.displayMessage(".. edges");
+		BasicInfo.displayMessage(".. edges");
 		
 		/*
 		float[][][][] forces = refine.exportForces();
@@ -231,7 +231,7 @@ public class JistSegmentationFitMgdmEdges extends ProcessingAlgorithm {
 		forceData.setName(intensityImg.getName()+"_forces");
 		debugImage.setValue(forceData);
 		forceData = null;
-		Interface.displayMessage(".. forces");
+		BasicInfo.displayMessage(".. forces");
 		*/
 	}
 

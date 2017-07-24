@@ -91,7 +91,7 @@ public class JistSegmentationSmoothProbabilityMap extends ProcessingAlgorithm {
 		int nz = probaImg.getSlices();
 		int nc = probaImg.getComponents();
 		int nxyz = nx*ny*nz;
-		Interface.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"; "+nc+"\n");
+		BasicInfo.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"; "+nc+"\n");
 		float rx = probaImg.getHeader().getDimResolutions()[0];
 		float ry = probaImg.getHeader().getDimResolutions()[1];
 		float rz = probaImg.getHeader().getDimResolutions()[2];
@@ -104,7 +104,7 @@ public class JistSegmentationSmoothProbabilityMap extends ProcessingAlgorithm {
 		ImageDataByte	labelImg = new ImageDataByte(labelImage.getImageData());
 		
 		// load mask and build boolean signature for each region
-		Interface.displayMessage("Load atlas\n");
+		BasicInfo.displayMessage("Load atlas\n");
 	
 		SimpleShapeAtlas atlas = new SimpleShapeAtlas(atlasParam.getValue().getAbsolutePath());
 
@@ -123,7 +123,7 @@ public class JistSegmentationSmoothProbabilityMap extends ProcessingAlgorithm {
 		// proceed object by object
 		for (int nobj=0;nobj<atlas.getNumber();nobj++) {
 		
-			Interface.displayMessage("Object label "+atlas.getLabels()[nobj]+"\n");
+			BasicInfo.displayMessage("Object label "+atlas.getLabels()[nobj]+"\n");
 	
 			// reconstruct the probabilities
 			float[][][] proba = new float[nx][ny][nz];
@@ -141,7 +141,7 @@ public class JistSegmentationSmoothProbabilityMap extends ProcessingAlgorithm {
 			}
 			
 			// smooth things
-			Interface.displayMessage("diffusion smoothing ("+scaleParam.getValue().floatValue()+", "+factorParam.getValue().floatValue()+")\n");
+			BasicInfo.displayMessage("diffusion smoothing ("+scaleParam.getValue().floatValue()+", "+factorParam.getValue().floatValue()+")\n");
 			proba = probaDiffusion(proba, mask, nx, ny, nz, 20, scaleParam.getValue().floatValue(), factorParam.getValue().floatValue());
 			
 			// store to multi-label image
@@ -191,7 +191,7 @@ public class JistSegmentationSmoothProbabilityMap extends ProcessingAlgorithm {
     	// propagate the values : diffusion
     	float maxdiff = 1.0f;
 		for (int t=0;t<iter && maxdiff>0.05f;t++) {
-			Interface.displayMessage(".");
+			BasicInfo.displayMessage(".");
 			maxdiff = 0.0f;
 			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
 				if (mask[x][y][z]) {
@@ -232,7 +232,7 @@ public class JistSegmentationSmoothProbabilityMap extends ProcessingAlgorithm {
 					map[x][y][z] = orig[x][y][z];
 				}
 			}
-			Interface.displayMessage("max diff. "+maxdiff+"\n");
+			BasicInfo.displayMessage("max diff. "+maxdiff+"\n");
 		}
 		return map;
     }

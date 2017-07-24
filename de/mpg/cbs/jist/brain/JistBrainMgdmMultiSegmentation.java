@@ -257,15 +257,15 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 		}			
 		
 		// main algorithm
-		Interface.displayMessage("Load atlas\n");
+		BasicInfo.displayMessage("Load atlas\n");
 
 		SimpleShapeAtlas atlas = new SimpleShapeAtlas(atlasParam.getValue().getAbsolutePath());
 		
 		//adjust modalities to canonical names
-		Interface.displayMessage("Image contrasts:\n");
+		BasicInfo.displayMessage("Image contrasts:\n");
 		for (n=0;n<nimg;n++) {
 			modality[n] = atlas.displayContrastName(atlas.contrastId(modality[n]));
-			Interface.displayMessage(modality[n]+"\n");
+			BasicInfo.displayMessage(modality[n]+"\n");
 		}
 		
 		atlas.setImageInfo(nx, ny, nz, rx, ry, rz, orient, orx, ory, orz);
@@ -273,18 +273,18 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 			
 		atlas.initShapeMapping();
 		
-		Interface.displayMessage("Compute tissue classification\n");
+		BasicInfo.displayMessage("Compute tissue classification\n");
 
 		ShapeAtlasClassification classif = new ShapeAtlasClassification(image, modality, 
 																		  nimg, nx,ny,nz, rx,ry,rz, atlas);
 		classif.initialAtlasTissueCentroids();
 		classif.computeMemberships();
 		
-		Interface.displayMessage("First alignment\n");
+		BasicInfo.displayMessage("First alignment\n");
 		
 		atlas.alignObjectCenter(classif.getMemberships()[ShapeAtlasClassification.WM], "wm");
 		atlas.refreshShapeMapping();
-		Interface.displayMessage("transform: "+atlas.displayTransform(atlas.getTransform()));
+		BasicInfo.displayMessage("transform: "+atlas.displayTransform(atlas.getTransform()));
 			
 		classif.computeMemberships();
 		
@@ -292,12 +292,12 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 			float diff = 1.0f;
 			for (int t=0;t<20 && diff>0.01f;t++) {
 				diff = classif.computeCentroids();
-				Interface.displayMessage("iteration "+t+", max diff: "+diff+"\n");
+				BasicInfo.displayMessage("iteration "+t+", max diff: "+diff+"\n");
 				classif.computeMemberships();
 			}
 		}
 		
-		Interface.displayMessage("Rigid alignment\n");
+		BasicInfo.displayMessage("Rigid alignment\n");
 		
 		BasicRigidRegistration rigid = new BasicRigidRegistration(atlas.generateObjectImage("wm"), 
 																	classif.getMemberships()[ShapeAtlasClassification.WM], 
@@ -319,14 +319,14 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 			float diff = 1.0f;
 			for (int t=0;t<20 && diff>0.01f;t++) {
 				diff = classif.computeCentroids();
-				Interface.displayMessage("iteration "+t+", max diff: "+diff+"\n");
+				BasicInfo.displayMessage("iteration "+t+", max diff: "+diff+"\n");
 				classif.computeMemberships();
 			}
 		}
 		classif.estimateIntensityTransform();
 		
 		// first order warping
-		Interface.displayMessage("NL warping\n");
+		BasicInfo.displayMessage("NL warping\n");
 		
 		BasicDemonsWarping warp1 = new BasicDemonsWarping(atlas.generateDifferentialObjectSegmentation("wm","mask"), 
 															classif.getDifferentialSegmentation(classif.WM, classif.BG),
@@ -351,12 +351,12 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 		warp1.finalize();
 		warp1 = null;
 		
-		Interface.displayMessage("level set segmentation\n");
+		BasicInfo.displayMessage("level set segmentation\n");
 
 		/*
 		// minimum scale?
 		float factor = (float)Math.sqrt(3.0)*Numerics.max(rx/atlas.getShapeRes()[0],ry/atlas.getShapeRes()[1],rz/atlas.getShapeRes()[2]);
-		Interface.displayMessage("minimum scale: "+factor+"\n");
+		BasicInfo.displayMessage("minimum scale: "+factor+"\n");
 		
 		// or full scale?
 		factor = 1.0f;
@@ -367,7 +367,7 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 		
 		// scale the force with regard to the final level
 		float factor = 1.0f/(Numerics.max(rx/atlas.getShapeRes()[0],ry/atlas.getShapeRes()[1],rz/atlas.getShapeRes()[2]));
-		Interface.displayMessage("atlas scale: "+factor+"\n");
+		BasicInfo.displayMessage("atlas scale: "+factor+"\n");
 			
 		// constant scale for the distance (=> multiplied by scaling factor)
 		float distanceScale = scaleParam.getValue().floatValue()/rx;
@@ -385,7 +385,7 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 																		distanceScale,
 																		"wcs");
 				
-		Interface.displayMessage("gain...\n");
+		BasicInfo.displayMessage("gain...\n");
 		
 		mgdma.computeAtlasBestGainFunction();
 		
@@ -393,7 +393,7 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 			mgdma.diffuseBestGainFunctions(20, 0.5f, diffuseParam.getValue().floatValue());
 		
 		if (stepParam.getValue().intValue()>0) {
-			Interface.displayMessage("atlas-space levelset evolution...\n");
+			BasicInfo.displayMessage("atlas-space levelset evolution...\n");
 			mgdma.evolveNarrowBand(iterationParam.getValue().intValue(),changeParam.getValue().floatValue());
 			
 			nprocessed++;
@@ -403,7 +403,7 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 		
 		// minimum scale?
 		factor = 1.0f/((float)Math.sqrt(3.0)*Numerics.max(rx/atlas.getShapeRes()[0],ry/atlas.getShapeRes()[1],rz/atlas.getShapeRes()[2]));
-		Interface.displayMessage("minimum scale: "+factor+"\n");
+		BasicInfo.displayMessage("minimum scale: "+factor+"\n");
 		
 		//short[] counter = mgdma.exportFrozenPointCounter();
 		byte[] initseg = null;
@@ -421,13 +421,13 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 																			distanceScale,
 																			"wcs");
 					
-			Interface.displayMessage("gain...\n");
+			BasicInfo.displayMessage("gain...\n");
 			
 			mgdms.importBestGainFunction(mgdma.getBestGainFunctionHD(), mgdma.getBestGainLabelHD());
 			
-			//Interface.displayMessage("scaled-space levelset evolution...\n");
+			//BasicInfo.displayMessage("scaled-space levelset evolution...\n");
 			if (nprocessed<stepParam.getValue().intValue()) {
-				Interface.displayMessage("scaled-space levelset evolution...\n");
+				BasicInfo.displayMessage("scaled-space levelset evolution...\n");
 				mgdms.evolveNarrowBand(iterationParam.getValue().intValue(),changeParam.getValue().floatValue());
 
 				nprocessed++;
@@ -436,7 +436,7 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 			initseg = mgdms.exportScaledSegmentation();
 			// scaling factor must be lower than 1/sqrt(3) to preserve topology
 			factor *= 0.575f;
-			Interface.displayMessage("additional scaling? (new factor: "+factor+")\n");
+			BasicInfo.displayMessage("additional scaling? (new factor: "+factor+")\n");
 		}
 
 		MgdmFastSegmentation mgdm = new MgdmFastSegmentation(image, modality, classif.getImageRanges(), nimg,
@@ -453,7 +453,7 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 		classif.finalize();
 		classif = null;
 		
-		Interface.displayMessage("gain...\n");
+		BasicInfo.displayMessage("gain...\n");
 			
 		mgdm.importBestGainFunctions(mgdma.getBestGainFunctionHD(), mgdma.getBestGainLabelHD());
 			
@@ -461,20 +461,20 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 		//float[][][] initmems = mgdm.exportBestGainFunction();
 			
 		if (nprocessed<stepParam.getValue().intValue()) {
-			Interface.displayMessage("full scale levelset evolution...\n");
+			BasicInfo.displayMessage("full scale levelset evolution...\n");
 			mgdm.evolveNarrowBand(iterationParam.getValue().intValue(),changeParam.getValue().floatValue());
 		}
 		
 		//float[][][] evolmems = mgdm.exportBestGainFunction();
 		
-		Interface.displayMessage("partial volume estimates...\n");
+		BasicInfo.displayMessage("partial volume estimates...\n");
 			
 		if (computePosteriors.getValue().booleanValue()) {
 			mgdm.computeApproxPartialVolumes(distanceScale, false);
 		}
 					
 		// outputs
-		Interface.displayMessage("generating outputs...\n");
+		BasicInfo.displayMessage("generating outputs...\n");
 			
 		String imgname = in1Img.getName();
 		
@@ -491,7 +491,7 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 		segData.setName(imgname+"_seg");
 		segmentImage.setValue(segData);
 		segData = null;
-		Interface.displayMessage("segmentation");
+		BasicInfo.displayMessage("segmentation");
 		
 		float[][][] lvl = new float[nx][ny][nz];
 		float[] fcn = mgdm.getFunctions()[0];
@@ -506,7 +506,7 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 		lvlData.setName(imgname+"_mgdm");
 		mgdmImage.setValue(lvlData);
 		lvlData = null;
-		Interface.displayMessage(".. boundaries");
+		BasicInfo.displayMessage(".. boundaries");
 		
 		if (outputParam.getValue().equals("memberships")) {		
 			/* debug */
@@ -517,7 +517,7 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 			bufferData.setName(imgname+"_mems");
 			membershipImage.setValue(bufferData);
 			bufferData = null;
-			Interface.displayMessage(".. memberships(4d)");
+			BasicInfo.displayMessage(".. memberships(4d)");
 			
 			byte[][][][] byte4d = mgdm.exportBestGainLabelsByte(0, ngain);
 			ImageDataByte byteData = new ImageDataByte(byte4d);
@@ -526,7 +526,7 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 			byteData.setName(imgname+"_lbls");
 			labelImage.setValue(byteData);
 			byteData = null;			
-			Interface.displayMessage(".. labels(4d)");
+			BasicInfo.displayMessage(".. labels(4d)");
 		} else {
 			// get the best label map and probabilities by default
 			float[][][] mem = mgdm.exportBestGainFunction();
@@ -536,7 +536,7 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 			bufferData.setName(imgname+"_mem1");
 			membershipImage.setValue(bufferData);
 			bufferData = null;
-			Interface.displayMessage(".. best membership");
+			BasicInfo.displayMessage(".. best membership");
 			
 			byte[][][] lbl = mgdm.exportBestGainLabelByte();
 			ImageDataByte byteData = new ImageDataByte(lbl);
@@ -545,7 +545,7 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 			byteData.setName(imgname+"_lbl1");
 			labelImage.setValue(byteData);
 			byteData = null;			
-			Interface.displayMessage(".. best label");
+			BasicInfo.displayMessage(".. best label");
 		}			
 		return;
 	}

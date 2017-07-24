@@ -28,6 +28,7 @@ import gov.nih.mipav.view.MipavUtil;
 
 import de.mpg.cbs.utilities.Numerics;
 import de.mpg.cbs.utilities.Interface;
+import de.mpg.cbs.utilities.BasicInfo;
 import de.mpg.cbs.structures.BinaryHeap4D;
 
 import java.io.*;
@@ -89,7 +90,7 @@ public class JistSurfaceLabelFileToVolume  extends ProcessingAlgorithm{
 	
 	protected void execute(CalculationMonitor monitor) {
 		
-		Interface.displayMessage("load image\n");		
+		BasicInfo.displayMessage("load image\n");		
 
 		ImageDataFloat	originalImgData = new ImageDataFloat(originalImage.getImageData());
 		int nx = originalImgData.getRows();
@@ -102,11 +103,11 @@ public class JistSurfaceLabelFileToVolume  extends ProcessingAlgorithm{
 		//float oy = originalImgData.getHeader().getOrigin()[1];
 		//float oz = originalImgData.getHeader().getOrigin()[2];
 		
-		Interface.displayMessage("load surface\n");		
+		BasicInfo.displayMessage("load surface\n");		
 
 		EmbeddedSurface surf = originalSurface.getSurface();
 		
-		Interface.displayMessage("map surface coordinates\n");		
+		BasicInfo.displayMessage("map surface coordinates\n");		
 
 		// maps the surface to the voxel space
 		if (mipavTransform.getValue().booleanValue()) {
@@ -119,11 +120,11 @@ public class JistSurfaceLabelFileToVolume  extends ProcessingAlgorithm{
 		byte[][][] mask = new byte[nx][ny][nz];
 		double[][] data = new double[surf.getVertexCount()][1];
 
-		Interface.displayMessage("load labels\n");		
+		BasicInfo.displayMessage("load labels\n");		
 
 		float[] list = getLabelsFromFreesurferFile(labelFile.getValue(), surf.getVertexCount()); 
 		
-		Interface.displayMessage("map surface labels to image\n");		
+		BasicInfo.displayMessage("map surface labels to image\n");		
 
 		for(int i=0; i<surf.getVertexCount(); i++){
 			// labels on surface
@@ -142,13 +143,13 @@ public class JistSurfaceLabelFileToVolume  extends ProcessingAlgorithm{
 		}
 		surf.setVertexData(data);
 		
-		Interface.displayMessage("propagate surface labels\n");		
+		BasicInfo.displayMessage("propagate surface labels\n");		
 
 		// expand labels out for a certain distance
 		if (labelExtension.getValue().floatValue()>0)
 			fastMarchingPropagation(labels, mask, labelExtension.getValue().floatValue(), nx, ny, nz);
 		
-		Interface.displayMessage("generate outputs\n");		
+		BasicInfo.displayMessage("generate outputs\n");		
 
 		surf.setName(surf.getName()+"_labels");
 		dataSurface.setValue(surf);
@@ -234,7 +235,7 @@ public class JistSurfaceLabelFileToVolume  extends ProcessingAlgorithm{
 		boolean done, isprocessed;
 		
 		// compute the neighboring labels and corresponding distance functions (! not the MGDM functions !)
-		Interface.displayMessage("fast marching\n");		
+		BasicInfo.displayMessage("fast marching\n");		
 
 		int[] xoff = new int[]{1, -1, 0, 0, 0, 0};
 		int[] yoff = new int[]{0, 0, 1, -1, 0, 0};
@@ -244,7 +245,7 @@ public class JistSurfaceLabelFileToVolume  extends ProcessingAlgorithm{
 		
         heap.reset();
 		
-        Interface.displayMessage("init\n");		
+        BasicInfo.displayMessage("init\n");		
         // initialize the heap from boundaries
         for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z=0; z<nz; z++) if (mask[x][y][z]>0) {
         	distance[x][y][z] = 0.0f;
@@ -259,11 +260,11 @@ public class JistSurfaceLabelFileToVolume  extends ProcessingAlgorithm{
 				}
             }
         }
-		Interface.displayMessage("main loop\n");		
+		BasicInfo.displayMessage("main loop\n");		
 
         // grow the labels and functions
         while (heap.isNotEmpty()) {
-        	//Interface.displayMessage(".");
+        	//BasicInfo.displayMessage(".");
         	
         	// extract point with minimum distance
         	curdist = heap.getFirst();

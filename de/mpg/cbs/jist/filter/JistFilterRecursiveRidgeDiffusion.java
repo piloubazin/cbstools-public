@@ -597,7 +597,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		double median = measure.evaluate(response, 50.0);
 		double beta = median/FastMath.log(2.0);
 		
-		Interface.displayMessage("exponential parameter estimates: median "+median+", beta "+beta+",\n");
+		BasicInfo.displayMessage("exponential parameter estimates: median "+median+", beta "+beta+",\n");
 		
 		// model the filter response as something more interesting, e.g. log-normal (removing the bg samples)
 		double[] weights = new double[nb];
@@ -612,7 +612,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		double dev = 100.0*0.5*Erf.erf(1.0/FastMath.sqrt(2.0));
 		double fdev = 0.5*(ImageStatistics.weightedPercentile(response,weights,50.0+dev,nb) - ImageStatistics.weightedPercentile(response,weights,50.0-dev,nb));
 		
-		Interface.displayMessage("Log-normal parameter estimates: mean = "+FastMath.exp(fmean)+", stdev = "+FastMath.exp(fdev)+",\n");
+		BasicInfo.displayMessage("Log-normal parameter estimates: mean = "+FastMath.exp(fmean)+", stdev = "+FastMath.exp(fdev)+",\n");
 		
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++){
 			int xyz = x + nx*y + nx*ny*z;
@@ -1682,7 +1682,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 
 		factor /= (float)ngbsize;
 		for (int t=0;t<iter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
 				float prev = diffused[xyz];
@@ -1701,7 +1701,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 				if (Numerics.abs(prev-diffused[xyz])>diff) diff = Numerics.abs(prev-diffused[xyz]);
 			}
 			
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff<maxdiff) t=iter;
 		}
 		
@@ -1734,7 +1734,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		}
 
 		for (int t=0;t<iter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
 				previous[xyz] = diffused[xyz];
 			}
@@ -1759,7 +1759,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 				if (Numerics.abs(previous[xyz]-diffused[xyz])>diff) diff = Numerics.abs(previous[xyz]-diffused[xyz]);
 			}
 			
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff<maxdiff) t=iter;
 		}
 		/*
@@ -1793,7 +1793,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		BinaryHeap2D heap = new BinaryHeap2D(nx+ny+nz, nx+ny+nz, BinaryHeap2D.MINTREE);
 		BitSet used = new BitSet(nxyz);
 		for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>factor) {
-			Interface.displayMessage(".");
+			BasicInfo.displayMessage(".");
 			heap.reset();
 			used.clear();
 			heap.addValue(0, xyz, (byte)1);
@@ -1881,7 +1881,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 
 		factor /= (float)ngbsize;
 		for (int t=0;t<iter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
 				float prev = diffused[xyz];
@@ -1900,7 +1900,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 				if (Numerics.abs(prev-diffused[xyz])>diff) diff = Numerics.abs(prev-diffused[xyz]);
 			}
 			
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff<maxdiff) t=iter;
 		}
 		
@@ -1933,7 +1933,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		}
 
 		for (int t=0;t<iter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
 				previous[xyz] = diffused[xyz];
 			}
@@ -1958,7 +1958,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 				if (Numerics.abs(previous[xyz]-diffused[xyz])>diff) diff = Numerics.abs(previous[xyz]-diffused[xyz]);
 			}
 			
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff<maxdiff) t=iter;
 		}
 		/*
@@ -1992,7 +1992,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		BinaryHeap2D heap = new BinaryHeap2D(nx+ny+nz, nx+ny+nz, BinaryHeap2D.MINTREE);
 		BitSet used = new BitSet(nxyz);
 		for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>factor) {
-			Interface.displayMessage(".");
+			BasicInfo.displayMessage(".");
 			heap.reset();
 			used.clear();
 			heap.addValue(0, xyz, (byte)1);
@@ -2280,7 +2280,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		
 		// message passing
 		for (int t=0;t<iter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			//float prev;
 			int ngb;
@@ -2328,7 +2328,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 					messagebg[n][xyz] = newmsgbg[n][xyz];
 				}
 			}
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff < maxdiff) t = iter;
 		}
 		
@@ -2390,7 +2390,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		
 		// message passing
 		for (int t=0;t<iter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			//float prev;
 			int ngb;
@@ -2439,7 +2439,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 					messagebg[n][xyz] = newmsgbg[n][xyz];
 				}
 			}
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff < maxdiff) t = iter;
 		}
 		

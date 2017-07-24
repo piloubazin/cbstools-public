@@ -247,15 +247,15 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 		buffer = null;	
 		
 		// main algorithm
-		Interface.displayMessage("Load atlas\n");
+		BasicInfo.displayMessage("Load atlas\n");
 
 		SimpleShapeAtlas2 atlas = new SimpleShapeAtlas2(atlasParam.getValue().getAbsolutePath());
 		
 		//adjust modalities to canonical names
-		Interface.displayMessage("Image contrasts:\n");
+		BasicInfo.displayMessage("Image contrasts:\n");
 		for (n=0;n<nimg;n++) {
 			modality[n] = atlas.displayContrastName(atlas.contrastId(modality[n]));
-			Interface.displayMessage(modality[n]+"\n");
+			BasicInfo.displayMessage(modality[n]+"\n");
 		}
 		
 		atlas.setImageInfo(nx, ny, nz, rx, ry, rz, orient, orx, ory, orz);
@@ -263,18 +263,18 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 			
 		atlas.initShapeMapping();
 		
-		Interface.displayMessage("Compute tissue classification\n");
+		BasicInfo.displayMessage("Compute tissue classification\n");
 
 		ShapeAtlasClassification2 classif = new ShapeAtlasClassification2(image, modality, 
 																		  nimg, nx,ny,nz, rx,ry,rz, atlas);
 		classif.initialAtlasTissueCentroids();
 		classif.computeMemberships();
 		
-		Interface.displayMessage("First alignment\n");
+		BasicInfo.displayMessage("First alignment\n");
 		
 		atlas.alignObjectCenter(classif.getMemberships()[ShapeAtlasClassification.WM], "wm");
 		atlas.refreshShapeMapping();
-		Interface.displayMessage("transform: "+atlas.displayTransform(atlas.getTransform()));
+		BasicInfo.displayMessage("transform: "+atlas.displayTransform(atlas.getTransform()));
 			
 		classif.computeMemberships();
 		
@@ -282,12 +282,12 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 			float diff = 1.0f;
 			for (int t=0;t<20 && diff>0.01f;t++) {
 				diff = classif.computeCentroids();
-				Interface.displayMessage("iteration "+t+", max diff: "+diff+"\n");
+				BasicInfo.displayMessage("iteration "+t+", max diff: "+diff+"\n");
 				classif.computeMemberships();
 			}
 		}
 		
-		Interface.displayMessage("Rigid alignment\n");
+		BasicInfo.displayMessage("Rigid alignment\n");
 		
 		BasicRigidRegistration rigid = new BasicRigidRegistration(atlas.generateObjectImage("wm"), 
 																	classif.getMemberships()[ShapeAtlasClassification.WM], 
@@ -309,7 +309,7 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 			float diff = 1.0f;
 			for (int t=0;t<20 && diff>0.01f;t++) {
 				diff = classif.computeCentroids();
-				Interface.displayMessage("iteration "+t+", max diff: "+diff+"\n");
+				BasicInfo.displayMessage("iteration "+t+", max diff: "+diff+"\n");
 				classif.computeMemberships();
 			}
 		}
@@ -320,7 +320,7 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 		float[] imrange = classif.getImageRanges();
 		
 		// first order warping
-		Interface.displayMessage("NL warping\n");
+		BasicInfo.displayMessage("NL warping\n");
 		
 		BasicDemonsWarping warp1 = new BasicDemonsWarping(atlas.generateDifferentialObjectSegmentation("wm","mask"), 
 															classif.getDifferentialSegmentation(classif.WM, classif.BG),
@@ -352,7 +352,7 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 		int naz = atlas.getShapeDim()[2];
 		float[] XA = new float[3];
 		
-		Interface.displayMessage("shape priors\n");
+		BasicInfo.displayMessage("shape priors\n");
 		
 		// shape
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
@@ -368,7 +368,7 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 			}
 		}
 		
-		Interface.displayMessage("probabilities\n");
+		BasicInfo.displayMessage("probabilities\n");
 		
 		// estimate the most probable object for each clusters
 		float[] proba = new float[ncluster];
@@ -390,7 +390,7 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 			}
 		}
 
-		Interface.displayMessage("intensity priors\n");
+		BasicInfo.displayMessage("intensity priors\n");
 		
 		// intensity: work directly on the intensity priors indep. of location for each cluster
 		float[] orcaimg = new float[ncluster];
@@ -415,28 +415,28 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 				int mod = atlas.contrastId(modality[ni]);
 				// separate normalized from quantitative image contrasts
 				if (atlas.isNormalizedIntensityContrast(mod)) {
-					Interface.displayMessage("n");
+					BasicInfo.displayMessage("n");
 					contrast[ni] = -1.0f;
 					for (int t=0;t<atlas.getMap(mod)[nb].length;t+=3) {
 						float diff = Numerics.abs(orcaimg[c]/imrange[ni]-atlas.getMap(mod)[nb][t])/atlas.getMap(mod)[nb][t+1];
 						contrast[ni] = Numerics.max(contrast[ni], atlas.getMap(mod)[nb][t+2]*(1.0f - diff*diff)/(1.0f + diff*diff) );
 					}
 				} else if (atlas.isQuantitativeContrast(mod)) {
-					Interface.displayMessage("q");
+					BasicInfo.displayMessage("q");
 					contrast[ni] = -1.0f;
 					for (int t=0;t<atlas.getMap(mod)[nb].length;t+=3) {
 						float diff = Numerics.abs(orcaimg[c]-atlas.getMap(mod)[nb][t])/atlas.getMap(mod)[nb][t+1];
 						contrast[ni] = Numerics.max(contrast[ni], atlas.getMap(mod)[nb][t+2]*(1.0f - diff*diff)/(1.0f + diff*diff) );
 					}
 				} else {
-					Interface.displayMessage("!");
+					BasicInfo.displayMessage("!");
 				}
 				// use maxmag: score closest to -1 or +1 wins!
 				intens[c][nb] = Numerics.maxmag(intens[c][nb], contrast[ni]);
 			}
 		}
 		
-		Interface.displayMessage("probabilities\n");
+		BasicInfo.displayMessage("probabilities\n");
 		
 		//  estimate the most probable object for each clusters
 		float[] intproba = new float[ncluster];
@@ -467,7 +467,7 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 		atlasimg = null;
 		
 		// outputs
-		Interface.displayMessage("generating outputs...\n");
+		BasicInfo.displayMessage("generating outputs...\n");
 			
 		String imgname = in1Img.getName();
 		
@@ -477,7 +477,7 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 		segData.setName(imgname+"_atlas");
 		atlaslabelImage.setValue(segData);
 		segData = null;
-		Interface.displayMessage("atlas");
+		BasicInfo.displayMessage("atlas");
 		
 		segData = new ImageDataByte(subjectlabel);	
 		subjectlabel = null;
@@ -485,7 +485,7 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 		segData.setName(imgname+"_shp_lbl");
 		shplabelImage.setValue(segData);
 		segData = null;
-		Interface.displayMessage("labels");
+		BasicInfo.displayMessage("labels");
 		
 		ImageDataFloat regionData = new ImageDataFloat(clusterweights);	
 		subjectregion = null;
@@ -493,7 +493,7 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 		regionData.setName(imgname+"_shp_reg");
 		shpregionImage.setValue(regionData);
 		regionData = null;
-		Interface.displayMessage(".. boundaries");
+		BasicInfo.displayMessage(".. boundaries");
 		
 		segData = new ImageDataByte(intenslabel);	
 		subjectlabel = null;
@@ -501,7 +501,7 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 		segData.setName(imgname+"_int_lbl");
 		intlabelImage.setValue(segData);
 		segData = null;
-		Interface.displayMessage("labels");
+		BasicInfo.displayMessage("labels");
 		
 		regionData = new ImageDataFloat(intens);	
 		subjectregion = null;
@@ -509,7 +509,7 @@ public class JistBrainOrcaSegmentation extends ProcessingAlgorithm {
 		regionData.setName(imgname+"_int_reg");
 		intregionImage.setValue(regionData);
 		regionData = null;
-		Interface.displayMessage(".. boundaries");
+		BasicInfo.displayMessage(".. boundaries");
 
 		return;
 	}

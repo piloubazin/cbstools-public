@@ -119,7 +119,7 @@ public class JistStatisticsSegmentation4D extends ProcessingAlgorithm {
 		int nz = segImg.getSlices();
 		int nc = segImg.getComponents();
 		int nxyz = nx*ny*nz;
-		Interface.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"; "+nc+"\n");
+		BasicInfo.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"; "+nc+"\n");
 		float rx = segImg.getHeader().getDimResolutions()[0];
 		float ry = segImg.getHeader().getDimResolutions()[1];
 		float rz = segImg.getHeader().getDimResolutions()[2];
@@ -142,7 +142,7 @@ public class JistStatisticsSegmentation4D extends ProcessingAlgorithm {
 		}
 		
 		if (atlasParam.getValue()!=null && atlasParam.getValue().length()>0) {
-			Interface.displayMessage("Load atlas\n");
+			BasicInfo.displayMessage("Load atlas\n");
 	
 			SimpleShapeAtlas atlas = new SimpleShapeAtlas(atlasParam.getValue().getAbsolutePath());
 			

@@ -97,7 +97,7 @@ public class JistSurfaceMgdmRepresentation extends ProcessingAlgorithm {
 		int ny = labelImg.getCols();
 		int nz = labelImg.getSlices();
 		int nxyz = nx*ny*nz;
-		Interface.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"\n");
+		BasicInfo.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"\n");
 		float rx = labelImg.getHeader().getDimResolutions()[0];
 		float ry = labelImg.getHeader().getDimResolutions()[1];
 		float rz = labelImg.getHeader().getDimResolutions()[2];
@@ -132,7 +132,7 @@ public class JistSurfaceMgdmRepresentation extends ProcessingAlgorithm {
 		byte[] objlabel = null;
 		int nobj = -1;
 		if (atlasParam.getValue()!=null) {
-			Interface.displayMessage("Load atlas\n");
+			BasicInfo.displayMessage("Load atlas\n");
 	
 			SimpleShapeAtlas atlas = new SimpleShapeAtlas(atlasParam.getValue().getAbsolutePath());
 		
@@ -168,7 +168,7 @@ public class JistSurfaceMgdmRepresentation extends ProcessingAlgorithm {
 		lblData.setName(labelImg.getName()+"_lbls");
 		mgdmlabelImage.setValue(lblData);
 		lblData = null;
-		Interface.displayMessage("labels");
+		BasicInfo.displayMessage("labels");
 		
 		float[][][][] fun = mgdm.exportFunctions();
 		ImageDataFloat funData = new ImageDataFloat(fun);	
@@ -177,7 +177,7 @@ public class JistSurfaceMgdmRepresentation extends ProcessingAlgorithm {
 		funData.setName(labelImg.getName()+"_func");
 		mgdmfunctImage.setValue(funData);
 		funData = null;
-		Interface.displayMessage("functions");
+		BasicInfo.displayMessage("functions");
 
 		return;
 	}

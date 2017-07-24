@@ -137,7 +137,7 @@ public class JistRegistrationSurfaceMeshGroupAverage extends ProcessingAlgorithm
 		*/
 		
 		int Nsubjects = levelsetImages.getImageDataList().size();
-		Interface.displayMessage("Number of subjectS: "+Nsubjects);
+		BasicInfo.displayMessage("Number of subjectS: "+Nsubjects);
 			
 		
 		int Nvertex = target.getVertexCount();
@@ -167,9 +167,9 @@ public class JistRegistrationSurfaceMeshGroupAverage extends ProcessingAlgorithm
 			}
 		}
 		
-		Interface.displayMessage("First pass: compute average surface");
+		BasicInfo.displayMessage("First pass: compute average surface");
 		for (int s=0;s<Nsubjects;s++) {
-			Interface.displayMessage("Processing subject "+(s+1));
+			BasicInfo.displayMessage("Processing subject "+(s+1));
 			float[][][] levelset = (new ImageDataFloat(levelsetImages.getImageDataList().get(s))).toArray3d();
 			levelsetImages.dispose();
 			float[][][][] deform = (new ImageDataFloat(deformImages.getImageDataList().get(s))).toArray4d();
@@ -177,7 +177,7 @@ public class JistRegistrationSurfaceMeshGroupAverage extends ProcessingAlgorithm
 			float[][][] contrast = null;
 			
 			if (contrastImages.getImageDataList()!=null && contrastImages.size()==Nsubjects) {
-				Interface.displayMessage("contrasts "+contrastImages.size());
+				BasicInfo.displayMessage("contrasts "+contrastImages.size());
 				if (contrastImages.getImageDataList().get(s)!=null) {
 					contrast = (new ImageDataFloat(contrastImages.getImageDataList().get(s))).toArray3d();
 					contrastImages.dispose();
@@ -247,10 +247,10 @@ public class JistRegistrationSurfaceMeshGroupAverage extends ProcessingAlgorithm
 		float[] dist;
 		// second pass: dist (opt)
 		if (computeStdev.getValue().booleanValue()) {
-			Interface.displayMessage("Second pass: estimate average distance");
+			BasicInfo.displayMessage("Second pass: estimate average distance");
 			dist = new float[Nvertex];
 			for (int s=0;s<Nsubjects;s++) {
-				Interface.displayMessage("Processing subject "+(s+1));
+				BasicInfo.displayMessage("Processing subject "+(s+1));
 				float[][][] levelset = (new ImageDataFloat(levelsetImages.getImageDataList().get(s))).toArray3d();
 				levelsetImages.dispose();
 				float[][][][] deform = (new ImageDataFloat(deformImages.getImageDataList().get(s))).toArray4d();

@@ -121,7 +121,7 @@ public class JistClusteringOrcaPostProcess extends ProcessingAlgorithm {
 		buffer = null;	
 		
 		// main algorithm: make ORCA cluster lists
-		Interface.displayMessage("extracting ORCA labels...\n");
+		BasicInfo.displayMessage("extracting ORCA labels...\n");
 		int[] clusterlist = ObjectLabeling.listLabels(orcaclusters, nx, ny, nz);
 		float[] clusteravg = new float[clusterlist.length];
 		float[] clusterstd = new float[clusterlist.length];
@@ -138,7 +138,7 @@ public class JistClusteringOrcaPostProcess extends ProcessingAlgorithm {
 		}
 
 		// get the N best / max. coverage
-		Interface.displayMessage("finding the best clusters...\n");
+		BasicInfo.displayMessage("finding the best clusters...\n");
 		float coverage = coverageParam.getValue().floatValue()/100.0f;
 		int nbest = nbestParam.getValue().intValue();
 		float ratio=0.0f;
@@ -150,7 +150,7 @@ public class JistClusteringOrcaPostProcess extends ProcessingAlgorithm {
 		int nratio=0;
 		int[] keptlabel = new int[ncluster];
 		while (ratio<coverage || nkept<nbest) {
-			Interface.displayMessage(".");
+			BasicInfo.displayMessage(".");
 			int id=0;
 			for (int n=1;n<ncluster;n++) {
 				if (clustersize[n]>clustersize[id]) id = n;
@@ -163,7 +163,7 @@ public class JistClusteringOrcaPostProcess extends ProcessingAlgorithm {
 			
 			clustersize[id] *= -1;
 		}
-		Interface.displayMessage("\n re-mapping the clusters");
+		BasicInfo.displayMessage("\n re-mapping the clusters");
 		
 		// warp into subject space, and compare with orca clusters
 		int[][][] nbestlabel = new int[nx][ny][nz];
@@ -179,7 +179,7 @@ public class JistClusteringOrcaPostProcess extends ProcessingAlgorithm {
 		}
 		
 		// outputs
-		Interface.displayMessage("generating outputs...\n");
+		BasicInfo.displayMessage("generating outputs...\n");
 			
 		String imgname = input.getName();
 		
@@ -189,7 +189,7 @@ public class JistClusteringOrcaPostProcess extends ProcessingAlgorithm {
 		segData.setName(imgname+"_nbest");
 		nbestImage.setValue(segData);
 		segData = null;
-		Interface.displayMessage("n best labels");
+		BasicInfo.displayMessage("n best labels");
 		
 		segData = new ImageDataInt(coverlabel);	
 		nbestlabel = null;
@@ -197,7 +197,7 @@ public class JistClusteringOrcaPostProcess extends ProcessingAlgorithm {
 		segData.setName(imgname+"cover");
 		coverageImage.setValue(segData);
 		segData = null;
-		Interface.displayMessage("coverage labels");
+		BasicInfo.displayMessage("coverage labels");
 		
 		return;
 	}

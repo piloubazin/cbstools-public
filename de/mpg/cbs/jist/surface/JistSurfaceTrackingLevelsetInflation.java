@@ -181,7 +181,7 @@ public class JistSurfaceTrackingLevelsetInflation extends ProcessingAlgorithm {
 			nimg++;
 		}
 		
-		Interface.displayMessage("mask creation...\n");
+		BasicInfo.displayMessage("mask creation...\n");
 
 		// create a mask
 		boolean[] bgmask = new boolean[nxyz];
@@ -206,7 +206,7 @@ public class JistSurfaceTrackingLevelsetInflation extends ProcessingAlgorithm {
 			intensitymask = null;
 		}
 		
-		Interface.displayMessage("re-build levelset...\n");
+		BasicInfo.displayMessage("re-build levelset...\n");
 
 			// main algorithm
 			CorticalInflationGdm gdm = new CorticalInflationGdm(levelset, nx, ny, nz, rx, ry, rz, 
@@ -221,13 +221,13 @@ public class JistSurfaceTrackingLevelsetInflation extends ProcessingAlgorithm {
 				scale = 0.5f;
 			}
 			for (int t=0;t<smoothiterParam.getValue().intValue();t++) {
-				Interface.displayMessage("step "+(t+1)+"\n");
+				BasicInfo.displayMessage("step "+(t+1)+"\n");
 				
-				Interface.displayMessage("input smoothing ("+scale+")...\n");
+				BasicInfo.displayMessage("input smoothing ("+scale+")...\n");
 				//gdm.smoothLevelset((float)scale);
 				gdm.computeSmoothedLevelset((float)scale, false);
 	
-				Interface.displayMessage("inflated surface estimation...\n");
+				BasicInfo.displayMessage("inflated surface estimation...\n");
 				if (mappingParam.getValue().equals("linear_interpolated"))
 					gdm.evolveNarrowBandMappingMean(iterationParam.getValue().intValue(), precisionParam.getValue().floatValue());
 				else if (mappingParam.getValue().equals("nearest_neighbor"))
@@ -235,7 +235,7 @@ public class JistSurfaceTrackingLevelsetInflation extends ProcessingAlgorithm {
 				else if (mappingParam.getValue().equals("closest_to_mean"))
 					gdm.evolveNarrowBandMappingClosestMean(iterationParam.getValue().intValue(), precisionParam.getValue().floatValue());
 				
-				//Interface.displayMessage("copy target...\n");
+				//BasicInfo.displayMessage("copy target...\n");
 				//gdm.updateTarget();
 				scale *= basis;
 			}

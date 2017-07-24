@@ -279,13 +279,13 @@ public class JistSurfaceMeshDataToLevelset  extends ProcessingAlgorithm{
 			}
 		}
 		
-		Interface.displayMessage("propagate surface labels\n");		
+		BasicInfo.displayMessage("propagate surface labels\n");		
 
 		// expand labels out for a certain distance
 		if (dataExtension.getValue().floatValue()>0)
 			fastMarchingPropagation(data, dist, dataExtension.getValue().floatValue(), nx, ny, nz);
 		
-		Interface.displayMessage("generate outputs\n");		
+		BasicInfo.displayMessage("generate outputs\n");		
 
 		ImageDataFloat dataImg = new ImageDataFloat(data);		
 		dataImg.setHeader(originalImage.getImageData().getHeader());
@@ -311,7 +311,7 @@ public class JistSurfaceMeshDataToLevelset  extends ProcessingAlgorithm{
 		boolean done, isprocessed;
 		
 		// compute the neighboring labels and corresponding distance functions (! not the MGDM functions !)
-		Interface.displayMessage("fast marching\n");		
+		BasicInfo.displayMessage("fast marching\n");		
 
 		int[] xoff = new int[]{1, -1, 0, 0, 0, 0};
 		int[] yoff = new int[]{0, 0, 1, -1, 0, 0};
@@ -319,7 +319,7 @@ public class JistSurfaceMeshDataToLevelset  extends ProcessingAlgorithm{
 
 		BinaryHeapPair heap = new BinaryHeapPair(nx+ny+nz, BinaryHeapPair.MINTREE);
 		
-		Interface.displayMessage("init\n");		
+		BasicInfo.displayMessage("init\n");		
         // initialize the heap from boundaries
         boolean[][][] computed = new boolean[nx][ny][nz];
         for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z=0; z<nz; z++) if (distance[x][y][z]>UNKNOWN) {
@@ -340,11 +340,11 @@ public class JistSurfaceMeshDataToLevelset  extends ProcessingAlgorithm{
             }
             */
         }
-		Interface.displayMessage("main loop\n");		
+		BasicInfo.displayMessage("main loop\n");		
 
         // grow the labels and functions
         while (heap.isNotEmpty()) {
-        	//Interface.displayMessage(".");
+        	//BasicInfo.displayMessage(".");
         	
         	// extract point with minimum distance
         	curdist = heap.getFirst();

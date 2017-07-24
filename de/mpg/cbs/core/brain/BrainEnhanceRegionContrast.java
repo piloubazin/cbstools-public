@@ -87,7 +87,7 @@ public class BrainEnhanceRegionContrast {
 	public final void execute(){
 				
 		// load mask and build boolean signature for each region
-		Interface.displayMessage("Load atlas\n");
+		BasicInfo.displayMessage("Load atlas\n");
 	
 		SimpleShapeAtlas2 atlas = new SimpleShapeAtlas2(atlasParam);
 
@@ -191,11 +191,11 @@ public class BrainEnhanceRegionContrast {
 		
 		double regmed = ImageStatistics.weightedPercentile(reg, wreg, 50.0, nreg);
 		double regstd = 0.5*(ImageStatistics.weightedPercentile(reg,wreg,50.0+dev,nreg) - ImageStatistics.weightedPercentile(reg,wreg,50.0-dev,nreg));
-		Interface.displayMessage("Region parameter estimates: mean = "+regmed+", stdev = "+regstd+",\n");
+		BasicInfo.displayMessage("Region parameter estimates: mean = "+regmed+", stdev = "+regstd+",\n");
 		
 		double bkgmed = ImageStatistics.weightedPercentile(bkg, wbkg, 50.0, nbkg);
 		double bkgstd = 0.5*(ImageStatistics.weightedPercentile(bkg,wbkg,50.0+dev,nbkg) - ImageStatistics.weightedPercentile(bkg,wbkg,50.0-dev,nbkg));
-		Interface.displayMessage("Background parameter estimates: mean = "+bkgmed+", stdev = "+bkgstd+",\n");
+		BasicInfo.displayMessage("Background parameter estimates: mean = "+bkgmed+", stdev = "+bkgstd+",\n");
 		
 		// process the data: probabilities or arbitrary enhancement?
 		probaRegionImage = new float[nxyz];

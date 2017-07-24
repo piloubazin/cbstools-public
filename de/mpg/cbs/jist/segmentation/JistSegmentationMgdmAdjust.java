@@ -267,7 +267,7 @@ public class JistSegmentationMgdmAdjust extends ProcessingAlgorithm {
 																			topologyParam.getValue());
 		
 		if (iterationParam.getValue().intValue()>0) {
-			Interface.displayMessage("level set segmentation...\n");
+			BasicInfo.displayMessage("level set segmentation...\n");
 			refine.evolveNarrowBand(iterationParam.getValue().intValue(),changeParam.getValue().floatValue());
 		}
 		
@@ -284,7 +284,7 @@ public class JistSegmentationMgdmAdjust extends ProcessingAlgorithm {
 		segData.setName(labelImg.getName()+"_correct");
 		newlabelImage.setValue(segData);
 		segData = null;
-		Interface.displayMessage("segmentation");
+		BasicInfo.displayMessage("segmentation");
 		
 		float[][][] lvl = new float[nx][ny][nz];
 		float[] fcn = refine.getFunctions()[0];
@@ -298,7 +298,7 @@ public class JistSegmentationMgdmAdjust extends ProcessingAlgorithm {
 		lvlData.setName(mgdmImg.getName()+"_correct");
 		newmgdmImage.setValue(lvlData);
 		lvlData = null;
-		Interface.displayMessage(".. boundaries");
+		BasicInfo.displayMessage(".. boundaries");
 		
 		mems = refine.exportBestGainFunctions();
 		float[][][][] buffer4d = new float[nx][ny][nz][nlb];
@@ -315,7 +315,7 @@ public class JistSegmentationMgdmAdjust extends ProcessingAlgorithm {
 		bufferData.setName(labelImg.getName()+"_cxmems");
 		newmemsImage.setValue(bufferData);
 		bufferData = null;
-		Interface.displayMessage(".. memberships(4d)");
+		BasicInfo.displayMessage(".. memberships(4d)");
 	
 		float[][] lbls = new float[nlb][];
 		for (int n=0;n<nlb;n++) {
@@ -335,7 +335,7 @@ public class JistSegmentationMgdmAdjust extends ProcessingAlgorithm {
 		byteData.setName(labelImg.getName()+"_cxlbls");
 		newlblsImage.setValue(byteData);
 		byteData = null;			
-		Interface.displayMessage(".. labels(4d)");
+		BasicInfo.displayMessage(".. labels(4d)");
 
 		byte[][][] msk = new byte[nx][ny][nz];
 		boolean[] mask = refine.getMask();
@@ -351,7 +351,7 @@ public class JistSegmentationMgdmAdjust extends ProcessingAlgorithm {
 		mskData.setName(labelImg.getName()+"_cxmask");
 		maskImage.setValue(mskData);
 		mskData = null;
-		Interface.displayMessage("mask");
+		BasicInfo.displayMessage("mask");
 		
 	}
 
