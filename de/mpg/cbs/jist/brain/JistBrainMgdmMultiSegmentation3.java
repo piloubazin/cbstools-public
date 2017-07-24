@@ -52,7 +52,7 @@ public class JistBrainMgdmMultiSegmentation3 extends ProcessingAlgorithm {
 													"DWIFA3T", "DWIMD3T", "meanBOLD3T", "QSM3T",
 													"-- 7T --", "T1MAP7T", "MP2RAGE7T", "T2SW7T", "QSM7T", 
 													"-- 9.4fT --", "T1MAP9T", "MP2RAGE9T",
-													"-- MPM --", "mpmPD3T", "mpmMT3T", "mpmR13T", "mpmR2s3T",
+													"-- MPM --", "mpmPD3T", "mpmMT3T", "mpmR13T", "mpmR2s3T", "mpmPD7T", "mpmR17T", "mpmR2s7T",
 													"-- misc --", "Filters", "WMLesions", "PVDURA", "Labeling","none"};
 	
 	private static final String inputTypeInfo = "Currently available contrasts:\n"
