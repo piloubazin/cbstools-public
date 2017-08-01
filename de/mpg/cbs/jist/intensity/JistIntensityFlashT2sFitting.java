@@ -29,11 +29,17 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 	ParamVolume vol3Param;
 	ParamVolume vol4Param;
 	ParamVolume vol5Param;
+	ParamVolume vol6Param;
+	ParamVolume vol7Param;
+	ParamVolume vol8Param;
 	ParamFloat te1Param;
 	ParamFloat te2Param;
 	ParamFloat te3Param;
 	ParamFloat te4Param;
 	ParamFloat te5Param;
+	ParamFloat te6Param;
+	ParamFloat te7Param;
+	ParamFloat te8Param;
 	//ParamBoolean noiseParam;
 	
 	ParamVolume s0Param;
@@ -64,6 +70,18 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 		inputParams.add(te5Param=new ParamFloat("TE 5"));
 		vol5Param.setMandatory(false);
 		te5Param.setMandatory(false);
+		inputParams.add(vol6Param=new ParamVolume("Echo 6"));
+		inputParams.add(te6Param=new ParamFloat("TE 6"));
+		vol6Param.setMandatory(false);
+		te6Param.setMandatory(false);
+		inputParams.add(vol7Param=new ParamVolume("Echo 7"));
+		inputParams.add(te7Param=new ParamFloat("TE 7"));
+		vol7Param.setMandatory(false);
+		te7Param.setMandatory(false);
+		inputParams.add(vol8Param=new ParamVolume("Echo 8"));
+		inputParams.add(te8Param=new ParamFloat("TE 8"));
+		vol8Param.setMandatory(false);
+		te8Param.setMandatory(false);
 		//inputParams.add(noiseParam=new ParamBoolean("Estimate background noise"));
 		
 
@@ -100,7 +118,7 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 		ImageDataFloat vol2Img = new ImageDataFloat(vol2Param.getImageData());
 		float[][][] vol2 = vol2Img.toArray3d();
 		int nimg = 2;
-		float[][][] vol3=null, vol4=null, vol5=null;
+		float[][][] vol3=null, vol4=null, vol5=null, vol6=null, vol7=null, vol8=null;
 		if (vol3Param.getImageData()!=null) {
 			ImageDataFloat vol3Img = new ImageDataFloat(vol3Param.getImageData());
 			vol3 = vol3Img.toArray3d();
@@ -116,12 +134,30 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 			vol5 = vol5Img.toArray3d();
 			nimg++;
 		}
+		if (vol6Param.getImageData()!=null) {
+			ImageDataFloat vol6Img = new ImageDataFloat(vol6Param.getImageData());
+			vol6 = vol6Img.toArray3d();
+			nimg++;
+		}
+		if (vol7Param.getImageData()!=null) {
+			ImageDataFloat vol7Img = new ImageDataFloat(vol7Param.getImageData());
+			vol7 = vol7Img.toArray3d();
+			nimg++;
+		}
+		if (vol8Param.getImageData()!=null) {
+			ImageDataFloat vol8Img = new ImageDataFloat(vol8Param.getImageData());
+			vol8 = vol8Img.toArray3d();
+			nimg++;
+		}
 		float[][][][] vol = new float[nimg][][][];
 		vol[0] = vol1;
 		vol[1] = vol2;
 		if (nimg>2) vol[2] = vol3;
 		if (nimg>3) vol[3] = vol4;
 		if (nimg>4) vol[4] = vol5;
+		if (nimg>5) vol[5] = vol6;
+		if (nimg>6) vol[6] = vol7;
+		if (nimg>7) vol[7] = vol8;
 		
 		// retrieve the corresponding TE
 		float[] TE = new float[nimg];
@@ -130,6 +166,9 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 		if (nimg>2) TE[2] = te3Param.getValue().floatValue();
 		if (nimg>3) TE[3] = te4Param.getValue().floatValue();
 		if (nimg>4) TE[4] = te5Param.getValue().floatValue();
+		if (nimg>5) TE[5] = te6Param.getValue().floatValue();
+		if (nimg>6) TE[6] = te7Param.getValue().floatValue();
+		if (nimg>7) TE[7] = te8Param.getValue().floatValue();
 		
 		// fit the exponential
 		double Sx, Sx2, Sy, Sxy, delta;

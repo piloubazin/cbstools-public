@@ -414,7 +414,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 					float[] stlevelset = ImageFilters.separableConvolution(tlevelset, nx, ny, nz, kernel, ks, ks, ks);
 
 					// calculate the curvature metrics
-					for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
+					for (int x=1; x<nx-1; x++) for (int y=1; y<ny-1; y++) for (int z = 1; z<nz-1; z++) {
 						int xyz = x + nx*y + nx*ny*z;
 
 						if(FastMath.abs(slevelset[xyz]) < 2.0f*1.7321f) {
