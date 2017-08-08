@@ -153,6 +153,13 @@ public class Gdm3d {
 						float[][] field_, float[] balloon_, 
 						float fw_, float bw_, float sw_,
 						String connectivityType_) {
+		this(init_, nx_, ny_, nz_, rx_, ry_, rz_, field_, balloon_, fw_, bw_, sw_, connectivityType_, null);
+	}
+	public Gdm3d(int[] init_, int nx_, int ny_, int nz_,
+						float rx_, float ry_, float rz_,
+						float[][] field_, float[] balloon_, 
+						float fw_, float bw_, float sw_,
+						String connectivityType_, String connectivityPath_) {
 		
 		fieldforce = field_;
 		balloonforce = balloon_;
@@ -194,7 +201,7 @@ public class Gdm3d {
 			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT("critical618LUT.raw.gz",200);
 			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				lut = new CriticalPointLUT(connectivityPath_,"critical66LUT.raw.gz",200);
 				checkComposed=true;
 			}
 			else if (connectivityType_.equals("wco")) {
@@ -246,6 +253,13 @@ public class Gdm3d {
 						float[][] field_, float[] balloon_, 
 						float fw_, float bw_, float sw_,
 						String connectivityType_) {
+		this(lvl_, maxdist_, nx_, ny_, nz_, rx_, ry_, rz_, field_, balloon_, fw_, bw_, sw_,	connectivityType_, null);
+	}	
+	public Gdm3d(float[] lvl_, float maxdist_, int nx_, int ny_, int nz_,
+						float rx_, float ry_, float rz_,
+						float[][] field_, float[] balloon_, 
+						float fw_, float bw_, float sw_,
+						String connectivityType_, String connectivityPath_) {
 		
 		levelset = lvl_;
 	
@@ -288,7 +302,7 @@ public class Gdm3d {
 			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT("critical618LUT.raw.gz",200);
 			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				lut = new CriticalPointLUT(connectivityPath_,"critical66LUT.raw.gz",200);
 				checkComposed=true;
 			}
 			else if (connectivityType_.equals("wco")) {
@@ -340,6 +354,13 @@ public class Gdm3d {
 						float[][] field_, float[] balloon_, 
 						float fw_, float bw_, float sw_,
 						String connectivityType_) {
+		this(init_, nx_, ny_, nz_, rx_, ry_, rz_, field_, balloon_, fw_, bw_, sw_, connectivityType_, null);
+	}
+	public Gdm3d(boolean[] init_, int nx_, int ny_, int nz_,
+						float rx_, float ry_, float rz_,
+						float[][] field_, float[] balloon_, 
+						float fw_, float bw_, float sw_,
+						String connectivityType_, String connectivityPath_) {
 		
 		fieldforce = field_;
 		balloonforce = balloon_;
@@ -381,7 +402,7 @@ public class Gdm3d {
 			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT("critical618LUT.raw.gz",200);
 			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				lut = new CriticalPointLUT(connectivityPath_,"critical66LUT.raw.gz",200);
 				checkComposed=true;
 			}
 			else if (connectivityType_.equals("wco")) {

@@ -180,7 +180,7 @@ public class BrainMp2rageSkullStripping {
 			topo.outsideSphericalTopology();
 			
 			int[] toposeg = topo.exportIntSegmentation();
-			gdm = new Gdm3d(toposeg, nx, ny, nz, rx, ry, rz, null, balloon, 0.0f, 0.1f, 0.9f, "wcs");
+			gdm = new Gdm3d(toposeg, nx, ny, nz, rx, ry, rz, null, balloon, 0.0f, 0.1f, 0.9f, "wcs", lutdir);
 					
 			gdm.evolveNarrowBand(100, 0.001f);
 
