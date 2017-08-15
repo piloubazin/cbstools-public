@@ -116,7 +116,7 @@ public class ShapeSimpleSkeleton {
 			BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 			return;
 		} else {
-			if (verbose) System.out.println("LUT loaded from: "+lut.getFilename());
+			//if (debug) System.out.println("LUT loaded from: "+lut.getFilename());
 		}
 		heap = new BinaryHeap3D(objsize, BinaryHeap3D.MINTREE);
 		

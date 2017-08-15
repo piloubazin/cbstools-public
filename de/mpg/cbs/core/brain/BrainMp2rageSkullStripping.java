@@ -174,12 +174,9 @@ public class BrainMp2rageSkullStripping {
 				balloon[xyz] = force;
 			}
 			
-			BasicInfo.displayMessage("topology LUT directory:"+lutdir+"\n");
-		
-			
 			// topology correction for the mask?
 			topo = new BinaryTopology(mask, nx, ny, nz, rx, ry, rz, "wcs", lutdir);
-			/*
+			
 			topo.outsideSphericalTopology();
 			
 			int[] toposeg = topo.exportIntSegmentation();
@@ -188,7 +185,6 @@ public class BrainMp2rageSkullStripping {
 			gdm.evolveNarrowBand(100, 0.001f);
 
 			brain = gdm.exportSegmentation();
-			*/
 		}
 		
 		// generate outputs

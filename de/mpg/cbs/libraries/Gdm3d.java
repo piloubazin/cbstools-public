@@ -223,7 +223,7 @@ public class Gdm3d {
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
-					System.out.println("LUT loaded from: "+lut.getFilename());
+					//System.out.println("LUT loaded from: "+lut.getFilename());
 				}
 			}
 		} catch (OutOfMemoryError e){
@@ -324,7 +324,7 @@ public class Gdm3d {
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
-					System.out.println("LUT loaded from: "+lut.getFilename());
+					//System.out.println("LUT loaded from: "+lut.getFilename());
 				}
 			}
 		} catch (OutOfMemoryError e){
@@ -424,7 +424,7 @@ public class Gdm3d {
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
-					System.out.println("LUT loaded from: "+lut.getFilename());
+					//if (debug) System.out.println("LUT loaded from: "+lut.getFilename());
 				}
 			}
 		} catch (OutOfMemoryError e){
