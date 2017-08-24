@@ -103,7 +103,7 @@ public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 		mean /= nb;
 		sqmean /= nb;
 		
-		Interface.displayMessage("parameter estimates: mean "+mean+", sq mean "+FastMath.sqrt(sqmean)+"\n");
+		BasicInfo.displayMessage("parameter estimates: mean "+mean+", sq mean "+FastMath.sqrt(sqmean)+"\n");
 		
 		// robust measures
 		double[] response = new double[nb];
@@ -117,7 +117,7 @@ public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 		measure = null;
 		response = null;
 		
-		Interface.displayMessage("parameter estimates: median "+median+"\n");
+		BasicInfo.displayMessage("parameter estimates: median "+median+"\n");
 		
 		// exponential fit or gaussian fit ? gaussian seems more sensitive, too much for the strict filter
 		
@@ -127,7 +127,7 @@ public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 		double beta = mean;
 		if (metric.startsWith("median")) beta = median/FastMath.log(2.0);
 		
-		Interface.displayMessage("parameter estimates: beta "+beta+"\n");
+		BasicInfo.displayMessage("parameter estimates: beta "+beta+"\n");
 		
 		// half-normal estimates
 		double sigma2 = sqmean;
@@ -135,7 +135,7 @@ public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 		if (metric.startsWith("median")) sigma2 = median*median/0.45493642;
 		double normg = FastMath.sqrt(2.0/(sigma2*FastMath.PI));
 		
-		Interface.displayMessage("parameter estimates: sigma "+FastMath.sqrt(sigma2)+"\n");
+		BasicInfo.displayMessage("parameter estimates: sigma "+FastMath.sqrt(sigma2)+"\n");
 		
 		
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) if (image[x][y][z]>0) {
@@ -152,7 +152,7 @@ public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 			double betaprev;
 			double sigma2prev;
 			for (int t=0;t<20;t++) {
-				Interface.displayMessage("iteration "+(t+1)+"\n");
+				BasicInfo.displayMessage("iteration "+(t+1)+"\n");
 
 				betaprev = beta;
 				sigma2prev = sigma2;
@@ -171,7 +171,7 @@ public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 				mean /= den;
 				sqmean /= den;
 				
-				Interface.displayMessage("parameter estimates: mean "+mean+", sq mean "+FastMath.sqrt(sqmean)+"\n");
+				BasicInfo.displayMessage("parameter estimates: mean "+mean+", sq mean "+FastMath.sqrt(sqmean)+"\n");
 				
 				// robust measures
 				response = new double[nb];
@@ -187,13 +187,13 @@ public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 				measure = null;
 				response = null;
 				
-				Interface.displayMessage("parameter estimates: median "+median+"\n");
+				BasicInfo.displayMessage("parameter estimates: median "+median+"\n");
 
 				// exponential estimates		
 				beta = mean;
 				if (metric.startsWith("median")) beta = median/FastMath.log(2.0);
 				
-				Interface.displayMessage("parameter estimates: beta "+beta+"\n");
+				BasicInfo.displayMessage("parameter estimates: beta "+beta+"\n");
 				
 				// half-normal estimates
 				sigma2 = sqmean;
@@ -201,7 +201,7 @@ public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 				if (metric.startsWith("median")) sigma2 = median*median/0.45493642;
 				normg = FastMath.sqrt(2.0/(sigma2*FastMath.PI));
 				
-				Interface.displayMessage("parameter estimates: sigma "+FastMath.sqrt(sigma2)+"\n");
+				BasicInfo.displayMessage("parameter estimates: sigma "+FastMath.sqrt(sigma2)+"\n");
 				
 				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) if (image[x][y][z]>0) {
 					if (model.startsWith("Exp")) {
@@ -244,7 +244,7 @@ public class JistFilterNormalizeResponse extends ProcessingAlgorithm {
 			double dev = 100.0*0.5*Erf.erf(1.0/FastMath.sqrt(2.0));
 			double fdev = 0.5*(ImageStatistics.weightedPercentile(response,weights,50.0+dev,nb) - ImageStatistics.weightedPercentile(response,weights,50.0-dev,nb));
 			
-			Interface.displayMessage("Log-normal parameter estimates: mean = "+FastMath.exp(fmean)+", stdev = "+FastMath.exp(fdev)+",\n");
+			BasicInfo.displayMessage("Log-normal parameter estimates: mean = "+FastMath.exp(fmean)+", stdev = "+FastMath.exp(fdev)+",\n");
 			
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++){
 				int xyz = x + nx*y + nx*ny*z;

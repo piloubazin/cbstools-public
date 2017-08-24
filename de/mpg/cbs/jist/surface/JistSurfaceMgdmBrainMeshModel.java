@@ -115,7 +115,7 @@ public class JistSurfaceMgdmBrainMeshModel extends ProcessingAlgorithm {
 		int ny = labelImg.getCols();
 		int nz = labelImg.getSlices();
 		int nxyz = nx*ny*nz;
-		Interface.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"\n");
+		BasicInfo.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"\n");
 		float rx = labelImg.getHeader().getDimResolutions()[0];
 		float ry = labelImg.getHeader().getDimResolutions()[1];
 		float rz = labelImg.getHeader().getDimResolutions()[2];
@@ -149,7 +149,7 @@ public class JistSurfaceMgdmBrainMeshModel extends ProcessingAlgorithm {
 		//}
 		
 		// generate regions from brain atlas
-		Interface.displayMessage("Load atlas\n");
+		BasicInfo.displayMessage("Load atlas\n");
 	
 		SimpleShapeAtlas atlas = new SimpleShapeAtlas(atlasParam.getValue().getAbsolutePath());
 

@@ -137,9 +137,9 @@ public class JistRegistrationSurfaceMeshGroupData extends ProcessingAlgorithm {
 			}
 		}
 		
-		Interface.displayMessage("First pass: compute average surface");
+		BasicInfo.displayMessage("First pass: compute average surface");
 		for (int s=0;s<Nsubjects;s++) {
-			Interface.displayMessage("Processing subject "+(s+1));
+			BasicInfo.displayMessage("Processing subject "+(s+1));
 			float[][][] levelset = (new ImageDataFloat(levelsetImages.getImageDataList().get(s))).toArray3d();
 			levelsetImages.dispose();
 			float[][][][] deform = (new ImageDataFloat(deformImages.getImageDataList().get(s))).toArray4d();

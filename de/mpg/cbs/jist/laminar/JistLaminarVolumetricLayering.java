@@ -170,20 +170,20 @@ public class JistLaminarVolumetricLayering extends ProcessingAlgorithm {
 		algorithm.execute();
 
 		// output
-		Interface.displayMessage("...depth\n");
+		BasicInfo.displayMessage("...depth\n");
 		
 		Interface.setFloatImage3D(algorithm.getContinuousDepthMeasurement(), dims, layeringImage, name+"_depth", header);
 		
-		Interface.displayMessage("...labels\n");
+		BasicInfo.displayMessage("...labels\n");
 		
 		Interface.setUByteImage3D(algorithm.getDiscreteSampledLayers(), dims, labelsImage, name+"_labels", header);
 		
-		Interface.displayMessage("...surfaces\n");
+		BasicInfo.displayMessage("...surfaces\n");
 		Interface.setFloatImage4D(algorithm.getLayerBoundarySurfaces(), dims, algorithm.getLayerBoundarySurfacesLength(), surfImage, name+"_layer_boundaries", header);
 	
 		Interface.setFloatImage4D(algorithm.getLayerCenteredSurfaces(), dims, algorithm.getLayerCenteredSurfacesLength(), midsurfImage, name+"_layer_centers", header);
 	
-		Interface.displayMessage("done\n");		
+		BasicInfo.displayMessage("done\n");		
 	}
 
 

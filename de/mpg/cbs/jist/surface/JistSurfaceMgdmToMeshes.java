@@ -110,7 +110,7 @@ public class JistSurfaceMgdmToMeshes extends ProcessingAlgorithm {
 		int ny = labelImg.getCols();
 		int nz = labelImg.getSlices();
 		int nxyz = nx*ny*nz;
-		Interface.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"\n");
+		BasicInfo.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"\n");
 		float rx = labelImg.getHeader().getDimResolutions()[0];
 		float ry = labelImg.getHeader().getDimResolutions()[1];
 		float rz = labelImg.getHeader().getDimResolutions()[2];
@@ -147,7 +147,7 @@ public class JistSurfaceMgdmToMeshes extends ProcessingAlgorithm {
 		int nobj = -1;
 		/*
 		if (atlasParam.getValue()!=null) {
-			Interface.displayMessage("Load atlas\n");
+			BasicInfo.displayMessage("Load atlas\n");
 	
 			SimpleShapeAtlas atlas = new SimpleShapeAtlas(atlasParam.getValue().getAbsolutePath());
 		
@@ -187,7 +187,7 @@ public class JistSurfaceMgdmToMeshes extends ProcessingAlgorithm {
 		// for each label, create the levelset then generate a mesh
 		float[][][] levelset = new float[nx][ny][nz];
 		for (int n=0;n<nobj;n++) {
-			Interface.displayMessage("extract object: "+objlabel[n]+"\n");
+			BasicInfo.displayMessage("extract object: "+objlabel[n]+"\n");
 			// extract corresponding region	
 			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 				int xyz = x+nx*y+nx*ny*z;

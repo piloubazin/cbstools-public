@@ -65,7 +65,7 @@ public class BinaryTopology {
 	boolean[][][] obj = new boolean[3][3][3];
 			
 	// for debug and display
-	private static final boolean		debug=true;
+	private static final boolean		debug=false;
 	private static final boolean		verbose=true;
 	
 
@@ -113,8 +113,8 @@ public class BinaryTopology {
 			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(connectivityPath_, "critical618LUT.raw.gz",200);
 			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(connectivityPath_, "critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT(connectivityPath_, "critical66LUT.raw.gz",200);
-				checkComposed=true;
+				lut = new CriticalPointLUT(connectivityPath_, "criticalWCLUT.raw.gz",200);
+				checkComposed=false;
 			}
 			else if (connectivityType_.equals("wco")) {
 				lut = null;
@@ -135,7 +135,7 @@ public class BinaryTopology {
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
-					System.out.println("LUT loaded from: "+lut.getFilename());
+					//if (debug) System.out.println("LUT loaded from: "+lut.getFilename());
 				}
 			}
 		} catch (OutOfMemoryError e){

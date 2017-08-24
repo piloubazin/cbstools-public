@@ -153,6 +153,13 @@ public class Gdm3d {
 						float[][] field_, float[] balloon_, 
 						float fw_, float bw_, float sw_,
 						String connectivityType_) {
+		this(init_, nx_, ny_, nz_, rx_, ry_, rz_, field_, balloon_, fw_, bw_, sw_, connectivityType_, null);
+	}
+	public Gdm3d(int[] init_, int nx_, int ny_, int nz_,
+						float rx_, float ry_, float rz_,
+						float[][] field_, float[] balloon_, 
+						float fw_, float bw_, float sw_,
+						String connectivityType_, String connectivityPath_) {
 		
 		fieldforce = field_;
 		balloonforce = balloon_;
@@ -188,13 +195,13 @@ public class Gdm3d {
 			// topology luts
 			checkTopology=true;
 			checkComposed=false;
-				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT("critical266LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT("critical626LUT.raw.gz",200);
-			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT("critical186LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT("critical618LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT(connectivityPath_, "critical266LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT(connectivityPath_, "critical626LUT.raw.gz",200);
+			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT(connectivityPath_, "critical186LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(connectivityPath_, "critical618LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(connectivityPath_, "critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				lut = new CriticalPointLUT(connectivityPath_,"critical66LUT.raw.gz",200);
 				checkComposed=true;
 			}
 			else if (connectivityType_.equals("wco")) {
@@ -216,7 +223,7 @@ public class Gdm3d {
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
-					System.out.println("LUT loaded from: "+lut.getFilename());
+					//System.out.println("LUT loaded from: "+lut.getFilename());
 				}
 			}
 		} catch (OutOfMemoryError e){
@@ -246,6 +253,13 @@ public class Gdm3d {
 						float[][] field_, float[] balloon_, 
 						float fw_, float bw_, float sw_,
 						String connectivityType_) {
+		this(lvl_, maxdist_, nx_, ny_, nz_, rx_, ry_, rz_, field_, balloon_, fw_, bw_, sw_,	connectivityType_, null);
+	}	
+	public Gdm3d(float[] lvl_, float maxdist_, int nx_, int ny_, int nz_,
+						float rx_, float ry_, float rz_,
+						float[][] field_, float[] balloon_, 
+						float fw_, float bw_, float sw_,
+						String connectivityType_, String connectivityPath_) {
 		
 		levelset = lvl_;
 	
@@ -282,13 +296,13 @@ public class Gdm3d {
 			// topology luts
 			checkTopology=true;
 			checkComposed=false;
-				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT("critical266LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT("critical626LUT.raw.gz",200);
-			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT("critical186LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT("critical618LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT(connectivityPath_, "critical266LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT(connectivityPath_, "critical626LUT.raw.gz",200);
+			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT(connectivityPath_, "critical186LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(connectivityPath_, "critical618LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(connectivityPath_, "critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				lut = new CriticalPointLUT(connectivityPath_,"critical66LUT.raw.gz",200);
 				checkComposed=true;
 			}
 			else if (connectivityType_.equals("wco")) {
@@ -310,7 +324,7 @@ public class Gdm3d {
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
-					System.out.println("LUT loaded from: "+lut.getFilename());
+					//System.out.println("LUT loaded from: "+lut.getFilename());
 				}
 			}
 		} catch (OutOfMemoryError e){
@@ -340,6 +354,13 @@ public class Gdm3d {
 						float[][] field_, float[] balloon_, 
 						float fw_, float bw_, float sw_,
 						String connectivityType_) {
+		this(init_, nx_, ny_, nz_, rx_, ry_, rz_, field_, balloon_, fw_, bw_, sw_, connectivityType_, null);
+	}
+	public Gdm3d(boolean[] init_, int nx_, int ny_, int nz_,
+						float rx_, float ry_, float rz_,
+						float[][] field_, float[] balloon_, 
+						float fw_, float bw_, float sw_,
+						String connectivityType_, String connectivityPath_) {
 		
 		fieldforce = field_;
 		balloonforce = balloon_;
@@ -375,14 +396,14 @@ public class Gdm3d {
 			// topology luts
 			checkTopology=true;
 			checkComposed=false;
-				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT("critical266LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT("critical626LUT.raw.gz",200);
-			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT("critical186LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT("critical618LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT(connectivityPath_, "critical266LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT(connectivityPath_, "critical626LUT.raw.gz",200);
+			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT(connectivityPath_, "critical186LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(connectivityPath_, "critical618LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(connectivityPath_, "critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
-				checkComposed=true;
+				lut = new CriticalPointLUT(connectivityPath_,"criticalWCLUT.raw.gz",200);
+				checkComposed=false;
 			}
 			else if (connectivityType_.equals("wco")) {
 				lut = null;
@@ -403,7 +424,7 @@ public class Gdm3d {
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
-					System.out.println("LUT loaded from: "+lut.getFilename());
+					//if (debug) System.out.println("LUT loaded from: "+lut.getFilename());
 				}
 			}
 		} catch (OutOfMemoryError e){

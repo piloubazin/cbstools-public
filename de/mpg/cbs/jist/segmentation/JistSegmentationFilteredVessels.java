@@ -175,7 +175,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		nz = inputImg.getSlices();
 		nc = inputImg.getComponents();
 		nxyz = nx*ny*nz;
-		Interface.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"; "+nc+"\n");
+		BasicInfo.displayMessage("Image dims: "+nx+", "+ny+", "+nz+"; "+nc+"\n");
 		float rx = inputImg.getHeader().getDimResolutions()[0];
 		float ry = inputImg.getHeader().getDimResolutions()[1];
 		float rz = inputImg.getHeader().getDimResolutions()[2];
@@ -215,19 +215,19 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		float[][] direction = new float[3][nxyz];
 		
 		if (filterParam.getValue().equals("hessian")) {
-			Interface.displayMessage("estimate diffusion tensor from Hessian\n");
+			BasicInfo.displayMessage("estimate diffusion tensor from Hessian\n");
 			shapeDirectionFromHessian(proba, mask, shape, direction);
 		} else if (filterParam.getValue().equals("Frangi")) {
-			Interface.displayMessage("estimate diffusion tensor from Frangi's filter\n");
+			BasicInfo.displayMessage("estimate diffusion tensor from Frangi's filter\n");
 			shapeDirectionFrangi(proba, mask, shape, direction, shapeParam.getValue().floatValue());
 		} else if (filterParam.getValue().equals("tubular")) {
-			Interface.displayMessage("estimate diffusion tensor from tubular filter\n");
+			BasicInfo.displayMessage("estimate diffusion tensor from tubular filter\n");
 			shapeDirectionFromTubularFilter(proba, mask, shape, direction);
 		} else if (filterParam.getValue().equals("strict_tubular")) {
-			Interface.displayMessage("estimate diffusion tensor from tubular filter\n");
+			BasicInfo.displayMessage("estimate diffusion tensor from tubular filter\n");
 			shapeDirectionFromStrictTubularFilter(proba, mask, shape, direction);
 		} else if (filterParam.getValue().equals("pre-filtered")) {
-			Interface.displayMessage("estimate diffusion tensor from pre-computed filter\n");
+			BasicInfo.displayMessage("estimate diffusion tensor from pre-computed filter\n");
 			boolean recomputeDir = false;
 			if (inputDirections.getImageData()==null) recomputeDir = true;
 			else {
@@ -248,7 +248,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		}
 		
 		// compute neighborhood structure
-		Interface.displayMessage("compute neighborhood structure\n");
+		BasicInfo.displayMessage("compute neighborhood structure\n");
 		float[] similarity1 = new float[nxyz];
 		float[] similarity2 = new float[nxyz];
 		byte[] neighbor1 = new byte[nxyz];
@@ -297,12 +297,12 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		
 		if (propagationParam.getValue().equals("diffusion")) {
 			// diffuse along the tensor
-			Interface.displayMessage("diffusion smoothing ("+factorParam.getValue().floatValue()+")\n");
+			BasicInfo.displayMessage("diffusion smoothing ("+factorParam.getValue().floatValue()+")\n");
 		
 			proba = probaDiffusion(proba, similarity1, similarity2, neighbor1, neighbor2, mask, nxyz, maxiter, maxdiff, factor);
 		} else if (propagationParam.getValue().equals("belief")) {
 			// belief propagation
-			Interface.displayMessage("belief propagation\n");
+			BasicInfo.displayMessage("belief propagation\n");
 		
 			proba = beliefPropagation(proba, similarity1, similarity2, neighbor1, neighbor2, mask, nxyz, maxiter, maxdiff);
 			//proba = basicBeliefPropagation(proba, similarity1, similarity2, neighbor1, neighbor2, mask, nxyz, maxiter, maxdiff);
@@ -357,7 +357,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		
 		/*
 		for (int t=0;t<maxiter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			/*
 			float globalw = 0.0f;
@@ -408,7 +408,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 				if (Numerics.abs(prev-diffused[xyz])>diff) diff = Numerics.abs(prev-diffused[xyz]);
 			}
 			
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff<maxdiff) t=maxiter;
 		}
 		proba = null;
@@ -522,7 +522,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		}
 		
 		for (int t=0;t<maxiter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			/*
 			float globalw = 0.0f;
@@ -573,7 +573,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 				if (Numerics.abs(prev-diffused[xyz])>diff) diff = Numerics.abs(prev-diffused[xyz]);
 			}
 			
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff<maxdiff) t=maxiter;
 		}
 		
@@ -615,7 +615,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		
 		// message passing
 		for (int t=0;t<iter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			//float prev;
 			int ngb;
@@ -689,7 +689,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 				message2fg[xyz] = newmsg2fg[xyz];
 				message2bg[xyz] = newmsg2bg[xyz];
 			}
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff < maxdiff) t = iter;
 		}
 		
@@ -749,7 +749,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		
 		// message passing
 		for (int t=0;t<iter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			//float prev;
 			int ngb;
@@ -799,7 +799,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 				message2fg[xyz] = newmsg2fg[xyz];
 				message2bg[xyz] = newmsg2bg[xyz];
 			}
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff < maxdiff) t = iter;
 		}
 		
@@ -839,7 +839,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		
 		// message passing
 		for (int t=0;t<iter;t++) {
-			Interface.displayMessage("iteration "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			//float prev;
 			int ngb;
@@ -868,7 +868,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 				message1[xyz] = newmsg1[xyz];
 				message2[xyz] = newmsg2[xyz];
 			}
-			Interface.displayMessage("diff "+diff+"\n");
+			BasicInfo.displayMessage("diff "+diff+"\n");
 			if (diff < maxdiff) t = iter;
 		}
 		
@@ -1052,7 +1052,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		double median = measure.evaluate(response, 50.0f);
 		double beta = median/FastMath.log(2.0f);
 	
-		Interface.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
+		BasicInfo.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
 		
 		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 			int xyz = x + nx*y + nx*ny*z;
@@ -1065,7 +1065,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		// iterative?
 		double betaprev;
 		for (int t=0;t<20;t++) {
-			Interface.displayMessage("iteration "+(t+1)+"\n");
+			BasicInfo.displayMessage("iteration "+(t+1)+"\n");
 			betaprev = beta;
 				
 			nb = 0;
@@ -1088,7 +1088,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 			}
 			median = measure.evaluate(response, 50.0f);
 			beta = median/FastMath.log(2.0f);
-			Interface.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
+			BasicInfo.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
 			
 			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 				int xyz = x + nx*y + nx*ny*z;
@@ -1174,7 +1174,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		double median = measure.evaluate(response, 50.0f);
 		double beta = median/FastMath.log(2.0f);
 	
-		Interface.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
+		BasicInfo.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
 		
 		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 			int xyz = x + nx*y + nx*ny*z;
@@ -1188,7 +1188,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 		// iterative?
 		double betaprev;
 		for (int t=0;t<20;t++) {
-			Interface.displayMessage("iteration "+(t+1)+"\n");
+			BasicInfo.displayMessage("iteration "+(t+1)+"\n");
 			betaprev = beta;
 				
 			nb = 0;
@@ -1211,7 +1211,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 			}
 			median = measure.evaluate(response, 50.0f);
 			beta = median/FastMath.log(2.0f);
-			Interface.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
+			BasicInfo.displayMessage("parameter estimates: median "+median+", beta "+beta+",\n");
 			
 			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
 				int xyz = x + nx*y + nx*ny*z;
@@ -1507,7 +1507,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
     	// propagate the values : diffusion
     	float maxdiff = 1.0f;
 		for (int t=0;t<iter && maxdiff>0.0f5f;t++) {
-			Interface.displayMessage(".");
+			BasicInfo.displayMessage(".");
 			maxdiff = 0.0f;
 			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
 				if (mask[x][y][z]) {
@@ -1548,7 +1548,7 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 					map[x][y][z] = orig[x][y][z];
 				}
 			}
-			Interface.displayMessage("max diff. "+maxdiff+"\n");
+			BasicInfo.displayMessage("max diff. "+maxdiff+"\n");
 		}
 		return map;
     }*/

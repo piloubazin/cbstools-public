@@ -174,7 +174,7 @@ public class JistCortexMyelinatedThickness extends ProcessingAlgorithm {
 			float[][][] pwm = pwmImg.toArray3d();
 			pwmImg = null;
 			// 1. evolve WM boundary (optional?)
-			Interface.displayMessage("refining WM boundary\n");
+			BasicInfo.displayMessage("refining WM boundary\n");
 			float[] forces = new float[nxyz];
 			float[] levelset = new float[nxyz];
 			float factor = 1.0f/offsetParam.getValue().floatValue();
@@ -199,7 +199,7 @@ public class JistCortexMyelinatedThickness extends ProcessingAlgorithm {
 									gdmcurvParam.getValue().floatValue(), topologyParam.getValue());
 			
 			if (gdmiterParam.getValue().intValue()>0) {
-				Interface.displayMessage("GDM adjustment...\n");
+				BasicInfo.displayMessage("GDM adjustment...\n");
 				
 				gdm.evolveNarrowBand(gdmiterParam.getValue().intValue(), gdmdiffParam.getValue().floatValue());
 			}
@@ -215,10 +215,10 @@ public class JistCortexMyelinatedThickness extends ProcessingAlgorithm {
 		}
 		
 		// 2. run Fantasm on cortex data
-		Interface.displayMessage("Cortical depth clustering...\n");
+		BasicInfo.displayMessage("Cortical depth clustering...\n");
 		boolean withwm = fcmwithwmParam.getValue().booleanValue();
-		if (withwm) Interface.displayMessage("(clustering WM, GMm, GM)\n");
-		else Interface.displayMessage("(clustering GMm, GM only)\n");
+		if (withwm) BasicInfo.displayMessage("(clustering WM, GMm, GM)\n");
+		else BasicInfo.displayMessage("(clustering GMm, GM only)\n");
 		
 		boolean[][][] mask = new boolean[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
@@ -239,7 +239,7 @@ public class JistCortexMyelinatedThickness extends ProcessingAlgorithm {
 			float diff = rfcm.computeMemberships();
 			rfcm.computeCentroids();
 			
-			Interface.displayMessage("Iteration "+(t+1)+" ("+diff+")\n");
+			BasicInfo.displayMessage("Iteration "+(t+1)+" ("+diff+")\n");
 			if (diff<maxdiff) t=nt;
 		}
 		// re-compute memberships for the entire image (to avoid empty regions at the WM/GM interface)
@@ -256,8 +256,8 @@ public class JistCortexMyelinatedThickness extends ProcessingAlgorithm {
 			sum2 += rfcm.getMemberships()[x][y][z][1];
 			if (withwm) sum3 += rfcm.getMemberships()[x][y][z][2];
 		}
-		if (withwm) Interface.displayMessage("classes distance to pial surface: 1 ("+(dist1/sum1)+"), 2 ("+(dist2/sum2)+"), 3 ("+(dist3/sum3)+")\n");
-		else Interface.displayMessage("classes distance to pial surface: 1 ("+(dist1/sum1)+"), 2 ("+(dist2/sum2)+")\n");
+		if (withwm) BasicInfo.displayMessage("classes distance to pial surface: 1 ("+(dist1/sum1)+"), 2 ("+(dist2/sum2)+"), 3 ("+(dist3/sum3)+")\n");
+		else BasicInfo.displayMessage("classes distance to pial surface: 1 ("+(dist1/sum1)+"), 2 ("+(dist2/sum2)+")\n");
 			
 		int inner = -1, central = -1, outer = -1;
 		if (withwm) {
@@ -301,7 +301,7 @@ public class JistCortexMyelinatedThickness extends ProcessingAlgorithm {
 									gdmcurvParam.getValue().floatValue(), topologyParam.getValue());
 			
 			if (gdmiterParam.getValue().intValue()>0) {
-				Interface.displayMessage("GDM final WM adjustment...\n");
+				BasicInfo.displayMessage("GDM final WM adjustment...\n");
 				
 				gdm.evolveNarrowBand(gdmiterParam.getValue().intValue(), gdmdiffParam.getValue().floatValue());
 			}
@@ -335,7 +335,7 @@ public class JistCortexMyelinatedThickness extends ProcessingAlgorithm {
 								gdmcurvParam.getValue().floatValue(), topologyParam.getValue());
 			
 		if (gdmiterParam.getValue().intValue()>0) {
-			Interface.displayMessage("GDM myelinated GM adjustment...\n");
+			BasicInfo.displayMessage("GDM myelinated GM adjustment...\n");
 			
 			gdm.evolveNarrowBand(gdmiterParam.getValue().intValue(), gdmdiffParam.getValue().floatValue());
 		}
@@ -369,7 +369,7 @@ public class JistCortexMyelinatedThickness extends ProcessingAlgorithm {
 							 gdmcurvParam.getValue().floatValue(), topologyParam.getValue());
 			
 			if (gdmiterParam.getValue().intValue()>0) {
-				Interface.displayMessage("GDM final GM adjustment...\n");
+				BasicInfo.displayMessage("GDM final GM adjustment...\n");
 				
 				gdm.evolveNarrowBand(gdmiterParam.getValue().intValue(), gdmdiffParam.getValue().floatValue());
 			}

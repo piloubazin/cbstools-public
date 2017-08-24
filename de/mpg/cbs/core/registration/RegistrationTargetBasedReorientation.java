@@ -100,7 +100,7 @@ public class RegistrationTargetBasedReorientation {
 		boolean[] mask = ObjectMorphology.dilateObject(bgmask, nx,ny,nz, 3,3,3);
 		SmoothGdm evolve = new SmoothGdm(gdm, gdm, nx, ny, nz, rx, ry, rz, mask, 0.1f, 0.4f, "no",null);
 		evolve.fastMarchingReinitialization(true);
-		Interface.displayMessage("level set segmentation...\n");
+		BasicInfo.displayMessage("level set segmentation...\n");
 		evolve.evolveNarrowBand(500, 0.001f);
 		
 		gdm = evolve.getLevelSet();	
@@ -191,7 +191,7 @@ public class RegistrationTargetBasedReorientation {
 			}
 		}
 		roi[id] = true;
-		Interface.displayMessage("intersection center ("+id+")\n");
+		BasicInfo.displayMessage("intersection center ("+id+")\n");
 		
 		// find centroid
 		float xc = 0.0f, yc = 0.0f, zc = 0.0f, nc = 0.0f;
@@ -224,9 +224,9 @@ public class RegistrationTargetBasedReorientation {
 		yt /= nt;
 		zt /= nt;
 		
-		Interface.displayMessage("intersection center ("+xc+", "+yc+", "+zc+")\n");
-		Interface.displayMessage("projection center ("+p0[X]+", "+p0[Y]+", "+p0[Z]+")\n");
-		Interface.displayMessage("target center ("+xt+", "+yt+", "+zt+")\n");
+		BasicInfo.displayMessage("intersection center ("+xc+", "+yc+", "+zc+")\n");
+		BasicInfo.displayMessage("projection center ("+p0[X]+", "+p0[Y]+", "+p0[Z]+")\n");
+		BasicInfo.displayMessage("target center ("+xt+", "+yt+", "+zt+")\n");
 				
 		xc = p0[X];
 		yc = p0[Y];
@@ -244,12 +244,12 @@ public class RegistrationTargetBasedReorientation {
 		
 		// move target to match distance
 		float dist0 = (float)FastMath.sqrt( (xc-xt)*(xc-xt) + (yc-yt)*(yc-yt) + (zc-zt)*(zc-zt) );	
-		Interface.displayMessage("distance: "+dist0+"\n");
+		BasicInfo.displayMessage("distance: "+dist0+"\n");
 		xt = xc + dist/dist0*(xt-xc);
 		yt = yc + dist/dist0*(yt-yc);
 		zt = zc + dist/dist0*(zt-zc);
 		
-		Interface.displayMessage("moved target center ("+xt+", "+yt+", "+zt+")\n");
+		BasicInfo.displayMessage("moved target center ("+xt+", "+yt+", "+zt+")\n");
 		
 		/*
 		// 4. search for optimal placement (location + orientation)?
@@ -302,9 +302,9 @@ public class RegistrationTargetBasedReorientation {
 		rotz[Y] /= normz;
 		rotz[Z] /= normz;
 		
-		Interface.displayMessage("rotation matrix \n ("+rotx[X]+", "+rotx[Y]+", "+rotx[Z]+")\n");
-		Interface.displayMessage(" ("+roty[X]+", "+roty[Y]+", "+roty[Z]+")\n");
-		Interface.displayMessage(" ("+rotz[X]+", "+rotz[Y]+", "+rotz[Z]+")\n");
+		BasicInfo.displayMessage("rotation matrix \n ("+rotx[X]+", "+rotx[Y]+", "+rotx[Z]+")\n");
+		BasicInfo.displayMessage(" ("+roty[X]+", "+roty[Y]+", "+roty[Z]+")\n");
+		BasicInfo.displayMessage(" ("+rotz[X]+", "+rotz[Y]+", "+rotz[Z]+")\n");
 		
 		
 		// rotate image from the center

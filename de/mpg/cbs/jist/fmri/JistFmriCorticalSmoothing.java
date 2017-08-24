@@ -360,7 +360,7 @@ public class JistFmriCorticalSmoothing extends ProcessingAlgorithm {
 				if (npt%(pts/100)==0) {
 					iter++;
 					long newtime = System.currentTimeMillis();
-					Interface.displayMessage("iter "+iter+", t="+(newtime-looptime)+", "+npt+" pts\n");
+					BasicInfo.displayMessage("iter "+iter+", t="+(newtime-looptime)+", "+npt+" pts\n");
 					looptime = newtime;
 				}
 				
