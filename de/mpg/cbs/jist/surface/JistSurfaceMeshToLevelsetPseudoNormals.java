@@ -341,7 +341,8 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 		
 		BasicInfo.displayMessage("Padding levelset.\n");
 		sdf = padLevelset(sdf, datamask, 6, nx, ny, nz);
-		
+		//sdf = padLevelset(sdf, datamask, 26, nx, ny, nz);
+		//sdf = padLevelset(sdf, datamask, 18, nx, ny, nz);
 		
 		for (int x=3; x<nx-3; x++) for (int y=3; y<ny-3; y++) for (int z=3; z<nz-3; z++) {
 			int xyz = x+nx*y+nx*ny*z;
@@ -349,6 +350,8 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 			//df[x][y][z] = sdf[xyz];
 		}
 		
+		BasicInfo.displayMessage("Removing sign errors.\n");
+		sdf = cleanupPaddingSign(sdf, datamask, 26, nx, ny, nz);
 		
 		BasicInfo.displayMessage("Clean up sign 2.\n");
 		sdf = cleanupSign2(sdf, 26, nx, ny, nz);
@@ -356,14 +359,6 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 		BasicInfo.displayMessage("Evolving narrow band.\n");
 		InflateGdm gdm = new InflateGdm(sdf, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no");
 		gdm.evolveNarrowBand(0, 1.0f);
-		
-		/*
-		BasicInfo.displayMessage("Clean up sign.\n");
-		sdf = cleanupSign(gdm.getLevelSet(), datamask, 26, nx, ny, nz);
-		
-		gdm = new InflateGdm(sdf, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no");
-		gdm.evolveNarrowBand(0, 1.0f);
-		*/
 		
 		BasicInfo.displayMessage("Output.\n");
 		
@@ -411,6 +406,43 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 				}
 			} else {
 				cleansdf[xyz] = sdf[xyz];
+			}
+		}
+		return cleansdf;
+			
+	}
+	
+	private final float[] cleanupPaddingSign(float[] sdf, boolean[] datamask, int connectivity, int nx, int ny, int nz) {
+		float[] cleansdf = new float[nx*ny*nz];
+		
+		int[] xoff = new int[]{1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 1, -1, 1, -1, 0, 0, 0, 0, 1, 1, 1, 1, -1, -1, -1, -1};
+		int[] yoff = new int[]{0, 0, nx, -nx, 0, 0, nx, -nx, -nx, nx, 0, 0, 0, 0, nx, -nx, nx, -nx, nx, nx, -nx, -nx, nx, nx, -nx, -nx};
+		int[] zoff = new int[]{0, 0, 0, 0, nx*ny, -nx*ny, 0, 0, 0, 0, nx*ny, -nx*ny,-nx*ny, nx*ny, nx*ny, -nx*ny,-nx*ny, nx*ny, nx*ny, -nx*ny, nx*ny, -nx*ny, nx*ny, -nx*ny, nx*ny, -nx*ny};
+		
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			
+			cleansdf[xyz] = sdf[xyz];
+			if (datamask[xyz]) {
+				if (Numerics.abs(sdf[xyz])==PADDING) {
+					//System.out.print(".");
+					// count the number of padded values with each sign
+					int pos=0;
+					int neg=0;
+					for (int k=0; k<connectivity; k++) {
+						int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+						if (datamask[xyzn]) {
+							if (sdf[xyzn]>=0) {
+								pos++;
+							} else if (sdf[xyzn]<0) {
+								neg++;
+							}
+						}
+					}
+					if (pos>neg) cleansdf[xyz] = PADDING;
+					else cleansdf[xyz] = -PADDING;
+					if (cleansdf[xyz]!=sdf[xyz]) System.out.print(".");
+				}
 			}
 		}
 		return cleansdf;
@@ -491,7 +523,6 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 					dilData[xyz] = data[xyz];
 				}
 			}
-			
         }
        	
         System.out.println("\n Set initial boundary");
@@ -527,7 +558,7 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 										
 					if (used.get(xyzn)) {
 						if (dilData[xyzn]<0.0f) dilData[xyz] = -PADDING;
-						else if (dilData[xyzn]>0.0f) dilData[xyz] = PADDING;
+						else if (dilData[xyzn]>=0.0f) dilData[xyz] = PADDING;
 					} else {
 						nextboundary.set(xyzn);
 						dilate = true;
