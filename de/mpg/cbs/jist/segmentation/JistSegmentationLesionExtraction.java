@@ -38,20 +38,22 @@ public class JistSegmentationLesionExtraction extends ProcessingAlgorithm {
 	private ParamVolume probaImage;
 	private ParamVolume segImage;
 	private ParamVolume mgdmImage;
+	private ParamVolume priorImage;
 	
 	private ParamFile atlasParam;
 	private ParamFloat		gmdistanceParam;
 	private ParamFloat		csfdistanceParam;
+	private ParamFloat		lesdistanceParam;
 	private ParamFloat		minprobaThresholdParam;
 	private ParamFloat		maxprobaThresholdParam;
 	private ParamFloat		minSizeParam;
 	
+	private ParamVolume scoreImage;
 	private ParamVolume pvRegionImage;
-	private ParamVolume pvVentImage;
 	private ParamVolume lesionsizeImage;
 	private ParamVolume lesionprobaImage;
 	private ParamVolume boundarypvImage;
-	private ParamVolume ventriclepvImage;
+	private ParamVolume labelImage;
 		
 	private SegmentationLesionExtraction algorithm;
 	
@@ -60,13 +62,16 @@ public class JistSegmentationLesionExtraction extends ProcessingAlgorithm {
 		inputParams.add(probaImage = new ParamVolume("Probability Image"));
 		inputParams.add(segImage = new ParamVolume("Segmentation Image"));
 		inputParams.add(mgdmImage = new ParamVolume("Levelset Boundary Image"));
+		inputParams.add(priorImage = new ParamVolume("Location Prior Image (opt)"));
+		priorImage.setMandatory(false);
 		
 		inputParams.add(atlasParam = new ParamFile("Atlas file",new FileExtensionFilter(new String[]{"txt"})));
-		inputParams.add(gmdistanceParam = new ParamFloat("GM boundary distance (voxels)",0.0f,100.0f,1.0f));
-		inputParams.add(csfdistanceParam = new ParamFloat("CSF boundary distance (voxels)",0.0f,100.0f,3.0f));
-		inputParams.add(minprobaThresholdParam = new ParamFloat("Probability minimum threshold",0.0f,1.0f,0.84f));
-		inputParams.add(maxprobaThresholdParam = new ParamFloat("Probability maximum threshold",0.0f,1.0f,0.97f));
-		inputParams.add(minSizeParam = new ParamFloat("Small lesion size (voxels)",0.0f,10000.0f,8.0f));
+		inputParams.add(gmdistanceParam = new ParamFloat("GM boundary partial voluming distance (voxels)",0.0f,100.0f,1.0f));
+		inputParams.add(csfdistanceParam = new ParamFloat("CSF boundary partial voluming distance (voxels)",0.0f,100.0f,2.0f));
+		inputParams.add(lesdistanceParam = new ParamFloat("Lesion clustering distance (voxels)",0.0f,100.0f,2.0f));
+		inputParams.add(minprobaThresholdParam = new ParamFloat("Probability minimum threshold (main threshold)",0.0f,1.0f,0.84f));
+		inputParams.add(maxprobaThresholdParam = new ParamFloat("Probability maximum threshold (to exclude dirty WM)",0.0f,1.0f,0.97f));
+		inputParams.add(minSizeParam = new ParamFloat("Small lesion size (voxels)",0.0f,10000.0f,4.0f));
 
 		algorithm = new SegmentationLesionExtraction();
 		
@@ -87,12 +92,12 @@ public class JistSegmentationLesionExtraction extends ProcessingAlgorithm {
 
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
+		outputParams.add(scoreImage = new ParamVolume("Lesions score",VoxelType.FLOAT));
 		outputParams.add(pvRegionImage = new ParamVolume("Region partial volume",VoxelType.FLOAT));
-		outputParams.add(pvVentImage = new ParamVolume("Inter-ventricle partial volume",VoxelType.FLOAT));
 		outputParams.add(lesionsizeImage = new ParamVolume("Lesions size",VoxelType.FLOAT));
 		outputParams.add(lesionprobaImage = new ParamVolume("Lesions probabilities",VoxelType.FLOAT));
 		outputParams.add(boundarypvImage = new ParamVolume("Boundari partial volume",VoxelType.FLOAT));
-		outputParams.add(ventriclepvImage = new ParamVolume("Lesion labels",VoxelType.FLOAT));
+		outputParams.add(labelImage = new ParamVolume("Lesion labels",VoxelType.INT));
 		
 		outputParams.setName("lesion images");
 		outputParams.setLabel("lesion images");
@@ -116,23 +121,25 @@ public class JistSegmentationLesionExtraction extends ProcessingAlgorithm {
 		algorithm.setSegmentationImage(Interface.getIntegerImage3D(segImage));
 		algorithm.setLevelsetBoundaryImage(Interface.getFloatImage3D(mgdmImage));
 		algorithm.setProbaImage(Interface.getFloatImage3D(probaImage));
+		if (Interface.isValid(priorImage)) algorithm.setLocationPriorImage(Interface.getFloatImage3D(priorImage));
 		
 		algorithm.setAtlasFile(atlasParam.getValue().getAbsolutePath());
 		
 		algorithm.setGMPartialVolumingDistance(gmdistanceParam.getValue().floatValue());
 		algorithm.setCSFPartialVolumingDistance(csfdistanceParam.getValue().floatValue());
+		algorithm.setLesionClusteringDistance(lesdistanceParam.getValue().floatValue());
 		algorithm.setMinProbabilityThreshold(minprobaThresholdParam.getValue().floatValue());
 		algorithm.setMaxProbabilityThreshold(maxprobaThresholdParam.getValue().floatValue());
 		algorithm.setMinimumSize(minSizeParam.getValue().floatValue());
 		
 		algorithm.execute();
 		
-		Interface.setFloatImage3D(algorithm.getRegionPrior(), dims, pvRegionImage, probaName+"_rgp", header);
-		Interface.setFloatImage3D(algorithm.getInterVentriclePrior(), dims, pvVentImage, probaName+"_ivp", header);
-		Interface.setFloatImage3D(algorithm.getLesionSize(), dims, lesionsizeImage, probaName+"_lsize", header);
-		Interface.setFloatImage3D(algorithm.getLesionProba(), dims, lesionprobaImage, probaName+"_lproba", header);
-		Interface.setFloatImage3D(algorithm.getBoundaryPartialVolume(), dims, boundarypvImage, probaName+"_lpv", header);
-		Interface.setFloatImage3D(algorithm.getVentriclePartialVolume(), dims, ventriclepvImage, probaName+"_llb", header);
+		Interface.setFloatImage3D(algorithm.getLesionScore(), dims, scoreImage, probaName+"_lesion_score", header);
+		Interface.setFloatImage3D(algorithm.getRegionPrior(), dims, pvRegionImage, probaName+"_lesion_prior", header);
+		Interface.setFloatImage3D(algorithm.getLesionSize(), dims, lesionsizeImage, probaName+"_lesion_size", header);
+		Interface.setFloatImage3D(algorithm.getLesionProba(), dims, lesionprobaImage, probaName+"_lesion_proba", header);
+		Interface.setFloatImage3D(algorithm.getBoundaryPartialVolume(), dims, boundarypvImage, probaName+"_lesion_pv", header);
+		Interface.setIntegerImage3D(algorithm.getLesionLabels(), dims, labelImage, probaName+"_lesion_labels", header);
 		
 		return;
 	}

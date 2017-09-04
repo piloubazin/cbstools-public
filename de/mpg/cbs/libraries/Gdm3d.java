@@ -302,8 +302,8 @@ public class Gdm3d {
 			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(connectivityPath_, "critical618LUT.raw.gz",200);
 			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(connectivityPath_, "critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT(connectivityPath_,"critical66LUT.raw.gz",200);
-				checkComposed=true;
+				lut = new CriticalPointLUT(connectivityPath_,"criticalWCLUT.raw.gz",200);
+				checkComposed=false;
 			}
 			else if (connectivityType_.equals("wco")) {
 				lut = null;

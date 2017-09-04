@@ -21,6 +21,7 @@ public class SegmentationLesionExtraction {
 	private float[] probaImage;
 	private int[] segImage;
 	private float[] mgdmImage;
+	private float[] priorImage = null;
 	
 	private int nx, ny, nz, nxyz, nc;
 	private float rx, ry, rz;
@@ -30,22 +31,24 @@ public class SegmentationLesionExtraction {
 	
 	private float	gmdistanceParam = 1.0f;	
 	private float	csfdistanceParam = 2.0f;	
-	private float	minprobaThreshold = 0.84f;
-	private float	maxprobaThreshold = 0.97f;
-	private float	minSize = 27.0f;
+	private float	lesdistanceParam = 2.0f;	
+	private float	minprobaThreshold = 0.84f;	// set as a distance to the estimated GM cluster, should be fixed
+	private float	maxprobaThreshold = 0.97f;	// to remove dirty WM, otherwise use the other one
+	private float	minSize = 27.0f; // to remove small lesions
 	
 	private float[] pvRegionImage;
-	private float[] pvVentImage;
 	private float[] lesionsizeImage;
 	private float[] lesionprobaImage;
 	private float[] boundarypvImage;
-	private float[] ventriclepvImage;
+	private float[] scoreImage;
+	private int[] labelImage;
 		
 	
 	// input parameters
 	public final void setSegmentationImage(int[] val) { segImage = val; }
 	public final void setLevelsetBoundaryImage(float[] val) { mgdmImage = val; }
 	public final void setProbaImage(float[] val) { probaImage = val; }
+	public final void setLocationPriorImage(float[] val) { priorImage = val; }
 		
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
@@ -59,6 +62,7 @@ public class SegmentationLesionExtraction {
 	
 	public final void setGMPartialVolumingDistance(float val) { gmdistanceParam = val; }
 	public final void setCSFPartialVolumingDistance(float val) { csfdistanceParam = val; }
+	public final void setLesionClusteringDistance(float val) { lesdistanceParam = val; }
 	
 	public final void setMinProbabilityThreshold(float val) { minprobaThreshold = val; }
 	public final void setMaxProbabilityThreshold(float val) { maxprobaThreshold = val; }
@@ -77,11 +81,11 @@ public class SegmentationLesionExtraction {
 
 	// output parameters
 	public final float[] getRegionPrior() { return pvRegionImage; }
-	public final float[] getInterVentriclePrior() { return pvVentImage; }
 	public final float[] getLesionSize() { return lesionsizeImage; }
 	public final float[] getLesionProba() { return lesionprobaImage; }
 	public final float[] getBoundaryPartialVolume() { return boundarypvImage; }
-	public final float[] getVentriclePartialVolume() { return ventriclepvImage; }
+	public final int[] getLesionLabels() { return labelImage; }
+	public final float[] getLesionScore() { return scoreImage; }
 	
 	
 	public final void execute(){
@@ -136,6 +140,8 @@ public class SegmentationLesionExtraction {
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			if (mgdmImage[xyz]==-1) lvlreg[xyz] = gmdistanceParam+1.0f;
 			else if (isRegion.get(segImage[xyz])) lvlreg[xyz] = -mgdmImage[xyz];
+			else if (priorImage!=null && priorImage[xyz]>0.5f) lvlreg[xyz] = 1.0f - 2.0f*priorImage[xyz];
+			else if (priorImage!=null) lvlreg[xyz] = Numerics.max(0.001f, Numerics.min(mgdmImage[xyz], 1.0f - 2.0f*priorImage[xyz]));
 			else lvlreg[xyz] = Numerics.max(0.001f, mgdmImage[xyz]);
 			
 			if (mgdmImage[xyz]==-1) lvlvenL[xyz] = csfdistanceParam+1.0f;
@@ -159,7 +165,7 @@ public class SegmentationLesionExtraction {
 		}
 		
 		// PV for inter ventricle region
-		pvVentImage = new float[nxyz];
+		float[] pvVentImage = new float[nxyz];
 		float maxdist = 0.0f;
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			if (-lvlvenL[xyz]>maxdist) maxdist = -lvlvenL[xyz];
@@ -197,7 +203,7 @@ public class SegmentationLesionExtraction {
 		*/
 		// other idea: find all local maxima
 		// pre-process with gaussian kernel for scale, reduce/avoid exact value match
-		float[] smoothproba = ImageFilters.separableConvolution(probaImage, nx,ny,nz, ImageFilters.separableGaussianKernel(gmdistanceParam,gmdistanceParam,gmdistanceParam));
+		float[] smoothproba = ImageFilters.separableConvolution(probaImage, nx,ny,nz, ImageFilters.separableGaussianKernel(lesdistanceParam,lesdistanceParam,lesdistanceParam));
 		boolean[] maxima = new boolean[nxyz];
 		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
 			int xyz = x+nx*y+nx*ny*z;
@@ -246,9 +252,8 @@ public class SegmentationLesionExtraction {
 		lesionsizeImage = new float[nxyz];
 		lesionprobaImage = new float[nxyz];
 		boundarypvImage = new float[nxyz];
-		ventriclepvImage = new float[nxyz];
-		float[] labelImage = new float[nxyz];
-		float[] finalImage = new float[nxyz];
+		labelImage = new int[nxyz];
+		scoreImage = new float[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			if (lesionlabels[xyz]>0) {
 				int lb = lesionlabels[xyz]-1;
@@ -260,14 +265,14 @@ public class SegmentationLesionExtraction {
 				//finalImage[xyz] = ventriclepv[lb]*pvRegionImage[xyz]*(probaImage[xyz]-minprobaThreshold)/(1.0f-minprobaThreshold);
 				//finalImage[xyz] = ventriclepv[lb]*pvRegionImage[xyz]*lesionproba[lb]/lesionsize[lb]*(probaImage[xyz]-minprobaThreshold)/(1.0f-minprobaThreshold);
 				//finalImage[xyz] = (float)FastMath.sqrt(lesionproba[lb]*lesionsize[lb]*(probaImage[xyz]-minprobaThreshold)/(1.0f-minprobaThreshold));
-				finalImage[xyz] = lesionproba[lb]*lesionsize[lb];
+				scoreImage[xyz] = lesionproba[lb]*lesionsize[lb];
 			} else if (clusters[xyz]) {
-				labelImage[xyz] = -1;
+				lesionprobaImage[xyz] = (probaImage[xyz]-minprobaThreshold)/(1.0f-minprobaThreshold);
+				boundarypvImage[xyz] = pvRegionImage[xyz];
+				if (maxima[xyz]) labelImage[xyz] = -2;
+				else labelImage[xyz] = -1;
 			}
-		}
-		pvVentImage = finalImage;
-		ventriclepvImage = labelImage;
-		
+		}		
 		return;
 	}
 	

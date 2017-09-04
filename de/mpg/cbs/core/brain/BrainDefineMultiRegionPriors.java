@@ -60,7 +60,7 @@ public class BrainDefineMultiRegionPriors {
 
 	public final String[] getAlgorithmAuthors() { return new String[]{"Pierre-Louis Bazin"}; }
 	public final String getAffiliation() { return "Netherlands Institute for Neuroscience | Spinoza Centre for Neuroimaging"; }
-	public final String getDescription() { return "Enhances the contrast between selected regions from a MGDM brain segmentation."; }
+	public final String getDescription() { return "Defines location priors based on combinations of regions from a MGDM brain segmentation."; }
 		
 	public final String getVersion() { return "3.1.1"; }
 
@@ -260,6 +260,9 @@ public class BrainDefineMultiRegionPriors {
 					pvRegionImage[xyz] = 1.0f+angle;
 				else
 					pvRegionImage[xyz] = 0.0f;
+				
+				// build proba, restrict to Caudate
+				if (lvlcau[xyz]>0.0f) pvRegionImage[xyz] = 0.0f;
 			}
 			
 		} else if (regionParam.equals("internal-capsule")) {
