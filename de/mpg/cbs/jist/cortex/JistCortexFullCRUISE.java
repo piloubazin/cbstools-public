@@ -119,7 +119,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		info.setDescription("Segments the cortex from a whole brain segmented data set with the CRUISE method \n"
 								+"(includes partial voluming corrections and ACE sulcal enhancement).");
 		
-		info.setVersion("3.1.1");
+		info.setVersion("3.1.2");
 		info.setStatus(DevelopmentStatus.RC);
 		info.setEditable(false);
 	}
