@@ -291,6 +291,7 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		float[] proba = new float[nxyz];
 		probabilityFromRecursiveRidgeFilter(maxresponse, proba);	
 		
+		
 		// Attenuate response according to orientation
 		float[] correction = new float[nxyz];
 		if (orientation.equals("parallel") || orientation.equals("orthogonal")) {
@@ -358,15 +359,21 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			for (int xyz=0;xyz<nxyz;xyz++) proba[xyz] *= location[xyz];
 		}
 
-		/* to be done before the other prior selection, in order to maintain the noise / response structure?
+		/* to be done before the other prior selection, in order to maintain the noise / response structure? 
 		// Equalize histogram (Exp Median)
 		BasicInfo.displayMessage("...normalization into probabilities\n");
 		float[] proba = new float[nxyz];
 		probabilityFromRecursiveRidgeFilter(maxresponse, proba);	
+		
+		float[] proba = new float[nxyz];
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			proba[xyz] = maxresponse[xyz];
+		}
 		*/
 		
+		
 		// rescale the probability response
-		float pmax = ImageStatistics.robustMaximum(proba, 0.0001f, 5, nx, ny, nz);
+		float pmax = ImageStatistics.robustMaximum(proba, 0.000001f, 6, nx, ny, nz);
 		if (pmax>0) for (int xyz=0;xyz<nxyz;xyz++) proba[xyz] = Numerics.min(proba[xyz]/pmax,1.0f);
 		
 		// generate a direction vector
@@ -406,6 +413,15 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 			if (filterParam.getValue().equals("1D"))  propag = regionLabeling1D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 			else if (filterParam.getValue().equals("2D"))  propag = regionLabeling2D(proba, maxdirection, ngbsize, maxdiff, simscale, difffactor, iter);
 		} 				
+		
+		/*
+		probabilityFromRecursiveRidgeFilter(propag, proba);	
+		
+		// rescale the probability response
+		float pmax = ImageStatistics.robustMaximum(proba, 0.0001f, 5, nx, ny, nz);
+		if (pmax>0) for (int xyz=0;xyz<nxyz;xyz++) proba[xyz] = Numerics.min(proba[xyz]/pmax,1.0f);
+		*/
+		
 		
 		// 4. Measure size of connected region
 		boolean[] detected = ObjectExtraction.objectFromImage(propag, nx, ny, nz, 0.5f, ObjectExtraction.SUPEQUAL);
@@ -1698,7 +1714,9 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 				}
 				diffused[xyz] = (float)FastMath.log(1.0f + diffused[xyz]);
 				
-				if (Numerics.abs(prev-diffused[xyz])>diff) diff = Numerics.abs(prev-diffused[xyz]);
+				if (diffused[xyz]+prev>0) {
+					if (Numerics.abs(prev-diffused[xyz])/(prev+diffused[xyz])>diff) diff = Numerics.abs(prev-diffused[xyz])/(prev+diffused[xyz]);
+				}
 			}
 			
 			BasicInfo.displayMessage("diff "+diff+"\n");
