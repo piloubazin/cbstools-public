@@ -9,6 +9,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
+import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
@@ -72,6 +73,11 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 		inputParams.add(padOption = new ParamOption("Image padding",pads));
 		deformation2Image.setMandatory(false);
 		
+		sourceImage.setLoadAndSaveOnValidate(false);
+		referenceImage.setLoadAndSaveOnValidate(false);
+		deformation1Image.setLoadAndSaveOnValidate(false);
+		deformation2Image.setLoadAndSaveOnValidate(false);
+		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Registration");
 		inputParams.setLabel("Apply Deformations");
@@ -82,7 +88,7 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 		info.setAffiliation("Max Planck Institute for Human Cognitive and Brain Sciences");
 		info.setDescription("Apply multiple deformations from non-linear transformations. Transformations can be a deformation field or a coordinate mapping.");
 		
-		info.setVersion("3.0.1");
+		info.setVersion("3.1.2");
 		info.setStatus(DevelopmentStatus.RC);
 		info.setEditable(false);
 	}
@@ -103,6 +109,9 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 		ImageDataFloat	sourceImg = new ImageDataFloat(sourceImage.getImageData());
 		ImageDataFloat	referenceImg = new ImageDataFloat(referenceImage.getImageData());
 		
+		sourceImage.dispose();
+		referenceImage.dispose();
+		
 		int nsx = sourceImg.getRows();
 		int nsy = sourceImg.getCols();
 		int nsz = sourceImg.getSlices();
@@ -114,7 +123,8 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 		float osx = sourceImg.getHeader().getOrigin()[X];
 		float osy = sourceImg.getHeader().getOrigin()[Y];
 		float osz = sourceImg.getHeader().getOrigin()[Z];
-		
+		String imgname = sourceImage.getImageData().getName();
+			
 		int nrx = referenceImg.getRows();
 		int nry = referenceImg.getCols();
 		int nrz = referenceImg.getSlices();
@@ -126,22 +136,30 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 		float orx = referenceImg.getHeader().getOrigin()[X];
 		float ory = referenceImg.getHeader().getOrigin()[Y];
 		float orz = referenceImg.getHeader().getOrigin()[Z];
+		ImageHeader refheader = referenceImg.getHeader();
+		//referenceImg.finalize();
+		referenceImg = null;
 		
 		// different paths for 3d and 4d data
 		if (nst==1) {
 			// pull the image data (not needed for reference)
 			float[][][] source = sourceImg.toArray3d();
+			//sourceImg.finalize();
+			sourceImg = null;
 			
 			// deformation: in reference space
 			System.out.println("load deformation 1");
 			ImageDataFloat deformation1Img = new ImageDataFloat(deformation1Image.getImageData());
+			deformation1Image.dispose();
 			int nd1x = deformation1Img.getRows();
 			int nd1y = deformation1Img.getCols();
 			int nd1z = deformation1Img.getSlices();
-			float rd1x = referenceImg.getHeader().getDimResolutions()[X];
-			float rd1y = referenceImg.getHeader().getDimResolutions()[Y];
-			float rd1z = referenceImg.getHeader().getDimResolutions()[Z];
+			float rd1x = deformation1Img.getHeader().getDimResolutions()[X];
+			float rd1y = deformation1Img.getHeader().getDimResolutions()[Y];
+			float rd1z = deformation1Img.getHeader().getDimResolutions()[Z];
 			float[][][][] deformation1 = deformation1Img.toArray4d();
+			//deformation1Img.finalize();
+			deformation1Img = null;
 			// scale to voxels if needed
 			if (type1Option.getValue().endsWith("(mm)")) {
 				System.out.println("normalize to resolution ("+rd1x+", "+rd1y+", "+rd1z+")");
@@ -164,13 +182,16 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 			if (!type2Option.getValue().equals("none") && deformation2Image.getImageData()!=null) {
 				System.out.println("load deformation 2");
 				ImageDataFloat deformation2Img = new ImageDataFloat(deformation2Image.getImageData());
+				deformation2Image.dispose();
 				int nd2x = deformation2Img.getRows();
 				int nd2y = deformation2Img.getCols();
 				int nd2z = deformation2Img.getSlices();
-				float rd2x = referenceImg.getHeader().getDimResolutions()[X];
-				float rd2y = referenceImg.getHeader().getDimResolutions()[Y];
-				float rd2z = referenceImg.getHeader().getDimResolutions()[Z];
+				float rd2x = deformation2Img.getHeader().getDimResolutions()[X];
+				float rd2y = deformation2Img.getHeader().getDimResolutions()[Y];
+				float rd2z = deformation2Img.getHeader().getDimResolutions()[Z];
 				float[][][][] deformation2 = deformation2Img.toArray4d();
+				//deformation2Img.finalize();
+				deformation2Img = null;
 				// scale to voxels if needed
 				if (type2Option.getValue().endsWith("(mm)")) {
 					System.out.println("normalize to resolution ("+rd2x+", "+rd2y+", "+rd2z+")");
@@ -259,31 +280,37 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 					//}
 				}
 			}
+			source = null;
 			// output
-			String imgname = sourceImage.getImageData().getName();
-			
 			ImageDataFloat mapData = new ImageDataFloat(deformed);		
-			mapData.setHeader(referenceImage.getImageData().getHeader());
+			mapData.setHeader(refheader);
 			mapData.setName(imgname+"_def");
 			mappedImage.setValue(mapData);
+			mappedImage.writeAndFreeNow(this);
 			mapData = null;
 			deformed = null;
 		} else {
 			// pull the image data (not needed for reference)
 			float[][][][] source = sourceImg.toArray4d();
+			//sourceImg.finalize();
+			sourceImg = null;
 			
 			// deformation: in reference space
 			System.out.println("load deformation 1");
 			ImageDataFloat deformation1Img = new ImageDataFloat(deformation1Image.getImageData());
+			deformation1Image.dispose();
 			int nd1x = deformation1Img.getRows();
 			int nd1y = deformation1Img.getCols();
 			int nd1z = deformation1Img.getSlices();
-			float rd1x = referenceImg.getHeader().getDimResolutions()[X];
-			float rd1y = referenceImg.getHeader().getDimResolutions()[Y];
-			float rd1z = referenceImg.getHeader().getDimResolutions()[Z];
+			float rd1x = deformation1Img.getHeader().getDimResolutions()[X];
+			float rd1y = deformation1Img.getHeader().getDimResolutions()[Y];
+			float rd1z = deformation1Img.getHeader().getDimResolutions()[Z];
 			float[][][][] deformation1 = deformation1Img.toArray4d();
+			//deformation1Img.finalize();
+			deformation1Img = null;
 			// scale to voxels if needed
 			if (type1Option.getValue().endsWith("(mm)")) {
+				System.out.println("normalize to resolution ("+rd1x+", "+rd1y+", "+rd1z+")");
 				for (int x=0;x<nd1x;x++) for (int y=0;y<nd1y;y++) for (int z=0;z<nd1z;z++) {
 					deformation1[x][y][z][X] /= rd1x; 	
 					deformation1[x][y][z][Y] /= rd1y; 	
@@ -301,16 +328,21 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 			
 			// second deformation if given
 			if (!type2Option.getValue().equals("none") && deformation2Image.getImageData()!=null) {
+				System.out.println("load deformation 2");
 				ImageDataFloat deformation2Img = new ImageDataFloat(deformation2Image.getImageData());
+				deformation2Image.dispose();
 				int nd2x = deformation2Img.getRows();
 				int nd2y = deformation2Img.getCols();
 				int nd2z = deformation2Img.getSlices();
-				float rd2x = referenceImg.getHeader().getDimResolutions()[X];
-				float rd2y = referenceImg.getHeader().getDimResolutions()[Y];
-				float rd2z = referenceImg.getHeader().getDimResolutions()[Z];
+				float rd2x = deformation2Img.getHeader().getDimResolutions()[X];
+				float rd2y = deformation2Img.getHeader().getDimResolutions()[Y];
+				float rd2z = deformation2Img.getHeader().getDimResolutions()[Z];
 				float[][][][] deformation2 = deformation2Img.toArray4d();
+				//deformation2Img.finalize();
+				deformation2Img = null;
 				// scale to voxels if needed
 				if (type2Option.getValue().endsWith("(mm)")) {
+					System.out.println("normalize to resolution ("+rd2x+", "+rd2y+", "+rd2z+")");
 					for (int x=0;x<nd2x;x++) for (int y=0;y<nd2y;y++) for (int z=0;z<nd2z;z++) {
 						deformation2[x][y][z][X] /= rd2x; 	
 						deformation2[x][y][z][Y] /= rd2y; 	
@@ -326,6 +358,7 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 					}
 				}
 				// compose the deformations: X' = def1(def2(X))
+				System.out.println("compose deformations");
 				float[][][][] composed = new float[nrx][nry][nrz][3];
 				for (int x=0;x<nrx;x++) for (int y=0;y<nry;y++) for (int z=0;z<nrz;z++) {
 					//if (deformation2[x][y][z][X]>=1 && deformation2[x][y][z][Y]>=1 && deformation2[x][y][z][Z]>=1) {
@@ -401,13 +434,13 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 					}
 				}
 			}
+			source = null;
 			// output
-			String imgname = sourceImage.getImageData().getName();
-			
 			ImageDataFloat mapData = new ImageDataFloat(deformed);		
-			mapData.setHeader(referenceImage.getImageData().getHeader());
+			mapData.setHeader(refheader);
 			mapData.setName(imgname+"_def");
 			mappedImage.setValue(mapData);
+			mappedImage.writeAndFreeNow(this);
 			mapData = null;
 			deformed = null;
 		}
