@@ -102,9 +102,9 @@ public class JistBrainMp2rageSkullStripping extends ProcessingAlgorithm {
 		float[] res = Interface.getResolutions(inv2Image);
 		
 		String t1name = null;
-		if (t1mapImage.getImageData() != null) t1name = Interface.getName(t1mapImage);
+		if (Interface.isValid(t1mapImage)) t1name = Interface.getName(t1mapImage);
 		String isoname = null;
-		if (isoImage.getImageData() != null) isoname = Interface.getName(isoImage);
+		if (Interface.isValid(isoImage)) isoname = Interface.getName(isoImage);
 		
 		// import the image data into 1D arrays
 		algorithm = new BrainMp2rageSkullStripping();

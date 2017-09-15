@@ -1,4 +1,4 @@
-package de.mpg.cbs.jist.cortex;
+package de.mpg.cbs.core.cortex;
 
 import de.mpg.cbs.utilities.*;
 import de.mpg.cbs.structures.*;
@@ -89,7 +89,7 @@ public class CortexOptimCRUISE {
 	public final float[] getSulcalCSFprobability() { return pcsfImage; }
 		
 
-	protected void execute(){
+	public void execute(){
 		
 		// import the image data into 1D arrays
 		float[] wm = wmImage;
