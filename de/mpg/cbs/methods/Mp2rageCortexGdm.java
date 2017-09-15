@@ -180,7 +180,7 @@ public class Mp2rageCortexGdm {
 							float[] wm_, float[] gm_, float[] csf_, float[] bg_,
 							boolean[] mask_, boolean[] include_, 
 							float ew_, float bw_, float cw_, float dw_,
-							String connectivityType_, boolean probas_, boolean gwb_) {
+							String connectivityType_, String lutdir_, boolean probas_, boolean gwb_) {
 		
 		images = img_;
 		segmentation = init_;
@@ -233,13 +233,13 @@ public class Mp2rageCortexGdm {
 			// topology luts
 			checkTopology=true;
 			checkComposed=false;
-				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT("critical266LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT("critical626LUT.raw.gz",200);
-			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT("critical186LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT("critical618LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT(lutdir_,"critical266LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT(lutdir_,"critical626LUT.raw.gz",200);
+			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT(lutdir_,"critical186LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(lutdir_,"critical618LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(lutdir_,"critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				lut = new CriticalPointLUT(lutdir_,"critical66LUT.raw.gz",200);
 				checkComposed=true;
 			}
 			else if (connectivityType_.equals("wco")) {

@@ -1,26 +1,5 @@
 package de.mpg.cbs.core.laminar;
 
-import edu.jhu.ece.iacl.jist.pipeline.AlgorithmRuntimeException;
-import edu.jhu.ece.iacl.jist.pipeline.CalculationMonitor;
-import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamDouble;
-import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
-import edu.jhu.ece.iacl.jist.structures.image.ImageData;
-import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
-import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
-import edu.jhu.ece.iacl.jist.structures.image.VoxelType;
-import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
-
-import edu.jhu.ece.iacl.jist.pipeline.DevelopmentStatus;
-import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
-import edu.jhu.ece.iacl.jist.pipeline.AlgorithmInformation.AlgorithmAuthor;
-import edu.jhu.ece.iacl.jist.pipeline.AlgorithmInformation.Citation;
-import edu.jhu.ece.iacl.jist.pipeline.AlgorithmInformation;
-
 import de.mpg.cbs.utilities.*;
 import de.mpg.cbs.structures.*;
 import de.mpg.cbs.libraries.*;

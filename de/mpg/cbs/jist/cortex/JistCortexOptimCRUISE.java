@@ -105,9 +105,9 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		inputParams.add(mainParams);
 			
 		inputParams.setPackage("CBS Tools");
-		inputParams.setCategory("Cortex Processing");
-		inputParams.setLabel("Full CRUISE Cortex Extraction");
-		inputParams.setName("FullCruiseCortexExtraction");
+		inputParams.setCategory("Cortex Processing.devel");
+		inputParams.setLabel("Optimized CRUISE Cortex Extraction");
+		inputParams.setName("OptimizedCruiseCortexExtraction");
 
 		AlgorithmInformation info = getAlgorithmInformation();
 		info.add(new AlgorithmAuthor("Xiao Han", "","http://www.iacl.ece.jhu.edu/"));
@@ -391,7 +391,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 														null, null,
 														0.0f, balloonParam.getValue().floatValue(), 
 														curvParam.getValue().floatValue(), 0.0f,
-														topologyParam.getValue(),null,useProbas, gwbflag);
+														topologyParam.getValue(),useProbas, gwbflag);
 		
 		if (iterationParam.getValue().intValue()>0) {
 			BasicInfo.displayMessage("level set segmentation...\n");
@@ -450,7 +450,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 									null, null,
 									0.0f, balloonParam.getValue().floatValue(), 
 									curvParam.getValue().floatValue(), 0.0f,
-									topologyParam.getValue(),null, useProbas, cgbflag);
+									topologyParam.getValue(),useProbas, cgbflag);
 		
 		if (iterationParam.getValue().intValue()>0) {
 			BasicInfo.displayMessage("level set segmentation...\n");
