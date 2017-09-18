@@ -33,6 +33,8 @@ public class BrainDefineMultiRegionPriors {
 		
 	private byte[] regionImage;
 	private float[] pvRegionImage;
+	//private int[] updateSegImage;
+	//private float[] updateMgdmImage;
 		
 	private String regionName;
 		
@@ -257,7 +259,7 @@ public class BrainDefineMultiRegionPriors {
 				
 				// if angle <0 : inside
 				if (lvlctx[xyz]>0 && lvlven[xyz]>0 && lvlput[xyz]>0)
-					pvRegionImage[xyz] = 1.0f+angle;
+					pvRegionImage[xyz] = 0.5f*(1.0f+angle);
 				else
 					pvRegionImage[xyz] = 0.0f;
 				
@@ -270,6 +272,8 @@ public class BrainDefineMultiRegionPriors {
 			BitSet isCau = new BitSet(maxlb);
 			BitSet isPut = new BitSet(maxlb);
 			BitSet isTha = new BitSet(maxlb);
+			BitSet isWM = new BitSet(maxlb);
+			BitSet isGP = new BitSet(maxlb);
 			
 			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
 				if (atlas.getNames()[nobj].equals("CaudateR")) isCau.set(atlas.getLabels()[nobj]);
@@ -282,6 +286,16 @@ public class BrainDefineMultiRegionPriors {
 			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
 				if (atlas.getNames()[nobj].equals("ThalamusR")) isTha.set(atlas.getLabels()[nobj]);
 				if (atlas.getNames()[nobj].equals("ThalamusL")) isTha.set(atlas.getLabels()[nobj]);
+			}
+			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
+				if (atlas.getNames()[nobj].equals("Cerebrum-WML")) isWM.set(atlas.getLabels()[nobj]);
+				else if (atlas.getNames()[nobj].equals("Cerebrum-WMR")) isWM.set(atlas.getLabels()[nobj]);
+				else if (atlas.getNames()[nobj].equals("Cerebrum-WM")) isWM.set(atlas.getLabels()[nobj]);	
+				else if (atlas.getNames()[nobj].equals("CerebralWM")) isWM.set(atlas.getLabels()[nobj]);	
+			}
+			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
+				if (atlas.getNames()[nobj].equals("GlobusPallidusL")) isGP.set(atlas.getLabels()[nobj]);
+				if (atlas.getNames()[nobj].equals("GlobusPallidusR")) isGP.set(atlas.getLabels()[nobj]);
 			}
 			
 			// signed distance functions
@@ -309,6 +323,9 @@ public class BrainDefineMultiRegionPriors {
 			
 			// PV for internal capsule: function of distance gradients
 			pvRegionImage = new float[nxyz];
+			float[] lvlic = new float[nxyz];
+			for (int xyz=0;xyz<nxyz;xyz++) lvlic[xyz] = distanceParam+1;
+				
 			float[] dcau = new float[4];
 			float[] dput = new float[4];
 			float[] dtha = new float[4];
@@ -317,27 +334,61 @@ public class BrainDefineMultiRegionPriors {
 				dcau[X] = lvlcau[xyz+1]-lvlcau[xyz-1];
 				dcau[Y] = lvlcau[xyz+nx]-lvlcau[xyz-nx];
 				dcau[Z] = lvlcau[xyz+nx*ny]-lvlcau[xyz-nx*ny];
+				dcau[N] = (float)FastMath.sqrt(dcau[X]*dcau[X]+dcau[Y]*dcau[Y]+dcau[Z]*dcau[Z]);
 				
 				dput[X] = lvlput[xyz+1]-lvlput[xyz-1];
 				dput[Y] = lvlput[xyz+nx]-lvlput[xyz-nx];
 				dput[Z] = lvlput[xyz+nx*ny]-lvlput[xyz-nx*ny];
+				dput[N] = (float)FastMath.sqrt(dput[X]*dput[X]+dput[Y]*dput[Y]+dput[Z]*dput[Z]);
 				
 				dtha[X] = lvltha[xyz+1]-lvltha[xyz-1];
 				dtha[Y] = lvltha[xyz+nx]-lvltha[xyz-nx];
 				dtha[Z] = lvltha[xyz+nx*ny]-lvltha[xyz-nx*ny];
+				dtha[N] = (float)FastMath.sqrt(dtha[X]*dtha[X]+dtha[Y]*dtha[Y]+dtha[Z]*dtha[Z]);
 				
-				float angle = Numerics.min(dcau[X]*dput[X]+dcau[Y]*dput[Y]+dcau[Z]*dput[Z], dput[X]*dtha[X]+dput[Y]*dtha[Y]+dput[Z]*dtha[Z], dtha[X]*dcau[X]+dtha[Y]*dcau[Y]+dtha[Z]*dcau[Z]);
+				// check for negative angles between two of the structures
+				float angle = Numerics.min((dcau[X]*dput[X]+dcau[Y]*dput[Y]+dcau[Z]*dput[Z])/(dcau[N]*dput[N]), 
+										   (dput[X]*dtha[X]+dput[Y]*dtha[Y]+dput[Z]*dtha[Z])/(dput[N]*dtha[N]), 
+										   (dtha[X]*dcau[X]+dtha[Y]*dcau[Y]+dtha[Z]*dcau[Z])/(dtha[N]*dcau[N]));
 				
 				// if angle <0 : inside
+				/*
 				if (angle<0)
 					pvRegionImage[xyz] = -angle;
 				else
 					pvRegionImage[xyz] = 0.0f;
+				
+				// build proba, restrict to WM, add Cau/Put/Tha/GP
+				float pvdist = Numerics.min(mgdmImage[xyz]/distanceParam,1.0f);
+				if (isCau.get(segImage[xyz])) pvRegionImage[xyz] = pvdist;
+				else if (isPut.get(segImage[xyz])) pvRegionImage[xyz] = pvdist;
+				else if (isTha.get(segImage[xyz])) pvRegionImage[xyz] = pvdist;
+				else if (isGP.get(segImage[xyz])) pvRegionImage[xyz] = pvdist;
+				else if (isWM.get(segImage[xyz])) pvRegionImage[xyz] *= pvdist;
+				*/
+				// restrict to WM+GP?
+				if (isGP.get(segImage[xyz]) || isWM.get(segImage[xyz]))
+					pvRegionImage[xyz] = 0.5f*(1.0f-angle);
+				else 
+					pvRegionImage[xyz] = 0.0f;
+				
+				// only inside WM and GP + CAU,PUT,THA: rebuild levelset
+				if (mgdmImage[xyz]==-1) lvlic[xyz] = distanceParam+1.0f;
+				else if (isCau.get(segImage[xyz])) lvlic[xyz] = -mgdmImage[xyz];
+				else if (isPut.get(segImage[xyz])) lvlic[xyz] = -mgdmImage[xyz];
+				else if (isTha.get(segImage[xyz])) lvlic[xyz] = -mgdmImage[xyz];
+				else if (isGP.get(segImage[xyz])) lvlic[xyz] = -mgdmImage[xyz];
+				else if (isWM.get(segImage[xyz])) lvlic[xyz] = 0.5f-pvRegionImage[xyz];
+				else lvlic[xyz] = Numerics.max(0.001f, mgdmImage[xyz]);
+			}
+			lvlic =  ObjectTransforms.fastMarchingDistanceFunction(lvlic,nx,ny,nz);
+			for (int xyz=0;xyz<nxyz;xyz++) {
+				pvRegionImage[xyz] = Numerics.bounded(0.5f-0.5f*lvlic[xyz]/distanceParam, 0.0f, 1.0f);
 			}
 		}
 		System.out.println("region mask");
 		regionImage = new byte[nxyz];
-		for (int xyz=0;xyz<nxyz;xyz++) if (pvRegionImage[xyz]>0.5f) {
+		for (int xyz=0;xyz<nxyz;xyz++) if (pvRegionImage[xyz]>=0.5f) {
 			regionImage[xyz] = 1;
 		}
 		
