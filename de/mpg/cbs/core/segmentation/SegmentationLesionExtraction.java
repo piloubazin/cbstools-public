@@ -186,9 +186,10 @@ public class SegmentationLesionExtraction {
 		// crop proba image to only include regions with positive WM proba
 		// combine raw proba with pv estimates?
 		float minpv = 0.5f;
+		float maxpv = 1.0f;
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			if (pvRegionImage[xyz]<minpv) probaImage[xyz] = 0.0f;
-			else probaImage[xyz] = Numerics.min(pvRegionImage[xyz]/minpv*minprobaThreshold, 1.0f)*probaImage[xyz];
+			else probaImage[xyz] = Numerics.min((pvRegionImage[xyz]-minpv)/(maxpv-minpv), 1.0f)*probaImage[xyz];
 		}
 				
 		// step 1: find clusters of high probability

@@ -119,7 +119,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 		info.setDescription("Segments the cortex from a whole brain segmented data set with the CRUISE method \n"
 								+"(includes partial voluming corrections and ACE sulcal enhancement).");
 		
-		info.setVersion("3.1.1");
+		info.setVersion("3.1.2");
 		info.setStatus(DevelopmentStatus.RC);
 		info.setEditable(false);
 	}
@@ -391,7 +391,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 														null, null,
 														0.0f, balloonParam.getValue().floatValue(), 
 														curvParam.getValue().floatValue(), 0.0f,
-														topologyParam.getValue(),useProbas, gwbflag);
+														topologyParam.getValue(),null,useProbas, gwbflag);
 		
 		if (iterationParam.getValue().intValue()>0) {
 			BasicInfo.displayMessage("level set segmentation...\n");
@@ -450,7 +450,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 									null, null,
 									0.0f, balloonParam.getValue().floatValue(), 
 									curvParam.getValue().floatValue(), 0.0f,
-									topologyParam.getValue(),useProbas, cgbflag);
+									topologyParam.getValue(),null, useProbas, cgbflag);
 		
 		if (iterationParam.getValue().intValue()>0) {
 			BasicInfo.displayMessage("level set segmentation...\n");
