@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# location of the JAVA command to use
+JAVAC=/usr/bin/javac
+
+# location of additional JAVA libraries to use
+JAVALIB=/home/pilou/Software/Mipav/jre/lib/ext/
+
+# location of the MIPAV installation to use
+MIPAV=/home/pilou/Software/Mipav
+
+# location of the plugin installation to use
+# please replace 'ThisUser' by your user name
+PLUGINS=/home/pilou/mipav/plugins
+
+# location of the code
+CODE=/home/pilou/Code/github/cbstools-public
+
+# mipav command
+echo "compile $@ ..."
+$JAVAC -classpath $CODE:$JAVALIB/*:$MIPAV:$MIPAV/lib/*:$PLUGINS:$/library/* -server -g -O -deprecation -encoding UTF-8 $@
+

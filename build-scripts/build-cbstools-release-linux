@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# input release number
+RELEASE=$1
+DATE=$(date +%y%m%d)
+echo "release $RELEASE: $DATE"
+
+# location of the JAVA commands to use
+JAVAC=/usr/bin/javac
+JAR=/usr/bin/jar
+
+# location of additional JAVA libraries to use
+JAVALIB=/home/pilou/Software/Mipav/jre/lib/ext/
+
+# location of the MIPAV installation to use
+MIPAV=/home/pilou/Software/Mipav
+
+# location of the plugin installation to use
+# please replace 'ThisUser' by your user name
+PLUGINS=/home/pilou/mipav/plugins
+
+# location of the code
+CODE=/home/pilou/Code/github/cbstools-public
+
+# mipav command
+$JAVAC -classpath $CODE:$JAVALIB/*:$MIPAV:$MIPAV/lib/*:$PLUGINS:$/library/* -server -g -O -deprecation -encoding UTF-8 $CODE/de/mpg/cbs/*/*.java $CODE/de/mpg/cbs/core/*/*.java $CODE/de/mpg/cbs/jist/*/*.java $CODE/edu/jhu/ece/iacl/jist/*/*.java
+
+# build release
+cd $CODE
+$JAR cvf release/cbstools-rel$RELEASE-$DATE.jar run-cbstools-mac de/mpg/cbs/*/*.class de/mpg/cbs/core/*/*.class de/mpg/cbs/jist/*/*.class edu/jhu/ece/iacl/jist/*/*.class edu/jhu/ece/iacl/algorithms/graphics/*/*.class jist/*.class atlases/*/*.* de/mpg/cbs/*/*.gz external-scripts/*.* layouts/*.LayoutXML lib/*.jar
+
