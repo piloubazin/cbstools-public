@@ -4,8 +4,6 @@ import java.io.*;
 import java.util.*;
 import java.lang.*;
 
-import gov.nih.mipav.model.structures.ModelImage;
-
 
 /**
  *
@@ -160,6 +158,7 @@ public class ImageCropping {
 		return tmp;
 	}
 	/** conversion between 1D and 3D arrays (import directly from Mipav format)*/
+	/*
 	public float[][][] convertFloatImage(ModelImage image) {
 		float[] buffer;
 		try {
@@ -179,6 +178,7 @@ public class ImageCropping {
 		}
 	}
 	/** conversion between 1D and 3D arrays (import directly from Mipav format)*/
+	/*
 	public float[][][][] convertFloatImage(ModelImage image, int nt) {
 		float[] buffer;
 		try {
@@ -198,6 +198,7 @@ public class ImageCropping {
 		}
 	}
 	/** conversion between 1D and 3D arrays (import directly from Mipav format)*/
+	/*
 	public boolean[][][][] convertBooleanImage(ModelImage image, int nt) {
 		BitSet buffer;
 		try {
@@ -217,6 +218,7 @@ public class ImageCropping {
 		}
 	}
 	/** conversion between 1D and 3D arrays (import directly from Mipav format)*/
+	/*
 	public byte[][][] convertByteImage(ModelImage image) {
 		byte[] buffer;
 		try {
@@ -236,6 +238,7 @@ public class ImageCropping {
 		}
 	}
 	/** conversion between 1D and 3D arrays (import directly from Mipav format)*/
+	/*
 	public int[][][] convertIntImage(ModelImage image) {
 		int[] buffer;
 		try {

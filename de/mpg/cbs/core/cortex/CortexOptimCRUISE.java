@@ -42,6 +42,10 @@ public class CortexOptimCRUISE {
 	private float[] pcsfImage;
 	
 	public final void setInitialWMSegmentationImage(byte[] val) { initImage = val; }
+	public final void importInitialWMSegmentationImage(int[] val) { 
+	    initImage = new byte[val.length];
+	    for (int xyz=0;xyz<val.length;xyz++) initImage[xyz] = (byte)val[xyz];
+	}
 	public final void setFilledWMProbabilityImage(float[] val) { wmImage = val; }
 	public final void setGMProbabilityImage(float[] val) { gmImage = val; }
 	public final void setCSFandBGProbabilityImage(float[] val) { csfImage = val; }
