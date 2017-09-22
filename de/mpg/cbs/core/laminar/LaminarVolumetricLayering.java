@@ -5,8 +5,6 @@ import de.mpg.cbs.structures.*;
 import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.methods.*;
 
-import javax.vecmath.*;
-
 import org.apache.commons.math3.util.FastMath;
 
 /*

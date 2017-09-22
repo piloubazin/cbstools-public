@@ -2,8 +2,6 @@ package de.mpg.cbs.methods;
 
 import java.io.*;
 import java.util.*;
-import gov.nih.mipav.view.*;
-import gov.nih.mipav.model.file.FileInfoBase;
 
 import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.utilities.*;
@@ -709,7 +707,7 @@ public class SimpleShapeAtlas {
 					// Structures:	nobj	objLabel	objType
 					st = new StringTokenizer(line, "	");
 					st.nextToken();
-					nobj = MipavUtil.getInt(st);
+					nobj = BasicInfo.getInt(st);
 					objName = new String[nobj];
 					objLabel = new byte[nobj];
 					objType = new String[nobj];
@@ -718,7 +716,7 @@ public class SimpleShapeAtlas {
 						line = br.readLine();
 						st = new StringTokenizer(line, "	");
 						objName[n] = st.nextToken();
-						objLabel[n] = (byte)MipavUtil.getInt(st);
+						objLabel[n] = (byte)BasicInfo.getInt(st);
 						objType[n] = st.nextToken();
 					}
 					// allocate other quantities
@@ -753,9 +751,9 @@ public class SimpleShapeAtlas {
 					line = br.readLine();
 					st = new StringTokenizer(line, "	");
 					st.nextToken();
-					ntx = MipavUtil.getInt(st);
-					nty = MipavUtil.getInt(st);
-					ntz = MipavUtil.getInt(st);
+					ntx = BasicInfo.getInt(st);
+					nty = BasicInfo.getInt(st);
+					ntz = BasicInfo.getInt(st);
 					x0t = ntx/2.0f;
 					y0t = nty/2.0f;
 					z0t = ntz/2.0f;
@@ -764,9 +762,9 @@ public class SimpleShapeAtlas {
 					line = br.readLine();
 					st = new StringTokenizer(line, "	");
 					st.nextToken();
-					rtx = MipavUtil.getFloat(st);
-					rty = MipavUtil.getFloat(st);
-					rtz = MipavUtil.getFloat(st);
+					rtx = BasicInfo.getFloat(st);
+					rty = BasicInfo.getFloat(st);
+					rtz = BasicInfo.getFloat(st);
 					if (debug) System.out.print("res: "+rtx+"x"+rty+"x"+rtz+"\n");
 					template = loadTemplateImage(imageFile, ntx, nty, ntz);
 					templateFile = imageFile;
@@ -776,14 +774,14 @@ public class SimpleShapeAtlas {
 					// Shape:	objLabelSamples
 					st = new StringTokenizer(line, "	");
 					st.nextToken();
-					objLabelSamples = MipavUtil.getInt(st);
+					objLabelSamples = BasicInfo.getInt(st);
 					// Dimensions: nax nay naz
 					line = br.readLine();
 					st = new StringTokenizer(line, "	");
 					st.nextToken();
-					nax = MipavUtil.getInt(st);
-					nay = MipavUtil.getInt(st);
-					naz = MipavUtil.getInt(st);
+					nax = BasicInfo.getInt(st);
+					nay = BasicInfo.getInt(st);
+					naz = BasicInfo.getInt(st);
 					x0a = nax/2.0f;
 					y0a = nay/2.0f;
 					z0a = naz/2.0f;
@@ -792,9 +790,9 @@ public class SimpleShapeAtlas {
 					line = br.readLine();
 					st = new StringTokenizer(line, "	");
 					st.nextToken();
-					rax = MipavUtil.getFloat(st);
-					ray = MipavUtil.getFloat(st);
-					raz = MipavUtil.getFloat(st);
+					rax = BasicInfo.getFloat(st);
+					ray = BasicInfo.getFloat(st);
+					raz = BasicInfo.getFloat(st);
 					if (debug) System.out.print("shape res: "+rax+"x"+ray+"x"+raz+"\n");
 					line = br.readLine();
 					while (line.startsWith("Structure:")) {
@@ -836,7 +834,7 @@ public class SimpleShapeAtlas {
 					
 					while (id !=-1 ) {
 						for (int n=0;n<nobj;n++) {
-							intensity[id][n] = MipavUtil.getFloat(st);
+							intensity[id][n] = BasicInfo.getFloat(st);
 						}
 						// search for next intensity profile
 						line = br.readLine();
@@ -855,7 +853,7 @@ public class SimpleShapeAtlas {
 					//if (debug) System.out.println(line);
 					st = new StringTokenizer(line, "	");
 					for (int n=0;n<nobj;n++) {
-						registeredShape[n] = (MipavUtil.getInt(st)==1);
+						registeredShape[n] = (BasicInfo.getInt(st)==1);
 					}
 					if (debug) System.out.println(displayRegisteredShapes());
 				} else
@@ -868,7 +866,7 @@ public class SimpleShapeAtlas {
 					//if (debug) System.out.println(line);
 					st = new StringTokenizer(line, "	");
 					for (int n=0;n<nobj;n++) {
-						regularizationFactor[n] = MipavUtil.getFloat(st);
+						regularizationFactor[n] = BasicInfo.getFloat(st);
 					}
 					if (debug) System.out.println(displayRegularizationFactor());
 				} else
@@ -897,7 +895,7 @@ public class SimpleShapeAtlas {
 								int count = st.countTokens();
 								intensityMap[T1MAP7T][id] = new float[count];
 								for (int t=0;t<count;t++)
-									intensityMap[T1MAP7T][id][t] = MipavUtil.getFloat(st);
+									intensityMap[T1MAP7T][id][t] = BasicInfo.getFloat(st);
 								// set intensity maps to the first value
 								intensity[T1MAP7T][id] = intensityMap[T1MAP7T][id][0];
 							}
@@ -925,7 +923,7 @@ public class SimpleShapeAtlas {
 								int count = st.countTokens();
 								intensityMap[MP2RAGE7T][id] = new float[count];
 								for (int t=0;t<count;t++)
-									intensityMap[MP2RAGE7T][id][t] = MipavUtil.getFloat(st);
+									intensityMap[MP2RAGE7T][id][t] = BasicInfo.getFloat(st);
 								// set intensity maps to the first value
 								intensity[MP2RAGE7T][id] = intensityMap[MP2RAGE7T][id][0];
 							}
@@ -953,7 +951,7 @@ public class SimpleShapeAtlas {
 								int count = st.countTokens();
 								intensityMap[T2SW7T][id] = new float[count];
 								for (int t=0;t<count;t++)
-									intensityMap[T2SW7T][id][t] = MipavUtil.getFloat(st);
+									intensityMap[T2SW7T][id][t] = BasicInfo.getFloat(st);
 								// set intensity maps to the first value
 								intensity[T2SW7T][id] = intensityMap[T2SW7T][id][0];
 							}
@@ -981,7 +979,7 @@ public class SimpleShapeAtlas {
 								int count = st.countTokens();
 								intensityMap[QSM7T][id] = new float[count];
 								for (int t=0;t<count;t++)
-									intensityMap[QSM7T][id][t] = MipavUtil.getFloat(st);
+									intensityMap[QSM7T][id][t] = BasicInfo.getFloat(st);
 								// set intensity maps to the first value
 								intensity[QSM7T][id] = intensityMap[QSM7T][id][0];
 							}
@@ -1009,7 +1007,7 @@ public class SimpleShapeAtlas {
 								int count = st.countTokens();
 								intensityMap[T1MAP3T][id] = new float[count];
 								for (int t=0;t<count;t++)
-									intensityMap[T1MAP3T][id][t] = MipavUtil.getFloat(st);
+									intensityMap[T1MAP3T][id][t] = BasicInfo.getFloat(st);
 								// set intensity maps to the first value
 								intensity[T1MAP3T][id] = intensityMap[T1MAP3T][id][0];
 							}
@@ -1037,7 +1035,7 @@ public class SimpleShapeAtlas {
 								int count = st.countTokens();
 								intensityMap[MP2RAGE3T][id] = new float[count];
 								for (int t=0;t<count;t++)
-									intensityMap[MP2RAGE3T][id][t] = MipavUtil.getFloat(st);
+									intensityMap[MP2RAGE3T][id][t] = BasicInfo.getFloat(st);
 								// set intensity maps to the first value
 								intensity[MP2RAGE3T][id] = intensityMap[MP2RAGE3T][id][0];
 							}
@@ -1065,7 +1063,7 @@ public class SimpleShapeAtlas {
 								int count = st.countTokens();
 								intensityMap[MPRAGE3T][id] = new float[count];
 								for (int t=0;t<count;t++)
-									intensityMap[MPRAGE3T][id][t] = MipavUtil.getFloat(st);
+									intensityMap[MPRAGE3T][id][t] = BasicInfo.getFloat(st);
 								// set intensity maps to the first value
 								intensity[MPRAGE3T][id] = intensityMap[MPRAGE3T][id][0];
 							}
@@ -1093,7 +1091,7 @@ public class SimpleShapeAtlas {
 								int count = st.countTokens();
 								intensityMap[NORMMPRAGE][id] = new float[count];
 								for (int t=0;t<count;t++)
-									intensityMap[NORMMPRAGE][id][t] = MipavUtil.getFloat(st);
+									intensityMap[NORMMPRAGE][id][t] = BasicInfo.getFloat(st);
 								// set intensity maps to the first value
 								intensity[NORMMPRAGE][id] = intensityMap[NORMMPRAGE][id][0];
 							}
@@ -1121,7 +1119,7 @@ public class SimpleShapeAtlas {
 								int count = st.countTokens();
 								intensityMap[PVDURA][id] = new float[count];
 								for (int t=0;t<count;t++)
-									intensityMap[PVDURA][id][t] = MipavUtil.getFloat(st);
+									intensityMap[PVDURA][id][t] = BasicInfo.getFloat(st);
 								// set intensity maps to the first value
 								intensity[PVDURA][id] = intensityMap[PVDURA][id][0];
 							}
@@ -1149,7 +1147,7 @@ public class SimpleShapeAtlas {
 								int count = st.countTokens();
 								intensityMap[FILTER][id] = new float[count];
 								for (int t=0;t<count;t++)
-									intensityMap[FILTER][id][t] = MipavUtil.getFloat(st);
+									intensityMap[FILTER][id][t] = BasicInfo.getFloat(st);
 								// set intensity maps to the first value
 								intensity[FILTER][id] = intensityMap[FILTER][id][0];
 							}
@@ -1177,7 +1175,7 @@ public class SimpleShapeAtlas {
 								int count = st.countTokens();
 								intensityMap[HCPT1W][id] = new float[count];
 								for (int t=0;t<count;t++)
-									intensityMap[HCPT1W][id][t] = MipavUtil.getFloat(st);
+									intensityMap[HCPT1W][id][t] = BasicInfo.getFloat(st);
 								// set intensity maps to the first value
 								intensity[HCPT1W][id] = intensityMap[HCPT1W][id][0];
 							}
@@ -1205,7 +1203,7 @@ public class SimpleShapeAtlas {
 								int count = st.countTokens();
 								intensityMap[HCPT2W][id] = new float[count];
 								for (int t=0;t<count;t++)
-									intensityMap[HCPT2W][id][t] = MipavUtil.getFloat(st);
+									intensityMap[HCPT2W][id][t] = BasicInfo.getFloat(st);
 								// set intensity maps to the first value
 								intensity[HCPT2W][id] = intensityMap[HCPT2W][id][0];
 							}
@@ -1532,30 +1530,30 @@ public class SimpleShapeAtlas {
 		// orientation: initialize a rotation
 		transform = new float[6];
 		// note : assumes a rotation around the image center
-		if (orient==FileInfoBase.AXIAL) {
+		if (orient==BasicInfo.AXIAL) {
 			transform[0] = 0.0f;
 			transform[1] = 0.0f;
 			transform[2] = 0.0f;
 			
-			if (orix==FileInfoBase.ORI_L2R_TYPE) rix *= -1.0f;
-			if (oriy==FileInfoBase.ORI_P2A_TYPE) riy *= -1.0f;
-			if (oriz==FileInfoBase.ORI_S2I_TYPE) riz *= -1.0f;
-		} else if (orient==FileInfoBase.CORONAL) {
+			if (orix==BasicInfo.L2R) rix *= -1.0f;
+			if (oriy==BasicInfo.P2A) riy *= -1.0f;
+			if (oriz==BasicInfo.S2I) riz *= -1.0f;
+		} else if (orient==BasicInfo.CORONAL) {
 			transform[0] = -ISQRT2;
 			transform[1] = 0.0f;
 			transform[2] = 0.0f;
 			
-			if (orix==FileInfoBase.ORI_L2R_TYPE) rix *= -1.0f;
-			if (oriy==FileInfoBase.ORI_I2S_TYPE) riy *= -1.0f;
-			if (oriz==FileInfoBase.ORI_P2A_TYPE) riz *= -1.0f;
-		} else if (orient==FileInfoBase.SAGITTAL) {
+			if (orix==BasicInfo.L2R) rix *= -1.0f;
+			if (oriy==BasicInfo.I2S) riy *= -1.0f;
+			if (oriz==BasicInfo.P2A) riz *= -1.0f;
+		} else if (orient==BasicInfo.SAGITTAL) {
 			transform[0] = -0.5f;
 			transform[1] = -0.5f;
 			transform[2] = 0.5f;
 			
-			if (orix==FileInfoBase.ORI_P2A_TYPE) rix *= -1.0f;
-			if (oriy==FileInfoBase.ORI_I2S_TYPE) riy *= -1.0f;
-			if (oriz==FileInfoBase.ORI_R2L_TYPE) riz *= -1.0f;
+			if (orix==BasicInfo.P2A) rix *= -1.0f;
+			if (oriy==BasicInfo.I2S) riy *= -1.0f;
+			if (oriz==BasicInfo.R2L) riz *= -1.0f;
 		} else {
 			// default is axial
 			transform[0] = 0.0f;

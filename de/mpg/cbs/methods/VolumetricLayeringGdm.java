@@ -2,15 +2,10 @@ package de.mpg.cbs.methods;
 
 import java.io.*;
 import java.util.*;
-import gov.nih.mipav.view.*;
-
-import gov.nih.mipav.model.structures.jama.*;
 
 import de.mpg.cbs.structures.*;
 import de.mpg.cbs.utilities.*;
 import de.mpg.cbs.libraries.*;
-
-import javax.vecmath.*;
 
 import org.apache.commons.math3.util.FastMath;
 

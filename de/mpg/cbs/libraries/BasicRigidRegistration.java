@@ -2,8 +2,6 @@ package de.mpg.cbs.libraries;
 
 import java.io.*;
 import java.util.*;
-import gov.nih.mipav.view.*;
-import gov.nih.mipav.model.file.FileInfoBase;
 
 import de.mpg.cbs.utilities.*;
 import de.mpg.cbs.structures.*;

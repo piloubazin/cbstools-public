@@ -2,9 +2,6 @@ package de.mpg.cbs.methods;
 
 import java.io.*;
 import java.util.*;
-import gov.nih.mipav.view.*;
-
-import gov.nih.mipav.model.structures.jama.*;
 
 import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.structures.*;

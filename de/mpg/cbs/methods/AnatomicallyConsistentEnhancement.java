@@ -59,7 +59,7 @@ public class AnatomicallyConsistentEnhancement {
 		acegm = new float[nxyz];
 		acecsf = new float[nxyz];
 		
-		lut = new CriticalPointLUT(null,"critical266LUT.raw.gz",200);
+		lut = new CriticalPointLUT(lutdir,"critical266LUT.raw.gz",200);
 		if (!lut.loadCompressedPattern()) {
 			System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 			BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
@@ -301,7 +301,7 @@ public class AnatomicallyConsistentEnhancement {
 
     public final byte[] medialThinning(byte[] skeleton, float[] funct, int nx, int ny, int nz) {
 		
-    	lut = new CriticalPointLUT(null,"critical266LUT.raw.gz",200);
+    	lut = new CriticalPointLUT(lutdir,"critical266LUT.raw.gz",200);
 		if (!lut.loadCompressedPattern()) {
 			System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 			BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
