@@ -161,13 +161,20 @@ public class CortexOptimCRUISE {
 		
 		// 2. Run ACE on CSF (new version)
 		
-		// compute distance factor for reducing impact of WM far from initial boundary (for dura mostly)
+		// compute distance factor for reducing impact of WM far from initial boundary / 0.5 probability (for dura mostly)
+		boolean[] wmmask = new boolean[nxyz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (init[xyz]>0 || wm[xyz]>=0.5f) wmmask[xyz] = true;
+			else wmmask[xyz] = false;
+		}
+		wmmask = ObjectLabeling.largestObject(wmmask, nx,ny,nz, 26);
 		float wmdist = wmdistParam;
 		float[] factor = new float[nxyz];
 		float[] update = new float[nxyz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;
-			if (init[xyz]>0) factor[xyz] = 1.0f;
+			if (wmmask[xyz]) factor[xyz] = 1.0f;
 		}
 		float scaling = 1.0f/(1.0f+Numerics.square(1.0f/wmdist));
 		for (int t=0;t<2*wmdist;t++) {

@@ -963,6 +963,18 @@ public class ObjectLabeling {
     public static final boolean[][][] largest18Object(boolean[][][] object, int nx, int ny, int nz) {		
     	return largestObject(object, nx, ny, nz, 18);
     }
+   
+    
+    /*
+     * @brief Returns the largest 18 connected object.
+     * @param object Boolean volume to work on.
+     * @param nx X dimension.
+     * @param ny Y dimension.
+     * @param nz Z dimension.
+     */
+    public static final boolean[][][] largest26Object(boolean[][][] object, int nx, int ny, int nz) {		
+    	return largestObject(object, nx, ny, nz, 26);
+    }
     	
 	/** 
 	 *	Connected components of an object.
