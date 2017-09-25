@@ -39,12 +39,13 @@ public class JistBrainDefineMultiRegionPriors extends ProcessingAlgorithm {
 	private ParamVolume mgdmImage;
 	
 	private ParamFile atlasParam;
-	private ParamOption 	regionParam;
+	//private ParamOption 	regionParam;
 	private ParamOption 	methodParam;
 	private ParamFloat		distanceParam;
 	
-	private ParamVolume regionImage;
-	private ParamVolume pvRegionImage;
+	private ParamVolume interImage;
+	private ParamVolume hornsImage;
+	private ParamVolume icapsImage;
 		
 	private BrainDefineMultiRegionPriors algorithm;
 	
@@ -55,7 +56,7 @@ public class JistBrainDefineMultiRegionPriors extends ProcessingAlgorithm {
 		
 		inputParams.add(atlasParam = new ParamFile("Atlas file",new FileExtensionFilter(new String[]{"txt"})));
 		
-		inputParams.add(regionParam = new ParamOption("Defined Region", BrainDefineMultiRegionPriors.regionTypes));
+		//inputParams.add(regionParam = new ParamOption("Defined Region", BrainDefineMultiRegionPriors.regionTypes));
 		inputParams.add(methodParam = new ParamOption("Definition Method", BrainDefineMultiRegionPriors.methodTypes));
 		inputParams.add(distanceParam = new ParamFloat("Distance Offset (voxels)", 0.0f, 10.0f, 1.0f));
 		
@@ -78,8 +79,9 @@ public class JistBrainDefineMultiRegionPriors extends ProcessingAlgorithm {
 
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
-		outputParams.add(regionImage = new ParamVolume("Region Mask",VoxelType.BYTE));
-		outputParams.add(pvRegionImage = new ParamVolume("Region partial volume",VoxelType.FLOAT));
+		outputParams.add(interImage = new ParamVolume("Inter-ventricular PV",VoxelType.FLOAT));
+		outputParams.add(hornsImage = new ParamVolume("Ventricular horns PV",VoxelType.FLOAT));
+		outputParams.add(icapsImage = new ParamVolume("Internal capsule PV",VoxelType.FLOAT));
 		
 		outputParams.setName("defined images");
 		outputParams.setLabel("defined images");
@@ -104,14 +106,15 @@ public class JistBrainDefineMultiRegionPriors extends ProcessingAlgorithm {
 		algorithm.setLevelsetBoundaryImage(Interface.getFloatImage3D(mgdmImage));
 		
 		algorithm.setAtlasFile(atlasParam.getValue().getAbsolutePath());
-		algorithm.setDefinedRegion(regionParam.getValue());
+		//algorithm.setDefinedRegion(regionParam.getValue());
 		algorithm.setDefinitionMethod(methodParam.getValue());
 		algorithm.setDistanceOffset(distanceParam.getValue().floatValue());
 		
 		algorithm.execute();
 		
-		Interface.setUByteImage3D(algorithm.getRegionMask(), dims, regionImage, segName+algorithm.getRegionName(), header);
-		Interface.setFloatImage3D(algorithm.getRegionProbability(), dims, pvRegionImage, mgdmName+algorithm.getRegionName(), header);
+		Interface.setFloatImage3D(algorithm.getInterVentricularPV(), dims, interImage, mgdmName+"_iv", header);
+		Interface.setFloatImage3D(algorithm.getVentricularHornsPV(), dims, hornsImage, mgdmName+"_vh", header);
+		Interface.setFloatImage3D(algorithm.getInternalCapsulePV(), dims, icapsImage, mgdmName+"_ic", header);
 		
 		return;
 	}
