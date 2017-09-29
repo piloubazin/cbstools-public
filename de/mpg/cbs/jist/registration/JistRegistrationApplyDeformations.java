@@ -42,14 +42,15 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 	private ParamVolume referenceImage;
 	private ParamVolume deformation1Image;
 	private ParamVolume deformation2Image;
+	private ParamVolume deformation3Image;
 	private ParamOption type1Option;
 	private ParamOption type2Option;
+	private ParamOption type3Option;
 	private ParamOption interpOption;
 	private ParamOption padOption;
 	
-	private static final String[] types1 = {"none", "deformation(voxels)", "mapping(voxels)", "deformation(mm)", "mapping(mm)"};
-	private static final String[] types2 = {"none", "deformation(voxels)", "mapping(voxels)", "deformation(mm)", "mapping(mm)"};
-	private static final String[] interp = {"WSinc","linear", "NN"};
+	private static final String[] types = {"none", "deformation(voxels)", "mapping(voxels)", "deformation(mm)", "mapping(mm)"};
+	private static final String[] interp = {"NN", "linear", "WSinc"};
 	private static final String[] pads = {"closest", "zero", "min", "max"};
 	
 	private ParamVolume mappedImage;
@@ -66,12 +67,18 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 		inputParams.add(sourceImage = new ParamVolume("Image to deform",null,-1,-1,-1,-1));
 		inputParams.add(referenceImage = new ParamVolume("Reference Image",null,-1,-1,-1,-1));
 		inputParams.add(deformation1Image = new ParamVolume("Deformation 1",null,-1,-1,-1,-1));
-		inputParams.add(type1Option = new ParamOption("Deformation type 1",types1));
+		inputParams.add(type1Option = new ParamOption("Deformation type 1",types));
+		type1Option.setValue("mapping(voxels)");
 		inputParams.add(deformation2Image = new ParamVolume("Deformation 2",null,-1,-1,-1,-1));
-		inputParams.add(type2Option = new ParamOption("Deformation type 2",types2));
+		inputParams.add(type2Option = new ParamOption("Deformation type 2",types));
+		deformation2Image.setMandatory(false);
+		type2Option.setValue("none");
+		inputParams.add(deformation3Image = new ParamVolume("Deformation 3",null,-1,-1,-1,-1));
+		inputParams.add(type3Option = new ParamOption("Deformation type 3",types));
+		deformation3Image.setMandatory(false);
+		type3Option.setValue("none");
 		inputParams.add(interpOption = new ParamOption("Interpolation type",interp));
 		inputParams.add(padOption = new ParamOption("Image padding",pads));
-		deformation2Image.setMandatory(false);
 		
 		sourceImage.setLoadAndSaveOnValidate(false);
 		referenceImage.setLoadAndSaveOnValidate(false);
@@ -211,16 +218,61 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 				}
 				// compose the deformations: X' = def1(def2(X))
 				System.out.println("compose deformations");
-				float[][][][] composed = new float[nrx][nry][nrz][3];
-				for (int x=0;x<nrx;x++) for (int y=0;y<nry;y++) for (int z=0;z<nrz;z++) {
+				float[][][][] composed12 = new float[nd2x][nd2y][nd2z][3];
+				for (int x=0;x<nd2x;x++) for (int y=0;y<nd2y;y++) for (int z=0;z<nd2z;z++) {
 					//if (deformation2[x][y][z][X]>=1 && deformation2[x][y][z][Y]>=1 && deformation2[x][y][z][Z]>=1) {
-						composed[x][y][z][X] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation2[x][y][z][X], deformation2[x][y][z][Y], deformation2[x][y][z][Z], X, nd1x, nd1y, nd1z, 3);
-						composed[x][y][z][Y] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation2[x][y][z][X], deformation2[x][y][z][Y], deformation2[x][y][z][Z], Y, nd1x, nd1y, nd1z, 3);
-						composed[x][y][z][Z] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation2[x][y][z][X], deformation2[x][y][z][Y], deformation2[x][y][z][Z], Z, nd1x, nd1y, nd1z, 3);
+						composed12[x][y][z][X] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation2[x][y][z][X], deformation2[x][y][z][Y], deformation2[x][y][z][Z], X, nd1x, nd1y, nd1z, 3);
+						composed12[x][y][z][Y] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation2[x][y][z][X], deformation2[x][y][z][Y], deformation2[x][y][z][Z], Y, nd1x, nd1y, nd1z, 3);
+						composed12[x][y][z][Z] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation2[x][y][z][X], deformation2[x][y][z][Y], deformation2[x][y][z][Z], Z, nd1x, nd1y, nd1z, 3);
 					//}
 				}
-				deformation1 = composed;
+				deformation1 = composed12;
 				deformation2 = null;
+
+				// third deformation if given
+				if (!type3Option.getValue().equals("none") && deformation3Image.getImageData()!=null) {
+					System.out.println("load deformation 3");
+					ImageDataFloat deformation3Img = new ImageDataFloat(deformation3Image.getImageData());
+					deformation3Image.dispose();
+					int nd3x = deformation3Img.getRows();
+					int nd3y = deformation3Img.getCols();
+					int nd3z = deformation3Img.getSlices();
+					float rd3x = deformation3Img.getHeader().getDimResolutions()[X];
+					float rd3y = deformation3Img.getHeader().getDimResolutions()[Y];
+					float rd3z = deformation3Img.getHeader().getDimResolutions()[Z];
+					float[][][][] deformation3 = deformation3Img.toArray4d();
+					//deformation3Img.finalize();
+					deformation3Img = null;
+					// scale to voxels if needed
+					if (type3Option.getValue().endsWith("(mm)")) {
+						System.out.println("normalize to resolution ("+rd3x+", "+rd3y+", "+rd3z+")");
+						for (int x=0;x<nd3x;x++) for (int y=0;y<nd3y;y++) for (int z=0;z<nd3z;z++) {
+							deformation3[x][y][z][X] /= rd3x; 	
+							deformation3[x][y][z][Y] /= rd3y; 	
+							deformation3[x][y][z][Z] /= rd3z; 	
+						}
+					}
+					// turn into a mapping if needed
+					if (type3Option.getValue().startsWith("deformation")) {
+						for (int x=0;x<nd3x;x++) for (int y=0;y<nd3y;y++) for (int z=0;z<nd3z;z++) {
+							deformation3[x][y][z][X] += x;
+							deformation3[x][y][z][Y] += y;
+							deformation3[x][y][z][Z] += z;
+						}
+					}
+					// compose the deformations: X' = def1(def2(X))
+					System.out.println("compose deformations");
+					float[][][][] composed23 = new float[nd3x][nd3y][nd3z][3];
+					for (int x=0;x<nd3x;x++) for (int y=0;y<nd3y;y++) for (int z=0;z<nd3z;z++) {
+						//if (deformation2[x][y][z][X]>=1 && deformation2[x][y][z][Y]>=1 && deformation2[x][y][z][Z]>=1) {
+							composed23[x][y][z][X] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation3[x][y][z][X], deformation3[x][y][z][Y], deformation3[x][y][z][Z], X, nd2x, nd2y, nd2z, 3);
+							composed23[x][y][z][Y] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation3[x][y][z][X], deformation3[x][y][z][Y], deformation3[x][y][z][Z], Y, nd2x, nd2y, nd2z, 3);
+							composed23[x][y][z][Z] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation3[x][y][z][X], deformation3[x][y][z][Y], deformation3[x][y][z][Z], Z, nd2x, nd2y, nd2z, 3);
+						//}
+					}
+					deformation1 = composed23;
+					deformation3 = null;
+				}
 			}
 			// new image
 			System.out.println("deform image");
@@ -359,16 +411,61 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 				}
 				// compose the deformations: X' = def1(def2(X))
 				System.out.println("compose deformations");
-				float[][][][] composed = new float[nrx][nry][nrz][3];
-				for (int x=0;x<nrx;x++) for (int y=0;y<nry;y++) for (int z=0;z<nrz;z++) {
+				float[][][][] composed12 = new float[nrx][nry][nrz][3];
+				for (int x=0;x<nd2x;x++) for (int y=0;y<nd2y;y++) for (int z=0;z<nd2z;z++) {
 					//if (deformation2[x][y][z][X]>=1 && deformation2[x][y][z][Y]>=1 && deformation2[x][y][z][Z]>=1) {
-						composed[x][y][z][X] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation2[x][y][z][X], deformation2[x][y][z][Y], deformation2[x][y][z][Z], X, nd1x, nd1y, nd1z, 3);
-						composed[x][y][z][Y] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation2[x][y][z][X], deformation2[x][y][z][Y], deformation2[x][y][z][Z], Y, nd1x, nd1y, nd1z, 3);
-						composed[x][y][z][Z] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation2[x][y][z][X], deformation2[x][y][z][Y], deformation2[x][y][z][Z], Z, nd1x, nd1y, nd1z, 3);
+						composed12[x][y][z][X] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation2[x][y][z][X], deformation2[x][y][z][Y], deformation2[x][y][z][Z], X, nd1x, nd1y, nd1z, 3);
+						composed12[x][y][z][Y] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation2[x][y][z][X], deformation2[x][y][z][Y], deformation2[x][y][z][Z], Y, nd1x, nd1y, nd1z, 3);
+						composed12[x][y][z][Z] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation2[x][y][z][X], deformation2[x][y][z][Y], deformation2[x][y][z][Z], Z, nd1x, nd1y, nd1z, 3);
 					//}
 				}
-				deformation1 = composed;
+				deformation1 = composed12;
 				deformation2 = null;
+
+				// third deformation if given
+				if (!type3Option.getValue().equals("none") && deformation3Image.getImageData()!=null) {
+					System.out.println("load deformation 3");
+					ImageDataFloat deformation3Img = new ImageDataFloat(deformation3Image.getImageData());
+					deformation3Image.dispose();
+					int nd3x = deformation3Img.getRows();
+					int nd3y = deformation3Img.getCols();
+					int nd3z = deformation3Img.getSlices();
+					float rd3x = deformation3Img.getHeader().getDimResolutions()[X];
+					float rd3y = deformation3Img.getHeader().getDimResolutions()[Y];
+					float rd3z = deformation3Img.getHeader().getDimResolutions()[Z];
+					float[][][][] deformation3 = deformation3Img.toArray4d();
+					//deformation2Img.finalize();
+					deformation3Img = null;
+					// scale to voxels if needed
+					if (type3Option.getValue().endsWith("(mm)")) {
+						System.out.println("normalize to resolution ("+rd3x+", "+rd3y+", "+rd3z+")");
+						for (int x=0;x<nd3x;x++) for (int y=0;y<nd3y;y++) for (int z=0;z<nd3z;z++) {
+							deformation3[x][y][z][X] /= rd3x; 	
+							deformation3[x][y][z][Y] /= rd3y; 	
+							deformation3[x][y][z][Z] /= rd3z; 	
+						}
+					}
+					// turn into a mapping if needed
+					if (type2Option.getValue().startsWith("deformation")) {
+						for (int x=0;x<nd3x;x++) for (int y=0;y<nd3y;y++) for (int z=0;z<nd3z;z++) {
+							deformation3[x][y][z][X] += x;
+							deformation3[x][y][z][Y] += y;
+							deformation3[x][y][z][Z] += z;
+						}
+					}
+					// compose the deformations: X' = def1(def2(X))
+					System.out.println("compose deformations");
+					float[][][][] composed23 = new float[nd3x][nd3y][nd3z][3];
+					for (int x=0;x<nd3x;x++) for (int y=0;y<nd3y;y++) for (int z=0;z<nd3z;z++) {
+						//if (deformation2[x][y][z][X]>=1 && deformation2[x][y][z][Y]>=1 && deformation2[x][y][z][Z]>=1) {
+							composed23[x][y][z][X] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation3[x][y][z][X], deformation3[x][y][z][Y], deformation3[x][y][z][Z], X, nd2x, nd2y, nd2z, 3);
+							composed23[x][y][z][Y] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation3[x][y][z][X], deformation3[x][y][z][Y], deformation3[x][y][z][Z], Y, nd2x, nd2y, nd2z, 3);
+							composed23[x][y][z][Z] = ImageInterpolation.linearClosestInterpolation(deformation1, deformation3[x][y][z][X], deformation3[x][y][z][Y], deformation3[x][y][z][Z], Z, nd2x, nd2y, nd2z, 3);
+						//}
+					}
+					deformation1 = composed23;
+					deformation3 = null;
+				}
 			}
 			// new image
 			System.out.println("deform image");
