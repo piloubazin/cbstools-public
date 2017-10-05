@@ -119,7 +119,7 @@ public class JistSurfaceLevelsetInflation extends ProcessingAlgorithm {
 		// main algorithm
 		InflateGdm gdm = new InflateGdm(levelset, nx, ny, nz, rx, ry, rz, 
 										bgmask, 0.4f, 
-										0.4f, topologyParam.getValue());
+										0.4f, topologyParam.getValue(),null);
 		
 		/* seems to work for the inflation part (still a few pbs) */
 		double basis = 1.0f;

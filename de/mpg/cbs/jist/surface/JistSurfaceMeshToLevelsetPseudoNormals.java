@@ -357,7 +357,7 @@ public class JistSurfaceMeshToLevelsetPseudoNormals  extends ProcessingAlgorithm
 		sdf = cleanupSign2(sdf, 26, nx, ny, nz);
 		
 		BasicInfo.displayMessage("Evolving narrow band.\n");
-		InflateGdm gdm = new InflateGdm(sdf, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no");
+		InflateGdm gdm = new InflateGdm(sdf, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no",null);
 		gdm.evolveNarrowBand(0, 1.0f);
 		
 		BasicInfo.displayMessage("Output.\n");

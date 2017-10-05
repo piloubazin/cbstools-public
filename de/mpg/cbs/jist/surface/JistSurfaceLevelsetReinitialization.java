@@ -102,7 +102,7 @@ public class JistSurfaceLevelsetReinitialization extends ProcessingAlgorithm {
 		//int delta = 30;
 		//ObjectMorphology.fastDilateObject(bgmask, nx, ny, nz, delta);
 				
-		InflateGdm gdm = new InflateGdm(levelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no");
+		InflateGdm gdm = new InflateGdm(levelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no",null);
 				
 		gdm.evolveNarrowBand(0, 1.0f);
 		//gdm.fastMarchingReinitialization(false);

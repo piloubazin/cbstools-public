@@ -238,11 +238,11 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 		boolean[] bgmask = new boolean[nxyz];
 		boolean[] bgmask2 = new boolean[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) bgmask[xyz] = true; 
-		InflateGdm reinit = new InflateGdm(slevelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no");
+		InflateGdm reinit = new InflateGdm(slevelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no",null);
 		reinit.fastMarchingReinitialization(false);
 		slevelset = reinit.getLevelSet();
 
-		reinit = new InflateGdm(tlevelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no");
+		reinit = new InflateGdm(tlevelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no",null);
 		reinit.fastMarchingReinitialization(false);
 		tlevelset = reinit.getLevelSet();		
 		
@@ -475,7 +475,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 								
 				// reinit the source levelset
 				dbgmask = Morphology.erodeObject(dbgmask, nx, ny, nz, 1, 1, 1);
-				reinit = new InflateGdm(slevelset, nx, ny, nz, rx, ry, rz, dbgmask, 0.4f, 0.4f, "no");
+				reinit = new InflateGdm(slevelset, nx, ny, nz, rx, ry, rz, dbgmask, 0.4f, 0.4f, "no",null);
 				reinit.fastMarchingReinitialization(false);
 				slevelset = reinit.getLevelSet();
 			}
@@ -574,7 +574,7 @@ public class JistRegistrationMultimodalSurface extends ProcessingAlgorithm {
 
 		// main algorithm
 		BasicInfo.displayMessage("re-build levelset...\n");
-		InflateGdm gdm = new InflateGdm(levelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no");
+		InflateGdm gdm = new InflateGdm(levelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no",null);
 		
 		double basis = 1.0f;
 		double scale = smoothing;
