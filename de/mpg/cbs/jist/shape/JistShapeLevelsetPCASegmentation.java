@@ -77,8 +77,8 @@ public class JistShapeLevelsetPCASegmentation extends ProcessingAlgorithm {
 		inputParams.add(scaleParam = new ParamDouble("Eigenmode visualization scaling (x stdev)", 0.0f, 10.0f, 1.0f));
 		*/	
 			
-		inputParams.setPackage("CBS");
-		inputParams.setCategory("Utilities");
+		inputParams.setPackage("CBS Tools");
+		inputParams.setCategory("Shape.devel");
 		inputParams.setLabel("Levelset PCA Segmentation");
 		inputParams.setName("LevelsetPCASegmentation");
 
