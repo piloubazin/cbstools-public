@@ -432,7 +432,7 @@ public class JistShapeLevelsetFullPCA extends ProcessingAlgorithm {
 				}
 			}
 		} else {
-			imgs = new float[nx][ny][nz][npca];
+			imgs = new float[nx][ny][nz][npca+1];
 			for (int x=x0;x<=xN;x++) for (int y=y0;y<=yN;y++) for (int z=z0;z<=zN;z++) {
 				imgs[x][y][z][0] = amean[x][y][z];
 				for (int n=0;n<npca;n++) {
