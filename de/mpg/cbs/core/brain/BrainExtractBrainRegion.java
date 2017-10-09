@@ -362,7 +362,7 @@ public class BrainExtractBrainRegion {
 				backgroundName = "_bg";
 			}
 		}
-		System.out.println("(output extensions: "+structureName+", "+insideName+", "+backgroundName+")");
+		//System.out.println("(output extensions: "+structureName+", "+insideName+", "+backgroundName+")");
 		
 		// simplified? only use first gdm for approximate scoring
 		// not good enough at further boundaries
