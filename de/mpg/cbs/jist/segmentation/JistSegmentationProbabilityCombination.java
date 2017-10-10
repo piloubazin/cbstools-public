@@ -109,9 +109,14 @@ public class JistSegmentationProbabilityCombination extends ProcessingAlgorithm{
 						else val[l] = 0.0f;
 					}
 						
-					if (addbg) { 
+					if (addbg) {
+					    /* use the sum or the max?
 						val[N] = 1.0f;
 						for(byte l=0; l<N; l++) val[N] -= val[l];
+						val[N] = Numerics.max(val[N],0.0f);
+						*/
+						val[N] = 1.0f;
+						for(byte l=0; l<N; l++) val[N] = Numerics.min(1.0f-val[l],val[N]);
 						val[N] = Numerics.max(val[N],0.0f);
 					}
 					Numerics.argmax(arg, best, val, M);
