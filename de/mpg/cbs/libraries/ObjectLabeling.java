@@ -860,6 +860,8 @@ public class ObjectLabeling {
 			lb = connected6Object3D(object, nx, ny, nz);
 		} else if (conn == 18) {
 			lb = connected18Object3D(object, nx, ny, nz);
+		} else if (conn == 26) {
+			lb = connected26Object3D(object, nx, ny, nz);
 		} else {
 			System.out.println("Unsupported connectivity: " + conn + " \n");
 			return null;
@@ -913,6 +915,8 @@ public class ObjectLabeling {
 			lb = connected6Object3D(object, nx, ny, nz);
 		} else if (conn == 18) {
 			lb = connected18Object3D(object, nx, ny, nz);
+		} else if (conn == 26) {
+			lb = connected26Object3D(object, nx, ny, nz);
 		} else {
 			System.out.println("Unsupported connectivity: " + conn + " \n");
 			return null;
@@ -930,6 +934,8 @@ public class ObjectLabeling {
 			lb = connected6Object3D(object, nx, ny, nz);
 		} else if (conn == 18) {
 			lb = connected18Object3D(object, nx, ny, nz);
+		} else if (conn == 26) {
+			lb = connected26Object3D(object, nx, ny, nz);
 		} else {
 			System.out.println("Unsupported connectivity: " + conn + " \n");
 			return null;
