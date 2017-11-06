@@ -221,6 +221,21 @@ public class ImageInterpolation {
 		if (mask[x0+nx*y0+nx*ny*z0]) return image[x0+nx*y0+nx*ny*z0];
 		else return zero;
 	}
+	public static float nearestNeighborInterpolation(float[] image, int offset, boolean[] mask, float zero, float x, float y, float z, int nx, int ny, int nz) {
+		int x0,y0,z0;
+		
+        // if out of boundary, replace all with zero
+        if ( (x<0) || (x>nx-1) || (y<0) || (y>ny-1) || (z<0) || (z>nz-1) ) {
+			return zero;
+        }
+		
+		x0 = Numerics.round(x);
+		y0 = Numerics.round(y);
+		z0 = Numerics.round(z);
+
+		if (mask[x0+nx*y0+nx*ny*z0+offset]) return image[x0+nx*y0+nx*ny*z0+offset];
+		else return zero;
+	}
 	/**
 	 *	linear interpolation, with given value outside the image
 	 */
@@ -749,6 +764,74 @@ public class ImageInterpolation {
 		y0 = Numerics.floor(y);
 		z0 = Numerics.floor(z);
 		xyz0 = x0 + nx*y0 + nx*ny*z0;
+		
+		alpha = x - x0;
+		nalpha = 1.0f - alpha;
+
+		beta = y - y0;
+		nbeta = 1.0f - beta;
+
+		gamma = z - z0;
+		ngamma = 1.0f - gamma;
+
+		val = 0.0f;
+		den = 0.0f;
+		
+		if (mask[xyz0]) {
+			val += nalpha*nbeta*ngamma*image[xyz0];
+			den += nalpha*nbeta*ngamma;
+		}
+		if (mask[xyz0+1]) {
+			val += alpha*nbeta*ngamma*image[xyz0+1];
+			den += alpha*nbeta*ngamma;
+		}
+		if (mask[xyz0+nx]) {
+			val += nalpha*beta*ngamma*image[xyz0+nx];
+			den += nalpha*beta*ngamma;
+		}
+		if (mask[xyz0+nx*ny]) {
+			val += nalpha*nbeta*gamma*image[xyz0+nx*ny];
+			den += nalpha*nbeta*gamma;
+		}
+		if (mask[xyz0+1+nx]) {
+			val += alpha*beta*ngamma*image[xyz0+1+nx];
+			den += alpha*beta*ngamma;
+		}
+		if (mask[xyz0+nx+nx*ny]) {
+			val += nalpha*beta*gamma*image[xyz0+nx+nx*ny];
+			den += nalpha*beta*gamma;
+		}
+		if (mask[xyz0+1+nx*ny]) {
+			val += alpha*nbeta*gamma*image[xyz0+1+nx*ny];
+			den += alpha*nbeta*gamma;
+		}
+		if (mask[xyz0+1+nx+nx*ny]) {
+			val += alpha*beta*gamma*image[xyz0+1+nx+nx*ny];
+			den += alpha*beta*gamma;
+		}
+		if (den>0) {
+			return (float) (val/den);
+		} else {
+			return (float) value;
+		}
+	}
+	
+	/**
+	 *	linear interpolation, with value outside the image and mask
+	 */
+	public static float linearInterpolation(float[] image, int offset, boolean[] mask, float value, double x, double y, double z, int nx, int ny, int nz) {
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val,den;
+		int x0,y0,z0;
+		int xyz0;
+
+        // if out of boundary, replace all with zero
+        if ( (x<0) || (x>nx-2) || (y<0) || (y>ny-2) || (z<0) || (z>nz-2) ) 
+            return value;
+        
+		x0 = Numerics.floor(x);
+		y0 = Numerics.floor(y);
+		z0 = Numerics.floor(z);
+		xyz0 = x0 + nx*y0 + nx*ny*z0 + offset;
 		
 		alpha = x - x0;
 		nalpha = 1.0f - alpha;

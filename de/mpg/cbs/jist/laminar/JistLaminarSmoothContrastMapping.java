@@ -46,7 +46,8 @@ public class JistLaminarSmoothContrastMapping extends ProcessingAlgorithm {
 	private ParamBoolean smoothfirstParam;	
 	
 	
-	private ParamVolume mappedImage;
+	private ParamVolume mappedContrastImage;
+	private ParamVolume mappedMaskImage;
 	
 	// global variables
 	private static final byte X = 0;
@@ -91,7 +92,8 @@ public class JistLaminarSmoothContrastMapping extends ProcessingAlgorithm {
 
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
-		outputParams.add(mappedImage = new ParamVolume("Cortex-mapped contrast image",null,-1,-1,-1,-1));
+		outputParams.add(mappedContrastImage = new ParamVolume("Cortex-mapped contrast image",null,-1,-1,-1,-1));
+		outputParams.add(mappedMaskImage = new ParamVolume("Cortex-mapped contrast mask",null,-1,-1,-1,-1));
 		
 		outputParams.setName("layers images");
 		outputParams.setLabel("layers images");
@@ -138,7 +140,8 @@ public class JistLaminarSmoothContrastMapping extends ProcessingAlgorithm {
 		// output
 		String imgname = contrastImage.getImageData().getName();
 		
-		Interface.setFloatImage4D(algorithm.getCortexMappedImage(), dims, idims[3], mappedImage, name+"_lscm", header);
+		Interface.setFloatImage4D(algorithm.getCortexMappedImage(), dims, idims[3], mappedContrastImage, name+"_lscm_data", header);
+		Interface.setIntegerImage3D(algorithm.getCortexMappedMask(), dims, mappedMaskImage, name+"_lscm_mask", header);
 	}
 
 

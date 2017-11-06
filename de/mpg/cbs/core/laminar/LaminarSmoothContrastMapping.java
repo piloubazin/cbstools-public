@@ -31,7 +31,8 @@ public class LaminarSmoothContrastMapping {
 	private float rx, ry, rz;
 	private float rix, riy, riz;
 
-	private float[] mappedImage;
+	private float[] mappedContrastImage;
+	private int[] mappedMaskImage;
 	
 	// global variables
 	private static final byte X = 0;
@@ -87,7 +88,8 @@ public class LaminarSmoothContrastMapping {
 	public final String getVersion() { return "3.1.2"; };
 			
 	// create outputs
-	public final float[] getCortexMappedImage() { return mappedImage; }
+	public final float[] getCortexMappedImage() { return mappedContrastImage; }
+	public final int[] getCortexMappedMask() { return mappedMaskImage; }
 	
 	public void execute(){
 		
@@ -118,10 +120,11 @@ public class LaminarSmoothContrastMapping {
 		// create self-mapping if not set
 		if (mappingImage==null) {
 			mappingImage = new float[3*nxyz];
-			for (int xyz=0;xyz<nxyz;xyz++) {
-				mappingImage[xyz+X*nxyz] = xyz+X*nxyz;
-				mappingImage[xyz+Y*nxyz] = xyz+Y*nxyz;
-				mappingImage[xyz+Z*nxyz] = xyz+Z*nxyz;
+			for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
+				int xyz = x + nx*y + nx*ny*z;
+				mappingImage[xyz+X*nxyz] = x;
+				mappingImage[xyz+Y*nxyz] = y;
+				mappingImage[xyz+Z*nxyz] = z;
 			}
 		}
 		
@@ -231,7 +234,12 @@ public class LaminarSmoothContrastMapping {
 		}
 		
 		// output
-		mappedImage = contrastMeasure;
+		mappedContrastImage = contrastMeasure;
+		mappedMaskImage = new int[nxyz];
+		for (int xyz=0;xyz<nixyz;xyz++) {
+			if (ctxmask[xyz]) mappedMaskImage[xyz] = 1;
+			else mappedMaskImage[xyz] = 0;
+		}
 	}
 
 	private final void directLaminarSmoothing(float[] data, int nd, float[][] layers, int nlayers, boolean[] ctxmask) {
