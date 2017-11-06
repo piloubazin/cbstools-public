@@ -149,6 +149,23 @@ public class ImageStatistics {
 	}
 	
 	/**
+	 *	minimum value of the image
+	 */
+    public static float minimum(float[] img, boolean[] mask, int nx, int ny, int nz) {
+		float min = 0;
+		boolean started=false;
+        for (int xyz=0;xyz<nx*ny*nz;xyz++) if (mask[xyz]) {
+        	if (!started) {
+        		min = img[xyz];
+        		started = true;
+        	} else if (img[xyz]<min) {
+        		min = img[xyz];
+        	}
+		}
+		return min;
+	}
+	
+	/**
 	 *	maximum value of the image
 	 */
     public static float maximum(float[][][] img, boolean[][][] mask, int nx, int ny, int nz) {
@@ -160,6 +177,23 @@ public class ImageStatistics {
         		started = true;
         	} else if (img[x][y][z]>max) {
         		max = img[x][y][z];
+        	}
+		}
+		return max;
+	}
+	
+	/**
+	 *	maximum value of the image
+	 */
+    public static float maximum(float[] img, boolean[] mask, int nx, int ny, int nz) {
+		float max = 0;
+		boolean started=false;
+        for (int xyz=0;xyz<nx*ny*nz;xyz++) if (mask[xyz]) {
+        	if (!started) {
+        		max = img[xyz];
+        		started = true;
+        	} else if (img[xyz]>max) {
+        		max = img[xyz];
         	}
 		}
 		return max;
@@ -360,6 +394,85 @@ public class ImageStatistics {
 				for (n=1;n<Nbins;n++) {
 					if (  (image[x][y][z] >  Imin + (float)n/(float)Nbins*(Imax-Imin) )
 						&&(image[x][y][z] <= Imin + (float)(n+1)/(float)Nbins*(Imax-Imin) ) ) bins[n]++;	
+				}
+			}
+			/* debug
+			System.out.print("histogram: \n");
+			for (n=0;n<Nbins;n++) System.out.print(" | "+bins[n]);
+			System.out.print("\n");
+			*/
+			
+			// find the value corresponding to the ratio
+			count = 0;
+			n=0;
+			while ( (count < ratio) && (n<Nbins) ) {
+				count +=bins[n];
+				n=n+1;
+			}
+			Rmin = Imin + (float)(n-0.5f)/(float)Nbins*(Imax-Imin);
+			
+			//System.out.print("robust minimum: "+Rmin+" ("+n+", "+ratio+", "+count+")\n");
+		
+			// new boundaries
+			float I0 = Imin + (float)(n-1)/(float)Nbins*(Imax-Imin);
+			float I1 = Imin + (float)(n)/(float)Nbins*(Imax-Imin);
+			
+			Imin = I0;
+			Imax = I1;
+			
+			// new ratio
+			if (n>0) ratio = ratio - (count-bins[n-1]);		
+		}
+		
+		return Rmin;
+	}
+
+	/**
+     *    Robust minimum estimation
+     *    @param 	ratio	float fraction in [0,1]: the minimum number of points below or equal to the minimum over the total volume
+	 *    @param 	scales	int: the number of times the scale is refined for finding the robust minimum
+	 *	  @return 			the robust minimum value	
+     */
+    public static final float robustMinimum(float[] image, boolean[] mask, float ratio, int scales, int nx, int ny, int nz ) {
+		float Imin,Imax,Rmin;
+		int Nbins = 10;
+		float[] bins = new float[Nbins];
+		float count;
+		int n;
+		
+		// ratio: global value
+		ratio = ratio*nx*ny*nz;
+		
+		// find first min, max
+		Imin=0; 
+		Imax=0;
+		boolean started=false;
+		for (int xyz=0;xyz<nx*ny*nz;xyz++) if (mask[xyz]) {
+			if (!started) {
+				Imin = image[xyz];
+				Imax = image[xyz];
+				started = true;
+			} else {
+				if (image[xyz]>Imax) Imax = image[xyz];
+				if (image[xyz]<Imin) Imin = image[xyz];
+			}
+		}
+		Rmin = Imin;
+		
+		for (int t=0;t<scales;t++) {
+			
+			Rmin = Imin;
+		
+			// compute coarse histogram
+			for (n=0;n<Nbins;n++) bins[n] = 0;
+			
+			for (int xyz=0;xyz<nx*ny*nz;xyz++) if (mask[xyz]) {
+				// first one include both boundaries 
+				if (  (image[xyz] >= Imin )
+					&&(image[xyz] <= Imin + 1.0f/(float)Nbins*(Imax-Imin) ) ) bins[0]++;
+				for (n=1;n<Nbins;n++) {
+					if (  (image[xyz] >  Imin + (float)n/(float)Nbins*(Imax-Imin) )
+						&&(image[xyz] <= Imin + (float)(n+1)/(float)Nbins*(Imax-Imin) ) ) bins[n]++;	
 				}
 			}
 			/* debug
@@ -661,6 +774,86 @@ public class ImageStatistics {
 				for (n=1;n<Nbins;n++) {
 					if (  (image[x][y][z] >  Imin + (float)n/(float)Nbins*(Imax-Imin) )
 						&&(image[x][y][z] <= Imin + (float)(n+1)/(float)Nbins*(Imax-Imin) ) ) bins[n]++;	
+				}
+			}
+			/* debug 
+			System.out.print("histogram: \n");
+			for (n=0;n<Nbins;n++) System.out.print(" | "+bins[n]);
+			System.out.print("\n");
+			*/
+			
+			// find the value corresponding to the ratio
+			count = 0;
+			n=Nbins;
+			while ( (count < ratio) && (n>0) ) {
+				n=n-1;
+				count +=bins[n];
+			}
+			Rmax = Imin + (float)(n+0.5f)/(float)Nbins*(Imax-Imin);
+			
+			//System.out.print("robust maximum: "+Rmax+" ("+n+", "+ratio+", "+count+")\n");		
+
+			// new boundaries
+			float I0 = Imin + (float)n/(float)Nbins*(Imax-Imin);
+			float I1 = Imin + (float)(n+1)/(float)Nbins*(Imax-Imin);
+			
+			Imin = I0;
+			Imax = I1;
+			
+			// new ratio
+			if (n<Nbins) ratio = ratio - (count-bins[n]);			
+		}
+		
+		return Rmax;
+	}
+
+	/**
+     *    Robust maximum estimation
+     *    @param 	ratio	float fraction in [0,1]: the minimum number of points above or equal to the maximum over the total volume
+	 *    @param 	scales	int: the number of times the scale is refined for finding the robust maximum
+	 *	  @param	nx,ny,nz	image dimensions
+	 *	  @return 			the robust maximum value	
+     */
+    public static final float robustMaximum(float[] image, boolean[] mask, float ratio, int scales, int nx, int ny, int nz ) {
+		float Imin,Imax,Rmax;
+		int Nbins = 10;
+		float[] bins = new float[Nbins];
+		float count;
+		int n;
+		
+		// ratio: global value
+		ratio = ratio*nx*ny*nz;
+		
+		// find first min, max
+		Imin = 0;
+		Imax = 0;
+		boolean started=false;
+		for (int xyz=0;xyz<nx*ny*nz;xyz++) if (mask[xyz]) {
+			if (!started) {
+				Imin = image[xyz];
+				Imax = image[xyz];
+				started = true;
+			} else {
+				if (image[xyz]>Imax) Imax = image[xyz];
+				if (image[xyz]<Imin) Imin = image[xyz];
+			}
+		}
+		Rmax = Imax;
+		
+		for (int t=0;t<scales;t++) {
+			
+			Rmax = Imax;
+			
+			// compute coarse histogram
+			for (n=0;n<Nbins;n++) bins[n] = 0;
+			
+			for (int xyz=0;xyz<nx*ny*nz;xyz++) if (mask[xyz]) {
+				// first one include both boundaries 
+				if (  (image[xyz] >= Imin )
+					&&(image[xyz] <= Imin + 1.0f/(float)Nbins*(Imax-Imin) ) ) bins[0]++;
+				for (n=1;n<Nbins;n++) {
+					if (  (image[xyz] >  Imin + (float)n/(float)Nbins*(Imax-Imin) )
+						&&(image[xyz] <= Imin + (float)(n+1)/(float)Nbins*(Imax-Imin) ) ) bins[n]++;	
 				}
 			}
 			/* debug 

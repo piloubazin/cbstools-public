@@ -44,6 +44,7 @@ public class SurfaceLevelsetBoundary {
 		
 	public final String getVersion() { return "3.1.2"; };
 	
+	// create outputs
 	public final int[] getBoundaryImage() { return boundaryImage; }
 	
 	public void execute() {
