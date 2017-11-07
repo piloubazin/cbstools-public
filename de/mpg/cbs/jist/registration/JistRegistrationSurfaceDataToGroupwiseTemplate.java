@@ -53,9 +53,9 @@ public class JistRegistrationSurfaceDataToGroupwiseTemplate extends ProcessingAl
 
 	private RegistrationSurfaceDataToGroupwiseTemplate algorithm;
 		
+	@Override
 	protected void createInputParameters(ParamCollection inputParams) {
 		
-		inputParams=new ParamCollection("Images");
 		inputParams.add(sourceContrastImage = new ParamVolume("Source Contrast Image",null,-1,-1,-1,-1));
 		inputParams.add(sourceMaskImage = new ParamVolume("Source Contrast Mask (opt)",null,-1,-1,-1,-1));
 		sourceMaskImage.setMandatory(false);
@@ -91,8 +91,8 @@ public class JistRegistrationSurfaceDataToGroupwiseTemplate extends ProcessingAl
 		outputParams.add(mappedDataImage = new ParamVolume("Cortex-mapped contrast image",null,-1,-1,-1,-1));
 		outputParams.add(mappedMaskImage = new ParamVolume("Cortex-mapped contrast mask",null,-1,-1,-1,-1));
 		
-		outputParams.setName("layers images");
-		outputParams.setLabel("layers images");
+		outputParams.setName("registered images");
+		outputParams.setLabel("registered images");
 	}
 
 	@Override

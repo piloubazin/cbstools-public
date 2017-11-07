@@ -56,9 +56,9 @@ public class JistLaminarSmoothContrastMapping extends ProcessingAlgorithm {
 
 	private LaminarSmoothContrastMapping algorithm;
 		
+	@Override
 	protected void createInputParameters(ParamCollection inputParams) {
 		
-		inputParams=new ParamCollection("Images");
 		inputParams.add(layersImage = new ParamVolume("Layer Surface Image",null,-1,-1,-1,-1));
 		inputParams.add(contrastImage = new ParamVolume("Contrast Image",null,-1,-1,-1,-1));
 		inputParams.add(mappingImage = new ParamVolume("Contrast To Layer Mapping (opt)",null,-1,-1,-1,-1));
@@ -95,8 +95,8 @@ public class JistLaminarSmoothContrastMapping extends ProcessingAlgorithm {
 		outputParams.add(mappedContrastImage = new ParamVolume("Cortex-mapped contrast image",null,-1,-1,-1,-1));
 		outputParams.add(mappedMaskImage = new ParamVolume("Cortex-mapped contrast mask",null,-1,-1,-1,-1));
 		
-		outputParams.setName("layers images");
-		outputParams.setLabel("layers images");
+		outputParams.setName("smooth layers images");
+		outputParams.setLabel("smooth layers images");
 	}
 
 	@Override

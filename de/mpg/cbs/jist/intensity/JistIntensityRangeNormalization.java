@@ -21,6 +21,7 @@ import edu.jhu.ece.iacl.jist.pipeline.AlgorithmInformation;
 
 import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.utilities.*;
+import de.mpg.cbs.core.intensity.IntensityRangeNormalization;
 
 /*
  * @author Pierre-Louis Bazin
@@ -41,6 +42,8 @@ public class JistIntensityRangeNormalization extends ProcessingAlgorithm {
 	private ParamBoolean ignoreZeroParam;
 	private ParamFloat	 scalingParam;
 	
+	private IntensityRangeNormalization algorithm;
+	
 	protected void createInputParameters(ParamCollection inputParams) {
 		inputParams.add(inImage = new ParamVolume("Input Image"));
 		inputParams.add(maskImage = new ParamVolume("Mask Image"));
@@ -55,17 +58,19 @@ public class JistIntensityRangeNormalization extends ProcessingAlgorithm {
 		inputParams.add(scalingParam = new ParamFloat("Output scaling", 0, 1e10f, 1.0f));
 		scalingParam.setDescription("scaling the output image into [0,S]");
 		
-		inputParams.setPackage("CBS Tools");
-		inputParams.setCategory("Intensity");
-		inputParams.setLabel("Intensity Range Normalization");
-		inputParams.setName("IntensityRangeNormalization");
+		algorithm = new IntensityRangeNormalization();
+		
+		inputParams.setPackage(algorithm.getPackage());
+		inputParams.setCategory(algorithm.getCategory());
+		inputParams.setLabel(algorithm.getLabel());
+		inputParams.setName(algorithm.getName());
 
 		AlgorithmInformation info = getAlgorithmInformation();
-		info.add(new AlgorithmAuthor("Pierre-Louis Bazin", "bazin@cbs.mpg.de","http://www.cbs.mpg.de/"));
-		info.setAffiliation("Max Planck Institute for Human Cognitive and Brain Sciences");
-		info.setDescription("Outputs a normalized version of the image in [0,1].");
+		info.add(References.getAuthor(algorithm.getAlgorithmAuthors()[0]));
+		info.setAffiliation(algorithm.getAffiliation());
+		info.setDescription(algorithm.getDescription());
 		
-		info.setVersion("3.0");
+		info.setVersion(algorithm.getVersion());
 		info.setStatus(DevelopmentStatus.RC);
 		info.setEditable(false);
 	}
@@ -80,75 +85,26 @@ public class JistIntensityRangeNormalization extends ProcessingAlgorithm {
 	@Override
 	protected void execute(CalculationMonitor monitor){
 		
-		ImageDataFloat input = new ImageDataFloat(inImage.getImageData());
-		float[][][] image = input.toArray3d();
-		int nx = input.getRows();
-		int ny= input.getCols();
-		int nz = input.getSlices();
-		float rx = input.getHeader().getDimResolutions()[0];
-		float ry = input.getHeader().getDimResolutions()[1];
-		float rz = input.getHeader().getDimResolutions()[2];
-		
-		// use a mask by default
-		boolean[][][] mask = new boolean[nx][ny][nz];
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			mask[x][y][z] = true;
-		}
-		// input mask
-		if (maskImage.getImageData()!=null) {
-			ImageDataUByte maskI = new ImageDataUByte(maskImage.getImageData());
-			byte[][][] tmp = maskI.toArray3d();
-			mask = new boolean[nx][ny][nz];
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-				mask[x][y][z] = (tmp[x][y][z]!=0);
-			}
-		}
-		// negative to zero
-		if (ignoreNegParam.getValue().booleanValue()) {
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-				if (image[x][y][z]<0) image[x][y][z] = 0.0f;
-			}
-		}
-		// ignore zero values: masked
-		if (ignoreZeroParam.getValue().booleanValue()) {
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-				if (image[x][y][z]==0) mask[x][y][z] = false;
-			}
-		}
-		
+		// i/o variables
+		String name = Interface.getName(inImage);
+		ImageHeader header = Interface.getHeader(inImage);
+		int[] dims = Interface.getDimensions(inImage);
+		float[] res = Interface.getResolutions(inImage);
 		
 		// main algorithm
+		algorithm = new IntensityRangeNormalization();
 		
-		// 1. estimate the min, max
-		float Imin = 0, Imax = 0;
-		if (normParam.getValue().equals("linear")) {
-			Imin = ImageStatistics.minimum(image, mask, nx, ny, nz); 
-			Imax = ImageStatistics.maximum(image, mask, nx, ny, nz);				
-		} else if (normParam.getValue().equals("robust")) {
-			Imin = ImageStatistics.robustMinimum(image, mask, ratioParam.getValue().floatValue(), 4, nx, ny, nz); 
-			Imax = ImageStatistics.robustMaximum(image, mask, ratioParam.getValue().floatValue(), 4, nx, ny, nz);
-		} else if (normParam.getValue().equals("robust-min")) {
-			Imin = ImageStatistics.robustMinimum(image, mask, ratioParam.getValue().floatValue(), 4, nx, ny, nz); 
-			Imax = ImageStatistics.maximum(image, nx, ny, nz);
-		} else if (normParam.getValue().equals("robust-max")) {
-			Imin = 0.0f;
-			Imax = ImageStatistics.robustMaximum(image, mask, ratioParam.getValue().floatValue(), 4, nx, ny, nz);
-		}
-		BasicInfo.displayMessage("image min, max: "+Imin+", "+Imax+"\n");
-			
-		// 2. scale the data
-		float scaling = scalingParam.getValue().floatValue();
-		float[][][] result = new float[nx][ny][nz];
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			result[x][y][z] = scaling*Numerics.bounded( (image[x][y][z]-Imin)/(Imax-Imin), 0.0f, 1.0f);
-		}
+		algorithm.setInputImage(Interface.getFloatImage3D(inImage));
+		if (Interface.isValid(maskImage)) 
+			algorithm.setMaskImage(Interface.getIntegerImage3D(maskImage));
+		
+		algorithm.setDimensions(dims);
+		algorithm.setResolutions(res);
 
-		ImageDataFloat resultData = new ImageDataFloat(result);		
-		resultData.setHeader(input.getHeader());
-		resultData.setName(input.getName()+"_norm");
-		resultImage.setValue(resultData);
-		resultData = null;
-		result = null;
+		// parameters
+		algorithm.setNormalization(normParam.getValue());
+		//TODO
+		
 		
 	}
 	

@@ -51,7 +51,7 @@ public class IntensityRangeNormalization {
 
 	public final String[] getAlgorithmAuthors() { return new String[]{"Pierre-Louis Bazin"}; }
 	public final String getAffiliation() { return "Spinoza Centre for Neuroimaging, Netherlands Institute for Neuroscience, Max Planck Institute for Human Cognitive and Brain Sciences"; }
-	public final String getDescription() { return "Outputs a normalized version of the image in [0,1]."; }
+	public final String getDescription() { return "Outputs a normalized version of the image in [0,S]."; }
 	public final String getLongDescription() { return getDescription(); }
 		
 	public final String getVersion() { return "3.1.2"; };
