@@ -162,8 +162,8 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 		float maskval = 1e13f;
 		
 		// sample from output space to template to source
-		float[] mappedDataImage = new float[noxyz*nst];
-		int[] mappedMaskImage = new int[noxyz];
+		mappedDataImage = new float[noxyz*nst];
+		mappedMaskImage = new int[noxyz];
 		for (int xyz=0;xyz<noxyz;xyz++) if (boundary[xyz]) {
 			// get template coordinates
 			float xt = templateMappingImage[xyz+X*noxyz];
