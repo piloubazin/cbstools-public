@@ -156,7 +156,11 @@ public class JistRegistrationSurfaceDataToGroupwiseTemplate extends ProcessingAl
 		// output
 		String imgname = sourceContrastImage.getImageData().getName();
 		
-		Interface.setFloatImage4D(algorithm.getMappedData(), odims, sdims[3], mappedDataImage, name+"_map2grp_data", header);
+		if (Interface.isImage4D(sourceContrastImage)) 
+			Interface.setFloatImage4D(algorithm.getMappedData(), odims, sdims[3], mappedDataImage, name+"_map2grp_data", header);
+		else
+			Interface.setFloatImage3D(algorithm.getMappedData(), odims, mappedDataImage, name+"_map2grp_data", header);
+			
 		Interface.setIntegerImage3D(algorithm.getmappedDataMask(), odims, mappedMaskImage, name+"_map2grp_mask", header);
 	}
 
