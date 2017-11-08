@@ -8,6 +8,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
+import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
