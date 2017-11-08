@@ -468,6 +468,9 @@ public class BrainExtractBrainRegion {
 			probaInsideImage[xyz] = Numerics.bounded(probaInsideImage[xyz], 0.0f, 1.0f);
 			probaBackgroundImage[xyz] = Numerics.bounded(probaBackgroundImage[xyz], 0.0f, 1.0f);
 		}
+		System.out.println("Probabilities:");
+		System.out.println("inside: ["+ImageStatistics.minimum(probaInsideImage, nx,ny,nz)+", "+ImageStatistics.maximum(probaInsideImage, nx,ny,nz)+"]");
+		
 		
 		// process the data: segmentation
 		System.out.println("Computing extracted segmentations");

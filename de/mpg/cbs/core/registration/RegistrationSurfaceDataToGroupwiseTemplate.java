@@ -46,8 +46,8 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 	public final void setSourceMaskImage(int[] val) { sourceMaskImage = val; }
 	public final void setSourceLevelsetImage(float[] val) { sourceLevelsetImage = val; }
 	public final void setSourceMappingImage(float[] val) { sourceMappingImage = val; }
-	public final void setTemplateLevelsetImage(float[] val) { sourceLevelsetImage = val; }
-	public final void setTemplateMappingImage(float[] val) { sourceMappingImage = val; }
+	public final void setTemplateLevelsetImage(float[] val) { templateLevelsetImage = val; }
+	public final void setTemplateMappingImage(float[] val) { templateMappingImage = val; }
 
 	public final void setSourceDimensions(int x, int y, int z, int t) { nsx=x; nsy=y; nsz=z; nst=t; nsxyz=nsx*nsy*nsz; }
 	public final void setSourceDimensions(int[] dim) { nsx=dim[0]; nsy=dim[1]; nsz=dim[2]; nst=dim[3]; nsxyz=nsx*nsy*nsz; }
