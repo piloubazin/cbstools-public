@@ -410,6 +410,7 @@ public class BrainExtractBrainRegion {
 				}
 			}
 			if (densityParam) {
+				System.out.println("re-estimate densities");
 				// modulate by a sigmoid to lower or higher values away from the boundaries
 				// find the closest label for each region
 				boolean done = false;
@@ -438,6 +439,7 @@ public class BrainExtractBrainRegion {
 				if (factorB!=-1) probaBackgroundImage[xyz] *= factorB;
 			}
 			if (normalizeParam) {
+				System.out.println("normalize probabilities");
 				if (isStructure.get(segImage[xyz]) ) {
 					float sum = Numerics.max(1e-3f,probaStructureImage[xyz]+probaInsideImage[xyz],probaStructureImage[xyz]+probaBackgroundImage[xyz]);
 					probaStructureImage[xyz] /= sum;
