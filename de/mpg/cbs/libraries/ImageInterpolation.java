@@ -233,7 +233,7 @@ public class ImageInterpolation {
 		y0 = Numerics.round(y);
 		z0 = Numerics.round(z);
 
-		if (mask[x0+nx*y0+nx*ny*z0+offset]) return image[x0+nx*y0+nx*ny*z0+offset];
+		if (mask[x0+nx*y0+nx*ny*z0]) return image[x0+nx*y0+nx*ny*z0+offset];
 		else return zero;
 	}
 	/**
@@ -831,7 +831,7 @@ public class ImageInterpolation {
 		x0 = Numerics.floor(x);
 		y0 = Numerics.floor(y);
 		z0 = Numerics.floor(z);
-		xyz0 = x0 + nx*y0 + nx*ny*z0 + offset;
+		xyz0 = x0 + nx*y0 + nx*ny*z0;
 		
 		alpha = x - x0;
 		nalpha = 1.0f - alpha;
@@ -846,35 +846,35 @@ public class ImageInterpolation {
 		den = 0.0f;
 		
 		if (mask[xyz0]) {
-			val += nalpha*nbeta*ngamma*image[xyz0];
+			val += nalpha*nbeta*ngamma*image[xyz0+offset];
 			den += nalpha*nbeta*ngamma;
 		}
 		if (mask[xyz0+1]) {
-			val += alpha*nbeta*ngamma*image[xyz0+1];
+			val += alpha*nbeta*ngamma*image[xyz0+offset+1];
 			den += alpha*nbeta*ngamma;
 		}
 		if (mask[xyz0+nx]) {
-			val += nalpha*beta*ngamma*image[xyz0+nx];
+			val += nalpha*beta*ngamma*image[xyz0+offset+nx];
 			den += nalpha*beta*ngamma;
 		}
 		if (mask[xyz0+nx*ny]) {
-			val += nalpha*nbeta*gamma*image[xyz0+nx*ny];
+			val += nalpha*nbeta*gamma*image[xyz0+offset+nx*ny];
 			den += nalpha*nbeta*gamma;
 		}
 		if (mask[xyz0+1+nx]) {
-			val += alpha*beta*ngamma*image[xyz0+1+nx];
+			val += alpha*beta*ngamma*image[xyz0+offset+1+nx];
 			den += alpha*beta*ngamma;
 		}
 		if (mask[xyz0+nx+nx*ny]) {
-			val += nalpha*beta*gamma*image[xyz0+nx+nx*ny];
+			val += nalpha*beta*gamma*image[xyz0+offset+nx+nx*ny];
 			den += nalpha*beta*gamma;
 		}
 		if (mask[xyz0+1+nx*ny]) {
-			val += alpha*nbeta*gamma*image[xyz0+1+nx*ny];
+			val += alpha*nbeta*gamma*image[xyz0+offset+1+nx*ny];
 			den += alpha*nbeta*gamma;
 		}
 		if (mask[xyz0+1+nx+nx*ny]) {
-			val += alpha*beta*gamma*image[xyz0+1+nx+nx*ny];
+			val += alpha*beta*gamma*image[xyz0+offset+1+nx+nx*ny];
 			den += alpha*beta*gamma;
 		}
 		if (den>0) {
