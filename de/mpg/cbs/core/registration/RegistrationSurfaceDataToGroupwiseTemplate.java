@@ -192,12 +192,14 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 					mappedDataImage[xyz+t*noxyz] = ImageInterpolation.linearInterpolation(sourceContrastImage, t*nsxyz, sourceMask, maskval, xs,ys,zs, nsx,nsy,nsz);
 				}
 			}
+			/*
 			// update the mask
 			if (mappedDataImage[xyz]!=maskval) mappedMaskImage[xyz] = 1;
 			else {
 				mappedMaskImage[xyz] = 0;
 				for (int t=0;t<nst;t++) mappedDataImage[xyz+t*noxyz] = 0.0f;
-			}
+			}*/
+			mappedMaskImage[xyz] = 1;
 		}
 		return;
 	}
