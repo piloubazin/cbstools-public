@@ -27,10 +27,10 @@ public class IntensityMp2rageMasking {
 	
 	// parameters
 	public		static final String[]	distribs = {"exponential","half-normal"};
-	private		String		distrib = "half-normal";
+	public		static final String		distrib = "half-normal";
 	
 	public		static final String[]	maskings = {"binary","dilated","proba"};
-	private		String		masking = "binary";
+	public		static final String		masking = "binary";
 	
 	private		static final byte	HNORM = 1;
 	private		static final byte	EXP = 2;
@@ -82,7 +82,7 @@ public class IntensityMp2rageMasking {
 		int inv2 = 0;
 		int nimg = 1;
 		
-		int t1map = -1, iso = -1, pv = -1;
+		int t1map = -1, iso = -1;
 		if (t1mapImage != null) { t1map = nimg; nimg++; }
 		if (isoImage != null) { iso = nimg; nimg++; }
 		
