@@ -12,7 +12,7 @@ import org.apache.commons.math3.util.FastMath;
  */
 public class IntensityMp2rageMasking {
 
-	// jist containers
+	// containers
 	private float[] inv2Image;
 	private float[] t1mapImage = null;
 	private float[] isoImage = null;
