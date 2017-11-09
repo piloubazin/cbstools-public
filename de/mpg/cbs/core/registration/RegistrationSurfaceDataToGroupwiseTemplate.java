@@ -116,7 +116,8 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 		boolean[] sourceMask = new boolean[nsxyz];
 		if (sourceMaskImage==null) {
 			for (int xyz=0;xyz<nsxyz;xyz++) {
-				sourceMask[xyz] = (sourceContrastImage[xyz]!=0);
+				//sourceMask[xyz] = (sourceContrastImage[xyz]!=0);
+				sourceMask[xyz] = (sourceLevelsetImage[xyz]>-10 && sourceLevelsetImage[xyz]<10);
 			}
 		} else {
 			for (int xyz=0;xyz<nsxyz;xyz++) {
