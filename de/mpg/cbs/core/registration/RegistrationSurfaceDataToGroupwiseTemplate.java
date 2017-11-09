@@ -164,6 +164,7 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 		// sample from output space to template to source
 		mappedDataImage = new float[noxyz*nst];
 		mappedMaskImage = new int[noxyz];
+		float[] proj = new float[3];
 		for (int xyz=0;xyz<noxyz;xyz++) if (boundary[xyz]) {
 			// get template coordinates
 			float xt = templateMappingImage[xyz+X*noxyz];
@@ -177,7 +178,6 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 			
 			// project to the closest surface point or sample raw data
 			if (sampling==PROJECTED) {
-				float[] proj = new float[3];
 				projectToLevelset(sourceLevelsetImage, new float[]{xs,ys,zs}, proj);
 				xs = proj[X];	
 				ys = proj[Y];	
@@ -189,7 +189,8 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 				}
 			} else if (interp==LINEAR) {
 				for (int t=0;t<nst;t++) {
-					mappedDataImage[xyz+t*noxyz] = ImageInterpolation.linearInterpolation(sourceContrastImage, t*nsxyz, sourceMask, maskval, xs,ys,zs, nsx,nsy,nsz);
+					//mappedDataImage[xyz+t*noxyz] = ImageInterpolation.linearInterpolation(sourceContrastImage, t*nsxyz, sourceMask, maskval, xs,ys,zs, nsx,nsy,nsz);
+					mappedDataImage[xyz+t*noxyz] = ImageInterpolation.linearInterpolation(sourceLevelsetImage, t*nsxyz, sourceMask, maskval, xs,ys,zs, nsx,nsy,nsz);
 				}
 			}
 			/*
