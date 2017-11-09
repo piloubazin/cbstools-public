@@ -104,9 +104,14 @@ public class JistIntensityRangeNormalization extends ProcessingAlgorithm {
 
 		// parameters
 		algorithm.setNormalization(normParam.getValue());
-		//TODO
+		algorithm.setRobustnessRatio(ratioParam.getValue().floatValue());
+		algorithm.setNegativeValuesToZero(ignoreNegParam.getValue().booleanValue());
+		algorithm.setIgnoreZeroValues(ignoreZeroParam.getValue().booleanValue());
+		algorithm.setOutputScaling(scalingParam.getValue().floatValue());
 		
+		algorithm.execute();
 		
+		Interface.setFloatImage3D(algorithm.getNormalizedImage(), dims, resultImage, name+"_rnorm_img", header);
 	}
 	
 }

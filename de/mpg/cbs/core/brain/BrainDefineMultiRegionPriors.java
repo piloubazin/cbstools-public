@@ -27,8 +27,8 @@ public class BrainDefineMultiRegionPriors {
 	private String atlasParam;
 	//private String regionParam;
 	//public static final String[] regionTypes = {"inter-ventricular", "ventricle-horns", "internal-capsule"};
-	private String methodParam;
-	public static final String[] methodTypes = {"closest-distance", "equi-distance", "distance-size"};
+	//private String methodParam;
+	//public static final String[] methodTypes = {"closest-distance", "equi-distance", "distance-size"};
 	private float	distanceParam = 0.0f;
 		
 	private float[] interImage;
@@ -51,7 +51,7 @@ public class BrainDefineMultiRegionPriors {
 	public final void setAtlasFile(String val) { atlasParam = val; }
 	
 	//public final void setDefinedRegion(String val) { regionParam = val; }
-	public final void setDefinitionMethod(String val) { methodParam = val; }
+	//public final void setDefinitionMethod(String val) { methodParam = val; }
 	public final void setDistanceOffset(float val) { distanceParam = val; }
 		
 	public final String getPackage() { return "CBS Tools"; }

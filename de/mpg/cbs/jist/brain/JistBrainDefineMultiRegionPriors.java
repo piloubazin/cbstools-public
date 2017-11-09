@@ -57,7 +57,7 @@ public class JistBrainDefineMultiRegionPriors extends ProcessingAlgorithm {
 		inputParams.add(atlasParam = new ParamFile("Atlas file",new FileExtensionFilter(new String[]{"txt"})));
 		
 		//inputParams.add(regionParam = new ParamOption("Defined Region", BrainDefineMultiRegionPriors.regionTypes));
-		inputParams.add(methodParam = new ParamOption("Definition Method", BrainDefineMultiRegionPriors.methodTypes));
+		//inputParams.add(methodParam = new ParamOption("Definition Method", BrainDefineMultiRegionPriors.methodTypes));
 		inputParams.add(distanceParam = new ParamFloat("Distance Offset (voxels)", 0.0f, 10.0f, 1.0f));
 		
 		algorithm = new BrainDefineMultiRegionPriors();
@@ -107,7 +107,7 @@ public class JistBrainDefineMultiRegionPriors extends ProcessingAlgorithm {
 		
 		algorithm.setAtlasFile(atlasParam.getValue().getAbsolutePath());
 		//algorithm.setDefinedRegion(regionParam.getValue());
-		algorithm.setDefinitionMethod(methodParam.getValue());
+		//algorithm.setDefinitionMethod(methodParam.getValue());
 		algorithm.setDistanceOffset(distanceParam.getValue().floatValue());
 		
 		algorithm.execute();
