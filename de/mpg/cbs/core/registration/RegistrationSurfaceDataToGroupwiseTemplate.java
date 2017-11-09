@@ -116,8 +116,7 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 		boolean[] sourceMask = new boolean[nsxyz];
 		if (sourceMaskImage==null) {
 			for (int xyz=0;xyz<nsxyz;xyz++) {
-				//sourceMask[xyz] = (sourceContrastImage[xyz]!=0);
-				sourceMask[xyz] = (sourceLevelsetImage[xyz]>-10 && sourceLevelsetImage[xyz]<10);
+				sourceMask[xyz] = (sourceContrastImage[xyz]!=0);
 			}
 		} else {
 			for (int xyz=0;xyz<nsxyz;xyz++) {
@@ -190,18 +189,15 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 				}
 			} else if (interp==LINEAR) {
 				for (int t=0;t<nst;t++) {
-					//mappedDataImage[xyz+t*noxyz] = ImageInterpolation.linearInterpolation(sourceContrastImage, t*nsxyz, sourceMask, maskval, xs,ys,zs, nsx,nsy,nsz);
-					mappedDataImage[xyz+t*noxyz] = ImageInterpolation.linearInterpolation(sourceLevelsetImage, t*nsxyz, sourceMask, maskval, xs,ys,zs, nsx,nsy,nsz);
+					mappedDataImage[xyz+t*noxyz] = ImageInterpolation.linearInterpolation(sourceContrastImage, t*nsxyz, sourceMask, maskval, xs,ys,zs, nsx,nsy,nsz);
 				}
 			}
-			/*
 			// update the mask
 			if (mappedDataImage[xyz]!=maskval) mappedMaskImage[xyz] = 1;
 			else {
 				mappedMaskImage[xyz] = 0;
 				for (int t=0;t<nst;t++) mappedDataImage[xyz+t*noxyz] = 0.0f;
-			}*/
-			mappedMaskImage[xyz] = 1;
+			}
 		}
 		return;
 	}
@@ -250,7 +246,7 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 			res = ImageInterpolation.linearInterpolation(levelset, 0.0f, pt[X], pt[Y], pt[Z], nsx, nsy, nsz);
 			while (res*res>0.0001 && t<100 && grad>0.01) {
 				t++;
-				System.out.print("-");
+				//System.out.print("-");
 				
 				// correction: come back halfway, recompute (going further back does not improve the result)
 				pt[X] = (float)(pt[X] + 0.5*length*Dx/grad);
@@ -292,12 +288,12 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 			}
 
 		} else {
-			System.out.print("o");
+			//System.out.print("o");
 			pt[X] = pt0[X];
 			pt[Y] = pt0[Y];
 			pt[Z] = pt0[Z];
 		}
-		System.out.println("x");
+		//System.out.println("x");
 				
 		return (float)res;
 	}
