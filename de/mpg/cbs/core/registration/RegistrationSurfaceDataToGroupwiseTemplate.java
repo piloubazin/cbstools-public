@@ -248,7 +248,7 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 			res = ImageInterpolation.linearInterpolation(levelset, 0.0f, pt[X], pt[Y], pt[Z], nsx, nsy, nsz);
 			while (res*res>0.0001 && t<100 && grad>0.01) {
 				t++;
-				//System.out.print(".");
+				System.out.print(".");
 				
 				// correction: come back halfway, recompute (going further back does not improve the result)
 				pt[X] = (float)(pt[X] + 0.5*length*Dx/grad);
@@ -290,7 +290,7 @@ public class RegistrationSurfaceDataToGroupwiseTemplate {
 			}
 
 		} else {
-			//System.err.print(".");
+			System.err.print("o");
 			pt[X] = pt0[X];
 			pt[Y] = pt0[Y];
 			pt[Z] = pt0[Z];
