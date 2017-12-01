@@ -11,9 +11,9 @@ import org.apache.commons.math3.util.FastMath;
 
 
 public class LaminarIterativeSmoothing {
-	private float[] dataImage;
+	private float[] intensityImage;
 	private float[] layersImage;
-	private byte[] maskImage = null;
+	private int[] maskImage = null;
 	
 	private float    fwhmParam = 5.0f;
 	private int      nlayers = 1;  
@@ -21,7 +21,7 @@ public class LaminarIterativeSmoothing {
 	private int nx, ny, nz, nt, nxyz;
 	private float rx, ry, rz;
 
-	private float[] smoothDataImage;
+	private float[] smoothIntensityImage;
 	
 	// global variables
 	private static final byte X = 0;
@@ -31,14 +31,16 @@ public class LaminarIterativeSmoothing {
 	private static final float HASQ3 = (float)(FastMath.sqrt(3.0f)/2.0f);
 
 
-	public final void setDataImage(float[] val) { dataImage = val; }
+	public final void setIntensityImage(float[] val) { intensityImage = val; }
 	public final void setProfileSurfaceImage(float[] val) { layersImage = val; }
-	public final void setROIMask(byte[] val) { maskImage = val; }
-	public final void setFWHM_mm(float val) { fwhmParam = val; }
+	public final void setROIMask(int[] val) { maskImage = val; }
+	public final void setFWHMmm(float val) { fwhmParam = val; }
+	
 	public final void setLayers(int val) { nlayers=val; }
+	public final void set4thDimension(int val) { nt=val; }
 		
-	public final void setDimensions(int x, int y, int z, int t) { nx=x; ny=y; nz=z; nt=t; nxyz=nx*ny*nz; }
-	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nt=dim[3]; nxyz=nx*ny*nz; }
+	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
+	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
 	
 	public final void setResolutions(float x, float y, float z) { rx=x; ry=y; rz=z; }
 	public final void setResolutions(float[] res) { rx=res[0]; ry=res[1]; rz=res[2]; }
@@ -57,7 +59,7 @@ public class LaminarIterativeSmoothing {
 	public final String getVersion() { return "3.1.1"; };
 	
 	// create outputs
-    public final float[] getSmoothedData() { return smoothDataImage; }
+    public final float[] getSmoothedIntensityImage() { return smoothIntensityImage; }
 		
 	public void execute() {
 				
@@ -113,7 +115,7 @@ public class LaminarIterativeSmoothing {
 		System.out.println("Neighbour weight = "+weight);
 		
 		// no black & white iterations: the layers are generally too thin
-		float[] sdataImage = new float[nxyz*nt];
+		float[] sintensityImage = new float[nxyz*nt];
 		double[] layerval = new double[nt];
 		double layersum = 0.0f;
 	
@@ -125,34 +127,34 @@ public class LaminarIterativeSmoothing {
 			// note that the smoothing happens only parallel to the layers here
 			for (int xyz=0;xyz<nxyz;xyz++) if (ctxmask[xyz]) {
 				double sumweight = 0.0f;
-				for (int t=0;t<nt;t++) sdataImage[xyz+nxyz*t] = 0.0f;
+				for (int t=0;t<nt;t++) sintensityImage[xyz+nxyz*t] = 0.0f;
 				for (int l=0;l<nlayers;l++) {
 					double pvweight = Numerics.max(pvol[l+1][xyz]-pvol[l][xyz],0.0f);
 					if (pvweight>0) {
-						for (int t=0;t<nt;t++) layerval[t] = pvweight*dataImage[xyz+nxyz*t];
+						for (int t=0;t<nt;t++) layerval[t] = pvweight*intensityImage[xyz+nxyz*t];
 						layersum = pvweight;
 						for (byte k=0; k<26; k++) {
 							int xyzn = Ngb.neighborIndex(k, xyz, nx, ny, nz);
 							float dw = 1.0f/Ngb.neighborDistance(k);
 							if (ctxmask[xyzn]) {
 								double pv = Numerics.max(pvol[l+1][xyzn]-pvol[l][xyzn],0.0f);
-								for (int t=0;t<nt;t++) layerval[t] += pv*weight*dw*dataImage[xyzn+nxyz*t];
+								for (int t=0;t<nt;t++) layerval[t] += pv*weight*dw*intensityImage[xyzn+nxyz*t];
 								layersum += pv*weight*dw;
 							}
 						}
 						for (int t=0;t<nt;t++) layerval[t] /= layersum;
 					}
-					for (int t=0;t<nt;t++) sdataImage[xyz+nxyz*t] += (float)(pvweight*layerval[t]);
+					for (int t=0;t<nt;t++) sintensityImage[xyz+nxyz*t] += (float)(pvweight*layerval[t]);
 					sumweight += pvweight;
 				}
-				for (int t=0;t<nt;t++) sdataImage[xyz+nxyz*t] /= (float)sumweight;
+				for (int t=0;t<nt;t++) sintensityImage[xyz+nxyz*t] /= (float)sumweight;
 			}
 			// copy back to original data image
 			for (int xyz=0;xyz<nxyz;xyz++) if (ctxmask[xyz]) {
-				for (int t=0;t<nt;t++) dataImage[xyz+nxyz*t] = sdataImage[xyz+nxyz*t];
+				for (int t=0;t<nt;t++) intensityImage[xyz+nxyz*t] = sintensityImage[xyz+nxyz*t];
 			}
 		}				
-		smoothDataImage = sdataImage;
+		smoothIntensityImage = sintensityImage;
 		
 		System.out.println("Done");
 		
