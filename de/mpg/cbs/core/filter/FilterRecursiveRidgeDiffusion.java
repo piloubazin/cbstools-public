@@ -20,28 +20,29 @@ public class FilterRecursiveRidgeDiffusion {
 	
 	// jist containers
 	private float[] inputImage;
-	private String brightParam;
-	private static final String[] brightTypes = {"bright","dark","both"};
+	private String brightParam = "bright";
+	public static final String[] brightTypes = {"bright","dark","both"};
 	
 	private float[] surfaceImage;
-	private String	orientationParam;
-	private static final String[] orientationParamTypes = {"parallel","orthogonal","undefined"};
-	private float	angleParam;
+	private String	orientationParam = "undefined";
+	public static final String[] orientationTypes = {"parallel","orthogonal","undefined"};
+	private float	angleParam = 1.0f;
 	
 	private float[] locationImage;
 	
-	private String filterParam;
-	private static final String[] filterTypes = {"2D","1D"};
-	private int nscalesParam;
+	private String filterParam = "2D";
+	public static final String[] filterTypes = {"2D","1D"};
+	private int nscalesParam = 3;
 	
-	private String propagationParam;
-	private static final String[] propagationTypes = {"diffusion","belief","SUR","flooding","growing","labeling","none"};
-	private float difffactorParam;
-	private float simscaleParam;
-	private int ngbParam;
-	private int iterParam;
-	private float maxdiffParam;
+	private String propagationParam = "diffusion";
+	public static final String[] propagationTypes = {"diffusion","belief","SUR","flooding","growing","labeling","none"};
+	private float difffactorParam = 1.0f;
+	private float simscaleParam = 0.1f;
+	private int ngbParam = 4;
+	private int iterParam = 100;
+	private float maxdiffParam = 0.001f;
 	
+	private float[] pvImage;
 	private float[] filterImage;
 	private float[] probaImage;
 	private float[] propagImage;
@@ -132,8 +133,11 @@ public class FilterRecursiveRidgeDiffusion {
 	public final String getAffiliation() { return "Max Planck Institute for Human Cognitive and Brain Sciences"; }
 	public final String getDescription() { return "Extracts planar of tubular structures across multiple scales, with an optional directional bias."; }
 	public final String getLongDescription() { return getDescription(); }
-
-	//set outputs
+		
+	public final String getVersion() { return "3.1.2"; };
+			
+	// create outputs
+	public final float[] getRidgePartialVolumeImage() { return pvImage;}
 	public final float[] getFilterResponseImage() { return filterImage;}
 	public final float[] getProbabilityResponseImage() { return probaImage;}
 	public final float[] getPropagatedResponseImage() { return propagImage;}
@@ -353,7 +357,9 @@ public class FilterRecursiveRidgeDiffusion {
 		} else if  (propagationParam.equals("labeling")) {
 			if (filterParam.equals("1D"))  propag = regionLabeling1D(proba, maxdirection, ngbParam, maxdiffParam, simscaleParam, difffactorParam, iterParam);
 			else if (filterParam.equals("2D"))  propag = regionLabeling2D(proba, maxdirection, ngbParam, maxdiffParam, simscaleParam, difffactorParam, iterParam);
-		} 				
+		} else {
+		    propag = proba;
+		}
 		
 		/*
 		probabilityFromRecursiveRidgeFilter(propag, proba);	
@@ -377,12 +383,34 @@ public class FilterRecursiveRidgeDiffusion {
 			lengthmap[xyz] = length[components[xyz]-1];
 		}
 		
+		// 5. Get the partial volume estimates : note they may be incorrect after propagation
+		float[] pvol = new float[nxyz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x + nx*y + nx*ny*z;
+			if (propag[xyz]>0.0f) {
+				// when the diameter is smaller than the voxel, linear approx
+				pvol[xyz] = Numerics.bounded(propag[xyz], 0.0f, 1.0f);
+				float radius = Numerics.max(0.0f, maxscale[xyz]/2.0f); // scale is diameter
+				int nsc = Numerics.ceil(radius); 
+				for (int i=-nsc;i<=nsc;i++) for (int j=-nsc;j<=nsc;j++) for (int k=-nsc;k<=nsc;k++) {
+					if (x+i>=0 && x+i<nx && y+j>=0 && y+j<ny && z+k>=0 && z+k<nz) {
+						float dist = (float)FastMath.sqrt(i*i+j*j+k*k);
+						// update the neighbor value for diameters above the voxel size
+						float ratio = Numerics.bounded(radius+0.5f-dist, 0.0f, 1.0f);
+						//pvol[xyz+i+j*nx+k*nx*ny] = Numerics.max(pvol[xyz+i+j*nx+k*nx*ny], Numerics.bounded(scaleMax[xyz]/2.0f+0.5f-dist, 0.0f, 1.0f));
+						pvol[xyz+i+j*nx+k*nx*ny] = Numerics.max(pvol[xyz+i+j*nx+k*nx*ny], ratio*pvol[xyz]);
+					}
+				}
+			}
+		}
+		
 		// Output
 		BasicInfo.displayMessage("...output inputImages\n");
 		filterImage = maxresponse;
 		probaImage = proba;
 		propagImage = propag;
 		scaleImage = maxscale;
+		pvImage = pvol;
 		
 		float[] result4 = new float[nxyz*3];
 		for (int xyz=0;xyz<nxyz;xyz++) {

@@ -74,7 +74,7 @@ public class JistBrainMp2rageDuraEstimation extends ProcessingAlgorithm {
 		// i/o variables
 		String name = Interface.getName(inv2Image);
 		ImageHeader header = Interface.getHeader(inv2Image);
-		int[] dims = Interface.getDimensions4D(inv2Image);
+		int[] dims = Interface.getDimensions(inv2Image);
 		float[] res = Interface.getResolutions(inv2Image);
 		
 		// main algorithm
