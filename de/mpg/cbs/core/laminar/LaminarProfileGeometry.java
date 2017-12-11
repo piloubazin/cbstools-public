@@ -34,6 +34,7 @@ public class LaminarProfileGeometry {
 	public static final String[] regTypes = {"none","Gaussian"};
 	
 	private float[] calcImage;
+	private boolean isCalc4D = false;
 	
 	// global variables
 	private static final byte X = 0;
@@ -70,7 +71,8 @@ public class LaminarProfileGeometry {
 	public final String getVersion() { return "3.1.2"; };
 
 	// create outputs
-	public final float[] getResult() { return calcImage; }
+	public final float[] getResultImage() { return calcImage; }
+	public final boolean isResult4D() { return isCalc4D; }
 
 	public final void execute() {
 		
@@ -94,9 +96,12 @@ public class LaminarProfileGeometry {
 		CorticalProfile profile = new CorticalProfile(nlayers, nx, ny, nz, rx, ry, rz);
 		
 		float[] calc = null;
-		if (calcParam.equals("profile_direction")) calc = new float[nxyz*3];
-		else calc = new float[nxyz];
-
+		if (calcParam.equals("profile_direction")) {
+		    calc = new float[nxyz*3];
+		    isCalc4D = true;
+		} else {
+		    calc = new float[nxyz];
+		}
 		// if surface processing: compute the smoothing
 		/* in all cases
 		if (calcParam.equals("mean_curvature") 
