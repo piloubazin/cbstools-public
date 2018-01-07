@@ -13,7 +13,7 @@ import de.mpg.cbs.utilities.*;
  *
  *  This algorithm uses the MGDM framework to evolve a labeling
  *	according to internal (curvature) and external (balloon, vector field) forces
- *	note: for now, we are assuming isotropic voxels 	
+ *	note: here we assume 2D images
  *
  *	@version    Jul 2010
  *	@author     Pierre-Louis Bazin 
@@ -23,7 +23,7 @@ import de.mpg.cbs.utilities.*;
  *
  */
  
-public class Mgdm3d {
+public class Mgdm2d {
 	
 	// object types
 
@@ -38,22 +38,17 @@ public class Mgdm3d {
     private final static byte SOUTH 	= 1;
 	private final static byte EAST 		= 2;
     private final static byte WEST 		= 3;
-	private final static byte FRONT 	= 4;
-    private final static byte BACK 		= 5;
     
     // numerical quantities
 	private static final	float   INF=1e15f;
 	private static final	float   ZERO=1e-15f;
 	private static final	float	PI2 = (float)(Math.PI/2.0);
 	private final static float SQR2 = (float) Math.sqrt(2.0f);
-    private final static float SQR3 = (float) Math.sqrt(3.0f);
     private final static float diagdist = 1/(2*SQR2);
-    private final static float cubedist = 1/(2*SQR3);
 	private static final	float	UNKNOWN = -1.0f;
 	
 	private static int[] xoff;
     private static int[] yoff;
-    private static int[] zoff;
 
 
 	// data and membership buffers
@@ -63,8 +58,8 @@ public class Mgdm3d {
 	private 	float[][] 		fieldforce;  		// original image forces, indep. object (e.g. boundaries)
 	private 	float[][] 		balloonforces;  	// original image forces, along object normals (e.g. from memberships)
 	private		boolean[]		mask;				// masking regions not used in computations
-	private static	int 		nx,ny,nz;   		// images dimensions
-	private static	float 		rx,ry,rz;   		// images resolutions
+	private static	int 		nx,ny;   		    // images dimensions
+	private static	float 		rx,ry;   		    // images resolutions
 	private static	int 	  	nobj;					// total number of objects to represent (including background)
 	private static	int 	  	nmgdm;					// total number of MGDM mgdmlabels and mgdmfunctions
 	private 	int[]			objLabel;			// label values in the original image
@@ -111,7 +106,7 @@ public class Mgdm3d {
 			functions = null;
 		}
 		
-		public final void addPoint(int xyz, byte[][] mgdmlb, float[][] mgdmfn) {
+		public final void addPoint(int xy, byte[][] mgdmlb, float[][] mgdmfn) {
 			// check for size
 			if (currentsize>=capacity-1) {
 				capacity += update;
@@ -136,10 +131,10 @@ public class Mgdm3d {
 			}
 			
 			// add the new point (use the MGDM variables)
-			id[currentsize] = xyz;
+			id[currentsize] = xy;
 			for (int l=0;l<nmgdm;l++) {
-				labels[l][currentsize] = mgdmlb[l][xyz];
-				functions[l][currentsize] = mgdmfn[l][xyz];
+				labels[l][currentsize] = mgdmlb[l][xy];
+				functions[l][currentsize] = mgdmfn[l][xy];
 			}
 			currentsize++;
 		}
@@ -153,17 +148,17 @@ public class Mgdm3d {
 	/**
 	 *  constructors for different cases: with/out outliers, with/out selective constraints
 	 */
-	public Mgdm3d(int[] init_, int nx_, int ny_, int nz_, int nobj_, int nmgdm_,
-						float rx_, float ry_, float rz_,
+	public Mgdm2d(int[] init_, int nx_, int ny_, int nobj_, int nmgdm_,
+						float rx_, float ry_,
 						float[][] field_, float[][] balloon_, 
 						float fw_, float bw_, float sw_, float pw_,
 						String connectivityType_) {
 	
-		init(init_, nx_, ny_, nz_, nobj_, nmgdm_, rx_, ry_, rz_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_);
+		init(init_, nx_, ny_, nobj_, nmgdm_, rx_, ry_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_);
 	}
 	
-	private void init(int[] init_, int nx_, int ny_, int nz_, int nobj_, int nmgdm_,
-						float rx_, float ry_, float rz_,
+	private void init(int[] init_, int nx_, int ny_, int nobj_, int nmgdm_,
+						float rx_, float ry_, 
 						float[][] field_, float[][] balloon_, 
 						float fw_, float bw_, float sw_, float pw_,
 						String connectivityType_) {
@@ -179,37 +174,34 @@ public class Mgdm3d {
 		
 		nx = nx_;
 		ny = ny_;
-		nz = nz_;
 		
 		nobj = nobj_;
 		nmgdm = nmgdm_;
 		
 		rx = rx_;
 		ry = ry_;
-		rz = rz_;
 		
-		objLabel = ObjectLabeling.listOrderedLabels(init_, nx, ny, nz);
+		objLabel = ObjectLabeling.listOrderedLabels(init_, nx, ny);
 		// note: we do expect that there are nb objects (not checked)
 		
 		// 6-neighborhood: pre-compute the index offsets
-		xoff = new int[]{1, -1, 0, 0, 0, 0};
-		yoff = new int[]{0, 0, nx, -nx, 0, 0};
-		zoff = new int[]{0, 0, 0, 0, nx*ny, -nx*ny};
+		xoff = new int[]{1, -1, 0, 0};
+		yoff = new int[]{0, 0, nx, -nx};
 		
 		// init all the arrays
 		try {
-			mgdmfunctions = new float[nmgdm][nx*ny*nz];
-			mgdmlabels = new byte[nmgdm][nx*ny*nz];	
-			segmentation = new byte[nx*ny*nz];	
-			mask = new boolean[nx*ny*nz];
-			otherlabels = new byte[nx*ny*nz];	
+			mgdmfunctions = new float[nmgdm][nx*ny];
+			mgdmlabels = new byte[nmgdm][nx*ny];	
+			segmentation = new byte[nx*ny];	
+			mask = new boolean[nx*ny];
+			otherlabels = new byte[nx*ny];	
 			// initalize the heap too so we don't have to do it multiple times
-			heap = new BinaryHeap2D(nx*ny+ny*nz+nz*nx, BinaryHeap2D.MINTREE);
+			heap = new BinaryHeap2D(nx*ny, BinaryHeap2D.MINTREE);
 			// topology luts
 			checkTopology=true;
 			checkComposed=false;
-				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT("critical266LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT("critical626LUT.raw.gz",200);
+				 if (connectivityType_.equals("26/6") || connectivityType_.equals("8/4")) lut = new CriticalPointLUT("critical266LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/26") || connectivityType_.equals("4/8")) lut = new CriticalPointLUT("critical626LUT.raw.gz",200);
 			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT("critical186LUT.raw.gz",200);
 			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT("critical618LUT.raw.gz",200);
 			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
@@ -246,9 +238,9 @@ public class Mgdm3d {
 		if (debug) BasicInfo.displayMessage("initial MGDM decomposition\n");		
 		
 		// basic mask: remove two layers off the images (for avoiding limits)
-		for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
-			if (x>1 && x<nx-2 && y>1 && y<ny-2 && z>1 && z<nz-2) mask[x+nx*y+nx*ny*z] = true;
-			else mask[x+nx*y+nx*ny*z] = false;
+		for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) {
+			if (x>1 && x<nx-2 && y>1 && y<ny-2) mask[x+nx*y] = true;
+			else mask[x+nx*y] = false;
 		}
 		// init decomposition
 		fastMarchingInitializationFromSegmentation(init_);
@@ -259,16 +251,16 @@ public class Mgdm3d {
 	/**
 	 *  constructors for different cases: with/out outliers, with/out selective constraints
 	 */
-	public Mgdm3d(byte[] init_, int nx_, int ny_, int nz_, int nobj_, int nmgdm_,
-						float rx_, float ry_, float rz_,
+	public Mgdm2d(byte[] init_, int nx_, int ny_, int nobj_, int nmgdm_,
+						float rx_, float ry_, 
 						float[][] field_, float[][] balloon_, 
 						float fw_, float bw_, float sw_, float pw_,
 						String connectivityType_) {
 		
-		int[] tmp = new int[nx_*ny_*nz_];
-		for (int n=0;n<nx_*ny_*nz_;n++) tmp[n] = init_[n];
+		int[] tmp = new int[nx_*ny_];
+		for (int n=0;n<nx_*ny_;n++) tmp[n] = init_[n];
 		
-		init(tmp, nx_, ny_, nz_, nobj_, nmgdm_, rx_, ry_, rz_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_);
+		init(tmp, nx_, ny_, nobj_, nmgdm_, rx_, ry_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_);
 	}
 		
 	public void finalize() {
@@ -298,25 +290,25 @@ public class Mgdm3d {
     
 	public final void fastMarchingInitializationFromSegmentation(int[] init) {
          // initialize the quantities
-         for (int xyz = 0; xyz<nx*ny*nz; xyz++) {
+         for (int xy = 0; xy<nx*ny; xy++) {
          	 // mgdm functions
 			for (int n = 0; n<nmgdm; n++) {
-            	mgdmfunctions[n][xyz] = UNKNOWN;                            
-            	mgdmlabels[n][xyz] = EMPTY;
+            	mgdmfunctions[n][xy] = UNKNOWN;                            
+            	mgdmlabels[n][xy] = EMPTY;
             }
             // segmentation
             byte nlb = EMPTY;
 			for (byte n=0; n<nobj; n++) {
-				if (objLabel[n]==init[xyz]) {
+				if (objLabel[n]==init[xy]) {
 					nlb = n;
 					continue;
 				}
 			}
-			segmentation[xyz] = nlb;
+			segmentation[xy] = nlb;
         }
 		
         // computation variables
-        byte[] processed = new byte[nx*ny*nz]; // note: using a byte instead of boolean for the second pass
+        byte[] processed = new byte[nx*ny]; // note: using a byte instead of boolean for the second pass
 		float[] nbdist = new float[6];
 		boolean[] nbflag = new boolean[6];
 					        		
@@ -324,15 +316,15 @@ public class Mgdm3d {
         if (debug) BasicInfo.displayMessage("fast marching\n");		
         heap.reset();
 		// initialize the heap from boundaries
-        for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
-        	processed[xyz] = 0;
+        for (int xy = 0; xy<nx*ny; xy++) if (mask[xy]) {
+        	processed[xy] = 0;
         	// search for boundaries
-        	for (int k = 0; k<6; k++) {
-				int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
-				if (segmentation[xyzn]!=segmentation[xyz]) if (mask[xyzn]) {
+        	for (int k = 0; k<4; k++) {
+				int xyn = xy + xoff[k] + yoff[k];
+				if (segmentation[xyn]!=segmentation[xy]) if (mask[xyn]) {
 					
 					// add to the heap
-					heap.addValue(0.5f,xyzn,segmentation[xyz]);
+					heap.addValue(0.5f,xyn,segmentation[xy]);
                 }
             }
         }
@@ -342,46 +334,46 @@ public class Mgdm3d {
         while (heap.isNotEmpty()) {
         	// extract point with minimum distance
         	float dist = heap.getFirst();
-        	int xyz = heap.getFirstId();
+        	int xy = heap.getFirstId();
         	byte lb = heap.getFirstState();
 			heap.removeFirst();
 
 			// if more than nmgdm labels have been found already, this is done
-			if (processed[xyz]>=nmgdm)  continue;
+			if (processed[xy]>=nmgdm)  continue;
 			
 			// if there is already a label for this object, this is done
 			boolean done = false;
-			for (int n=0; n<processed[xyz]; n++)
-				if (mgdmlabels[n][xyz]==lb) done = true;
+			for (int n=0; n<processed[xy]; n++)
+				if (mgdmlabels[n][xy]==lb) done = true;
 			if (done) continue;
 			
 			// update the distance functions at the current level
-			mgdmfunctions[processed[xyz]][xyz] = dist;
-			mgdmlabels[processed[xyz]][xyz] = lb;
-			processed[xyz]++; // update the current level
+			mgdmfunctions[processed[xy]][xy] = dist;
+			mgdmlabels[processed[xy]][xy] = lb;
+			processed[xy]++; // update the current level
  			
 			// find new neighbors
-			for (int k = 0; k<6; k++) {
-				int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+			for (int k = 0; k<4; k++) {
+				int xyn = xy + xoff[k] + yoff[k];
 				
-				if (mask[xyzn]) {
+				if (mask[xyn]) {
 					// must be in outside the object or its processed neighborhood
 					boolean isprocessed = false;
-					if (segmentation[xyzn]==lb) isprocessed = true;
+					if (segmentation[xyn]==lb) isprocessed = true;
 					else {
-						for (int n=0; n<processed[xyzn]; n++)
-							if (mgdmlabels[n][xyzn]==lb) isprocessed = true;
+						for (int n=0; n<processed[xyn]; n++)
+							if (mgdmlabels[n][xyn]==lb) isprocessed = true;
 					}
 					
 					if (!isprocessed) {
 						// compute new distance based on processed neighbors for the same object
-						for (int l=0; l<6; l++) {
+						for (int l=0; l<4; l++) {
 							nbdist[l] = UNKNOWN;
 							nbflag[l] = false;
-							int xyznb = xyzn + xoff[l] + yoff[l] + zoff[l];
+							int xynb = xyn + xoff[l] + yoff[l];
 							// note that there is at most one value used here
-							for (int n=0; n<processed[xyznb]; n++) if (mask[xyznb]) if (mgdmlabels[n][xyznb]==lb) {
-								nbdist[l] = mgdmfunctions[n][xyznb];
+							for (int n=0; n<processed[xynb]; n++) if (mask[xynb]) if (mgdmlabels[n][xynb]==lb) {
+								nbdist[l] = mgdmfunctions[n][xynb];
 								nbflag[l] = true;
 							}			
 						}
@@ -389,7 +381,7 @@ public class Mgdm3d {
 						
 						if (newdist<=narrowBandDist) {
 							// add to the heap
-							heap.addValue(newdist,xyzn,lb);
+							heap.addValue(newdist,xyn,lb);
 						}
 					}
 				}
@@ -398,18 +390,18 @@ public class Mgdm3d {
 		// to create the MGDM functions, we need to copy the segmentation, forget the last labels
 		// and compute differences between distance functions
 		if (debug) BasicInfo.displayMessage("transform into MGDM functions\n");		
-		for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
+		for (int xy = 0; xy<nx*ny; xy++) if (mask[xy]) {
 			// label permutation
-			otherlabels[xyz] = mgdmlabels[nmgdm-1][xyz];
+			otherlabels[xy] = mgdmlabels[nmgdm-1][xy];
 			for (int n=nmgdm-1;n>0;n--) {
-				mgdmlabels[n][xyz] = mgdmlabels[n-1][xyz];
+				mgdmlabels[n][xy] = mgdmlabels[n-1][xy];
 			}
-			mgdmlabels[0][xyz] = segmentation[xyz];
+			mgdmlabels[0][xy] = segmentation[xy];
 			
 			// distance function difference
         	for (int n = nmgdm-1; n>0; n--) {
-        		mgdmfunctions[n][xyz] = Numerics.max(UNKNOWN, mgdmfunctions[n][xyz]
-        														-mgdmfunctions[n-1][xyz]);
+        		mgdmfunctions[n][xy] = Numerics.max(UNKNOWN, mgdmfunctions[n][xy]
+        														-mgdmfunctions[n-1][xy]);
 			}
         }
 		if (debug) BasicInfo.displayMessage("done\n");		
@@ -422,30 +414,30 @@ public class Mgdm3d {
       */
      public final void fastMarchingReinitialization() {
         // computation variables
-        byte[] processed = new byte[nx*ny*nz]; // note: using a byte instead of boolean for the second pass
-		float[] nbdist = new float[6];
-		boolean[] nbflag = new boolean[6];
+        byte[] processed = new byte[nx*ny]; // note: using a byte instead of boolean for the second pass
+		float[] nbdist = new float[4];
+		boolean[] nbflag = new boolean[4];
 					        		
 		// compute the neighboring labels and corresponding distance functions (! not the MGDM functions !)
         if (debug) BasicInfo.displayMessage("fast marching\n");		
         heap.reset();
 		// initialize the heap from boundaries
-        for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
+        for (int xy = 0; xy<nx*ny; xy++) if (mask[xy]) {
         	// mgdm functions : reinit everywhere
 			for (int n = 0; n<nmgdm; n++) {
-            	if (n>0) mgdmfunctions[n][xyz] = UNKNOWN;                            
-            	mgdmlabels[n][xyz] = EMPTY;
+            	if (n>0) mgdmfunctions[n][xy] = UNKNOWN;                            
+            	mgdmlabels[n][xy] = EMPTY;
             }
-            processed[xyz] = 0;
+            processed[xy] = 0;
         	// not needed, should be kept the same
-        	//segmentation[xyz] = mgdmlabels[0][xyz];
+        	//segmentation[xy] = mgdmlabels[0][xy];
         	// search for boundaries
-        	for (int k = 0; k<6; k++) {
-				int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
-				if (segmentation[xyzn]!=segmentation[xyz]) if (mask[xyzn]) {
+        	for (int k = 0; k<4; k++) {
+				int xyn = xy + xoff[k] + yoff[k];
+				if (segmentation[xyn]!=segmentation[xy]) if (mask[xyn]) {
 					
 					// add to the heap with previous value
-					heap.addValue(mgdmfunctions[0][xyzn],xyzn,segmentation[xyz]);
+					heap.addValue(mgdmfunctions[0][xyn],xyn,segmentation[xy]);
                 }
             }
         }
@@ -455,46 +447,46 @@ public class Mgdm3d {
         while (heap.isNotEmpty()) {
         	// extract point with minimum distance
         	float dist = heap.getFirst();
-        	int xyz = heap.getFirstId();
+        	int xy = heap.getFirstId();
         	byte lb = heap.getFirstState();
 			heap.removeFirst();
 
 			// if more than nmgdm labels have been found already, this is done
-			if (processed[xyz]>=nmgdm)  continue;
+			if (processed[xy]>=nmgdm)  continue;
 			
 			// if there is already a label for this object, this is done
 			boolean done = false;
-			for (int n=0; n<processed[xyz]; n++)
-				if (mgdmlabels[n][xyz]==lb) done = true;
+			for (int n=0; n<processed[xy]; n++)
+				if (mgdmlabels[n][xy]==lb) done = true;
 			if (done) continue;
 			
 			// update the distance functions at the current level
-			mgdmfunctions[processed[xyz]][xyz] = dist;
-			mgdmlabels[processed[xyz]][xyz] = lb;
-			processed[xyz]++; // update the current level
+			mgdmfunctions[processed[xy]][xy] = dist;
+			mgdmlabels[processed[xy]][xy] = lb;
+			processed[xy]++; // update the current level
  			
 			// find new neighbors
-			for (int k = 0; k<6; k++) {
-				int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+			for (int k = 0; k<4; k++) {
+				int xyn = xy + xoff[k] + yoff[k];
 				
-				if (mask[xyzn]) {
+				if (mask[xyn]) {
 					// must be in outside the object or its processed neighborhood
 					boolean isprocessed = false;
-					if (segmentation[xyzn]==lb) isprocessed = true;
+					if (segmentation[xyn]==lb) isprocessed = true;
 					else {
-						for (int n=0; n<processed[xyzn]; n++)
-							if (mgdmlabels[n][xyzn]==lb) isprocessed = true;
+						for (int n=0; n<processed[xyn]; n++)
+							if (mgdmlabels[n][xyn]==lb) isprocessed = true;
 					}
 					
 					if (!isprocessed) {
 						// compute new distance based on processed neighbors for the same object
-						for (int l=0; l<6; l++) {
+						for (int l=0; l<4; l++) {
 							nbdist[l] = UNKNOWN;
 							nbflag[l] = false;
-							int xyznb = xyzn + xoff[l] + yoff[l] + zoff[l];
+							int xynb = xyn + xoff[l] + yoff[l];
 							// note that there is at most one value used here
-							for (int n=0; n<processed[xyznb]; n++) if (mask[xyznb]) if (mgdmlabels[n][xyznb]==lb) {
-								nbdist[l] = mgdmfunctions[n][xyznb];
+							for (int n=0; n<processed[xynb]; n++) if (mask[xynb]) if (mgdmlabels[n][xynb]==lb) {
+								nbdist[l] = mgdmfunctions[n][xynb];
 								nbflag[l] = true;
 							}			
 						}
@@ -502,7 +494,7 @@ public class Mgdm3d {
 						
 						if (newdist<=narrowBandDist) {
 							// add to the heap
-							heap.addValue(newdist,xyzn,lb);
+							heap.addValue(newdist,xyn,lb);
 						}
 					}
 				}
@@ -511,18 +503,18 @@ public class Mgdm3d {
 		// to create the MGDM functions, we need to copy the segmentation, forget the last labels
 		// and compute differences between distance functions
 		if (debug) BasicInfo.displayMessage("transform into MGDM functions\n");		
-		for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
+		for (int xy = 0; xy<nx*ny; xy++) if (mask[xy]) {
 			// label permutation
-			otherlabels[xyz] = mgdmlabels[nmgdm-1][xyz];
+			otherlabels[xy] = mgdmlabels[nmgdm-1][xy];
 			for (int n=nmgdm-1;n>0;n--) {
-				mgdmlabels[n][xyz] = mgdmlabels[n-1][xyz];
+				mgdmlabels[n][xy] = mgdmlabels[n-1][xy];
 			}
-			mgdmlabels[0][xyz] = segmentation[xyz];
+			mgdmlabels[0][xy] = segmentation[xy];
 			
 			// distance function difference
         	for (int n = nmgdm-1; n>0; n--) {
-        		mgdmfunctions[n][xyz] = Numerics.max(UNKNOWN, mgdmfunctions[n][xyz]
-        														-mgdmfunctions[n-1][xyz]);
+        		mgdmfunctions[n][xy] = Numerics.max(UNKNOWN, mgdmfunctions[n][xy]
+        														-mgdmfunctions[n-1][xy]);
         	}
         }
 		if (debug) BasicInfo.displayMessage("done\n");		
@@ -532,7 +524,7 @@ public class Mgdm3d {
 
 	/**
      * the Fast marching distance computation 
-     * (!assumes a 6D array with opposite coordinates stacked one after the other)
+     * (!assumes a 4D array with opposite coordinates stacked one after the other)
      * 
      */
     public static final float minimumMarchingDistance(float[] val, boolean[] flag) {
@@ -544,7 +536,7 @@ public class Mgdm3d {
         s2 = 0;
         count = 0;
 
-        for (int n=0; n<6; n+=2) {
+        for (int n=0; n<4; n+=2) {
 			if (flag[n] && flag[n+1]) {
 				tmp = Numerics.min(val[n], val[n+1]); // Take the smaller one if both are processed
 				s += tmp;
@@ -569,7 +561,7 @@ public class Mgdm3d {
     }
 	/**
      * the isosurface distance computation 
-     * (!assumes a 6D array with opposite coordinates stacked one after the other)
+     * (!assumes a 4D array with opposite coordinates stacked one after the other)
      * (the input values are all positive, the flags are true only if the isosurface crosses)
      */
     public static final float isoSurfaceDistance(float cur, float[] val, boolean[] flag) {
@@ -582,7 +574,7 @@ public class Mgdm3d {
         s = 0;
         dist = 0;
         
-        for (int n=0; n<6; n+=2) {
+        for (int n=0; n<4; n+=2) {
 			if (flag[n] && flag[n+1]) {
 				tmp = Numerics.max(val[n], val[n+1]); // Take the largest distance (aka closest to current point) if both are across the boundary
 				s = cur/(cur+tmp);
@@ -605,14 +597,14 @@ public class Mgdm3d {
 	 *	reconstruct the level set functions with possible approximation far from contour 
 	 */
     public final float[][] reconstructedLevelSets() {
-    	float[][] levelsets = new float[nobj][nx*ny*nz];
+    	float[][] levelsets = new float[nobj][nx*ny];
     	for (int n=0;n<nobj;n++) {
-    		for (int xyz=0; xyz<nx*ny*nz; xyz++) {
-    			if (mgdmlabels[0][xyz]==n) levelsets[n][xyz] = -mgdmfunctions[0][xyz];
-    			else  levelsets[n][xyz] = 0.0f;
+    		for (int xy=0; xy<nx*ny; xy++) {
+    			if (mgdmlabels[0][xy]==n) levelsets[n][xy] = -mgdmfunctions[0][xy];
+    			else  levelsets[n][xy] = 0.0f;
     			
-    			for (int l=0;l<nmgdm && mgdmlabels[l][xyz]!=n;l++) {
-    				levelsets[n][xyz] += mgdmfunctions[l][xyz];
+    			for (int l=0;l<nmgdm && mgdmlabels[l][xy]!=n;l++) {
+    				levelsets[n][xy] += mgdmfunctions[l][xy];
     			}
     		}
     	}
@@ -622,18 +614,18 @@ public class Mgdm3d {
      *	reconstruct the levelset only where it is guaranteed to be exact 
      */
     public final float[][] reconstructedExactLevelSets() {
-    	float[][] levelsets = new float[nobj][nx*ny*nz];
+    	float[][] levelsets = new float[nobj][nx*ny];
     	for (int n=0;n<nobj;n++) {
-    		for (int xyz=0; xyz<nx*ny*nz; xyz++) {
-    			if (mgdmlabels[0][xyz]==n) levelsets[n][xyz] = -mgdmfunctions[0][xyz];
-    			else  levelsets[n][xyz] = 0.0f;
+    		for (int xy=0; xy<nx*ny; xy++) {
+    			if (mgdmlabels[0][xy]==n) levelsets[n][xy] = -mgdmfunctions[0][xy];
+    			else  levelsets[n][xy] = 0.0f;
     			
     			int max=0;
-    			for (int l=0;l<nmgdm && mgdmlabels[l][xyz]!=n;l++) {
-    				levelsets[n][xyz] += mgdmfunctions[l][xyz];
+    			for (int l=0;l<nmgdm && mgdmlabels[l][xy]!=n;l++) {
+    				levelsets[n][xy] += mgdmfunctions[l][xy];
     				max++;
     			}
-    			if (max==nmgdm) levelsets[n][xyz] = UNKNOWN;
+    			if (max==nmgdm) levelsets[n][xy] = UNKNOWN;
     		}
     	}
     	return levelsets;
@@ -642,10 +634,10 @@ public class Mgdm3d {
 	 *	reconstruct the level set functions with possible approximation far from contour 
 	 */
     public final float[][] reconstructedLevelsetForces() {
-    	float[][] forces = new float[nobj][nx*ny*nz];
+    	float[][] forces = new float[nobj][nx*ny];
     	for (byte n=0;n<nobj;n++) {
-    		for (int xyz=0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
-    			forces[n][xyz] = (float)levelsetForces(xyz,n);
+    		for (int xy=0; xy<nx*ny; xy++) if (mask[xy]) {
+    			forces[n][xy] = (float)levelsetForces(xy,n);
     		}
     	}
     	return forces;
@@ -654,11 +646,11 @@ public class Mgdm3d {
 	 *	reconstruct the level set functions with possible approximation far from contour 
 	 */
     public final float[] reconstructedLevelsetForceDifference(int lv) {
-    	float[] forces = new float[nx*ny*nz];
-    	for (int xyz=0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
-    		if (mgdmlabels[lv][xyz]!=EMPTY) forces[xyz] = (float)levelsetForces(xyz,mgdmlabels[lv][xyz]);
-    		else forces[xyz] = 0.0f;
-    		if (mgdmlabels[lv+1][xyz]!=EMPTY) forces[xyz]-= (float)levelsetForces(xyz,mgdmlabels[lv+1][xyz]);
+    	float[] forces = new float[nx*ny];
+    	for (int xy=0; xy<nx*ny; xy++) if (mask[xy]) {
+    		if (mgdmlabels[lv][xy]!=EMPTY) forces[xy] = (float)levelsetForces(xy,mgdmlabels[lv][xy]);
+    		else forces[xy] = 0.0f;
+    		if (mgdmlabels[lv+1][xy]!=EMPTY) forces[xy]-= (float)levelsetForces(xy,mgdmlabels[lv+1][xy]);
     		
     	}
     	return forces;
@@ -667,10 +659,10 @@ public class Mgdm3d {
 	 *	reconstruct the level set functions with possible approximation far from contour 
 	 */
     public final float[][] reconstructedFastMarchingForces() {
-    	float[][] forces = new float[nobj][nx*ny*nz];
+    	float[][] forces = new float[nobj][nx*ny];
     	for (byte n=0;n<nobj;n++) {
-    		for (int xyz=0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
-    			forces[n][xyz] = (float)fastMarchingForces(xyz,n);
+    		for (int xy=0; xy<nx*ny; xy++) if (mask[xy]) {
+    			forces[n][xy] = (float)fastMarchingForces(xy,n);
     		}
     	}
     	return forces;
@@ -679,11 +671,11 @@ public class Mgdm3d {
 	 *	reconstruct the level set functions with possible approximation far from contour 
 	 */
     public final int[][] reconstructedLabels() {
-    	int[][] labels = new int[nmgdm][nx*ny*nz];
+    	int[][] labels = new int[nmgdm][nx*ny];
     	for (int n=0;n<nmgdm;n++) {
-    		for (int xyz=0; xyz<nx*ny*nz; xyz++) {
-    			if (mgdmlabels[n][xyz]>-1) {
-					labels[n][xyz] = objLabel[mgdmlabels[n][xyz]];
+    		for (int xy=0; xy<nx*ny; xy++) {
+    			if (mgdmlabels[n][xy]>-1) {
+					labels[n][xy] = objLabel[mgdmlabels[n][xy]];
 				}
 			}
     	}
@@ -701,20 +693,20 @@ public class Mgdm3d {
     	
     	// first estimate the narrow band size
     	int size = 0;
-		for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) if (mgdmfunctions[0][xyz]<narrowBandDist) size++;
+		for (int xy = 0; xy<nx*ny; xy++) if (mask[xy]) if (mgdmfunctions[0][xy]<narrowBandDist) size++;
 		// create the narrow band with initial estimates of size
     	NarrowBand narrowband = new NarrowBand(Numerics.ceil(1.25f*size), Numerics.ceil(0.1f*size));
     	BitSet landmines = new BitSet(Numerics.ceil(0.2f*size));
     	
     	if (debug) System.out.print("init ("+size+")\n");
         
-		for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
+		for (int xy = 0; xy<nx*ny; xy++) if (mask[xy]) {
 			// the criterion for being in the narrow band is to have a short distance to closest boundaries
-			if (mgdmfunctions[0][xyz]<narrowBandDist) {
-				narrowband.addPoint(xyz, mgdmlabels, mgdmfunctions);
+			if (mgdmfunctions[0][xy]<narrowBandDist) {
+				narrowband.addPoint(xy, mgdmlabels, mgdmfunctions);
 				// in addition, if close to the narrow band boundary, set a landmine
-				if (mgdmfunctions[0][xyz]>=landmineDist) {
-					landmines.set(xyz,true);
+				if (mgdmfunctions[0][xy]>=landmineDist) {
+					landmines.set(xy,true);
 				}
 			}
 		}
@@ -733,31 +725,31 @@ public class Mgdm3d {
 			for (int lb=0;lb<nmgdm;lb++) nswap[lb] = 0;
 			
 			for (int n=0; n<narrowband.currentsize;n++) {
-				int xyz = narrowband.id[n];
+				int xy = narrowband.id[n];
 				
 				/* probably better; disabled for testing
 				// select best label somehow (use the balloon forces with highest value (e.g. coming from memberships)
-				byte olb = lastNeighborCandidate(xyz);
+				byte olb = lastNeighborCandidate(xy);
 				*/
 				
 				// select best label from previous initialization
-				byte olb = otherlabels[xyz];
+				byte olb = otherlabels[xy];
 				
 				// evolve the MGDM functions
 				
 				// compute the forces from current levelset values, update the narrow band from it
 				/*
 				double curr, next;
-				if (olb!=EMPTY) next = levelsetForces(xyz, olb);
-				else next = levelsetForces(xyz, mgdmlabels[nmgdm-1][xyz]);
+				if (olb!=EMPTY) next = levelsetForces(xy, olb);
+				else next = levelsetForces(xy, mgdmlabels[nmgdm-1][xy]);
 				*/
-				if (olb!=EMPTY) forces[nmgdm] = levelsetForces(xyz, olb);
+				if (olb!=EMPTY) forces[nmgdm] = levelsetForces(xy, olb);
 				else forces[nmgdm] = 0.0f;
 				lbmax = nmgdm;
 				lbsec = -1;
 				for (int lb=nmgdm-1;lb>=0;lb--) {
-					if (mgdmlabels[lb][xyz]!=EMPTY) {
-						forces[lb] = levelsetForces(xyz, mgdmlabels[lb][xyz]);
+					if (mgdmlabels[lb][xy]!=EMPTY) {
+						forces[lb] = levelsetForces(xy, mgdmlabels[lb][xy]);
 						if (forces[lb]>forces[lbmax]) {
 							lbsec = lbmax;
 							lbmax = lb;
@@ -768,8 +760,8 @@ public class Mgdm3d {
 						}
 					} else forces[lb] = 0.0f;					
 				}
-				for (int lb=nmgdm-1;lb>=0;lb--) if (mgdmlabels[lb][xyz]!=EMPTY) {
-					/*curr = levelsetForces(xyz, mgdmlabels[lb][xyz]);*/
+				for (int lb=nmgdm-1;lb>=0;lb--) if (mgdmlabels[lb][xy]!=EMPTY) {
+					/*curr = levelsetForces(xy, mgdmlabels[lb][xy]);*/
 					curr = forces[lb];
 					if (lb==lbmax) next = forces[lbsec];
 					else next = forces[lbmax];
@@ -786,33 +778,33 @@ public class Mgdm3d {
 						
 						if (lb==nmgdm-1) {
 							if (olb!=EMPTY) {
-								//if (homeomorphicLabeling(xyz, olb)) {
+								//if (homeomorphicLabeling(xy, olb)) {
 								narrowband.labels[lb][n] = olb;
 								narrowband.functions[lb][n] = -narrowband.functions[lb][n];
 							} else {
 								// reset to low value
 								narrowband.functions[lb][n] = lowlevel;
 							}
-						} else if (mgdmlabels[lb+1][xyz]!=EMPTY) {
+						} else if (mgdmlabels[lb+1][xy]!=EMPTY) {
 							if (lb==0) {
 								// check for topology here (optional)
-								if (homeomorphicLabeling(xyz, mgdmlabels[lb+1][xyz])) {
-									narrowband.labels[lb+1][n] = mgdmlabels[lb][xyz];
-									narrowband.labels[lb][n] = mgdmlabels[lb+1][xyz];
+								if (homeomorphicLabeling(xy, mgdmlabels[lb+1][xy])) {
+									narrowband.labels[lb+1][n] = mgdmlabels[lb][xy];
+									narrowband.labels[lb][n] = mgdmlabels[lb+1][xy];
 									narrowband.functions[lb][n] = -narrowband.functions[lb][n];
-									segmentation[xyz] = mgdmlabels[lb+1][xyz];
+									segmentation[xy] = mgdmlabels[lb+1][xy];
 									// check for boundary changes in the landmines : force reinitialization
-									if (landmines.get(xyz)) reinitLM = true;
+									if (landmines.get(xy)) reinitLM = true;
 									// check for far labels getting mixed in: time to re-initialize
-									if (narrowband.labels[0][n]==otherlabels[xyz]) reinitOL = true;
+									if (narrowband.labels[0][n]==otherlabels[xy]) reinitOL = true;
 								} else {
 									// reset to low value
 									narrowband.functions[lb][n] = lowlevel;
 								}
 							} else {
-								//if (homeomorphicLabeling(xyz, mgdmlabels[lb+1][xyz])) {
-									narrowband.labels[lb+1][n] = mgdmlabels[lb][xyz];
-									narrowband.labels[lb][n] = mgdmlabels[lb+1][xyz];
+								//if (homeomorphicLabeling(xy, mgdmlabels[lb+1][xy])) {
+									narrowband.labels[lb+1][n] = mgdmlabels[lb][xy];
+									narrowband.labels[lb][n] = mgdmlabels[lb+1][xy];
 									narrowband.functions[lb][n] = -narrowband.functions[lb][n];
 								//} else {
 									// reset to low value
@@ -834,14 +826,14 @@ public class Mgdm3d {
 			// once all the new values are computed, copy into original MGDM functions
 			float avgdiff = 0.0f;
 			for (int n=0; n<narrowband.currentsize;n++) {
-				int xyz = narrowband.id[n];
+				int xy = narrowband.id[n];
 				// measure the changes at the base level
-				if (mgdmlabels[0][xyz]==narrowband.labels[0][n]) avgdiff += Numerics.abs(mgdmfunctions[0][xyz]-narrowband.functions[0][n]);
-				else avgdiff += Numerics.abs(mgdmfunctions[0][xyz]+narrowband.functions[0][n]);
+				if (mgdmlabels[0][xy]==narrowband.labels[0][n]) avgdiff += Numerics.abs(mgdmfunctions[0][xy]-narrowband.functions[0][n]);
+				else avgdiff += Numerics.abs(mgdmfunctions[0][xy]+narrowband.functions[0][n]);
 				
 				for (int lb=0;lb<nmgdm;lb++) {
-					mgdmlabels[lb][xyz] = narrowband.labels[lb][n];
-					mgdmfunctions[lb][xyz] = narrowband.functions[lb][n];
+					mgdmlabels[lb][xy] = narrowband.labels[lb][n];
+					mgdmfunctions[lb][xy] = narrowband.functions[lb][n];
 				}
 			}
 			if (debug) System.out.print("mean distance function change: "+(avgdiff/narrowband.currentsize)+"\n");
@@ -856,12 +848,12 @@ public class Mgdm3d {
 				// rebuild narrow band
 				narrowband.reset();
 				landmines.clear();
-				for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
+				for (int xy = 0; xy<nx*ny; xy++) if (mask[xy]) {
 					// the criterion for being in the narrow band is to have a shortdistance to closest boundaries
-					if (mgdmfunctions[0][xyz]<narrowBandDist) {
-						narrowband.addPoint(xyz, mgdmlabels, mgdmfunctions);
-						if (mgdmfunctions[0][xyz]>=landmineDist) {
-							landmines.set(xyz,true);
+					if (mgdmfunctions[0][xy]<narrowBandDist) {
+						narrowband.addPoint(xy, mgdmlabels, mgdmfunctions);
+						if (mgdmfunctions[0][xy]>=landmineDist) {
+							landmines.set(xy,true);
 						}
 					}
 				}
@@ -879,15 +871,15 @@ public class Mgdm3d {
     /** method to select the nmgdm-th closest neighbor based on external information 
      *  (highly application-dependent, may not be usable in all cases) 
      */
-    private final byte lastNeighborCandidate(int xyz) {
+    private final byte lastNeighborCandidate(int xy) {
 		// select best label somehow (use the balloon forces with highest value (e.g. coming from memberships)
 		byte olb = EMPTY;
 		if (balloonweight>0) {
 			float best=-INF;
 			for (byte n=1;n<nobj;n++) {
 				boolean outside = true;
-				for (byte l=0;l<nmgdm;l++) if (mgdmlabels[l][xyz]==n) outside = false;
-				if (outside && balloonforces[n][xyz]>best) olb = n;
+				for (byte l=0;l<nmgdm;l++) if (mgdmlabels[l][xy]==n) outside = false;
+				if (outside && balloonforces[n][xy]>best) olb = n;
 			}
 			if (olb==EMPTY) System.out.print("?");
 		}
@@ -895,80 +887,65 @@ public class Mgdm3d {
 	}
     
 	/** specific forces applied to the level sets (application dependent) */
-    private final double levelsetForces(int xyz, int lb) {
+    private final double levelsetForces(int xy, int lb) {
     	
 		// simple option: rebuild level set locally
 		// note: we go back to the convention of usual level sets with negative value inside, positive value outside
-		float[][][] phi = new float[3][3][3];
+		float[][] phi = new float[3][3];
 		
 		// do the center point first
-		if (mgdmlabels[0][xyz]==lb) phi[1][1][1] = -mgdmfunctions[0][xyz];
-		else  phi[1][1][1] = 0.0f;
-		for (int l=0;l<nmgdm && mgdmlabels[l][xyz]!=lb;l++) {
-			phi[1][1][1] += mgdmfunctions[l][xyz];
+		if (mgdmlabels[0][xy]==lb) phi[1][1] = -mgdmfunctions[0][xy];
+		else  phi[1][1] = 0.0f;
+		for (int l=0;l<nmgdm && mgdmlabels[l][xy]!=lb;l++) {
+			phi[1][1] += mgdmfunctions[l][xy];
 		}
 		// neighbors
-		for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int k=-1;k<=1;k++) if (i*i>0 || j*j>0 || k*k>0) {
-    		int xyzn = xyz + i + j*nx + k*nx*ny;
+		for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) if (i*i>0 || j*j>0) {
+    		int xyn = xy + i + j*nx;
 
-			if (mask[xyzn]) {
-				if (mgdmlabels[0][xyzn]==lb) phi[i+1][j+1][k+1] = -mgdmfunctions[0][xyzn];
-				else  phi[i+1][j+1][k+1] = 0.0f;
+			if (mask[xyn]) {
+				if (mgdmlabels[0][xyn]==lb) phi[i+1][j+1] = -mgdmfunctions[0][xyn];
+				else  phi[i+1][j+1] = 0.0f;
 					
-				for (int l=0;l<nmgdm && mgdmlabels[l][xyzn]!=lb;l++) {
-					phi[i+1][j+1][k+1] += mgdmfunctions[l][xyzn];
+				for (int l=0;l<nmgdm && mgdmlabels[l][xyn]!=lb;l++) {
+					phi[i+1][j+1] += mgdmfunctions[l][xyn];
 				}
 			} else {
 				// filling in values outside the mask?? center value
-				phi[i+1][j+1][k+1] = phi[1][1][1];
+				phi[i+1][j+1] = phi[1][1];
 			}
     	}
     	// first derivatives
-    	double Dmx = phi[1][1][1] - phi[0][1][1];
-    	double Dmy = phi[1][1][1] - phi[1][0][1];
-    	double Dmz = phi[1][1][1] - phi[1][1][0];
+    	double Dmx = phi[1][1] - phi[0][1];
+    	double Dmy = phi[1][1] - phi[1][0];
     	
-    	double Dpx = phi[2][1][1] - phi[1][1][1];
-    	double Dpy = phi[1][2][1] - phi[1][1][1];
-    	double Dpz = phi[1][1][2] - phi[1][1][1];
+    	double Dpx = phi[2][1] - phi[1][1];
+    	double Dpy = phi[1][2] - phi[1][1];
     	
-    	double D0x = (phi[2][1][1] - phi[0][1][1])/2.0;
-    	double D0y = (phi[1][2][1] - phi[1][0][1])/2.0;
-    	double D0z = (phi[1][1][2] - phi[1][1][0])/2.0;
+    	double D0x = (phi[2][1] - phi[0][1])/2.0;
+    	double D0y = (phi[1][2] - phi[1][0])/2.0;
     	
     	// if using smoothing forces:
     	double smooth = 0.0;
     	if (Numerics.abs(smoothweight)>0) {
     	
 			// second derivatives
-			double Dxx = phi[0][1][1] + phi[2][1][1] - 2.0*phi[1][1][1];
-			double Dyy = phi[1][0][1] + phi[1][2][1] - 2.0*phi[1][1][1];
-			double Dzz = phi[1][1][0] + phi[1][1][2] - 2.0*phi[1][1][1];
-			
-			double Dxy = (phi[0][0][1] + phi[2][2][1] - phi[0][2][1] - phi[2][0][1])/4.0;
-			double Dyz = (phi[1][0][0] + phi[1][2][2] - phi[1][0][2] - phi[1][2][0])/4.0;
-			double Dzx = (phi[0][1][0] + phi[2][1][2] - phi[2][1][0] - phi[0][1][2])/4.0;
+			double Dxx = phi[0][1] + phi[2][1] - 2.0*phi[1][1];
+			double Dyy = phi[1][0] + phi[1][2] - 2.0*phi[1][1];
+			double Dxy = (phi[0][0] + phi[2][2] - phi[0][2] - phi[2][0])/4.0;
 			
 			// gradient norm
 			double SD0x = D0x * D0x;
 			double SD0y = D0y * D0y;
-			double SD0z = D0z * D0z;
-			double GPhi = Math.sqrt(SD0x + SD0y + SD0z);
+			double GPhi = Math.sqrt(SD0x + SD0y);
 			
-			// mean curvature
-			double K =  (Dyy + Dzz)*SD0x + (Dxx + Dzz)*SD0y + (Dxx + Dyy)*SD0z 
-						- 2.0*(D0x*D0y*Dxy + D0y*D0z*Dyz + D0z*D0x*Dzx);
+			// curvature
+			double K =  Dyy*SD0x + Dxx*SD0y 
+						- 2.0*D0x*D0y*Dxy;
 				
-			// gaussian curvature
-			double G = (Dyy*Dzz - Dyz*Dyz)*SD0x + (Dzz*Dxx - Dzx*Dzx)*SD0y + (Dxx*Dyy - Dxy*Dxy)*SD0z 
-						+ 2.0*(D0x*D0y*(Dyz*Dzx - Dxy*Dzz) + D0z*D0x*(Dxy*Dyz - Dzx*Dyy) + D0y*D0z*(Dxy*Dzx - Dyz*Dxx));
-	
 			if(GPhi > 0.0000001){
 				double tmp = GPhi*GPhi;
 				K = K/(GPhi*tmp);
-				G = G/(tmp*tmp);
-				tmp = K*K - 2*G;
-				if(tmp > 0 ) K = K*G/tmp;
 			} else {
 				K = 0;
 			}
@@ -982,32 +959,29 @@ public class Mgdm3d {
 		double balloon = 0.0;
 		if (Numerics.abs(balloonweight)>0) {
 			double DeltaP = Math.sqrt(Numerics.square(Numerics.max(Dmx, 0.0)) + Numerics.square(Numerics.min(Dpx, 0.0))
-									 +Numerics.square(Numerics.max(Dmy, 0.0)) + Numerics.square(Numerics.min(Dpy, 0.0))
-									 +Numerics.square(Numerics.max(Dmz, 0.0)) + Numerics.square(Numerics.min(Dpz, 0.0)));
+									 +Numerics.square(Numerics.max(Dmy, 0.0)) + Numerics.square(Numerics.min(Dpy, 0.0)));
 			
 			double DeltaM = Math.sqrt(Numerics.square(Numerics.max(Dpx, 0.0)) + Numerics.square(Numerics.min(Dmx, 0.0))
-									 +Numerics.square(Numerics.max(Dpy, 0.0)) + Numerics.square(Numerics.min(Dmy, 0.0))
-									 +Numerics.square(Numerics.max(Dpz, 0.0)) + Numerics.square(Numerics.min(Dmz, 0.0)));
+									 +Numerics.square(Numerics.max(Dpy, 0.0)) + Numerics.square(Numerics.min(Dmy, 0.0)));
 			
-			balloon = balloonweight*stepsize*(Numerics.max(balloonforces[lb][xyz], 0.0)*DeltaP + Numerics.min(balloonforces[lb][xyz], 0.0)*DeltaM);
+			balloon = balloonweight*stepsize*(Numerics.max(balloonforces[lb][xy], 0.0)*DeltaP + Numerics.min(balloonforces[lb][xy], 0.0)*DeltaM);
 		}
 		
 		// external force field
 		double field = 0.0;
 		if (Numerics.abs(fieldweight)>0) {
-			field =  fieldweight*stepsize*(Numerics.max(fieldforce[X][xyz],0.0)*Dmx + Numerics.min(fieldforce[X][xyz],0.0)*Dpx
-										  +Numerics.max(fieldforce[Y][xyz],0.0)*Dmy + Numerics.min(fieldforce[Y][xyz],0.0)*Dpy
-										  +Numerics.max(fieldforce[Z][xyz],0.0)*Dmz + Numerics.min(fieldforce[Z][xyz],0.0)*Dpz);
+			field =  fieldweight*stepsize*(Numerics.max(fieldforce[X][xy],0.0)*Dmx + Numerics.min(fieldforce[X][xy],0.0)*Dpx
+										  +Numerics.max(fieldforce[Y][xy],0.0)*Dmy + Numerics.min(fieldforce[Y][xy],0.0)*Dpy);
 		}
 		
 		// pressure forces of structures 1 voxel thick
 		double pressure = 0.0;
-		if (phi[1][1][1]<0 && Numerics.abs(pressureweight)>0) {
-			for (int n=0;n<6;n++) {
-				int xyzn = xyz+xoff[n]+yoff[n]+zoff[n];
+		if (phi[1][1]<0 && Numerics.abs(pressureweight)>0) {
+			for (int n=0;n<4;n++) {
+				int xyn = xy+xoff[n]+yoff[n];
 				// neighbor-based pressure force
-				pressure = Numerics.max(pressure, Numerics.min(Numerics.max(1.0-mgdmfunctions[1][xyzn],0.0),
-																 Numerics.max(1.0-mgdmfunctions[0][xyzn],0.0)));
+				pressure = Numerics.max(pressure, Numerics.min(Numerics.max(1.0-mgdmfunctions[1][xyn],0.0),
+																 Numerics.max(1.0-mgdmfunctions[0][xyn],0.0)));
 			}
 			pressure = -pressureweight*stepsize*pressure;
 		}
@@ -1018,20 +992,20 @@ public class Mgdm3d {
     /**
 	 *  critical relation detection: groups objects with relations
 	 */
-    private final boolean homeomorphicLabeling(int xyz, byte lb) {
+    private final boolean homeomorphicLabeling(int xy, byte lb) {
     	// if we don't check, just exit
     	if (!checkTopology) return true;
     	
 		// is the new segmentation homeomorphic ? 
 		
 		// inside the original object ?
-		if (segmentation[xyz]==lb) return true;
+		if (segmentation[xy]==lb) return true;
 		
 		boolean [][][] obj = new boolean[3][3][3];
 		
 		// does it change the topology of the new object ?
 		for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int l=-1;l<=1;l++) {
-			if (segmentation[xyz+i+j*nx+l*nx*ny]==lb) {
+			if (segmentation[xy+i+j*nx]==lb) {
 				obj[1+i][1+j][1+l] = true;
 			} else {
 				obj[1+i][1+j][1+l] = false;
@@ -1044,7 +1018,7 @@ public class Mgdm3d {
 			
 		// does it change the topology of the object it modifies ?
 		for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int l=-1;l<=1;l++) {
-			if (segmentation[xyz+i+j*nx+l*nx*ny]==segmentation[xyz]) {
+			if (segmentation[xy+i+j*nx]==segmentation[xy]) {
 				obj[1+i][1+j][1+l] = true;
 			} else {
 				obj[1+i][1+j][1+l] = false;
@@ -1059,15 +1033,15 @@ public class Mgdm3d {
 		int  Nconfiguration = 0;
 		short[] lbs = new short[26];
 		for (short i=-1;i<=1;i++) for (short j=-1;j<=1;j++) for (short l=-1;l<=1;l++) {
-			if ( (i*i+j*j+l*l>0) 
-				&& (segmentation[xyz+i+j*nx+l*nx*ny]!=lb) 
-				&& (segmentation[xyz+i+j*nx+l*nx*ny]!=segmentation[xyz]) ) {
+			if ( (i*i+j*j>0) 
+				&& (segmentation[xy+i+j*nx]!=lb) 
+				&& (segmentation[xy+i+j*nx]!=segmentation[xy]) ) {
 				boolean found = false;
 				for (int n=0;n<Nconfiguration;n++) 
-					if (segmentation[xyz+i+j*nx+l*nx*ny]==lbs[n]) { found = true; break; }
+					if (segmentation[xy+i+j*nx]==lbs[n]) { found = true; break; }
 				
 				if (!found) {
-					lbs[Nconfiguration] = segmentation[xyz+i+j*nx+l*nx*ny];
+					lbs[Nconfiguration] = segmentation[xy+i+j*nx];
 					Nconfiguration++;
 				}
 			}
@@ -1077,8 +1051,8 @@ public class Mgdm3d {
 		for (int n=0;n<Nconfiguration;n++) {
 			// in relation with previous object
 			for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int l=-1;l<=1;l++) {
-				if ( (segmentation[xyz+i+j*nx+l*nx*ny]==segmentation[xyz])
-					|| (segmentation[xyz+i+j*nx+l*nx*ny]==lbs[n]) ) {
+				if ( (segmentation[xy+i+j*nx]==segmentation[xy])
+					|| (segmentation[xy+i+j*nx]==lbs[n]) ) {
 					obj[1+i][1+j][1+l] = true;
 				} else {
 					obj[1+i][1+j][1+l] = false;
@@ -1090,8 +1064,8 @@ public class Mgdm3d {
 		for (int n=0;n<Nconfiguration;n++) {
 			// in relation with new object
 			for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int l=-1;l<=1;l++) {
-				if ( (segmentation[xyz+i+j*nx+l*nx*ny]==lb)
-					|| (segmentation[xyz+i+j*nx+l*nx*ny]==lbs[n]) ) {
+				if ( (segmentation[xy+i+j*nx]==lb)
+					|| (segmentation[xy+i+j*nx]==lbs[n]) ) {
 					obj[1+i][1+j][1+l] = true;
 				} else {
 					obj[1+i][1+j][1+l] = false;
@@ -1101,14 +1075,14 @@ public class Mgdm3d {
 			if (!lut.get(lut.keyFromPattern(obj,1,1,1))) return false;
 		}
 
-		// triplets
+		// triplets: may not be needed
 		for (int n=0;n<Nconfiguration;n++) {
 			for (int m=n+1;m<Nconfiguration;m++) {
 				// in relation with previous object
 				for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int l=-1;l<=1;l++) {
-					if ( (segmentation[xyz+i+j*nx+l*nx*ny]==segmentation[xyz])
-						|| (segmentation[xyz+i+j*nx+l*nx*ny]==lbs[n])
-						|| (segmentation[xyz+i+j*nx+l*nx*ny]==lbs[m]) ) {
+					if ( (segmentation[xy+i+j*nx]==segmentation[xy])
+						|| (segmentation[xy+i+j*nx]==lbs[n])
+						|| (segmentation[xy+i+j*nx]==lbs[m]) ) {
 						obj[1+i][1+j][1+l] = true;
 					} else {
 						obj[1+i][1+j][1+l] = false;
@@ -1122,9 +1096,9 @@ public class Mgdm3d {
 			for (int m=n+1;m<Nconfiguration;m++) {
 				// in relation with new object
 				for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int l=-1;l<=1;l++) {
-					if ( (segmentation[xyz+i+j*nx+l*nx*ny]==lb)
-						|| (segmentation[xyz+i+j*nx+l*nx*ny]==lbs[n]) 
-						|| (segmentation[xyz+i+j*nx+l*nx*ny]==lbs[m]) ) {
+					if ( (segmentation[xy+i+j*nx]==lb)
+						|| (segmentation[xy+i+j*nx]==lbs[n]) 
+						|| (segmentation[xy+i+j*nx]==lbs[m]) ) {
 						obj[1+i][1+j][1+l] = true;
 					} else {
 						obj[1+i][1+j][1+l] = false;
@@ -1146,34 +1120,34 @@ public class Mgdm3d {
     private final void resetIsosurfaceNarrowBand(NarrowBand narrowband) {
     	if (debug) System.out.print("level set evolution: iso-surface reinit\n");
 
-    	float[] nbdist = new float[6];
-    	boolean[] nbflag = new boolean[6];
+    	float[] nbdist = new float[4];
+    	boolean[] nbflag = new boolean[4];
     	boolean boundary;
     	
 		for (int n=0; n<narrowband.currentsize;n++) {
-			int xyz = narrowband.id[n];
+			int xy = narrowband.id[n];
 			
 			boundary = false;
-			for (int l=0; l<6; l++) {
+			for (int l=0; l<4; l++) {
 				nbdist[l] = UNKNOWN;
 				nbflag[l] = false;
 				
-				int xyznb = xyz + xoff[l] + yoff[l] + zoff[l];
-				if (mgdmlabels[0][xyznb]!=mgdmlabels[0][xyz] && mask[xyznb]) {
+				int xynb = xy + xoff[l] + yoff[l];
+				if (mgdmlabels[0][xynb]!=mgdmlabels[0][xy] && mask[xynb]) {
 					// compute new distance based on processed neighbors for the same object
-					nbdist[l] = Numerics.abs(mgdmfunctions[0][xyznb]);
+					nbdist[l] = Numerics.abs(mgdmfunctions[0][xynb]);
 					nbflag[l] = true;
 					boundary = true;
 				}
 			}
 			if (boundary) {
-				narrowband.functions[0][n] = isoSurfaceDistance(mgdmfunctions[0][xyz], nbdist, nbflag);
+				narrowband.functions[0][n] = isoSurfaceDistance(mgdmfunctions[0][xy], nbdist, nbflag);
 			}
 		}
 		// once all the new values are computed, copy into original GDM function (sign is not important here)
 		for (int n=0; n<narrowband.currentsize;n++) {
-			int xyz = narrowband.id[n];
-			mgdmfunctions[0][xyz] = narrowband.functions[0][n];
+			int xy = narrowband.id[n];
+			mgdmfunctions[0][xy] = narrowband.functions[0][n];
 		}
 			
         return;
@@ -1185,36 +1159,36 @@ public class Mgdm3d {
     private final void resetIsosurfaceBoundary() {
     	if (debug) System.out.print("fast marching evolution: iso-surface reinit\n");
 
-    	float[] nbdist = new float[6];
-    	boolean[] nbflag = new boolean[6];
+    	float[] nbdist = new float[4];
+    	boolean[] nbflag = new boolean[4];
     	boolean boundary;
     	
-    	float[] tmp = new float[nx*ny*nz];
-    	boolean[] processed = new boolean[nx*ny*nz];
-		for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
+    	float[] tmp = new float[nx*ny];
+    	boolean[] processed = new boolean[nx*ny];
+		for (int xy = 0; xy<nx*ny; xy++) if (mask[xy]) {
 			
 			boundary = false;
-			for (int l=0; l<6; l++) {
+			for (int l=0; l<4; l++) {
 				nbdist[l] = UNKNOWN;
 				nbflag[l] = false;
 				
-				int xyznb = xyz + xoff[l] + yoff[l] + zoff[l];
-				if (segmentation[xyznb]!=segmentation[xyz] && mask[xyznb]) {
+				int xynb = xy + xoff[l] + yoff[l];
+				if (segmentation[xynb]!=segmentation[xy] && mask[xynb]) {
 					// compute new distance based on processed neighbors for the same object
-					nbdist[l] = Numerics.abs(mgdmfunctions[0][xyznb]);
+					nbdist[l] = Numerics.abs(mgdmfunctions[0][xynb]);
 					nbflag[l] = true;
 					boundary = true;
 				}
 			}
 			if (boundary) {
-				tmp[xyz] = isoSurfaceDistance(mgdmfunctions[0][xyz], nbdist, nbflag);
-				processed[xyz] = true;
+				tmp[xy] = isoSurfaceDistance(mgdmfunctions[0][xy], nbdist, nbflag);
+				processed[xy] = true;
 			}
 		}
 		// once all the new values are computed, copy into original GDM function (sign is not important here)
-		for (int xyz = 0; xyz<nx*ny*nz; xyz++) {
-			if (processed[xyz]) mgdmfunctions[0][xyz] = tmp[xyz];
-			else mgdmfunctions[0][xyz] = UNKNOWN;
+		for (int xy = 0; xy<nx*ny; xy++) {
+			if (processed[xy]) mgdmfunctions[0][xy] = tmp[xy];
+			else mgdmfunctions[0][xy] = UNKNOWN;
 		}
 			
         return;
@@ -1228,13 +1202,13 @@ public class Mgdm3d {
     	if (debug) System.out.print("level set evolution: fast marching\n");
 
     	// computation variables
-        boolean[] processed = new boolean[nx*ny*nz]; // note: using a byte instead of boolean for the second pass
+        boolean[] processed = new boolean[nx*ny]; // note: using a byte instead of boolean for the second pass
     	
         // init
     	
     	// first estimate the binary tree size
     	int size = 0;
-		for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) if (mgdmfunctions[0][xyz]<=0.5f) size++;
+		for (int xy = 0; xy<nx*ny; xy++) if (mask[xy]) if (mgdmfunctions[0][xy]<=0.5f) size++;
 		// create the tree with initial estimates of size
     	heap = new BinaryHeap2D(Numerics.ceil(1.25f*size), Numerics.ceil(0.1f*size), BinaryHeap2D.MINTREE);
     	
@@ -1248,24 +1222,24 @@ public class Mgdm3d {
 			double curr, next;
 			float speed = 0;
 			int nbound = 0;
-			for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
+			for (int xy = 0; xy<nx*ny; xy++) if (mask[xy]) {
 				// the criterion for being in the narrow band is to have a short distance to closest boundaries
-				if (mgdmfunctions[0][xyz]<1.0f) {
+				if (mgdmfunctions[0][xy]<1.0f) {
 					// add to the heap
-					curr = balloonweight*balloonforces[mgdmlabels[0][xyz]][xyz];
-					next = balloonweight*balloonforces[mgdmlabels[1][xyz]][xyz];
+					curr = balloonweight*balloonforces[mgdmlabels[0][xy]][xy];
+					next = balloonweight*balloonforces[mgdmlabels[1][xy]][xy];
 					if (next>curr) {
 						speed =  (float)(1.0/smoothweight);
 							 if (sign==0) speed = (float)(1.0/(smoothweight+0.5*(next-curr)));
 						else if (sign>0 && next>0) speed = (float)(1.0/(smoothweight+next));
 						else if (sign<0 && curr<0) speed = (float)(1.0/(smoothweight-curr));
 						
-						heap.addValue(speed, xyz, mgdmlabels[1][xyz]);
+						heap.addValue(speed, xy, mgdmlabels[1][xy]);
 					}
 				
 					nbound++;
 				}
-				processed[xyz] = false;
+				processed[xy] = false;
 			}
 			System.out.println("initial boundary points: "+nbound);
 				
@@ -1274,33 +1248,33 @@ public class Mgdm3d {
 			while (heap.isNotEmpty()) {
 				// extract point with minimum distance
 				dist = heap.getFirst();
-				int xyz = heap.getFirstId();
+				int xy = heap.getFirstId();
 				byte lb = heap.getFirstState();
 				heap.removeFirst();
 	
 				// if more than nmgdm labels have been found already, this is done
-				if (processed[xyz])  continue;
+				if (processed[xy])  continue;
 				
 				// check topology
-				if (!homeomorphicLabeling(xyz, lb)) continue; 
+				if (!homeomorphicLabeling(xy, lb)) continue; 
 				
 				// update the segmentation and distance function (?) at the current level
-				mgdmfunctions[0][xyz] = dist;
-				mgdmlabels[0][xyz] = lb;
-				processed[xyz] = true;
-				segmentation[xyz] = lb;
+				mgdmfunctions[0][xy] = dist;
+				mgdmlabels[0][xy] = lb;
+				processed[xy] = true;
+				segmentation[xy] = lb;
 				//System.out.print(".");
 				
 				// find new neighbors
-				for (int k = 0; k<6; k++) {
-					int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+				for (int k = 0; k<4; k++) {
+					int xyn = xy + xoff[k] + yoff[k];
 					
-					if (mask[xyzn]) {
+					if (mask[xyn]) {
 						// must be in outside the object or its processed neighborhood
-						if (!processed[xyzn]) {
-							if (mgdmlabels[0][xyzn]!=lb) {
-								curr = balloonweight*balloonforces[mgdmlabels[0][xyzn]][xyzn];
-								next = balloonweight*balloonforces[lb][xyzn];
+						if (!processed[xyn]) {
+							if (mgdmlabels[0][xyn]!=lb) {
+								curr = balloonweight*balloonforces[mgdmlabels[0][xyn]][xyn];
+								next = balloonweight*balloonforces[lb][xyn];
 								if (next>curr) {
 									// add to the heap
 									speed =  (float)(1.0/smoothweight);
@@ -1309,15 +1283,15 @@ public class Mgdm3d {
 									else if (sign<0 && curr<0) speed = (float)(1.0/(smoothweight-curr));
 									
 									//System.out.print("+");
-									heap.addValue(dist+speed, xyzn, lb);
+									heap.addValue(dist+speed, xyn, lb);
 								}
 							}
 						}
 					}
 				}
 			}
-			for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (!processed[xyz]) {
-				mgdmfunctions[0][xyz] = dist;
+			for (int xy = 0; xy<nx*ny; xy++) if (!processed[xy]) {
+				mgdmfunctions[0][xy] = dist;
 			}
 			// re-init
 			//resetIsosurfaceBoundary();
@@ -1326,8 +1300,8 @@ public class Mgdm3d {
         return;
     }
     
-    private final float fastMarchingForces(int xyz, byte lb) {
-    	if (balloonforces[lb][xyz]>0) return 1.0f/(float)(smoothweight+balloonweight*balloonforces[lb][xyz]);
+    private final float fastMarchingForces(int xy, byte lb) {
+    	if (balloonforces[lb][xy]>0) return 1.0f/(float)(smoothweight+balloonweight*balloonforces[lb][xy]);
     	else return 1.0f/(float)smoothweight;
     }
 }
