@@ -32,12 +32,6 @@ public class Mgdm2d {
 	// fast marching flags
 	private final static byte X = 0;
     private final static byte Y = 1;
-    private final static byte Z = 2;
-    	
-	private final static byte NORTH 	= 0;
-    private final static byte SOUTH 	= 1;
-	private final static byte EAST 		= 2;
-    private final static byte WEST 		= 3;
     
     // numerical quantities
 	private static final	float   INF=1e15f;
