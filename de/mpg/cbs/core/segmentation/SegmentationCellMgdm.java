@@ -116,19 +116,55 @@ public class SegmentationCellMgdm {
 		byte dimension = DIM2D;
 		if (dimParam.equals("3D")) dimension = DIM3D;
 		
-		// 1. Get the initial segmentation from cell centroid detection
-		int[] initialization = null;
+		int nmgdm = 4;
+                
+		//output images
+		segmentImage = new int[nx*ny*nz];
+		mgdmImage = new float[nx*ny*nz];
+		
+		labelImage = new int[nx*ny*nz*nmgdm];
+		membershipImage = new float[nx*ny*nz*nmgdm];
+		
+		
 		if (dimension==DIM2D) {
 		    // independet Z stacks
 		    for (int z=0;z<nz;z++) {
-		        int[] labels = ObjectLabeling.connected6Object3D(Object.objectFromImage(centroids, nx,ny,1, 0.0f, ObjectExtraction.SUPERIOR), nx,ny,1);
-		        //...
+		        // 1. Get the initial segmentation from cell centroid detection
+		        boolean[] seg = new boolean[nx*ny];
+		        for (int xy=0;xy<nx*ny;xy++) seg[xy] = (centroids[xy+z*nx*ny]>0);
+                int[] initialization = ObjectLabeling.connected6Object3D(seg, nx,ny,1);
+                int nlb = ObjectLabeling.countLabels(initialization, nx,ny,1);
+		        
+                // 2. Get the forces from foreground proba
+                float[][] forces = new float[nlb][];
+                float[] fgmap = new float[nx*ny];
+                float[] bgmap = new float[nx*ny];
+                for (int xy=0;xy<nx*ny;xy++) {
+                    fgmap[nx*ny] = fgproba[xy+z*nx*ny];
+                    bgmap[nx*ny] = 1.0f - fgproba[xy+z*nx*ny];
+                }
+                // trick so that each object has the same proba (foreground)
+                for (int lb=0;lb<nlb;lb++) forces[lb] = fgmap;
+               
+                // find background
+                // assume background to be the label with highest cumulative bg proba?
+                float[] bgscore = new float[nlb];
+                for (int lb=0;lb<nlb;lb++)
+                    for (int xy=0;xy<nx*ny;xy++)
+                        bgscore[lb] += bgproba[xy];
+                int bglb = Numerics.argmax(bgscore,nlb);
+                forces[bglb] = bgmap;
+                    
+                // 3. Run MGDM!
+                Mgdm2D mgdm = new Mgdm2d(initialization, nx, ny, nlb, nmgdm, rx, ry, null, forces, 
+						                0.0f, forceParam, curvParam, 0.0f, 
+                                        topologyParam);
+                
+                mgdm.evolveNarrowBand(iterationParam, changeParam);
+                
+                // 4. copy the results
 		    }
 		}
-		
-		// 2. Get the forces from foreground proba
-		
-		// 3. Run MGDM!
 		
 		float[][] image = new float[nimg][nxyz];
 		n = 0;

@@ -680,7 +680,7 @@ public class Mgdm2d {
     *  	Evolution using the narrow band scheme 
     *	(the reinitialization is incorporated)
     */
-    public final void evolveNarrowBand(int iter) {
+    public final void evolveNarrowBand(int iter, float mindist) {
     	if (debug) System.out.print("level set evolution: narrow band\n");
 
     	// init
@@ -709,8 +709,9 @@ public class Mgdm2d {
 		double[] forces = new double[nmgdm+1];
 		int lbmax, lbsec;
 		double curr, next;
+		double curdist = mindist+1;
 		// evolve until a landmine is closer than minDist of the boundaries
-		for (int t=0;t<iter;t++) {
+		for (int t=0;t<iter && curdist>mindist;t++) {
 			if (debug) System.out.print("iteration "+t+"\n");
         			
 			boolean reinitLM = false;
@@ -830,6 +831,7 @@ public class Mgdm2d {
 					mgdmfunctions[lb][xy] = narrowband.functions[lb][n];
 				}
 			}
+			curdist = (avgdiff/narrowband.currentsize);
 			if (debug) System.out.print("mean distance function change: "+(avgdiff/narrowband.currentsize)+"\n");
 	
 			if (reinitLM) {
