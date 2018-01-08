@@ -248,6 +248,7 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 		byte[][][] supercount = new byte[2*nx-1][2*ny-1][2*nz-1];
 		float[][][][] boundaryvector = new float[nx][ny][nz][3];
 		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]) {
+			superboundaries[2*x][2*y][2*z] = 1.0f;
 			for (int n=0;n<26;n++) {
 				if (mask[x+Ngb.x[n]][y+Ngb.y[n]][z+Ngb.z[n]] && mask[x-Ngb.x[n]][y-Ngb.y[n]][z-Ngb.z[n]]) {
 					// partial correlation formula?
@@ -295,6 +296,7 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 						
 					double pcorr = (corrXY-corrZX*corrYZ)/FastMath.sqrt((1.0-corrZX*corrZX)*(1.0-corrYZ*corrYZ));
 					partialboundaries[x][y][z][n] = (float)(pcorr);
+					superboundaries[2*x][2*y][2*z] = Numerics.min((float)(pcorr),superboundaries[2*x][2*y][2*z]);
 					
 					//superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]] = Numerics.max(superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]], (float)pcorr);
 					superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]] += (float)pcorr;
@@ -309,7 +311,7 @@ public class JistFmriPartialCorrelationBoundaries extends ProcessingAlgorithm {
 		}
 		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) if (mask[x][y][z]) {
 			//superboundaries[2*x][2*y][2*z] = superboundaries[2*x-Ngb.x[0]][2*y-Ngb.y[0]][2*z-Ngb.z[0]];
-			superboundaries[2*x][2*y][2*z] = 0.0f;
+			//superboundaries[2*x][2*y][2*z] = 0.0f;
 			//for (int n=1;n<26;n++) {
 			for (int n=0;n<26;n++) {
 				//superboundaries[2*x][2*y][2*z] = Numerics.min(superboundaries[2*x][2*y][2*z], superboundaries[2*x-Ngb.x[n]][2*y-Ngb.y[n]][2*z-Ngb.z[n]]);
