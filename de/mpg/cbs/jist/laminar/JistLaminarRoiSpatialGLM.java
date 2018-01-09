@@ -48,6 +48,7 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 	private ParamOption 	glmtypeParam;
 	private static final String[] glmTypes = {"local_pv_full", 
 											  "local_pv_fast",
+											  "full_pv_mean",
 											  "fast_pv_mean",
 											  "basic_bold_full",
 											  "basic_bold_fast"};
@@ -570,6 +571,7 @@ public class JistLaminarRoiSpatialGLM extends ProcessingAlgorithm {
 		// second option: with explicit definition of the intersection (~marching cubes!)
 		// requires intersecting all 12 edges from the voxel cube, then defining either case-by-case formulas or 
 		// deriving the formula for an integral of the Heaviside function
+		// not so much fun...
 		
 		return (float)volume;
 	}

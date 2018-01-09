@@ -134,9 +134,9 @@ public class BrainExtractBrainRegion {
 			
 				else isBackground.set(atlas.getLabels()[nobj]);
 				
-				structureName = "_lcr_gm";
-				insideName = "_lcr_wm";
-				backgroundName = "_lcr_bg";
+				structureName = "_lcrgm";
+				insideName = "_lcrwm";
+				backgroundName = "_lcrbg";
 			}
 		} else
 		if (regionParam.equals("right_cerebrum")) {
@@ -155,9 +155,9 @@ public class BrainExtractBrainRegion {
 			
 				else isBackground.set(atlas.getLabels()[nobj]);
 				
-				structureName = "_rcr_gm";
-				insideName = "_rcr_wm";
-				backgroundName = "_rcr_bg";
+				structureName = "_rcrgm";
+				insideName = "_rcrwm";
+				backgroundName = "_rcrbg";
 			}
 		} else
 		if (regionParam.equals("cerebrum")) {
@@ -193,9 +193,9 @@ public class BrainExtractBrainRegion {
 				
 				else isBackground.set(atlas.getLabels()[nobj]);
 				
-				structureName = "_cr_gm";
-				insideName = "_cr_wm";
-				backgroundName = "_cr_bg";
+				structureName = "_crgm";
+				insideName = "_crwm";
+				backgroundName = "_crbg";
 			}
 		} else
 		if (regionParam.equals("cerebellum")) {
@@ -207,9 +207,9 @@ public class BrainExtractBrainRegion {
 				
 				else isBackground.set(atlas.getLabels()[nobj]);
 				
-				structureName = "_cb_gm";
-				insideName = "_cb_wm";
-				backgroundName = "_cb_bg";
+				structureName = "_cbgm";
+				insideName = "_cbwm";
+				backgroundName = "_cbbg";
 			}
 		} else
 		if (regionParam.equals("cerebellum_brainstem")) {
@@ -222,9 +222,9 @@ public class BrainExtractBrainRegion {
 				
 				else isBackground.set(atlas.getLabels()[nobj]);
 				
-				structureName = "_cbs_gm";
-				insideName = "_cbs_wm";
-				backgroundName = "_cbs_bg";
+				structureName = "_cbsgm";
+				insideName = "_cbswm";
+				backgroundName = "_cbsbg";
 			}
 		} else
 		if (regionParam.equals("subcortex")) {
@@ -254,9 +254,9 @@ public class BrainExtractBrainRegion {
 				
 				else isInside.set(atlas.getLabels()[nobj]);
 				
-				structureName = "_sub_gm";
-				insideName = "_sub_wmbg";
-				backgroundName = "_sub_csf";
+				structureName = "_subgm";
+				insideName = "_subwmbg";
+				backgroundName = "_subcsf";
 			}
 		} else
 		if (regionParam.equals("tissues(anat)")) {
@@ -297,9 +297,9 @@ public class BrainExtractBrainRegion {
 				else if (atlas.getNames()[nobj].equals("Ventricle4")) isBackground.set(atlas.getLabels()[nobj]);
 				else if (atlas.getNames()[nobj].equals("Ventricles")) isBackground.set(atlas.getLabels()[nobj]);
 				
-				structureName = "_an_gm";
-				insideName = "_an_wm";
-				backgroundName = "_an_csf";
+				structureName = "_angm";
+				insideName = "_anwm";
+				backgroundName = "_ancsf";
 			}
 		} else
 		if (regionParam.equals("tissues(func)")) {
@@ -341,9 +341,9 @@ public class BrainExtractBrainRegion {
 				else if (atlas.getNames()[nobj].equals("Ventricles")) isBackground.set(atlas.getLabels()[nobj]);
 				else if (atlas.getNames()[nobj].equals("Arteries")) isBackground.set(atlas.getLabels()[nobj]);
 				
-				structureName = "_fn_gm";
-				insideName = "_fn_wm";
-				backgroundName = "_fn_csf";
+				structureName = "_fngm";
+				insideName = "_fnwm";
+				backgroundName = "_fncsf";
 			}
 		} else
 		if (regionParam.equals("brain_mask")) {
@@ -384,8 +384,7 @@ public class BrainExtractBrainRegion {
 			*/
 			mgdmfull = new MgdmRepresentation(segImage, mgdmImage, nx,ny,nz, rx,ry,rz,
 												objlabel, nobj, nmgdm, false, dist);
-		}
-		
+		}		
 		
 		// process the data: probabilities
 		probaStructureImage = new float[nx*ny*nz];
@@ -410,6 +409,7 @@ public class BrainExtractBrainRegion {
 				}
 			}
 			if (densityParam) {
+				System.out.println("re-estimate densities");
 				// modulate by a sigmoid to lower or higher values away from the boundaries
 				// find the closest label for each region
 				boolean done = false;
@@ -438,6 +438,7 @@ public class BrainExtractBrainRegion {
 				if (factorB!=-1) probaBackgroundImage[xyz] *= factorB;
 			}
 			if (normalizeParam) {
+				System.out.println("normalize probabilities");
 				if (isStructure.get(segImage[xyz]) ) {
 					float sum = Numerics.max(1e-3f,probaStructureImage[xyz]+probaInsideImage[xyz],probaStructureImage[xyz]+probaBackgroundImage[xyz]);
 					probaStructureImage[xyz] /= sum;

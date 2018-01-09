@@ -98,7 +98,7 @@ public class JistIntensityBackgroundEstimator extends ProcessingAlgorithm {
 		algorithm.setDimensions(dims);
 		algorithm.setRobustMinMaxThresholding(ratioParam.getValue().floatValue());
 		algorithm.setBackgroundDistribution(distribParam.getValue());
-		algorithm.setSkipZeroValues(skip0Param.getValue());
+		algorithm.setSkipZeroValues(skip0Param.getValue().booleanValue());
 		
 		algorithm.execute();
 
