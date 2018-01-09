@@ -16,6 +16,7 @@ public class IntensityMp2rageT1Fitting {
 	// input parameters
 	private		float[] 	inv1;
 	private		float[] 	inv2;
+	private		float[]		b1map = null;
 	private		int			nx, ny, nz, nxyz;
 	private 	float 		rx, ry, rz;
 
@@ -34,18 +35,25 @@ public class IntensityMp2rageT1Fitting {
 	private		float		r1mapThreshold = 2.0f;
 	private		int			lutSamples = 100000;
 	
+	private		boolean		useB1correction = true;
+	private		float 		b1scaling = 1000000.0f;
+	private		float		b1min = 0.05f;
+	private		float		b1max = 2.0f;
+	private 	int			b1Samples = 2000;
+	
 	// output parameters
 	private		float[] uni = null;
 	private		float[] t1map = null;
 	private		float[] r1map = null;
 	private		float[] snr = null;
 	
-	private		double[] T1lookup = null;
-	private 	double[] unilookup = null;
+	private		double[][] T1lookup = null;
+	private 	double[][] unilookup = null;
 	
 	// set inputs
 	public final void setFirstInversionImage(float[] in) { inv1 = in; }
 	public final void setSecondInversionImage(float[] in) { inv2 = in; }
+	public final void setB1mapImage(float[] in) { b1map = in; }
 	
 	public final void setInversionRepetitionTime(float in) { TRinversion = in; }
 	public final void setExcitationRepetitionTime(float in) { TRexcitation1 = in; TRexcitation2 = in; }
@@ -90,10 +98,12 @@ public class IntensityMp2rageT1Fitting {
 			img[x+nx*y]++;
 		}
 		*/
-		float[] img = new float[lutSamples*lutSamples];
+		float[] img = new float[lutSamples*lutSamples*b1Samples];
 		for (int x=0;x<lutSamples;x++) {
 			for (int y=0;y<lutSamples;y++) {
-				img[x+lutSamples*y] = (float)T1lookup[x];
+				for (int z=0;z<b1Samples;z++) {
+					img[x+lutSamples*y+lutSamples*lutSamples*z] = (float)T1lookup[z][x];
+				}
 			}
 		}
 		return img;
@@ -106,10 +116,12 @@ public class IntensityMp2rageT1Fitting {
 			int y = Numerics.bounded(Numerics.round(unilookup[x]/t1mapThreshold*lutSamples),0,lutSamples);
 			img[x+nx*y]++;
 		}*/
-		float[] img = new float[lutSamples*lutSamples];
+		float[] img = new float[lutSamples*lutSamples*b1Samples];
 		for (int x=0;x<lutSamples;x++) {
 			for (int y=0;y<lutSamples;y++) {
-				img[x+lutSamples*y] = (float)unilookup[x];
+				for (int z=0;z<b1Samples;z++) {
+					img[x+lutSamples*y+lutSamples*lutSamples*z] = (float)unilookup[z][x];
+				}
 			}
 		}
 		return img;
@@ -153,8 +165,10 @@ public class IntensityMp2rageT1Fitting {
 			else snr[xyz] = 1.0f;
 		}
 		
+		if (!useB1correction) b1Samples = 1;	
+		
 		// for the T1 map, more complicated: first estimate the inv1, inv2 you would get for a range of t1 values, then find the fit?
-		T1lookup = new double[lutSamples];
+		T1lookup = new double[b1Samples][lutSamples];
 		
 		double TA = TI1 - Nexcitations/2.0f*TRexcitation1;
 		double TB = TI2 - TI1 - Nexcitations/2.0f*TRexcitation1 - Nexcitations/2.0f*TRexcitation2;
@@ -167,48 +181,54 @@ public class IntensityMp2rageT1Fitting {
 		
 		double cosA1cosA2n = FastMath.pow( FastMath.cos(a1rad)*FastMath.cos(a2rad), Nexcitations );
 		
-		T1lookup[0] = 0.5;
-		for (int t=0;t<lutSamples;t++) {
-			double qt1 = t*t1mapThreshold/(double)lutSamples;
+		for (int b=0;b<b1Samples;b++) {
+			T1lookup[b][0] = 0.5;
+			for (int t=0;t<lutSamples;t++) {
+				double qt1 = t*t1mapThreshold/(double)lutSamples;
+				double b1 = b1min + b*(b1max-b1min)/(double)b1Samples;
+				if (!useB1correction) b1 = 1.0;
 			
-			if (qt1>0.1) {
-				double E1 = FastMath.exp(-TRexcitation1/qt1);
-				double E2 = FastMath.exp(-TRexcitation2/qt1);
+				if (qt1>0.1) {
+					double E1 = FastMath.exp(-TRexcitation1/qt1);
+					double E2 = FastMath.exp(-TRexcitation2/qt1);
 				
-				double EI = FastMath.exp(-TRinversion/qt1);
+					double EI = FastMath.exp(-TRinversion/qt1);
 				
-				double EA = FastMath.exp(-TA/qt1);
-				double EB = FastMath.exp(-TB/qt1);
-				double EC = FastMath.exp(-TC/qt1);
+					double EA = FastMath.exp(-TA/qt1);
+					double EB = FastMath.exp(-TB/qt1);
+					double EC = FastMath.exp(-TC/qt1);
 				
-				double E1cosA1 = FastMath.cos(a1rad)*E1;
-				double E2cosA2 = FastMath.cos(a2rad)*E2;
+					double E1cosA1 = FastMath.cos(b1*a1rad)*E1;
+					double E2cosA2 = FastMath.cos(b1*a2rad)*E2;
 				
-				double E1cosA1n = FastMath.pow( (FastMath.cos(a1rad)*E1), Nexcitations);
-				double E2cosA2n = FastMath.pow( (FastMath.cos(a2rad)*E2), Nexcitations);
+					double E1cosA1n = FastMath.pow( (FastMath.cos(b1*a1rad)*E1), Nexcitations);
+					double E2cosA2n = FastMath.pow( (FastMath.cos(b1*a2rad)*E2), Nexcitations);
 				
-				double E1cosA1n2 = FastMath.pow( (FastMath.cos(a1rad)*E1), Nexcitations/2.0f);
-				double E2cosA2n2 = FastMath.pow( (FastMath.cos(a2rad)*E2), Nexcitations/2.0f);
+					double E1cosA1n2 = FastMath.pow( (FastMath.cos(b1*a1rad)*E1), Nexcitations/2.0f);
+					double E2cosA2n2 = FastMath.pow( (FastMath.cos(b1*a2rad)*E2), Nexcitations/2.0f);
 				
-				double mza = (1.0f-EA)*E1cosA1n + (1.0f-E1)*(1.0f-E1cosA1n)/(1.0f-E1cosA1);
-				double mzb = ( mza*EB + (1.0f-EB) )*E2cosA2n + (1.0f-E2)*(1.0f-E2cosA2n)/(1.0f-E2cosA2);
-				double mzc = ( mzb*EC + (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
-				double mzss = ( ( ( ( (1.0f-EA)*E1cosA1n + (1.0f-E1)*(1.0f-E1cosA1n)/(1.0f-E1cosA1) )*EB + (1.0f-EB) )*E2cosA2n + (1.0f-E2)*(1.0f-E2cosA2n)/(1.0f-E2cosA2) )*EC + (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
+					double mza = (1.0f-EA)*E1cosA1n + (1.0f-E1)*(1.0f-E1cosA1n)/(1.0f-E1cosA1);
+					double mzb = ( mza*EB + (1.0f-EB) )*E2cosA2n + (1.0f-E2)*(1.0f-E2cosA2n)/(1.0f-E2cosA2);
+					double mzc = ( mzb*EC + (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
+					double mzss = ( ( ( ( (1.0f-EA)*E1cosA1n + (1.0f-E1)*(1.0f-E1cosA1n)/(1.0f-E1cosA1) )*EB 
+									+ (1.0f-EB) )*E2cosA2n + (1.0f-E2)*(1.0f-E2cosA2n)/(1.0f-E2cosA2) )*EC 
+										+ (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
 				
-				//double gre1 = FastMath.sin(a1rad)*( (-inversionEfficiency*mzss*EA + 1.0f-EA)*E1cosA1n21 + (1.0f-E1)*(1.0f-E1cosA1n21)/(1.0f-E1cosA1) );
-				//double gre2 = FastMath.sin(a2rad)*( (mzss-(1.0f-EC))/(EC*E1cosA2n2) - (1.0f-E1)*(1.0f/E1cosA2n2-1.0f)/(1.0f-E1cosA2) );
+					//double gre1 = FastMath.sin(a1rad)*( (-inversionEfficiency*mzss*EA + 1.0f-EA)*E1cosA1n21 + (1.0f-E1)*(1.0f-E1cosA1n21)/(1.0f-E1cosA1) );
+					//double gre2 = FastMath.sin(a2rad)*( (mzss-(1.0f-EC))/(EC*E1cosA2n2) - (1.0f-E1)*(1.0f/E1cosA2n2-1.0f)/(1.0f-E1cosA2) );
 				
-				double factora = ( (-inversionEfficiency*mzss*EA + 1.0-EA)*E1cosA1n2 + (1.0-E1)*(1.0-E1cosA1n2)/(1.0-E1cosA1) );
-				double factorb = factora*E1cosA1n2 + (1.0-E1)*(1.0-E1cosA1n2)/(1.0-E1cosA1n2);
-				double factorc = (factorb*EB + 1.0-EB)*E2cosA2n2 + (1.0-E2)*(1.0-E2cosA2n2)/(1.0-E2cosA2);
+					double factora = ( (-inversionEfficiency*mzss*EA + 1.0-EA)*E1cosA1n2 + (1.0-E1)*(1.0-E1cosA1n2)/(1.0-E1cosA1) );
+					double factorb = factora*E1cosA1n2 + (1.0-E1)*(1.0-E1cosA1n2)/(1.0-E1cosA1n2);
+					double factorc = (factorb*EB + 1.0-EB)*E2cosA2n2 + (1.0-E2)*(1.0-E2cosA2n2)/(1.0-E2cosA2);
 				
-				double gre1 = FastMath.sin(a1rad)*factora;
-				double gre2 = FastMath.sin(a2rad)*factorc;
+					double gre1 = FastMath.sin(b1*a1rad)*factora;
+					double gre2 = FastMath.sin(b1*a2rad)*factorc;
 				
-				//T1lookup[t] = intensityScale/2.0f + intensityScale*gre1*gre2/(gre1*gre1+gre2*gre2);
-				T1lookup[t] = gre1*gre2/(gre1*gre1+gre2*gre2);
-			} else {
-				T1lookup[t] = 0.5;
+					//T1lookup[t] = intensityScale/2.0f + intensityScale*gre1*gre2/(gre1*gre1+gre2*gre2);
+					T1lookup[b][t] = gre1*gre2/(gre1*gre1+gre2*gre2);
+				} else {
+					T1lookup[b][t] = 0.5;
+				}
 			}
 			/*
 			if (Numerics.abs(gre2)>1 || Numerics.abs(gre1)>1) {
@@ -220,32 +240,37 @@ public class IntensityMp2rageT1Fitting {
 			}*/
 		}
 		// invert the LUT for speed
-		unilookup = new double[lutSamples];
-		for (int t=0;t<lutSamples;t++) {
-			//double val = intensityScale*t/(double)lutSamples;
-			double val = t/(double)lutSamples - 0.5;
+		unilookup = new double[b1Samples][lutSamples];
+		for (int b=0;b<b1Samples;b++) {
+			for (int t=0;t<lutSamples;t++) {
+				//double val = intensityScale*t/(double)lutSamples;
+				double val = t/(double)lutSamples - 0.5;
 			
-			int n=0;
-			while (n<lutSamples && T1lookup[n]>val) n++;
+				int n=0;
+				while (n<lutSamples && T1lookup[b][n]>val) n++;
 			
-			if (n>0 && n<lutSamples) {
-				double ratio = (val-T1lookup[n-1])/(T1lookup[n]-T1lookup[n-1]);
-				unilookup[t] = ( ratio*n+(1.0f-ratio)*(n-1) )*t1mapThreshold/lutSamples;
-			} else if (n>=lutSamples) {
-				unilookup[t] = t1mapThreshold;
-			} else {
-				unilookup[t] = 0.0f;	
+				if (n>0 && n<lutSamples) {
+					double ratio = (val-T1lookup[b][n-1])/(T1lookup[b][n]-T1lookup[b][n-1]);
+					unilookup[b][t] = ( ratio*n+(1.0f-ratio)*(n-1) )*t1mapThreshold/lutSamples;
+				} else if (n>=lutSamples) {
+					unilookup[b][t] = t1mapThreshold;
+				} else {
+					unilookup[b][t] = 0.0f;	
+				}
 			}
-			
 		}
 		
 		t1map = new float[nxyz];
 		r1map = new float[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			int t = Numerics.round( (uni[xyz]+0.5f)*lutSamples);
+			
+			int b = Numerics.bounded( Numerics.round( (b1map[xyz]/b1scaling-b1min)/(b1max-b1min)*b1Samples ), 0, b1Samples-1);
+			if (!useB1correction) b = 0;
+			
 			//int t = Numerics.round(uni[xyz]/intensityScale*lutSamples);
 			if (t>=0 && t<lutSamples) {
-				t1map[xyz] = (float)unilookup[t];
+				t1map[xyz] = (float)unilookup[b][t];
 				r1map[xyz] = 1.0f/t1map[xyz];
 			} else if (t<0) {
 				t1map[xyz] = t1mapThreshold;
