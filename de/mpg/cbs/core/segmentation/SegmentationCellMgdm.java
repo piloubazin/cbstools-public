@@ -1,4 +1,4 @@
-package de.mpg.cbs.core.brain;
+package de.mpg.cbs.core.segmentation;
 
 import java.net.URL;
 
@@ -41,10 +41,6 @@ public class SegmentationCellMgdm {
 	private int[] segmentImage;
 	private float[] mgdmImage;
 	
-	private float[] membershipImage;
-	private int[] labelImage;
-	private int output4Dlength;
-	
 	// create inputs
 	public final void setContrastImage1(float[] val) { input1Image = val; }
 	public final void setContrastType1(String val) { type1Param = val; }
@@ -63,7 +59,6 @@ public class SegmentationCellMgdm {
 	public final void setCurvatureWeight(float val) { curvParam = val; }
 	public final void setMaxIterations(int val) { iterationParam = val; }
 	public final void setMinChange(float val) { changeParam = val; }
-	public final void setSteps(int val) { stepParam = val; }
 	
 	public final void setTopology(String val) { topologyParam = val; }
 	public final void setTopologyLUTdirectory(String val) { lutdir = val; }
@@ -82,11 +77,8 @@ public class SegmentationCellMgdm {
 	public static final String getVersion() { return "3.1.2"; }
 
 	// create outputs
-	public final int[] getSegmentedBrainImage() { return segmentImage; }
+	public final int[] getSegmentedImage() { return segmentImage; }
 	public final float[] getLevelsetBoundaryImage() { return mgdmImage; }
-	public final int getOutput4Dlength() { return output4Dlength; }
-	public final float[] getPosteriorMaximumMemberships4D() { return membershipImage; }
-	public final byte[] getPosteriorMaximumLabels4D() { return labelImage; }
 
 	public void execute(){
 		// import the image data into 1D arrays
@@ -104,7 +96,7 @@ public class SegmentationCellMgdm {
 		
 		float[] centroids = null;
 		float[] fgproba = null;
-		for (int n=0;n<nimg;n++) {
+		for (n=0;n<nimg;n++) {
 		    if (modality[n].equals("centroid-proba")) centroids = image[n];
 		    else if (modality[n].equals("foreground-proba")) fgproba = image[n];
 		}
@@ -121,10 +113,6 @@ public class SegmentationCellMgdm {
 		segmentImage = new int[nx*ny*nz];
 		mgdmImage = new float[nx*ny*nz];
 		
-		labelImage = new int[nx*ny*nz*nmgdm];
-		membershipImage = new float[nx*ny*nz*nmgdm];
-		
-		
 		if (dimension==DIM2D) {
 		    // independet Z stacks
 		    for (int z=0;z<nz;z++) {
@@ -133,14 +121,15 @@ public class SegmentationCellMgdm {
 		        for (int xy=0;xy<nx*ny;xy++) seg[xy] = (centroids[xy+z*nx*ny]>0);
                 int[] initialization = ObjectLabeling.connected6Object3D(seg, nx,ny,1);
                 int nlb = ObjectLabeling.countLabels(initialization, nx,ny,1);
+                System.out.print("slice "+z+", "+nlb+" labels \n");
 		        
                 // 2. Get the forces from foreground proba
                 float[][] forces = new float[nlb][];
                 float[] fgmap = new float[nx*ny];
                 float[] bgmap = new float[nx*ny];
                 for (int xy=0;xy<nx*ny;xy++) {
-                    fgmap[nx*ny] = fgproba[xy+z*nx*ny];
-                    bgmap[nx*ny] = 1.0f - fgproba[xy+z*nx*ny];
+                    fgmap[xy] = fgproba[xy+z*nx*ny];
+                    bgmap[xy] = 1.0f - fgproba[xy+z*nx*ny];
                 }
                 // trick so that each object has the same proba (foreground)
                 for (int lb=0;lb<nlb;lb++) forces[lb] = fgmap;
@@ -150,327 +139,23 @@ public class SegmentationCellMgdm {
                 float[] bgscore = new float[nlb];
                 for (int lb=0;lb<nlb;lb++)
                     for (int xy=0;xy<nx*ny;xy++)
-                        bgscore[lb] += bgproba[xy];
-                int bglb = Numerics.argmax(bgscore,nlb);
+                        bgscore[lb] += bgmap[xy];
+                int bglb = Numerics.argmax(bgscore);
                 forces[bglb] = bgmap;
                     
                 // 3. Run MGDM!
-                Mgdm2D mgdm = new Mgdm2d(initialization, nx, ny, nlb, nmgdm, rx, ry, null, forces, 
+                Mgdm2d mgdm = new Mgdm2d(initialization, nx, ny, nlb, nmgdm, rx, ry, null, forces, 
 						                0.0f, forceParam, curvParam, 0.0f, 
-                                        topologyParam);
+                                        topologyParam, lutdir);
                 
                 mgdm.evolveNarrowBand(iterationParam, changeParam);
                 
                 // 4. copy the results
+                for (int xy=0;xy<nx*ny;xy++) {
+                    segmentImage[xy+z*nx*ny] = mgdm.getLabels()[0][xy];
+                    mgdmImage[xy+z*nx*ny] = mgdm.getFunctions()[0][xy];
+                }
 		    }
-		}
-		
-		float[][] image = new float[nimg][nxyz];
-		n = 0;
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			int xyz = x+nx*y+nx*ny*z;
-			image[n][xyz] = input1Image[xyz];
-		}
-		input1Image = null;
-		if (input2Image != null) {
-			n++;
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-				int xyz = x+nx*y+nx*ny*z;
-				image[n][xyz] = input2Image[xyz];
-			}
-		}	
-		input2Image = null;		
-		if (input3Image != null) {
-			n++;
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-				int xyz = x+nx*y+nx*ny*z;
-				image[n][xyz] = input3Image[xyz];
-			}
-		}			
-		input3Image = null;		
-		if (input4Image != null) {
-			n++;
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-				int xyz = x+nx*y+nx*ny*z;
-				image[n][xyz] = input4Image[xyz];
-			}
-		}	
-		input4Image = null;		
-		
-		// main algorithm
-		BasicInfo.displayMessage("Load atlas\n");
-
-		SimpleShapeAtlas2 atlas = new SimpleShapeAtlas2(atlasParam);
-		
-		//adjust modalities to canonical names
-		BasicInfo.displayMessage("Image contrasts:\n");
-		for (n=0;n<nimg;n++) {
-			modality[n] = atlas.displayContrastName(atlas.contrastId(modality[n]));
-			BasicInfo.displayMessage(modality[n]+"\n");
-		}
-		
-		atlas.setImageInfo(nx, ny, nz, rx, ry, rz, orient, orx, ory, orz);
-		atlas.adjustAtlasScale(image, nimg);
-		atlas.setQuantitativeNormalization(normalizeQuantitative);
-		
-		atlas.initShapeMapping();
-		
-		BasicInfo.displayMessage("Compute tissue classification\n");
-
-		ShapeAtlasClassification2 classif = new ShapeAtlasClassification2(image, modality, 
-																		  nimg, nx,ny,nz, rx,ry,rz, atlas);
-		classif.initialAtlasTissueCentroids();
-		classif.computeMemberships();
-		
-		BasicInfo.displayMessage("First alignment\n");
-		
-		atlas.alignObjectCenter(classif.getMemberships()[ShapeAtlasClassification.WM], "wm");
-		atlas.refreshShapeMapping();
-		BasicInfo.displayMessage("transform: "+atlas.displayTransform(atlas.getTransform()));
-			
-		classif.computeMemberships();
-		
-		if (adjustIntensPriors) {
-			float diff = 1.0f;
-			for (int t=0;t<20 && diff>0.01f;t++) {
-				diff = classif.computeCentroids();
-				BasicInfo.displayMessage("iteration "+t+", max diff: "+diff+"\n");
-				classif.computeMemberships();
-			}
-		}
-		
-		BasicInfo.displayMessage("Rigid alignment\n");
-		
-		BasicRigidRegistration rigid = new BasicRigidRegistration(atlas.generateObjectImage("wm"), 
-																	classif.getMemberships()[ShapeAtlasClassification.WM], 
-																	atlas.getShapeDim()[0],atlas.getShapeDim()[1],atlas.getShapeDim()[2],
-																	atlas.getShapeRes()[0],atlas.getShapeRes()[1],atlas.getShapeRes()[2],
-																	50, 0.0f, 1);
-		
-		rigid.register();
-		atlas.updateRigidTransform(rigid.getTransform());
-		atlas.refreshShapeMapping();
-
-		// clean-up
-		rigid.finalize();
-		rigid = null;
-		
-		classif.computeMemberships();
-
-		if (adjustIntensPriors) {
-			float diff = 1.0f;
-			for (int t=0;t<20 && diff>0.01f;t++) {
-				diff = classif.computeCentroids();
-				BasicInfo.displayMessage("iteration "+t+", max diff: "+diff+"\n");
-				classif.computeMemberships();
-			}
-		}
-		classif.estimateIntensityTransform();
-		
-		byte[][][] tissueseg = classif.exportClassificationByte();
-		
-		// first order warping
-		BasicInfo.displayMessage("NL warping\n");
-		
-		BasicDemonsWarping warp1 = new BasicDemonsWarping(atlas.generateDifferentialObjectSegmentation("wm","mask"), 
-															classif.getDifferentialSegmentation(classif.WM, classif.BG),
-															atlas.getShapeDim()[0],atlas.getShapeDim()[1],atlas.getShapeDim()[2],
-															atlas.getShapeRes()[0],atlas.getShapeRes()[1],atlas.getShapeRes()[2],
-															1.0f, 4.0f, 1.0f, BasicDemonsWarping.DIFFUSION,
-															null);
-							
-		warp1.initializeTransform();
-		
-		for (int t=0;t<50;t++) {
-			warp1.registerImageToTarget();
-		}
-		
-		atlas.updateNonRigidTransform(warp1);
-		
-			
-		// record corresponding segmentation
-		 byte[] target = atlas.generateTransformedClassification();
-		
-		// clean-up
-		warp1.finalize();
-		warp1 = null;
-		
-		BasicInfo.displayMessage("level set segmentation\n");
-
-		/*
-		// minimum scale?
-		float factor = (float)Math.sqrt(3.0)*Numerics.max(rx/atlas.getShapeRes()[0],ry/atlas.getShapeRes()[1],rz/atlas.getShapeRes()[2]);
-		BasicInfo.displayMessage("minimum scale: "+factor+"\n");
-		
-		// or full scale?
-		factor = 1.0f;
-		*/
-		
-		int nmgdm = 5;
-		int ngain = 5;
-		
-		// scale the force with regard to the final level
-		float factor = 1.0f/(Numerics.max(rx/atlas.getShapeRes()[0],ry/atlas.getShapeRes()[1],rz/atlas.getShapeRes()[2]));
-		BasicInfo.displayMessage("atlas scale: "+factor+"\n");
-			
-		// constant scale for the distance (=> multiplied by scaling factor)
-		float distanceScale = scaleParam/rx;
-			
-		// count the number of pre-processing MGDMs already done: skip the lowest smoothness steps in the following ones
-		int nprocessed = 0;
-			
-		MgdmFastAtlasSegmentation2 mgdma = new MgdmFastAtlasSegmentation2(image, modality, classif.getImageRanges(), nimg,
-																		nx,ny,nz, rx,ry,rz, 
-																		atlas,
-																		nmgdm, ngain,
-																		forceParam*factor,
-																		curvParam,
-																		0.0f, 0.0f,
-																		distanceScale,
-																		"wcs", lutdir);
-				
-		BasicInfo.displayMessage("gain...\n");
-		
-		mgdma.computeAtlasBestGainFunction();
-		
-		if (diffuseProbabilities)
-			mgdma.diffuseBestGainFunctions(20, 0.5f, diffuseParam);
-		
-		if (stepParam>0) {
-			BasicInfo.displayMessage("atlas-space levelset evolution...\n");
-			mgdma.evolveNarrowBand(iterationParam,changeParam);
-			
-			nprocessed++;
-		}
-		
-		atlas.setTemplate(mgdma.getLabeledSegmentation());
-		
-		// minimum scale?
-		factor = 1.0f/((float)Math.sqrt(3.0)*Numerics.max(rx/atlas.getShapeRes()[0],ry/atlas.getShapeRes()[1],rz/atlas.getShapeRes()[2]));
-		BasicInfo.displayMessage("minimum scale: "+factor+"\n");
-		
-		//short[] counter = mgdma.exportFrozenPointCounter();
-		byte[] atlasseg = mgdma.getSegmentation();
-		byte[] initseg = null;
-		
-		MgdmFastScaledSegmentation2 mgdms = null;
-		// make a progressive scale increase/decrease
-		for (int nscale=0;nscale<10 && factor>1.75f;nscale++) {
-			mgdms = new MgdmFastScaledSegmentation2(image, modality, classif.getImageRanges(), nimg,
-																			nx,ny,nz, rx,ry,rz, 
-																			atlas, atlasseg, initseg,
-																			nmgdm, ngain, factor,
-																			forceParam*factor, 
-																			curvParam,
-																			0.0f,
-																			distanceScale,
-																			"wcs", lutdir);
-					
-			BasicInfo.displayMessage("gain...\n");
-			
-			mgdms.importBestGainFunction(mgdma.getBestGainFunctionHD(), mgdma.getBestGainLabelHD());
-			
-			//BasicInfo.displayMessage("scaled-space levelset evolution...\n");
-			if (nprocessed<stepParam) {
-				BasicInfo.displayMessage("scaled-space levelset evolution...\n");
-				mgdms.evolveNarrowBand(iterationParam,changeParam);
-
-				nprocessed++;
-			}
-				
-			initseg = mgdms.exportScaledSegmentation();
-			// scaling factor must be lower than 1/sqrt(3) to preserve topology
-			factor *= 0.575f;
-			BasicInfo.displayMessage("additional scaling? (new factor: "+factor+")\n");
-		}
-
-		MgdmFastSegmentation2 mgdm = new MgdmFastSegmentation2(image, modality, classif.getImageRanges(), nimg,
-																nx,ny,nz, rx,ry,rz, 
-																atlas, atlasseg, initseg,
-																nmgdm, ngain,
-																forceParam, 
-																curvParam,
-																0.0f,
-																distanceScale,
-																topologyParam, lutdir);
-		
-		// clean-up
-		classif.finalize();
-		classif = null;
-		
-		BasicInfo.displayMessage("gain...\n");
-			
-		mgdm.importBestGainFunctions(mgdma.getBestGainFunctionHD(), mgdma.getBestGainLabelHD());
-			
-		//float[] initgain = mgdm.exportBestGainSegmentation();
-		//float[][][] initmems = mgdm.exportBestGainFunction();
-			
-		if (nprocessed<stepParam) {
-			BasicInfo.displayMessage("full scale levelset evolution...\n");
-			mgdm.evolveNarrowBand(iterationParam,changeParam);
-		}
-		
-		//float[][][] evolmems = mgdm.exportBestGainFunction();
-		
-		BasicInfo.displayMessage("partial volume estimates...\n");
-			
-		if (computePosteriors) {
-			mgdm.computeApproxPartialVolumes(distanceScale, false);
-		}
-					
-		// outputs
-		BasicInfo.displayMessage("generating outputs...\n");
-			
-		segmentImage = mgdm.labelSegmentation();
-		BasicInfo.displayMessage("segmentation");
-		
-		mgdmImage = mgdm.getFunctions()[0];
-		BasicInfo.displayMessage(".. boundaries");
-		
-		idImage = mgdm.getSegmentation();
-		BasicInfo.displayMessage("segmentation ids");
-		
-		if (outputParam.equals("label_memberships")) {		
-			output4Dlength = ngain+1;
-			
-			membershipImage = mgdm.exportBestGainFunctions1D(0, ngain, !computePosteriors);
-			BasicInfo.displayMessage(".. memberships(4d)");
-			
-			labelImage = mgdm.exportBestGainLabelsByte1D(0, ngain);
-			BasicInfo.displayMessage(".. labels(4d)");
-		} else if (outputParam.equals("raw_memberships")) {		
-			output4Dlength = ngain+1;
-			
-			membershipImage = mgdm.exportBestGainFunctions1D(0, ngain, !computePosteriors);
-			BasicInfo.displayMessage(".. memberships(4d)");
-			
-			labelImage = mgdm.exportBestGainsByte1D(0, ngain);
-			BasicInfo.displayMessage(".. labels(4d)");
-		} else if (outputParam.equals("segmentation")) {		
-			output4Dlength = 1;
-			
-			// get the best label map and probabilities by default
-			membershipImage = mgdm.exportBestGainFunctions1D(0, 0, !computePosteriors);
-			BasicInfo.displayMessage(".. best membership");
-			
-			labelImage = mgdm.exportBestGainsByte1D(0, 0);
-			BasicInfo.displayMessage(".. best label");
-		} else if (outputParam.equals("debug")) {			
-			output4Dlength = 3;
-			
-			membershipImage = mgdm.exportBestGainFunctions1D(0, 3, !computePosteriors);
-			BasicInfo.displayMessage(".. memberships(4d)");
-			
-			//byte[][][][] byte4d = mgdm.exportBestGainLabelsByte(0, ngain);
-			labelImage = new byte[nx*ny*nz*3];
-			byte[][][] gain = mgdm.exportBestGainByte();
-			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-				int xyz = x+nx*y+nx*ny*z;
-				labelImage[xyz] = tissueseg[x][y][z];
-				labelImage[xyz+nxyz] = target[xyz];
-				labelImage[xyz+2*nxyz] = gain[x][y][z];
-			}
-			BasicInfo.displayMessage(".. debug(4d)");
 		}
 		return;
 	}

@@ -359,9 +359,9 @@ public class Numerics {
 	}	
 			
 	/** find the index of the largest values in val */
-	public static final byte argmax(float[] val) {
-		byte nmax=0;
-		for (byte m=1;m<val.length;m++) if (val[m]>val[nmax]) {
+	public static final int argmax(float[] val) {
+		int nmax=0;
+		for (int m=1;m<val.length;m++) if (val[m]>val[nmax]) {
 			nmax = m;
 		}
 		return nmax;

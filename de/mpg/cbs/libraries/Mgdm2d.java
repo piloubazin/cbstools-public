@@ -27,11 +27,11 @@ public class Mgdm2d {
 	
 	// object types
 
-	private	static	final	byte	EMPTY = -1;
+	private	static	final	int	EMPTY = -1;
 	
 	// fast marching flags
-	private final static byte X = 0;
-    private final static byte Y = 1;
+	private final static int X = 0;
+    private final static int Y = 1;
     
     // numerical quantities
 	private static final	float   INF=1e15f;
@@ -47,8 +47,8 @@ public class Mgdm2d {
 
 	// data and membership buffers
 	private 	float[][] 		mgdmfunctions;  	// MGDM's pseudo level set mgdmfunctions
-	private 	byte[][] 		mgdmlabels;   		// MGDM's label maps
-	private 	byte[] 			segmentation;   	// MGDM's segmentation
+	private 	int[][] 		mgdmlabels;   		// MGDM's label maps
+	private 	int[] 			segmentation;   	// MGDM's segmentation
 	private 	float[][] 		fieldforce;  		// original image forces, indep. object (e.g. boundaries)
 	private 	float[][] 		balloonforces;  	// original image forces, along object normals (e.g. from memberships)
 	private		boolean[]		mask;				// masking regions not used in computations
@@ -57,11 +57,12 @@ public class Mgdm2d {
 	private static	int 	  	nobj;					// total number of objects to represent (including background)
 	private static	int 	  	nmgdm;					// total number of MGDM mgdmlabels and mgdmfunctions
 	private 	int[]			objLabel;			// label values in the original image
-	private		BinaryHeap2D	heap;				// the heap used in fast marching
+	private		BinaryHeapPair	heap;				// the heap used in fast marching
 	private		CriticalPointLUT	lut;				// the LUT for critical points
+	private String	lutdir = null;
 	private		boolean				checkComposed;		// check if the objects are well-composed too (different LUTs)
 	private		boolean				checkTopology;		// check if the objects are well-composed too (different LUTs)
-	private		byte[]			otherlabels;		// labels for the non-evolved region? 
+	private		int[]			otherlabels;		// labels for the non-evolved region? 
 	
 	// parameters
 	private	double		smoothweight, fieldweight, balloonweight, pressureweight;
@@ -76,7 +77,7 @@ public class Mgdm2d {
 	
 	private static class NarrowBand {
 		public int[] id;
-		public byte[][] labels;
+		public int[][] labels;
 		public float[][] functions;
 		public int currentsize;
 		public int capacity;
@@ -89,7 +90,7 @@ public class Mgdm2d {
 			currentsize = 0;
 			
 			id = new int[capacity];
-			labels = new byte[nmgdm][capacity];
+			labels = new int[nmgdm][capacity];
 			functions = new float[nmgdm][capacity];
 		}
 		
@@ -100,17 +101,17 @@ public class Mgdm2d {
 			functions = null;
 		}
 		
-		public final void addPoint(int xy, byte[][] mgdmlb, float[][] mgdmfn) {
+		public final void addPoint(int xy, int[][] mgdmlb, float[][] mgdmfn) {
 			// check for size
 			if (currentsize>=capacity-1) {
 				capacity += update;
 				
 				int[] oldid = id;
-				byte[][] oldlabels = labels;
+				int[][] oldlabels = labels;
 				float[][] oldfunctions = functions;
 				
 				id = new int[capacity];
-				labels = new byte[nmgdm][capacity];
+				labels = new int[nmgdm][capacity];
 				functions = new float[nmgdm][capacity];
 				
 				for (int n=0;n<currentsize;n++) {
@@ -146,16 +147,8 @@ public class Mgdm2d {
 						float rx_, float ry_,
 						float[][] field_, float[][] balloon_, 
 						float fw_, float bw_, float sw_, float pw_,
-						String connectivityType_) {
+						String connectivityType_, String lutdir_) {
 	
-		init(init_, nx_, ny_, nobj_, nmgdm_, rx_, ry_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_);
-	}
-	
-	private void init(int[] init_, int nx_, int ny_, int nobj_, int nmgdm_,
-						float rx_, float ry_, 
-						float[][] field_, float[][] balloon_, 
-						float fw_, float bw_, float sw_, float pw_,
-						String connectivityType_) {
 		fieldforce = field_;
 		balloonforces = balloon_;
 		
@@ -175,6 +168,8 @@ public class Mgdm2d {
 		rx = rx_;
 		ry = ry_;
 		
+		lutdir = lutdir_;
+		
 		objLabel = ObjectLabeling.listOrderedLabels(init_, nx, ny);
 		// note: we do expect that there are nb objects (not checked)
 		
@@ -185,26 +180,26 @@ public class Mgdm2d {
 		// init all the arrays
 		try {
 			mgdmfunctions = new float[nmgdm][nx*ny];
-			mgdmlabels = new byte[nmgdm][nx*ny];	
-			segmentation = new byte[nx*ny];	
+			mgdmlabels = new int[nmgdm][nx*ny];	
+			segmentation = new int[nx*ny];	
 			mask = new boolean[nx*ny];
-			otherlabels = new byte[nx*ny];	
+			otherlabels = new int[nx*ny];	
 			// initalize the heap too so we don't have to do it multiple times
-			heap = new BinaryHeap2D(nx*ny, BinaryHeap2D.MINTREE);
+			heap = new BinaryHeapPair(nx*ny, BinaryHeapPair.MINTREE);
 			// topology luts
 			checkTopology=true;
 			checkComposed=false;
-				 if (connectivityType_.equals("26/6") || connectivityType_.equals("8/4")) lut = new CriticalPointLUT("critical266LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/26") || connectivityType_.equals("4/8")) lut = new CriticalPointLUT("critical626LUT.raw.gz",200);
-			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT("critical186LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT("critical618LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				 if (connectivityType_.equals("26/6") || connectivityType_.equals("8/4")) lut = new CriticalPointLUT(lutdir, "critical266LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/26") || connectivityType_.equals("4/8")) lut = new CriticalPointLUT(lutdir, "critical626LUT.raw.gz",200);
+			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT(lutdir, "critical186LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(lutdir, "critical618LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(lutdir, "critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT("criticalWCLUT.raw.gz",200);
+				lut = new CriticalPointLUT(lutdir, "criticalWCLUT.raw.gz",200);
 				checkComposed=false;
 			}
 			else if (connectivityType_.equals("wco")) {
-				lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				lut = new CriticalPointLUT(lutdir, "critical66LUT.raw.gz",200);
 				checkComposed=true;
 			}
 			else if (connectivityType_.equals("no")) {
@@ -242,21 +237,6 @@ public class Mgdm2d {
 		if (debug) BasicInfo.displayMessage("initialization\n");
 	}
 		
-	/**
-	 *  constructors for different cases: with/out outliers, with/out selective constraints
-	 */
-	public Mgdm2d(byte[] init_, int nx_, int ny_, int nobj_, int nmgdm_,
-						float rx_, float ry_, 
-						float[][] field_, float[][] balloon_, 
-						float fw_, float bw_, float sw_, float pw_,
-						String connectivityType_) {
-		
-		int[] tmp = new int[nx_*ny_];
-		for (int n=0;n<nx_*ny_;n++) tmp[n] = init_[n];
-		
-		init(tmp, nx_, ny_, nobj_, nmgdm_, rx_, ry_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_);
-	}
-		
 	public void finalize() {
 		mgdmfunctions = null;
 		mgdmlabels = null;
@@ -280,7 +260,7 @@ public class Mgdm2d {
 
 	public final float[][] getFunctions() { return mgdmfunctions; }
 	
-	public final byte[][] getLabels() { return mgdmlabels; }
+	public final int[][] getLabels() { return mgdmlabels; }
     
 	public final void fastMarchingInitializationFromSegmentation(int[] init) {
          // initialize the quantities
@@ -291,8 +271,8 @@ public class Mgdm2d {
             	mgdmlabels[n][xy] = EMPTY;
             }
             // segmentation
-            byte nlb = EMPTY;
-			for (byte n=0; n<nobj; n++) {
+            int nlb = EMPTY;
+			for (int n=0; n<nobj; n++) {
 				if (objLabel[n]==init[xy]) {
 					nlb = n;
 					continue;
@@ -302,7 +282,7 @@ public class Mgdm2d {
         }
 		
         // computation variables
-        byte[] processed = new byte[nx*ny]; // note: using a byte instead of boolean for the second pass
+        int[] processed = new int[nx*ny]; // note: using a int instead of boolean for the second pass
 		float[] nbdist = new float[6];
 		boolean[] nbflag = new boolean[6];
 					        		
@@ -328,8 +308,8 @@ public class Mgdm2d {
         while (heap.isNotEmpty()) {
         	// extract point with minimum distance
         	float dist = heap.getFirst();
-        	int xy = heap.getFirstId();
-        	byte lb = heap.getFirstState();
+        	int xy = heap.getFirstId1();
+        	int lb = heap.getFirstId2();
 			heap.removeFirst();
 
 			// if more than nmgdm labels have been found already, this is done
@@ -408,7 +388,7 @@ public class Mgdm2d {
       */
      public final void fastMarchingReinitialization() {
         // computation variables
-        byte[] processed = new byte[nx*ny]; // note: using a byte instead of boolean for the second pass
+        int[] processed = new int[nx*ny]; // note: using a int instead of boolean for the second pass
 		float[] nbdist = new float[4];
 		boolean[] nbflag = new boolean[4];
 					        		
@@ -441,8 +421,8 @@ public class Mgdm2d {
         while (heap.isNotEmpty()) {
         	// extract point with minimum distance
         	float dist = heap.getFirst();
-        	int xy = heap.getFirstId();
-        	byte lb = heap.getFirstState();
+        	int xy = heap.getFirstId1();
+        	int lb = heap.getFirstId2();
 			heap.removeFirst();
 
 			// if more than nmgdm labels have been found already, this is done
@@ -629,7 +609,7 @@ public class Mgdm2d {
 	 */
     public final float[][] reconstructedLevelsetForces() {
     	float[][] forces = new float[nobj][nx*ny];
-    	for (byte n=0;n<nobj;n++) {
+    	for (int n=0;n<nobj;n++) {
     		for (int xy=0; xy<nx*ny; xy++) if (mask[xy]) {
     			forces[n][xy] = (float)levelsetForces(xy,n);
     		}
@@ -654,7 +634,7 @@ public class Mgdm2d {
 	 */
     public final float[][] reconstructedFastMarchingForces() {
     	float[][] forces = new float[nobj][nx*ny];
-    	for (byte n=0;n<nobj;n++) {
+    	for (int n=0;n<nobj;n++) {
     		for (int xy=0; xy<nx*ny; xy++) if (mask[xy]) {
     			forces[n][xy] = (float)fastMarchingForces(xy,n);
     		}
@@ -724,11 +704,11 @@ public class Mgdm2d {
 				
 				/* probably better; disabled for testing
 				// select best label somehow (use the balloon forces with highest value (e.g. coming from memberships)
-				byte olb = lastNeighborCandidate(xy);
+				int olb = lastNeighborCandidate(xy);
 				*/
 				
 				// select best label from previous initialization
-				byte olb = otherlabels[xy];
+				int olb = otherlabels[xy];
 				
 				// evolve the MGDM functions
 				
@@ -867,14 +847,14 @@ public class Mgdm2d {
     /** method to select the nmgdm-th closest neighbor based on external information 
      *  (highly application-dependent, may not be usable in all cases) 
      */
-    private final byte lastNeighborCandidate(int xy) {
+    private final int lastNeighborCandidate(int xy) {
 		// select best label somehow (use the balloon forces with highest value (e.g. coming from memberships)
-		byte olb = EMPTY;
+		int olb = EMPTY;
 		if (balloonweight>0) {
 			float best=-INF;
-			for (byte n=1;n<nobj;n++) {
+			for (int n=1;n<nobj;n++) {
 				boolean outside = true;
-				for (byte l=0;l<nmgdm;l++) if (mgdmlabels[l][xy]==n) outside = false;
+				for (int l=0;l<nmgdm;l++) if (mgdmlabels[l][xy]==n) outside = false;
 				if (outside && balloonforces[n][xy]>best) olb = n;
 			}
 			if (olb==EMPTY) System.out.print("?");
@@ -988,7 +968,7 @@ public class Mgdm2d {
     /**
 	 *  critical relation detection: groups objects with relations
 	 */
-    private final boolean homeomorphicLabeling(int xy, byte lb) {
+    private final boolean homeomorphicLabeling(int xy, int lb) {
     	// if we don't check, just exit
     	if (!checkTopology) return true;
     	
@@ -1027,8 +1007,8 @@ public class Mgdm2d {
 
 		// does it change the topology of a relation between the modified object and its neighbors ?
 		int  Nconfiguration = 0;
-		short[] lbs = new short[26];
-		for (short i=-1;i<=1;i++) for (short j=-1;j<=1;j++) for (short l=-1;l<=1;l++) {
+		int[] lbs = new int[26];
+		for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int l=-1;l<=1;l++) {
 			if ( (i*i+j*j>0) 
 				&& (segmentation[xy+i+j*nx]!=lb) 
 				&& (segmentation[xy+i+j*nx]!=segmentation[xy]) ) {
@@ -1198,7 +1178,7 @@ public class Mgdm2d {
     	if (debug) System.out.print("level set evolution: fast marching\n");
 
     	// computation variables
-        boolean[] processed = new boolean[nx*ny]; // note: using a byte instead of boolean for the second pass
+        boolean[] processed = new boolean[nx*ny]; // note: using a int instead of boolean for the second pass
     	
         // init
     	
@@ -1206,7 +1186,7 @@ public class Mgdm2d {
     	int size = 0;
 		for (int xy = 0; xy<nx*ny; xy++) if (mask[xy]) if (mgdmfunctions[0][xy]<=0.5f) size++;
 		// create the tree with initial estimates of size
-    	heap = new BinaryHeap2D(Numerics.ceil(1.25f*size), Numerics.ceil(0.1f*size), BinaryHeap2D.MINTREE);
+    	heap = new BinaryHeapPair(Numerics.ceil(1.25f*size), Numerics.ceil(0.1f*size), BinaryHeap2D.MINTREE);
     	
 		for (int t=0;t<iter;t++) {
 			if (debug) System.out.print("iteration "+t+"\n");
@@ -1244,8 +1224,8 @@ public class Mgdm2d {
 			while (heap.isNotEmpty()) {
 				// extract point with minimum distance
 				dist = heap.getFirst();
-				int xy = heap.getFirstId();
-				byte lb = heap.getFirstState();
+				int xy = heap.getFirstId1();
+				int lb = heap.getFirstId2();
 				heap.removeFirst();
 	
 				// if more than nmgdm labels have been found already, this is done
@@ -1296,7 +1276,7 @@ public class Mgdm2d {
         return;
     }
     
-    private final float fastMarchingForces(int xy, byte lb) {
+    private final float fastMarchingForces(int xy, int lb) {
     	if (balloonforces[lb][xy]>0) return 1.0f/(float)(smoothweight+balloonweight*balloonforces[lb][xy]);
     	else return 1.0f/(float)smoothweight;
     }
