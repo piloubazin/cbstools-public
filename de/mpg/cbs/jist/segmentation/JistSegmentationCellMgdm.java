@@ -52,6 +52,7 @@ public class JistSegmentationCellMgdm extends ProcessingAlgorithm {
 	private ParamFloat 	changeParam;
 	private	ParamFloat 	forceParam;
 	private ParamFloat 	curvParam;
+	private ParamFloat 	cellthresholdParam;
 	
 	private ParamOption 	topologyParam;
 	private static final String[] topoTypes = SegmentationCellMgdm.topoTypes;
@@ -82,6 +83,7 @@ public class JistSegmentationCellMgdm extends ProcessingAlgorithm {
 		inputParams.add(curvParam = new ParamFloat("Curvature weight", -1E10f, 1E10f, 0.4f));
 		inputParams.add(iterationParam = new ParamInteger("Max iterations", 0, 100000, 500));
 		inputParams.add(changeParam = new ParamFloat("Min change", 0f, 1f, 0.001f));
+		inputParams.add(cellthresholdParam = new ParamFloat("Cell threshold", 0f, 1f, 0.8f));
 		
 		inputParams.add(topologyParam = new ParamOption("Topology", topoTypes));
 		topologyParam.setValue("wcs");

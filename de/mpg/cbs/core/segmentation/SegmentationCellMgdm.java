@@ -32,6 +32,7 @@ public class SegmentationCellMgdm {
 	private float 	changeParam		=	0.001f;
 	private	float 	forceParam		= 	0.1f;
 	private float 	curvParam		=	0.4f;
+	private float   cellthresholdParam = 0.8f;
 		
 	private String 	topologyParam	=	"wcs";
 	public static final String[] topoTypes = {"26/6", "6/26", "18/6", "6/18", "6/6", "wcs", "wco", "no"};
@@ -59,6 +60,7 @@ public class SegmentationCellMgdm {
 	public final void setCurvatureWeight(float val) { curvParam = val; }
 	public final void setMaxIterations(int val) { iterationParam = val; }
 	public final void setMinChange(float val) { changeParam = val; }
+	public final void setCellThreshold(float val) { cellthresholdParam = val; }
 	
 	public final void setTopology(String val) { topologyParam = val; }
 	public final void setTopologyLUTdirectory(String val) { lutdir = val; }
@@ -160,7 +162,7 @@ public class SegmentationCellMgdm {
                         if (lb!=bglb) {
                             forces[lb] = new float[nx*ny];
                             for (int xy=0;xy<nx*ny;xy++) {
-                                forces[lb][xy] = 2.0f*intens[xy+z*nx*ny]/initmax[lb]-1.0f;
+                                forces[lb][xy] = (intens[xy+z*nx*ny]/initmax[lb]-cellthresholdParam);
                             }
                         } else {
                             forces[lb] = new float[nx*ny];
