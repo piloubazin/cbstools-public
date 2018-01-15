@@ -23,7 +23,7 @@ public class SegmentationCellMgdm {
 	private String type1Param = "none";
 	private String type2Param = "none";
 	private String type3Param = "none";
-	public static final String[] inputTypes = {"centroid-proba", "foreground-proba"};
+	public static final String[] inputTypes = {"centroid-proba", "foreground-proba","image-intensities"};
 	
 	private String dimParam = "none";
 	public static final String[] dimTypes = {"2D", "3D"};
@@ -96,9 +96,11 @@ public class SegmentationCellMgdm {
 		
 		float[] centroids = null;
 		float[] fgproba = null;
+		float[] intens = null;
 		for (n=0;n<nimg;n++) {
 		    if (modality[n].equals("centroid-proba")) centroids = image[n];
 		    else if (modality[n].equals("foreground-proba")) fgproba = image[n];
+		    else if (modality[n].equals("image-intensities")) intens = image[n];
 		}
 		
 		// different streams for 2D or 3D
@@ -125,23 +127,46 @@ public class SegmentationCellMgdm {
 		        
                 // 2. Get the forces from foreground proba
                 float[][] forces = new float[nlb][];
-                float[] fgmap = new float[nx*ny];
-                float[] bgmap = new float[nx*ny];
-                for (int xy=0;xy<nx*ny;xy++) {
-                    fgmap[xy] = fgproba[xy+z*nx*ny];
-                    bgmap[xy] = 1.0f - fgproba[xy+z*nx*ny];
-                }
-                // trick so that each object has the same proba (foreground)
-                for (int lb=0;lb<nlb;lb++) forces[lb] = fgmap;
+                if (intens==null) {
+                    float[] fgmap = new float[nx*ny];
+                    float[] bgmap = new float[nx*ny];
+                    for (int xy=0;xy<nx*ny;xy++) {
+                        fgmap[xy] = fgproba[xy+z*nx*ny];
+                        bgmap[xy] = 1.0f - fgproba[xy+z*nx*ny];
+                    }
+                    // trick so that each object has the same proba (foreground)
+                    for (int lb=0;lb<nlb;lb++) forces[lb] = fgmap;
                
-                // find background
-                // assume background to be the label with highest cumulative bg proba?
-                float[] bgscore = new float[nlb];
-                for (int lb=0;lb<nlb;lb++)
-                    for (int xy=0;xy<nx*ny;xy++)
-                        bgscore[lb] += bgmap[xy];
-                int bglb = Numerics.argmax(bgscore);
-                forces[bglb] = bgmap;
+                    // find background
+                    // assume background to be the label with highest cumulative bg proba?
+                    float[] bgscore = new float[nlb];
+                    for (int lb=0;lb<nlb;lb++)
+                        for (int xy=0;xy<nx*ny;xy++)
+                            bgscore[lb] += bgmap[xy];
+                    int bglb = Numerics.argmax(bgscore);
+                    forces[bglb] = bgmap;
+                } else {
+                    // different model: propagate intensities to 50% of original intensity per cluster
+                    float[] initmax = new float[nlb];
+                    int bglb = 0;
+                    for (int xy=0;xy<nx*ny;xy++) {
+                        if (centroids[xy+z*nx*ny]>0) {
+                            initmax[initialization[xy]] = Numerics.max(initmax[initialization[xy]],intens[xy+z*nx*ny]);
+                        } else {
+                            bglb = initialization[xy];
+                        }
+                    }
+                    for (int lb=0;lb<nlb;lb++) {
+                        if (lb!=bglb) {
+                            forces[lb] = new float[nx*ny];
+                            for (int xy=0;xy<nx*ny;xy++) {
+                                forces[lb][xy] = 2.0f*intens[xy+z*nx*ny]/initmax[lb]-1.0f;
+                            }
+                        } else {
+                            forces[lb] = new float[nx*ny];
+                        }
+                    }
+                }
                     
                 // 3. Run MGDM!
                 Mgdm2d mgdm = new Mgdm2d(initialization, nx, ny, nlb, nmgdm, rx, ry, null, forces, 
