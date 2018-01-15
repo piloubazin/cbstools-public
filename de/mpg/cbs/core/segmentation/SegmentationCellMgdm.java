@@ -158,14 +158,28 @@ public class SegmentationCellMgdm {
                             bglb = initialization[xy];
                         }
                     }
+                    // for the background, use the mean (over-estimating)?
+                    double sumbg = 0.0, denbg = 0.0;
+                    for (int xy=0;xy<nx*ny;xy++) {
+                        if (centroids[xy+z*nx*ny]==0) {
+                            sumbg += intens[xy+z*nx*ny];
+                            denbg++;
+                        }
+                    }
+                    sumbg /= denbg;
                     for (int lb=0;lb<nlb;lb++) {
                         if (lb!=bglb) {
                             forces[lb] = new float[nx*ny];
                             for (int xy=0;xy<nx*ny;xy++) {
-                                forces[lb][xy] = (intens[xy+z*nx*ny]/initmax[lb]-cellthresholdParam);
+                                //forces[lb][xy] = Numerics.bounded( (intens[xy+z*nx*ny]/initmax[lb]-cellthresholdParam)/(1.0f-cellthresholdParam), -1.0f, 1.0f);
+                                forces[lb][xy] = Numerics.bounded( ( (1.0f-cellthresholdParam)*initmax[lb] - Numerics.abs(initmax[lb]-intens[xy+z*nx*ny]))
+                                                                        /( (1.0f-cellthresholdParam)*initmax[lb]), -1.0f, 1.0f);
                             }
                         } else {
                             forces[lb] = new float[nx*ny];
+                            for (int xy=0;xy<nx*ny;xy++) {
+                                forces[lb][xy] = Numerics.bounded( (float)((sumbg-intens[xy+z*nx*ny])/sumbg), -1.0f, 1.0f);
+                            }
                         }
                     }
                 }
