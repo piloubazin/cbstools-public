@@ -166,7 +166,7 @@ public class SegmentationCellMgdm {
                             denbg++;
                         }
                     }
-                    sumbg /= denbg;
+                    float initbg = (float)(sumbg/denbg);
                     for (int lb=0;lb<nlb;lb++) {
                         if (lb!=bglb) {
                             forces[lb] = new float[nx*ny];
@@ -178,7 +178,10 @@ public class SegmentationCellMgdm {
                         } else {
                             forces[lb] = new float[nx*ny];
                             for (int xy=0;xy<nx*ny;xy++) {
-                                forces[lb][xy] = Numerics.bounded( (float)((sumbg-intens[xy+z*nx*ny])/sumbg), -1.0f, 1.0f);
+                                // not bad..
+                                //forces[lb][xy] = Numerics.bounded( (float)((initbg-intens[xy+z*nx*ny])/initbg), -1.0f, 1.0f);
+                                forces[lb][xy] = Numerics.bounded( ( (1.0f-cellthresholdParam)*initbg -intens[xy+z*nx*ny] + initbg)
+                                                                        /( (1.0f-cellthresholdParam)*initbg), -1.0f, 1.0f);
                             }
                         }
                     }
