@@ -6,6 +6,7 @@ import edu.jhu.ece.iacl.jist.pipeline.ProcessingAlgorithm;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
@@ -33,6 +34,7 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 	
 	private ParamVolume 	inv1Image;
 	private ParamVolume 	inv2Image;
+	private ParamVolume 	b1Image;
 	private ParamFloat 		invertRepTimeParam;
 	private ParamFloat 		excite1RepTimeParam;
 	private ParamFloat 		excite2RepTimeParam;
@@ -43,6 +45,8 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 	private ParamFloat 		flipAngle2Param;
 	private ParamFloat 		invertEffParam;
 	//private ParamOption methodParam;
+	private ParamBoolean	useB1Param;
+	private ParamFloat		b1ScalingParam;
 	
 	private ParamVolume uniformImage;
 	private ParamVolume t1mapImage;
@@ -60,6 +64,8 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 		imgParam = new ParamCollection("images");
 		imgParam.add(inv1Image = new ParamVolume("First Inversion Image (4D:mag+phs)"));
 		imgParam.add(inv2Image = new ParamVolume("Second Inversion Image (4D:mag+phs)"));
+		imgParam.add(b1Image = new ParamVolume("B1 map (calculated & co-registered)"));
+		b1Image.setMandatory(false);
 		inputParams.add(imgParam);
 		
 		mrParam = new ParamCollection("MR parameters");
@@ -73,6 +79,9 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 		mrParam.add(excite1RepTimeParam = new ParamFloat("First Excitation repetition time (sec)", 0.0f, 10000.0f, 0.0062f));
 		mrParam.add(excite2RepTimeParam = new ParamFloat("Second Excitation repetition time (sec)", 0.0f, 10000.0f, 0.0062f));
 		mrParam.add(exciteNumberParam = new ParamInteger("Number of excitations", 0, 10000, 160));
+		
+		mrParam.add(useB1Param = new ParamBoolean("correct B1 inhomogeneities", true));
+		mrParam.add(b1ScalingParam = new ParamFloat("B1 map scaling", 0.0f, 10000000000.0f, 1000000.0f));
 		inputParams.add(mrParam);
 		
 		algorithm = new IntensityMp2rageT1Fitting();
@@ -119,7 +128,8 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 		
 		algorithm.setFirstInversionImage(Interface.getFloatImage4D(inv1Image));
 		algorithm.setSecondInversionImage(Interface.getFloatImage4D(inv2Image));
-		
+		if (Interface.isValid(b1Image)) algorithm.setB1mapImage(Interface.getFloatImage3D(b1Image));
+			
 		algorithm.setDimensions(dims);
 		algorithm.setResolutions(res);
 
@@ -133,6 +143,9 @@ public class JistIntensityMp2rageT1Fitting extends ProcessingAlgorithm {
 		algorithm.setFirstExcitationRepetitionTime(excite1RepTimeParam.getValue().floatValue());
 		algorithm.setSecondExcitationRepetitionTime(excite2RepTimeParam.getValue().floatValue());
 		algorithm.setNumberExcitations(exciteNumberParam.getValue().intValue());
+		
+		algorithm.setCorrectB1inhomogeneities(useB1Param.getValue().booleanValue());
+		algorithm.setB1mapScaling(b1ScalingParam.getValue().floatValue());
 		
 		algorithm.execute();
 

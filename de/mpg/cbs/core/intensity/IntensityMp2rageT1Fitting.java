@@ -36,7 +36,7 @@ public class IntensityMp2rageT1Fitting {
 	private		int			lutSamples = 100000;
 	
 	private		boolean		useB1correction = true;
-	private		float 		b1scaling = 1000000.0f;
+	private		float 		b1Scaling = 1000000.0f;
 	private		float		b1min = 0.05f;
 	private		float		b1max = 2.0f;
 	private 	int			b1Samples = 2000;
@@ -65,6 +65,8 @@ public class IntensityMp2rageT1Fitting {
 	public final void setFirstFlipAngle(float in) { angle1 = in; }
 	public final void setSecondFlipAngle(float in) { angle2 = in; }
 	public final void setInversionEfficiency(float in) { inversionEfficiency = in; }
+	public final void setCorrectB1inhomogeneities(boolean in) { useB1correction = in; }
+	public final void setB1mapScaling(float in) { b1Scaling = in;}
 	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
@@ -265,7 +267,7 @@ public class IntensityMp2rageT1Fitting {
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			int t = Numerics.round( (uni[xyz]+0.5f)*lutSamples);
 			
-			int b = Numerics.bounded( Numerics.round( (b1map[xyz]/b1scaling-b1min)/(b1max-b1min)*b1Samples ), 0, b1Samples-1);
+			int b = Numerics.bounded( Numerics.round( (b1map[xyz]/b1Scaling-b1min)/(b1max-b1min)*b1Samples ), 0, b1Samples-1);
 			if (!useB1correction) b = 0;
 			
 			//int t = Numerics.round(uni[xyz]/intensityScale*lutSamples);
