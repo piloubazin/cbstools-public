@@ -1341,8 +1341,8 @@ public class JistSegmentationFilteredVessels extends ProcessingAlgorithm {
 					}
 				}
 				// find the best for each side
-				neighbor1[id] = Numerics.argmax(ds1);
-				neighbor2[id] = Numerics.argmax(ds2);
+				neighbor1[id] = (byte)Numerics.argmax(ds1);
+				neighbor2[id] = (byte)Numerics.argmax(ds2);
 				similarity1[id] = Numerics.max(ds1[neighbor1[id]],0.0f);
 				similarity2[id] = Numerics.max(ds2[neighbor2[id]],0.0f);
 			}

@@ -33,13 +33,13 @@ public class IntensityMp2rageT1Fitting {
 	private		float		intensityScale = 1000.0f;
 	private		float		t1mapThreshold = 5.0f;
 	private		float		r1mapThreshold = 2.0f;
-	private		int			lutSamples = 100000;
+	private		int			lutSamples = 50000;
 	
 	private		boolean		useB1correction = true;
 	private		float 		b1Scaling = 1000000.0f;
 	private		float		b1min = 0.05f;
 	private		float		b1max = 2.0f;
-	private 	int			b1Samples = 2000;
+	private 	int			b1Samples = 195;
 	
 	// output parameters
 	private		float[] uni = null;

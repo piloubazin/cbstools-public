@@ -26,7 +26,7 @@ public class IntensityMp2ragemePCADenoising {
 	// output parameters
 	private		float[] invmagden = null;
 	private		float[] invphsden = null;
-	private		float[] noisemap = null;
+	private		float[] pcadim = null;
 	
 	// set inputs
 	public final void setMagnitudeImages(float[] in) { invmag = in; }
@@ -34,7 +34,8 @@ public class IntensityMp2ragemePCADenoising {
 
 	public final void setFirstInversionImage(float[] in) {
 	    if (invmag==null || invphs==null) {
-	        invmag = new float[nxyz*nimg];
+	        if (nxyz==0) nxyz = in.length/2;
+            invmag = new float[nxyz*nimg];
 	        invphs = new float[nxyz*nimg];
 	    }
 	    for (int xyz=0;xyz<nxyz;xyz++) {
@@ -45,6 +46,7 @@ public class IntensityMp2ragemePCADenoising {
 
 	public final void setSecondInversionEcho1Image(float[] in) {
 	    if (invmag==null || invphs==null) {
+	        if (nxyz==0) nxyz = in.length/2;
 	        invmag = new float[nxyz*nimg];
 	        invphs = new float[nxyz*nimg];
 	    }
@@ -56,6 +58,7 @@ public class IntensityMp2ragemePCADenoising {
 
 	public final void setSecondInversionEcho2Image(float[] in) {
 	    if (invmag==null || invphs==null) {
+	        if (nxyz==0) nxyz = in.length/2;
 	        invmag = new float[nxyz*nimg];
 	        invphs = new float[nxyz*nimg];
 	    }
@@ -67,6 +70,7 @@ public class IntensityMp2ragemePCADenoising {
 
 	public final void setSecondInversionEcho3Image(float[] in) {
 	    if (invmag==null || invphs==null) {
+	        if (nxyz==0) nxyz = in.length/2;
 	        invmag = new float[nxyz*nimg];
 	        invphs = new float[nxyz*nimg];
 	    }
@@ -78,6 +82,7 @@ public class IntensityMp2ragemePCADenoising {
 
 	public final void setSecondInversionEcho4Image(float[] in) {
 	    if (invmag==null || invphs==null) {
+	        if (nxyz==0) nxyz = in.length/2;
 	        invmag = new float[nxyz*nimg];
 	        invphs = new float[nxyz*nimg];
 	    }
@@ -110,6 +115,8 @@ public class IntensityMp2ragemePCADenoising {
 	// get outputs
 	public float[] getDenoisedMagnitudeImages() { return invmag; }
 	public float[] getDenoisedPhaseImages() { return invphs; }
+	public float[] getLocalDimensionImage() { return pcadim; }
+	
 	
 	public float[] getFirstInversionImage() {
 	    float[] out = new float[2*nxyz];
@@ -162,6 +169,7 @@ public class IntensityMp2ragemePCADenoising {
 		// main algorithm
 		
 		// we assume 4D images of size nimg
+		if (invmag==null || invphs==null) System.out.println("data stacks not properly initialized!");
 		
 		// renormalize phase
 		float phsmin = invphs[0];
@@ -190,6 +198,7 @@ public class IntensityMp2ragemePCADenoising {
 		int nimg2 = 2*nimg;
 		float[][] denoised = new float[2*nimg][nxyz];
 		float[] weights = new float[nxyz];
+		pcadim = new float[nxyz];
 		// border issues should be cleaned-up, ignored so far
 		for (int x=0;x<nx-ngb;x+=nstep) for (int y=0;y<ny-ngb;y+=nstep) for (int z=0;z<nz-ngb;z+=nstep) {
 		    double[][] patch = new double[ngb3][nimg2];
@@ -204,7 +213,7 @@ public class IntensityMp2ragemePCADenoising {
 		       for (int n=0;n<ngb3;n++) patch[n][i] -= mean[i];
 		    }
 		    // PCA from SVD X = USVt
-		    System.out.println("perform SVD");
+		    //System.out.println("perform SVD");
             Matrix M = new Matrix(patch);
             SingularValueDecomposition svd = M.svd();
 		
@@ -218,18 +227,18 @@ public class IntensityMp2ragemePCADenoising {
 		    sigma = FastMath.sqrt(sigma);
 		    
 		    // cutoff
-            System.out.println("eigenvalues: ");
+            //System.out.println("eigenvalues: ");
             double[] eig = new double[nimg2];
             int nzero=0;
             for (int n=0;n<nimg2;n++) {
                 eig[n] = svd.getSingularValues()[n];
-                System.out.print(" "+(eig[n]/sigma));
-                if (eig[n] < stdevCutoff*sigma) {
+                //System.out.print(" "+(eig[n]/sigma));
+                if (Numerics.abs(eig[n]) < stdevCutoff*sigma) {
                     eig[n] = 0.0;
                     nzero++;
-                    System.out.print("(-),");
+                    //System.out.print("(-),");
                 } else {
-                    System.out.print("(+),");
+                    //System.out.print("(+),");
                 }
             }
             // reconstruct
@@ -237,22 +246,29 @@ public class IntensityMp2ragemePCADenoising {
             Matrix V = svd.getV();
             for (int n=0;n<ngb3;n++) for (int i=0;i<nimg2;i++) {
                 // Sum_s>0 s_kU_kV_kt
-                patch[n][i] = 0.0;
-                for (int j=0;j<nimg2;j++) if (eig[j]>0) {
-                    patch[n][i] += U.get(n,j)*V.get(i,j);
+                patch[n][i] = mean[i];
+                for (int j=0;j<nimg2;j++) if (eig[j]!=0) {
+                    patch[n][i] += U.get(n,j)*eig[j]*V.get(i,j);
                 }
             }
             // add to the denoised image
-            float wpatch = (1.0f/(1.0f + nzero));
+            double wpatch = (1.0/(1.0 + nimg2 - nzero));
             for (int dx=0;dx<ngb;dx++) for (int dy=0;dy<ngb;dy++) for (int dz=0;dz<ngb;dz++) {
                 for (int i=0;i<nimg2;i++) {
-                    denoised[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += wpatch*patch[dx+ngb*dy+ngb*ngb*dz][i];
+                    denoised[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*patch[dx+ngb*dy+ngb*ngb*dz][i]);
                 }
-                weights[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += wpatch;
+                weights[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)wpatch;
+                pcadim[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*(nimg2-nzero));
 		    }
         }
         images = null;
-        
+        for (int xyz=0;xyz<nxyz;xyz++) {
+            for (int i=0;i<nimg;i++) {
+                denoised[i][xyz] /= weights[xyz];
+            }
+            pcadim[xyz] /= weights[xyz];
+        }
+           
         // 3. rebuild magnitude and phase images
         invmag = new float[nimg*nxyz];
         invphs = new float[nimg*nxyz];
