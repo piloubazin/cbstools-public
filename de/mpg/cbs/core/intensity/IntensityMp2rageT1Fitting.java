@@ -267,8 +267,8 @@ public class IntensityMp2rageT1Fitting {
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			int t = Numerics.round( (uni[xyz]+0.5f)*lutSamples);
 			
-			int b = Numerics.bounded( Numerics.round( (b1map[xyz]/b1Scaling-b1min)/(b1max-b1min)*b1Samples ), 0, b1Samples-1);
-			if (!useB1correction) b = 0;
+			int b = 0;
+			if (useB1correction) b = Numerics.bounded( Numerics.round( (b1map[xyz]/b1Scaling-b1min)/(b1max-b1min)*b1Samples ), 0, b1Samples-1);
 			
 			//int t = Numerics.round(uni[xyz]/intensityScale*lutSamples);
 			if (t>=0 && t<lutSamples) {
