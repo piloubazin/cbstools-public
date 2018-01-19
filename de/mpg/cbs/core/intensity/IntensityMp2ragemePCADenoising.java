@@ -22,11 +22,13 @@ public class IntensityMp2ragemePCADenoising {
 
 	private     int         nimg = 5;
 	private		float		stdevCutoff = 2.3f;
+	private     int         minDimension = 1;
 		
 	// output parameters
 	private		float[] invmagden = null;
 	private		float[] invphsden = null;
 	private		float[] pcadim = null;
+	private		float[] errmap = null;
 	
 	// set inputs
 	public final void setMagnitudeImages(float[] in) { invmag = in; }
@@ -94,6 +96,7 @@ public class IntensityMp2ragemePCADenoising {
 
 	public final void setImageNumber(int in) { nimg = in; }
 	public final void setStdevCutoff(float in) { stdevCutoff = in; }
+	public final void setMinimumDimension(int in) { minDimension = in; }
 	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
@@ -116,6 +119,7 @@ public class IntensityMp2ragemePCADenoising {
 	public float[] getDenoisedMagnitudeImages() { return invmag; }
 	public float[] getDenoisedPhaseImages() { return invphs; }
 	public float[] getLocalDimensionImage() { return pcadim; }
+	public float[] getNoiseMagnitudeImage() { return errmap; }
 	
 	
 	public float[] getFirstInversionImage() {
@@ -233,7 +237,7 @@ public class IntensityMp2ragemePCADenoising {
             for (int n=0;n<nimg2;n++) {
                 eig[n] = svd.getSingularValues()[n];
                 //System.out.print(" "+(eig[n]/sigma));
-                if (Numerics.abs(eig[n]) < stdevCutoff*sigma) {
+                if (n>minDimension && Numerics.abs(eig[n]) < stdevCutoff*sigma) {
                     eig[n] = 0.0;
                     nzero++;
                     //System.out.print("(-),");
@@ -261,14 +265,18 @@ public class IntensityMp2ragemePCADenoising {
                 pcadim[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*(nimg2-nzero));
 		    }
         }
-        images = null;
+		errmap = new float[nxyz];
         for (int xyz=0;xyz<nxyz;xyz++) {
+            double err = 0.0;
             for (int i=0;i<nimg;i++) {
                 denoised[i][xyz] /= weights[xyz];
+                err += (denoised[i][xyz]-images[i][xyz])*(denoised[i][xyz]-images[i][xyz]);
             }
             pcadim[xyz] /= weights[xyz];
+            errmap[xyz] = (float)FastMath.sqrt(err/nimg2);
         }
-           
+        images = null;
+          
         // 3. rebuild magnitude and phase images
         invmag = new float[nimg*nxyz];
         invphs = new float[nimg*nxyz];

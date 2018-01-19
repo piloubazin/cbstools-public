@@ -34,6 +34,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 	private ParamVolume 	inv2e4Image;
 	
 	private ParamFloat 		cutoffParam;
+	private ParamInteger    mindimParam;
 	
 	private ParamVolume 	denoisedInv1Image;
 	private ParamVolume 	denoisedInv2e1Image;
@@ -41,6 +42,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 	private ParamVolume 	denoisedInv2e3Image;
 	private ParamVolume 	denoisedInv2e4Image;
 	private ParamVolume 	localdimImage;
+	private ParamVolume 	noisemagImage;
 	
 	// parameters
 	//private		static final String[]	methods = IntensityMp2rageT1Fitting.methods;
@@ -55,6 +57,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 		inputParams.add(inv2e4Image = new ParamVolume("Second Inversion Image Echo4 (4D:mag+phs)"));
 		
 		inputParams.add(cutoffParam = new ParamFloat("Stdev cutoff", 0.0f, 100.0f, 2.3f));
+		inputParams.add(mindimParam = new ParamInteger("Minimum dimension", 0, 100, 3));
 
 		algorithm = new IntensityMp2ragemePCADenoising();
 		
@@ -81,6 +84,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 		outputParams.add(denoisedInv2e3Image = new ParamVolume("Denoised Inv2 E3 Image",null,-1,-1,-1,-1));
 		outputParams.add(denoisedInv2e4Image = new ParamVolume("Denoised Inv2 E4 Image",null,-1,-1,-1,-1));
         outputParams.add(localdimImage = new ParamVolume("PCA Dimension Image",null,-1,-1,-1,-1));
+        outputParams.add(noisemagImage = new ParamVolume("Noise Magnitude Image",null,-1,-1,-1,-1));
 
 		outputParams.setName("denoised images");
 		outputParams.setLabel("denoised images");
@@ -109,6 +113,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 		algorithm.setSecondInversionEcho4Image(Interface.getFloatImage4D(inv2e4Image));
 		
 		algorithm.setStdevCutoff(cutoffParam.getValue().floatValue());
+		algorithm.setMinimumDimension(mindimParam.getValue().intValue());
 		
 		System.out.println("run the algorithm");
 		algorithm.execute();
@@ -120,6 +125,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 		Interface.setFloatImage4D(algorithm.getSecondInversionEcho3Image(), dims, 2, denoisedInv2e3Image, Interface.getName(inv2e3Image)+"_lpca", Interface.getHeader(inv2e3Image));
 		Interface.setFloatImage4D(algorithm.getSecondInversionEcho4Image(), dims, 2, denoisedInv2e4Image, Interface.getName(inv2e4Image)+"_lpca", Interface.getHeader(inv2e4Image));
 		Interface.setFloatImage3D(algorithm.getLocalDimensionImage(), dims, localdimImage, Interface.getName(inv1Image)+"_ldim", Interface.getHeader(inv1Image));
+		Interface.setFloatImage3D(algorithm.getNoiseMagnitudeImage(), dims, noisemagImage, Interface.getName(inv1Image)+"_lerr", Interface.getHeader(inv1Image));
 	}
 
 
