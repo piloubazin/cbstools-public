@@ -181,14 +181,14 @@ public class IntensityMp2rageT1Fitting {
 		double a1rad = angle1/180.0*FastMath.PI;
 		double a2rad = angle2/180.0*FastMath.PI;
 		
-		double cosA1cosA2n = FastMath.pow( FastMath.cos(a1rad)*FastMath.cos(a2rad), Nexcitations );
-		
 		for (int b=0;b<b1Samples;b++) {
+			double b1 = b1min + b*(b1max-b1min)/(double)b1Samples;
+			if (!useB1correction) b1 = 1.0;
+			double cosA1cosA2n = FastMath.pow( FastMath.cos(b1*a1rad)*FastMath.cos(b1*a2rad), Nexcitations );
+		
 			T1lookup[b][0] = 0.5;
 			for (int t=0;t<lutSamples;t++) {
 				double qt1 = t*t1mapThreshold/(double)lutSamples;
-				double b1 = b1min + b*(b1max-b1min)/(double)b1Samples;
-				if (!useB1correction) b1 = 1.0;
 			
 				if (qt1>0.1) {
 					double E1 = FastMath.exp(-TRexcitation1/qt1);
@@ -216,8 +216,8 @@ public class IntensityMp2rageT1Fitting {
 									+ (1.0f-EB) )*E2cosA2n + (1.0f-E2)*(1.0f-E2cosA2n)/(1.0f-E2cosA2) )*EC 
 										+ (1.0f-EC) )/(1.0f + inversionEfficiency*cosA1cosA2n*EI);
 				
-					//double gre1 = FastMath.sin(a1rad)*( (-inversionEfficiency*mzss*EA + 1.0f-EA)*E1cosA1n21 + (1.0f-E1)*(1.0f-E1cosA1n21)/(1.0f-E1cosA1) );
-					//double gre2 = FastMath.sin(a2rad)*( (mzss-(1.0f-EC))/(EC*E1cosA2n2) - (1.0f-E1)*(1.0f/E1cosA2n2-1.0f)/(1.0f-E1cosA2) );
+					//double gre1 = FastMath.sin(b1*a1rad)*( (-inversionEfficiency*mzss*EA + 1.0f-EA)*E1cosA1n21 + (1.0f-E1)*(1.0f-E1cosA1n21)/(1.0f-E1cosA1) );
+					//double gre2 = FastMath.sin(b1*a2rad)*( (mzss-(1.0f-EC))/(EC*E1cosA2n2) - (1.0f-E1)*(1.0f/E1cosA2n2-1.0f)/(1.0f-E1cosA2) );
 				
 					double factora = ( (-inversionEfficiency*mzss*EA + 1.0-EA)*E1cosA1n2 + (1.0-E1)*(1.0-E1cosA1n2)/(1.0-E1cosA1) );
 					double factorb = factora*E1cosA1n2 + (1.0-E1)*(1.0-E1cosA1n2)/(1.0-E1cosA1n2);
@@ -268,7 +268,7 @@ public class IntensityMp2rageT1Fitting {
 			int t = Numerics.round( (uni[xyz]+0.5f)*lutSamples);
 			
 			int b = 0;
-			if (useB1correction) b = Numerics.bounded( Numerics.round( (b1map[xyz]/b1Scaling-b1min)/(b1max-b1min)*b1Samples ), 0, b1Samples-1);
+			if (useB1correction) b = Numerics.bounded( Numerics.round( (b1map[xyz]/b1Scaling-b1min)/(b1max-b1min)*(double)b1Samples ), 0, b1Samples-1);
 			
 			//int t = Numerics.round(uni[xyz]/intensityScale*lutSamples);
 			if (t>=0 && t<lutSamples) {
