@@ -84,9 +84,6 @@ public class IntensityRangeNormalization {
 				if (inImage[xyz]==0) mask[xyz] = false;
 			}
 		}
-		int ndata=0;
-		for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) ndata++;
-		BasicInfo.displayMessage("data points: "+ndata);    
 		    
 		// main algorithm
 		
@@ -111,7 +108,7 @@ public class IntensityRangeNormalization {
 			
 		// 2. scale the data
 		float[] result = new float[nxyz];
-		for (int xyz=0;xyz<nx;xyz++) {
+		for (int xyz=0;xyz<nxyz;xyz++) {
 			result[xyz] = scalingParam*Numerics.bounded( (inImage[xyz]-Imin)/(Imax-Imin), 0.0f, 1.0f);
 		}
 		resultImage = result;

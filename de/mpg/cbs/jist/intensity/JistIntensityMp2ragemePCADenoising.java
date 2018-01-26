@@ -35,6 +35,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 	
 	private ParamFloat 		cutoffParam;
 	private ParamInteger    mindimParam;
+	private ParamInteger    sizeParam;
 	
 	private ParamVolume 	denoisedInv1Image;
 	private ParamVolume 	denoisedInv2e1Image;
@@ -58,6 +59,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 		
 		inputParams.add(cutoffParam = new ParamFloat("Stdev cutoff", 0.0f, 100.0f, 2.3f));
 		inputParams.add(mindimParam = new ParamInteger("Minimum dimension", 0, 100, 3));
+        inputParams.add(sizeParam = new ParamInteger("Patch size", 3, 20, 4));
 
 		algorithm = new IntensityMp2ragemePCADenoising();
 		
@@ -114,6 +116,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 		
 		algorithm.setStdevCutoff(cutoffParam.getValue().floatValue());
 		algorithm.setMinimumDimension(mindimParam.getValue().intValue());
+		algorithm.setPatchSize(sizeParam.getValue().intValue());
 		
 		System.out.println("run the algorithm");
 		algorithm.execute();

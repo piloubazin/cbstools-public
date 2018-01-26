@@ -23,6 +23,7 @@ public class IntensityMp2ragemePCADenoising {
 	private     int         nimg = 5;
 	private		float		stdevCutoff = 2.3f;
 	private     int         minDimension = 1;
+	private     int         ngbSize = 4;
 		
 	// output parameters
 	private		float[] invmagden = null;
@@ -97,6 +98,7 @@ public class IntensityMp2ragemePCADenoising {
 	public final void setImageNumber(int in) { nimg = in; }
 	public final void setStdevCutoff(float in) { stdevCutoff = in; }
 	public final void setMinimumDimension(int in) { minDimension = in; }
+	public final void setPatchSize(int in) { ngbSize = in; }
 	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
@@ -196,18 +198,22 @@ public class IntensityMp2ragemePCADenoising {
         invphs = null;
 		
 		// 2. estimate PCA in slabs of NxNxN size
-		int ngb = 4;
-		int nstep = 2;
-		int ngb3 = ngb*ngb*ngb;
+		int ngb = ngbSize;
+		int nstep = Numerics.ceil(ngb);
 		int nimg2 = 2*nimg;
 		float[][] denoised = new float[2*nimg][nxyz];
 		float[] weights = new float[nxyz];
 		pcadim = new float[nxyz];
 		// border issues should be cleaned-up, ignored so far
-		for (int x=0;x<nx-ngb;x+=nstep) for (int y=0;y<ny-ngb;y+=nstep) for (int z=0;z<nz-ngb;z+=nstep) {
+		for (int x=0;x<nx-nstep;x+=nstep) for (int y=0;y<ny-nstep;y+=nstep) for (int z=0;z<nz-nstep;z+=nstep) {
+		    int ngbx = Numerics.min(ngb, nx-x);
+		    int ngby = Numerics.min(ngb, ny-y);
+		    int ngbz = Numerics.min(ngb, nz-z);
+		    int ngb3 = ngbx*ngby*ngbz;
+		    if (ngb3<nimg2) System.out.println("!patch is too small!");
 		    double[][] patch = new double[ngb3][nimg2];
-		    for (int dx=0;dx<ngb;dx++) for (int dy=0;dy<ngb;dy++) for (int dz=0;dz<ngb;dz++) for (int i=0;i<nimg2;i++) {
-		        patch[dx+ngb*dy+ngb*ngb*dz][i] = images[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)];
+		    for (int dx=0;dx<ngbx;dx++) for (int dy=0;dy<ngby;dy++) for (int dz=0;dz<ngbz;dz++) for (int i=0;i<nimg2;i++) {
+		        patch[dx+ngbx*dy+ngbx*ngby*dz][i] = images[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)];
 		    }
 		    // mean over samples
 		    double[] mean = new double[nimg2];
@@ -257,9 +263,9 @@ public class IntensityMp2ragemePCADenoising {
             }
             // add to the denoised image
             double wpatch = (1.0/(1.0 + nimg2 - nzero));
-            for (int dx=0;dx<ngb;dx++) for (int dy=0;dy<ngb;dy++) for (int dz=0;dz<ngb;dz++) {
+            for (int dx=0;dx<ngbx;dx++) for (int dy=0;dy<ngby;dy++) for (int dz=0;dz<ngbz;dz++) {
                 for (int i=0;i<nimg2;i++) {
-                    denoised[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*patch[dx+ngb*dy+ngb*ngb*dz][i]);
+                    denoised[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*patch[dx+ngbx*dy+ngbx*ngby*dz][i]);
                 }
                 weights[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)wpatch;
                 pcadim[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*(nimg2-nzero));
