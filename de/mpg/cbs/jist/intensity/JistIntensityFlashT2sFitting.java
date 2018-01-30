@@ -13,6 +13,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
+import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataMipav;
 
@@ -102,51 +103,110 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 
 
 	protected void createOutputParameters(ParamCollection outputParams) {
-		outputParams.add(s0Param=new ParamVolume("S0 Volume"));
-		outputParams.add(t2Param=new ParamVolume("T2 Volume"));
-		outputParams.add(r2Param=new ParamVolume("R2 Volume"));
-		outputParams.add(errParam=new ParamVolume("Residuals Volume"));
+		outputParams.add(s0Param=new ParamVolume("S0 Volume",null,-1,-1,-1,-1));
+		outputParams.add(t2Param=new ParamVolume("T2 Volume",null,-1,-1,-1,-1));
+		outputParams.add(r2Param=new ParamVolume("R2 Volume",null,-1,-1,-1,-1));
+		outputParams.add(errParam=new ParamVolume("Residuals Volume",null,-1,-1,-1,-1));
+		
+		outputParams.setName("t2s_fitted_images");
+		outputParams.setLabel("T2s fitted Images");
 	}
 
 
 	protected void execute(CalculationMonitor monitor) throws AlgorithmRuntimeException {
 		ImageDataFloat vol1Img = new ImageDataFloat(vol1Param.getImageData());
-		float[][][] vol1 = vol1Img.toArray3d();
 		int nx = vol1Img.getRows();
 		int ny = vol1Img.getCols();
 		int nz = vol1Img.getSlices();
+		ImageHeader header = vol1Img.getHeader();
+		String name = vol1Param.getImageData().getName();
+
+		float[][][] vol1;
+		if (Interface.isImage4D(vol1Param)) {
+		    float[][][][] tmp = vol1Img.toArray4d();
+		    vol1 = new float[nx][ny][nz];
+		    for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+		        vol1[x][y][z] = tmp[x][y][z][0];
+		    }
+		} else vol1 = vol1Img.toArray3d();
+		
 		ImageDataFloat vol2Img = new ImageDataFloat(vol2Param.getImageData());
-		float[][][] vol2 = vol2Img.toArray3d();
+		float[][][] vol2;
+		if (Interface.isImage4D(vol2Param)) {
+		    float[][][][] tmp = vol2Img.toArray4d();
+		    vol2 = new float[nx][ny][nz];
+		    for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+		        vol2[x][y][z] = tmp[x][y][z][0];
+		    }
+		} else vol2 = vol2Img.toArray3d();
+		
 		int nimg = 2;
 		float[][][] vol3=null, vol4=null, vol5=null, vol6=null, vol7=null, vol8=null;
+		
 		if (vol3Param.getImageData()!=null) {
 			ImageDataFloat vol3Img = new ImageDataFloat(vol3Param.getImageData());
-			vol3 = vol3Img.toArray3d();
-			nimg++;
+			if (Interface.isImage4D(vol3Param)) {
+                float[][][][] tmp = vol3Img.toArray4d();
+                vol3 = new float[nx][ny][nz];
+                for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+                    vol3[x][y][z] = tmp[x][y][z][0];
+                }
+            } else vol3 = vol3Img.toArray3d();
+		    nimg++;
 		}
 		if (vol4Param.getImageData()!=null) {
 			ImageDataFloat vol4Img = new ImageDataFloat(vol4Param.getImageData());
-			vol4 = vol4Img.toArray3d();
+			if (Interface.isImage4D(vol4Param)) {
+                float[][][][] tmp = vol4Img.toArray4d();
+                vol4 = new float[nx][ny][nz];
+                for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+                    vol4[x][y][z] = tmp[x][y][z][0];
+                }
+            } else vol4 = vol4Img.toArray3d();
 			nimg++;
 		}
 		if (vol5Param.getImageData()!=null) {
 			ImageDataFloat vol5Img = new ImageDataFloat(vol5Param.getImageData());
-			vol5 = vol5Img.toArray3d();
+			if (Interface.isImage4D(vol5Param)) {
+                float[][][][] tmp = vol5Img.toArray4d();
+                vol5 = new float[nx][ny][nz];
+                for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+                    vol5[x][y][z] = tmp[x][y][z][0];
+                }
+            } else vol5 = vol5Img.toArray3d();
 			nimg++;
 		}
 		if (vol6Param.getImageData()!=null) {
 			ImageDataFloat vol6Img = new ImageDataFloat(vol6Param.getImageData());
-			vol6 = vol6Img.toArray3d();
+			if (Interface.isImage4D(vol6Param)) {
+                float[][][][] tmp = vol6Img.toArray4d();
+                vol6 = new float[nx][ny][nz];
+                for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+                    vol6[x][y][z] = tmp[x][y][z][0];
+                }
+            } else vol6 = vol6Img.toArray3d();
 			nimg++;
 		}
 		if (vol7Param.getImageData()!=null) {
 			ImageDataFloat vol7Img = new ImageDataFloat(vol7Param.getImageData());
-			vol7 = vol7Img.toArray3d();
+			if (Interface.isImage4D(vol7Param)) {
+                float[][][][] tmp = vol7Img.toArray4d();
+                vol7 = new float[nx][ny][nz];
+                for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+                    vol7[x][y][z] = tmp[x][y][z][0];
+                }
+            } else vol7 = vol7Img.toArray3d();
 			nimg++;
 		}
 		if (vol8Param.getImageData()!=null) {
 			ImageDataFloat vol8Img = new ImageDataFloat(vol8Param.getImageData());
-			vol8 = vol8Img.toArray3d();
+			if (Interface.isImage4D(vol8Param)) {
+                float[][][][] tmp = vol8Img.toArray4d();
+                vol8 = new float[nx][ny][nz];
+                for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+                    vol8[x][y][z] = tmp[x][y][z][0];
+                }
+            } else vol8 = vol8Img.toArray3d();
 			nimg++;
 		}
 		float[][][][] vol = new float[nimg][][][];
@@ -158,6 +218,8 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 		if (nimg>5) vol[5] = vol6;
 		if (nimg>6) vol[6] = vol7;
 		if (nimg>7) vol[7] = vol8;
+		
+		System.out.println("data loaded...");
 		
 		// retrieve the corresponding TE
 		float[] TE = new float[nimg];
@@ -208,33 +270,36 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 				
 			}
 		}
+		System.out.println("T2* fitting..");
 		
 		ImageDataFloat s0Data = new ImageDataFloat(s0);
-		s0Data.setHeader(vol1Param.getImageData().getHeader());
-		s0Data.setName(vol1Param.getImageData().getName()+"_s0");
+		//s0Data.setHeader(header);
+		s0Data.setName(name+"_s0");
 		s0Param.setValue(s0Data);
 		s0Data = null;
 		s0 = null;
 		
 		ImageDataFloat r2Data = new ImageDataFloat(r2);
-		r2Data.setHeader(vol1Param.getImageData().getHeader());
-		r2Data.setName(vol1Param.getImageData().getName()+"_r2");
+		//r2Data.setHeader(header);
+		r2Data.setName(name+"_r2");
 		r2Param.setValue(r2Data);
 		r2Data = null;
 		r2 = null;
 		
 		ImageDataFloat t2Data = new ImageDataFloat(t2);
-		t2Data.setHeader(vol1Param.getImageData().getHeader());
-		t2Data.setName(vol1Param.getImageData().getName()+"_t2");
+		//t2Data.setHeader(header);
+		t2Data.setName(name+"_t2");
 		t2Param.setValue(t2Data);
 		t2Data = null;
 		t2 = null;
 		
 		ImageDataFloat errData = new ImageDataFloat(err);
-		errData.setHeader(vol1Param.getImageData().getHeader());
-		errData.setName(vol1Param.getImageData().getName()+"_err");
+		//errData.setHeader(header);
+		errData.setName(name+"_err");
 		errParam.setValue(errData);
 		errData = null;
 		err = null;
+		
+		System.out.println("Done.");
 	}
 }
