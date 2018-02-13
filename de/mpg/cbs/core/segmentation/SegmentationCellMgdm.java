@@ -97,6 +97,7 @@ public class SegmentationCellMgdm {
 		if (input3Image != null) { n++; modality[n] = type3Param; image[n] = input3Image; }
 		
 		float[] centroids = null;
+		float[] maximum = null;
 		float[] fgproba = null;
 		float[] intens = null;
 		for (n=0;n<nimg;n++) {

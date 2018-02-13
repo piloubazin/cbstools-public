@@ -60,6 +60,7 @@ public class JistStatisticsSegmentation extends ProcessingAlgorithm {
 												"Volumes", "Dice_overlap", "Jaccard_overlap", "Volume_difference",
 												"False_positives","False_negatives",
 												"Dilated_Dice_overlap","Dilated_false_positive","Dilated_false_negative",
+												"Dilated_false_negative_volume","Dilated_false_positive_volume",
 												"--- boundaries ---",
 												"Average_surface_distance", "Average_surface_difference", 
 												"Average_squared_surface_distance", "Hausdorff_distance"};
@@ -408,6 +409,46 @@ public class JistStatisticsSegmentation extends ProcessingAlgorithm {
 					fneg[n] = (vol2-diff)/vol2;
 				}
 				line = "Dilated_false_negative"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+fneg[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+			}
+			if (statistics.get(s).equals("Dilated_false_positive_volume")) {
+				// compare: requires same labels (use the reference as basis)
+				float[] fpos = new float[nlabels];
+				for (int n=0;n<nlabels;n++) {
+					boolean[][][] obj1 = ObjectExtraction.objectFromLabelImage(segmentation,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					float vol1 = ObjectStatistics.volume(obj1,nx,ny,nz);
+					boolean[][][] obj2 = ObjectExtraction.objectFromLabelImage(template,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					obj2 = Morphology.dilateObject(obj2, nx,ny,nz, 1,1,1);
+					float vol2 = ObjectStatistics.volume(obj2,nx,ny,nz);
+					boolean[][][] and = ObjectGeometry.binaryOperation(obj1,obj2,ObjectExtraction.AND,nx,ny,nz);
+					float diff = ObjectStatistics.volume(and,nx,ny,nz);
+									
+					fpos[n] = (vol1-diff);
+				}
+				line = "Dilated_false_positive_volume"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+fpos[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+			}
+			if (statistics.get(s).equals("Dilated_false_negative_volume")) {
+				// compare: requires same labels (use the reference as basis)
+				float[] fneg = new float[nlabels];
+				for (int n=0;n<nlabels;n++) {
+					boolean[][][] obj1 = ObjectExtraction.objectFromLabelImage(segmentation,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					obj1 = Morphology.dilateObject(obj1, nx,ny,nz, 1,1,1);
+					float vol1 = ObjectStatistics.volume(obj1,nx,ny,nz);
+					boolean[][][] obj2 = ObjectExtraction.objectFromLabelImage(template,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					float vol2 = ObjectStatistics.volume(obj2,nx,ny,nz);
+					boolean[][][] and = ObjectGeometry.binaryOperation(obj1,obj2,ObjectExtraction.AND,nx,ny,nz);
+					float diff = ObjectStatistics.volume(and,nx,ny,nz);
+									
+					fneg[n] = (vol2-diff);
+				}
+				line = "Dilated_false_negative_volume"+imgtag+reftag+notag;
 				for (int n=0;n<nlabels;n++) line+=(delim+fneg[n]);
 				line+=("\n");
 				output.add(line);
