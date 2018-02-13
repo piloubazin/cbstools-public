@@ -30,17 +30,17 @@ public class IntensityMp2rageT1Fitting {
 	private 	int			Nexcitations = 160;
 	private		float		inversionEfficiency = 0.96f;
 	
-	private		float		intensityScale = 1000.0f;
-	private		float		t1Max = 5.0f;
+	private		float		intensityScale = 4000.0f;
+	private		float		t1Max = 4.0f;
 	private		float		t1Min = 0.05f;
-	private		int			t1Samples = 495;
-	private		int			uniSamples = 1000;
+	private		int			t1Samples = 3950;
+	private		int			uniSamples = 4000;
 	
 	private		boolean		useB1correction = true;
 	private		float 		b1Scaling = 100.0f;
 	private		float		b1min = 0.05f;
 	private		float		b1max = 2.0f;
-	private 	int			b1Samples = 195;
+	private 	int			b1Samples = 1950;
 	
 	// output parameters
 	private		float[] uni = null;
@@ -250,7 +250,7 @@ public class IntensityMp2rageT1Fitting {
 			
 				if (t>0 && t<t1Samples) {
 				    // make a linear interpolation between previous and current value
-					double ratio = (T1lookup[b][t-1]-val)/(T1lookup[b][t-1]-T1lookup[b][t]);
+					double ratio = Numerics.bounded( (T1lookup[b][t-1]-val)/(T1lookup[b][t-1]-T1lookup[b][t]), 0.0, 1.0);
 					unilookup[b][u] = t1Min + ( ratio*t+(1.0-ratio)*(t-1) )*(t1Max-t1Min)/(t1Samples-1.0);
 				} else if (t>=t1Samples) {
 					unilookup[b][u] = t1Max;
@@ -264,35 +264,45 @@ public class IntensityMp2rageT1Fitting {
 		r1map = new float[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
 		    double u = (uni[xyz]+0.5)*(uniSamples-1.0);
-			int u0 = Numerics.floor(u);
-			double uratio = (u-u0);
+			int u0 = Numerics.bounded(Numerics.floor(u), 0, uniSamples-1);
+			int u1 = Numerics.bounded(Numerics.ceil(u), 0, uniSamples-1);
+			double uratio = Numerics.bounded( (u-u0), 0.0, 1.0);
                 
 			double b = 0;
-			int b0 = 0;
+			int b0 = 0, b1 = 0;
 			double bratio = 0.0;
             if (useB1correction) {
 			    b = (b1map[xyz]/b1Scaling-b1min)/(b1max-b1min)*(b1Samples-1.0);
-			    b0 = Numerics.floor(b);
-                bratio = (b-b0);
+			    b0 = Numerics.bounded(Numerics.floor(b), 0, b1Samples-1);
+                b1 = Numerics.bounded(Numerics.ceil(b), 0, b1Samples-1);
+                bratio = Numerics.bounded( (b-b0), 0.0, 1.0);
             }
 			// linear interpolation here too
-			if (useB1correction) {
-                t1map[xyz] = (float)( (1.0-uratio)*(1.0-bratio)*unilookup[b0][u0]);
-                if (bratio>0) t1map[xyz] += (float)( (1.0-uratio)*bratio*unilookup[b0+1][u0]);
-                if (uratio>0) t1map[xyz] += (float)( uratio*(1.0-bratio)*unilookup[b0][u0+1]);
-                if (uratio*bratio>0) t1map[xyz] += (float)( uratio*bratio*unilookup[b0+1][u0+1]);
-            }
+			t1map[xyz] = (float)( (1.0-uratio)*(1.0-bratio)*unilookup[b0][u0]
+								 +(1.0-uratio)*bratio*unilookup[b1][u0]
+								 +uratio*(1.0-bratio)*unilookup[b0][u1]
+								 +uratio*bratio*unilookup[b1][u1]);
+			
+			// r1 map is just inverse
 			r1map[xyz] = 1.0f/t1map[xyz];
 			
 			// re-correct the uni with the B1 information
 			if (useB1correction) {
 			    double t = (t1map[xyz]-t1Min)/(t1Max-t1Min)*(t1Samples-1.0);
-			    int t0 = Numerics.floor(t);
-			    double tratio = (t-t0);
-			    uni[xyz] = (float)( (1.0-tratio)*(1.0-bratio)*T1lookup[b0][t0]);
-                if (bratio>0) uni[xyz] += (float)( (1.0-tratio)*bratio*T1lookup[b0+1][t0]);
-                if (tratio>0) uni[xyz] += (float)( tratio*(1.0-bratio)*T1lookup[b0][t0+1]);
-                if (tratio*bratio>0) uni[xyz] += (float)( tratio*bratio*T1lookup[b0+1][t0+1]);			    
+			    int t0 = Numerics.bounded(Numerics.floor(t), 0, t1Samples-1);
+			    int t1 = Numerics.bounded(Numerics.ceil(t), 0, t1Samples-1);
+			    double tratio = Numerics.bounded( (t-t0), 0.0, 1.0);
+			    
+			    // assume B1 = 1 values this time
+			    b = (1.0-b1min)/(b1max-b1min)*(b1Samples-1.0);
+			    b0 = Numerics.bounded(Numerics.floor(b), 0, b1Samples-1);
+                b1 = Numerics.bounded(Numerics.ceil(b), 0, b1Samples-1);
+                bratio = Numerics.bounded( (b-b0), 0.0, 1.0);
+                
+			    uni[xyz] = (float)( (1.0-tratio)*(1.0-bratio)*T1lookup[b0][t0]
+			    				   +(1.0-tratio)*bratio*T1lookup[b1][t0]
+			    				   +tratio*(1.0-bratio)*T1lookup[b0][t1]
+			    				   +tratio*bratio*T1lookup[b1][t1]);			    
 			}
 		}
 		
