@@ -145,11 +145,11 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 
 		algorithm.setRidgeIntensities(brightParam.getValue());
 		algorithm.setRidgeFilter(filterParam.getValue());
-		algorithm.setSurfaceLevelSet(Interface.getFloatImage3D(surfaceImage));
+		if (Interface.isValid(surfaceImage)) algorithm.setSurfaceLevelSet(Interface.getFloatImage3D(surfaceImage));
 		algorithm.setOrientationToSurface(orientationParam.getValue());
 		algorithm.setAngularFactor(angleParam.getValue().floatValue());
 		
-		algorithm.setLocationPrior(Interface.getFloatImage3D(locationImage));
+		if (Interface.isValid(locationImage)) algorithm.setLocationPrior(Interface.getFloatImage3D(locationImage));
 		
 		algorithm.setNumberOfScales(nscalesParam.getValue().intValue());
 		

@@ -23,7 +23,7 @@ public class SegmentationCellMgdm {
 	private String type1Param = "none";
 	private String type2Param = "none";
 	private String type3Param = "none";
-	public static final String[] inputTypes = {"centroid-proba", "foreground-proba","image-intensities"};
+	public static final String[] inputTypes = {"centroid-proba", "local-maxima", "foreground-proba","image-intensities"};
 	
 	private String dimParam = "none";
 	public static final String[] dimTypes = {"2D", "3D"};
@@ -33,6 +33,7 @@ public class SegmentationCellMgdm {
 	private	float 	forceParam		= 	0.1f;
 	private float 	curvParam		=	0.4f;
 	private float   cellthresholdParam = 0.8f;
+	private float   centroidthresholdParam = 0.1f;
 		
 	private String 	topologyParam	=	"wcs";
 	public static final String[] topoTypes = {"26/6", "6/26", "18/6", "6/18", "6/6", "wcs", "wco", "no"};
@@ -97,11 +98,12 @@ public class SegmentationCellMgdm {
 		if (input3Image != null) { n++; modality[n] = type3Param; image[n] = input3Image; }
 		
 		float[] centroids = null;
-		float[] maximum = null;
+		float[] maxima = null;
 		float[] fgproba = null;
 		float[] intens = null;
 		for (n=0;n<nimg;n++) {
 		    if (modality[n].equals("centroid-proba")) centroids = image[n];
+		    else if (modality[n].equals("local-maxima")) maxima = image[n];
 		    else if (modality[n].equals("foreground-proba")) fgproba = image[n];
 		    else if (modality[n].equals("image-intensities")) intens = image[n];
 		}
@@ -121,10 +123,47 @@ public class SegmentationCellMgdm {
 		if (dimension==DIM2D) {
 		    // independet Z stacks
 		    for (int z=0;z<nz;z++) {
-		        // 1. Get the initial segmentation from cell centroid detection
+		        // 1. Get the initial segmentation from cell centroid detection + local maxima
 		        boolean[] seg = new boolean[nx*ny];
-		        for (int xy=0;xy<nx*ny;xy++) seg[xy] = (centroids[xy+z*nx*ny]>0);
-                int[] initialization = ObjectLabeling.connected6Object3D(seg, nx,ny,1);
+		        for (int xy=0;xy<nx*ny;xy++) seg[xy] = (maxima[xy+z*nx*ny]>0);
+		        int[] initialization = ObjectLabeling.connected6Object3D(seg, nx,ny,1);
+                // simple region growing: could be done more nicely
+		        int[] growing = new int[nx*ny];
+		        float[] proba = new float[nx*ny];
+		        float[] maxproba = new float[nx*ny];
+		        for (int xy=0;xy<nx*ny;xy++) proba[xy] = centroids[xy+z*nx*ny];
+		        for (int t=0;t<20;t++) {
+		            for (int xy=0;xy<nx*ny;xy++) {
+		                growing[xy] = initialization[xy];
+		                maxproba[xy] = proba[xy];
+		            }
+		            for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) {
+		                int xy = x+nx*y;
+		                if (initialization[xy]>0) {
+		                    if (growing[xy-1]==0 && proba[xy-1]>centroidthresholdParam*proba[xy]) {
+		                        growing[xy-1] = initialization[xy];
+		                        maxproba[xy-1] = Numerics.max(maxproba[xy-1], proba[xy-1], proba[xy]);
+		                    }
+		                    if (growing[xy+1]==0 && proba[xy+1]>centroidthresholdParam*proba[xy]) {
+		                        growing[xy+1] = initialization[xy];
+		                        maxproba[xy+1] = Numerics.max(maxproba[xy+1], proba[xy+1], proba[xy]);
+		                    }
+		                    if (growing[xy-nx]==0 && proba[xy-nx]>centroidthresholdParam*proba[xy]) {
+		                        growing[xy-nx] = initialization[xy];
+		                        maxproba[xy-nx] = Numerics.max(maxproba[xy-nx], proba[xy-nx], proba[xy]);
+		                    }
+		                    if (growing[xy+nx]==0 && proba[xy+nx]>centroidthresholdParam*proba[xy]) {
+		                        growing[xy+nx] = initialization[xy];
+		                        maxproba[xy+nx] = Numerics.max(maxproba[xy+nx], proba[xy+nx], proba[xy]);
+		                    }
+		                }
+		            }
+		            for (int xy=0;xy<nx*ny;xy++) {
+		                initialization[xy] = growing[xy];
+		                proba[xy] = maxproba[xy];
+		            }
+		        }
+		            
                 int nlb = ObjectLabeling.countLabels(initialization, nx,ny,1);
                 System.out.print("slice "+z+", "+nlb+" labels \n");
 		        
@@ -153,7 +192,7 @@ public class SegmentationCellMgdm {
                     float[] initmax = new float[nlb];
                     int bglb = 0;
                     for (int xy=0;xy<nx*ny;xy++) {
-                        if (centroids[xy+z*nx*ny]>0) {
+                        if (initialization[xy]>0) {
                             initmax[initialization[xy]] = Numerics.max(initmax[initialization[xy]],intens[xy+z*nx*ny]);
                         } else {
                             bglb = initialization[xy];
@@ -162,7 +201,7 @@ public class SegmentationCellMgdm {
                     // for the background, use the mean (over-estimating)?
                     double sumbg = 0.0, denbg = 0.0;
                     for (int xy=0;xy<nx*ny;xy++) {
-                        if (centroids[xy+z*nx*ny]==0) {
+                        if (initialization[xy]==0) {
                             sumbg += intens[xy+z*nx*ny];
                             denbg++;
                         }
