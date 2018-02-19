@@ -141,6 +141,7 @@ public class JistSegmentationCellMgdm extends ProcessingAlgorithm {
 		algorithm.setCurvatureWeight(curvParam.getValue().floatValue());
 		algorithm.setMaxIterations(iterationParam.getValue().intValue());
 		algorithm.setMinChange(changeParam.getValue().floatValue());
+		algorithm.setCellThreshold(cellthresholdParam.getValue().floatValue());
 		
 		algorithm.setTopology(topologyParam.getValue());
 		

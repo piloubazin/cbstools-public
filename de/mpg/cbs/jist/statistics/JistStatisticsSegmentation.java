@@ -426,7 +426,7 @@ public class JistStatisticsSegmentation extends ProcessingAlgorithm {
 					boolean[][][] and = ObjectGeometry.binaryOperation(obj1,obj2,ObjectExtraction.AND,nx,ny,nz);
 					float diff = ObjectStatistics.volume(and,nx,ny,nz);
 									
-					fpos[n] = (vol1-diff);
+					fpos[n] = (vol1-diff)*rx*ry*rz;
 				}
 				line = "Dilated_false_positive_volume"+imgtag+reftag+notag;
 				for (int n=0;n<nlabels;n++) line+=(delim+fpos[n]);
@@ -446,7 +446,7 @@ public class JistStatisticsSegmentation extends ProcessingAlgorithm {
 					boolean[][][] and = ObjectGeometry.binaryOperation(obj1,obj2,ObjectExtraction.AND,nx,ny,nz);
 					float diff = ObjectStatistics.volume(and,nx,ny,nz);
 									
-					fneg[n] = (vol2-diff);
+					fneg[n] = (vol2-diff)*rx*ry*rz;
 				}
 				line = "Dilated_false_negative_volume"+imgtag+reftag+notag;
 				for (int n=0;n<nlabels;n++) line+=(delim+fneg[n]);
