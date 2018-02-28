@@ -28,6 +28,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 	
 	// jist containers
 	private ParamVolume 	inv1Image;
+	private ParamVolume 	inv2Image;
 	private ParamVolume 	inv2e1Image;
 	private ParamVolume 	inv2e2Image;
 	private ParamVolume 	inv2e3Image;
@@ -52,6 +53,8 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 	protected void createInputParameters(ParamCollection inputParams) {
 		
 		inputParams.add(inv1Image = new ParamVolume("First Inversion Image (4D:mag+phs)"));
+		inputParams.add(inv2Image = new ParamVolume("Second Inversion Image (4D: N mag+ N phs)"));
+		inv2Image.setMandatory(false);
 		inputParams.add(inv2e1Image = new ParamVolume("Second Inversion Image Echo1 (4D:mag+phs)"));
 		inputParams.add(inv2e2Image = new ParamVolume("Second Inversion Image Echo2 (4D:mag+phs)"));
 		inputParams.add(inv2e3Image = new ParamVolume("Second Inversion Image Echo3 (4D:mag+phs)"));

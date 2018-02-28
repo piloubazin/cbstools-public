@@ -61,6 +61,7 @@ public class JistStatisticsSegmentation extends ProcessingAlgorithm {
 												"False_positives","False_negatives",
 												"Dilated_Dice_overlap","Dilated_false_positive","Dilated_false_negative",
 												"Dilated_false_negative_volume","Dilated_false_positive_volume",
+												"Detected_clusters", "False_detections",
 												"--- boundaries ---",
 												"Average_surface_distance", "Average_surface_difference", 
 												"Average_squared_surface_distance", "Hausdorff_distance"};
@@ -450,6 +451,72 @@ public class JistStatisticsSegmentation extends ProcessingAlgorithm {
 				}
 				line = "Dilated_false_negative_volume"+imgtag+reftag+notag;
 				for (int n=0;n<nlabels;n++) line+=(delim+fneg[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+			}
+			if (statistics.get(s).equals("Detected_clusters")) {
+				// compare: requires same labels (use the reference as basis)
+				float[] detc = new float[nlabels];
+				float[] nclu = new float[nlabels];
+				for (int n=0;n<nlabels;n++) {
+					// get the connected components
+					boolean[][][] obj1 = ObjectExtraction.objectFromLabelImage(segmentation,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					// not needed here... int[][][] label1 = ObjectLabeling.connected18Object3D(obj1, nx,ny,nz);
+					boolean[][][] obj2 = ObjectExtraction.objectFromLabelImage(template,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					int[][][] label2 = ObjectLabeling.connected18Object3D(obj2, nx,ny,nz);
+					int[] list2 = ObjectLabeling.listOrderedLabels(label2, nx,ny,nz);
+					// use the intersection to find which ones overlap
+					boolean[][][] and = ObjectGeometry.binaryOperation(obj1,obj2,ObjectExtraction.AND,nx,ny,nz);
+					boolean[] detected = new boolean[list2.length];
+					for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) if (and[x][y][z]) {
+					    for (int l=1;l<list2.length;l++) if (label2[x][y][z]==list2[l]) detected[l] = true;    	
+					}
+					// count the final numbers
+					detc[n] = 0;
+					for (int l=1;l<list2.length;l++) if (detected[l]) detc[n]++;
+					nclu[n] = list2.length-1;
+				}
+				line = "Detected_clusters"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+detc[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+				line = "Total_clusters"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+nclu[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+			}
+			if (statistics.get(s).equals("False_detections")) {
+				// compare: requires same labels (use the reference as basis)
+				float[] fdet = new float[nlabels];
+				float[] ndet = new float[nlabels];
+				for (int n=0;n<nlabels;n++) {
+					// get the connected components
+					boolean[][][] obj1 = ObjectExtraction.objectFromLabelImage(segmentation,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					int[][][] label1 = ObjectLabeling.connected18Object3D(obj1, nx,ny,nz);
+					int[] list1 = ObjectLabeling.listOrderedLabels(label1, nx,ny,nz);
+					boolean[][][] obj2 = ObjectExtraction.objectFromLabelImage(template,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					// use the intersection to find which ones overlap
+					boolean[][][] and = ObjectGeometry.binaryOperation(obj1,obj2,ObjectExtraction.AND,nx,ny,nz);
+					boolean[] detected = new boolean[list1.length];
+					for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) if (and[x][y][z]) {
+					    for (int l=1;l<list1.length;l++) if (label1[x][y][z]==list1[l]) detected[l] = true;    	
+					}
+					// count the final numbers
+					fdet[n] = 0;
+					for (int l=1;l<list1.length;l++) if (detected[l]) fdet[n]++;
+					ndet[n] = list1.length-1;
+					fdet[n] = ndet[n]-fdet[n];
+				}
+				line = "False_detections"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+fdet[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+				line = "Total_detections"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+ndet[n]);
 				line+=("\n");
 				output.add(line);
 				System.out.println(line);

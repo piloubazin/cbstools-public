@@ -31,8 +31,9 @@ public class FilterRecursiveRidgeDiffusion {
 	private float[] locationImage;
 	
 	private String filterParam = "2D";
-	public static final String[] filterTypes = {"2D","1D"};
-	private int nscalesParam = 3;
+	public static final String[] filterTypes = {"2D","1D","0D"};
+	private int minscaleParam = 0;
+	private int maxscaleParam = 3;
 	
 	private String propagationParam = "diffusion";
 	public static final String[] propagationTypes = {"diffusion","belief","SUR","flooding","growing","labeling","none"};
@@ -107,7 +108,8 @@ public class FilterRecursiveRidgeDiffusion {
 		
 	public final void setLocationPrior(float[] val) { locationImage = val; }
 
-	public final void setNumberOfScales(int val) { nscalesParam = val; }
+	public final void setMinimumScale(int val) { minscaleParam = val; }
+	public final void setMaximumScale(int val) { maxscaleParam = val; }
 
 	public final void setPropagationModel(String val) { propagationParam = val; }
 	public final void setDiffusionFactor(float val) { difffactorParam = val; }
@@ -178,6 +180,7 @@ public class FilterRecursiveRidgeDiffusion {
 		}
 		
 		// normalize, invert inputImage if looking for dark features
+		BasicInfo.displayMessage("...normalize intensities (detection: "+brightParam+")\n");
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			if (brightParam.equals("bright"))
 				inputImage[xyz] = (inputImage[xyz]-minI)/(maxI-minI);
@@ -195,11 +198,14 @@ public class FilterRecursiveRidgeDiffusion {
 		byte[] maxdirection = new byte[nxyz];
 		int[] maxscale = new int[nxyz];
 		
-		BasicInfo.displayMessage("...first filter response\n");
-		
-		if (filterParam.equals("1D")) directionFromRecursiveRidgeFilter1D(inputImage, mask, maxresponse, maxdirection, unidirectional);
-		else if (filterParam.equals("2D")) directionFromRecursiveRidgeFilter2D(inputImage, mask, maxresponse, maxdirection, unidirectional);
-			
+		if (minscaleParam==0) {
+            BasicInfo.displayMessage("...first filter response\n");
+            
+            if (filterParam.equals("0D")) directionFromRecursiveRidgeFilter0D(inputImage, mask, maxresponse, maxdirection, unidirectional);
+            else if (filterParam.equals("1D")) directionFromRecursiveRidgeFilter1D(inputImage, mask, maxresponse, maxdirection, unidirectional);
+            else if (filterParam.equals("2D")) directionFromRecursiveRidgeFilter2D(inputImage, mask, maxresponse, maxdirection, unidirectional);
+        }
+        
 		for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
 			if (maxresponse[xyz]>0) {
 				maxscale[xyz] = 0;
@@ -207,7 +213,7 @@ public class FilterRecursiveRidgeDiffusion {
 				maxscale[xyz] = -1;
 			}
 		}
-		for (int i=0;i<nscalesParam;i++) {
+		for (int i=Numerics.max(minscaleParam-1,0);i<maxscaleParam;i++) {
 			float scale = 1.0f+i;
 			float[] smoothed = new float[nxyz];
 
@@ -224,7 +230,8 @@ public class FilterRecursiveRidgeDiffusion {
 
 			byte[] direction = new byte[nxyz];
 			float[] response = new float[nxyz];
-			if (filterParam.equals("1D")) directionFromRecursiveRidgeFilter1D(smoothed, mask, response, direction, unidirectional);
+			if (filterParam.equals("0D")) directionFromRecursiveRidgeFilter0D(smoothed, mask, response, direction, unidirectional);
+			else if (filterParam.equals("1D")) directionFromRecursiveRidgeFilter1D(smoothed, mask, response, direction, unidirectional);
 			else if (filterParam.equals("2D")) directionFromRecursiveRidgeFilter2D(smoothed, mask, response, direction, unidirectional);
 			
 			//Combine scales: keep maximum response
@@ -241,7 +248,6 @@ public class FilterRecursiveRidgeDiffusion {
 		BasicInfo.displayMessage("...normalization into probabilities\n");
 		float[] proba = new float[nxyz];
 		probabilityFromRecursiveRidgeFilter(maxresponse, proba);	
-		
 		
 		// Attenuate response according to orientationParam
 		float[] correction = new float[nxyz];
@@ -339,6 +345,9 @@ public class FilterRecursiveRidgeDiffusion {
 		BasicInfo.displayMessage("...diffusion\n");
 		
 		float[] propag = new float[nxyz];
+		if (filterParam.equals("0D")) {
+		     propag = spatialExpansion0D(proba, maxscale);
+		} else
 		if (propagationParam.equals("SUR")) {
 			if (filterParam.equals("1D"))  propag = spatialUncertaintyRelaxation1D(proba, maxdirection, ngbParam, simscaleParam, difffactorParam, iterParam);
 			else if (filterParam.equals("2D"))  propag = spatialUncertaintyRelaxation2D(proba, maxdirection, ngbParam, simscaleParam, difffactorParam, iterParam);
@@ -427,6 +436,50 @@ public class FilterRecursiveRidgeDiffusion {
 		return;
 	}
 	
+	private final void directionFromRecursiveRidgeFilter0D(float[] img, boolean[] mask, float[] filter, byte[] direction, boolean unidirectional) {
+			
+			// get the tubular filter response
+			float[][][] planescore = new float[nx][ny][nz];
+			byte[][][] planedir = new byte[nx][ny][nz];
+			byte[][][] linedir = new byte[nx][ny][nz];
+			float[][][] inputImage = new float[nx][ny][nz];
+			//float[] filter = new float[nx*ny*nz];
+			for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+				int xyz = x + nx*y + nx*ny*z;
+				inputImage[x][y][z] = img[xyz];
+			}
+			for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
+				int xyz = x + nx*y + nx*ny*z;
+				filter[xyz] = 0.0f;
+				if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
+					// check for zero-valued neighbors as well
+					minmaxplaneScore(inputImage, planescore, planedir, x,y,z, 13);
+					// sign issue: remove all that have different sign, keep global sign
+					float linescore = minmaxlineScore(inputImage, planedir, linedir, x,y,z, 4);
+					if (planescore[x][y][z]*linescore>0) {
+					    // now measure along the line
+					    byte[] dl = directionNeighbor(linedir[x][y][z]);
+					    float pointscore = Numerics.minmag(inputImage[x][y][z]-inputImage[x+dl[X]][y+dl[Y]][z+dl[Z]],inputImage[x][y][z]-inputImage[x-dl[X]][y-dl[Y]][z-dl[Z]]);
+					    if (pointscore*linescore>0) {
+                            filter[xyz] = Numerics.sign(pointscore)*(float)FastMath.cbrt(planescore[x][y][z]*linescore*pointscore);
+                            direction[xyz] = -1;
+                        } else {
+                            filter[xyz] = 0.0f;
+                            direction[xyz] = -1;
+                        }
+						if(filter[xyz]<0) if (unidirectional) { filter[xyz]=0; direction[xyz] = -1; } else filter[xyz]*=-1.0f;
+					} else {
+						filter[xyz] = 0.0f;
+						direction[xyz] = -1;
+					}
+				}
+			}
+			planescore = null;
+			planedir = null;
+			linedir = null;
+			inputImage = null;
+			return;
+	}
 	private final void directionFromRecursiveRidgeFilter1D(float[] img, boolean[] mask, float[] filter, byte[] direction, boolean unidirectional) {
 			
 			// get the tubular filter response
@@ -1367,6 +1420,26 @@ public class FilterRecursiveRidgeDiffusion {
 
 		return dv;
 	}	
+	
+	private final float[] spatialExpansion0D(float[] proba, int[] scale) {
+		float[] propag = new float[nxyz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x + nx*y + nx*ny*z;
+			// expand along the same gaussian kernel as used in detection
+			if (proba[xyz]>0.0f && scale[xyz]>0) {
+				int dim = Numerics.ceil(Math.max(3.0f*scale[xyz]-0.5f,0.0f)); 
+				for (int i=-dim;i<=dim;i++) for (int j=-dim;j<=dim;j++) for (int k=-dim;k<=dim;k++) {
+					if (x+i>=0 && x+i<nx && y+j>=0 && y+j<ny && z+k>=0 && z+k<nz) {
+					    float ratio = (float)FastMath.exp( - 0.5f*(i*i+j*j+k*k)/(scale[xyz]*scale[xyz]) );
+						propag[xyz+i+j*nx+k*nx*ny] = Numerics.max(propag[xyz+i+j*nx+k*nx*ny], ratio*proba[xyz]);
+					}
+				}
+			}
+			// by default, unless increased previously
+			propag[xyz] = Numerics.max(propag[xyz],proba[xyz]);
+		}
+	    return propag;
+	}
 
 	private final float[] spatialUncertaintyRelaxation1D(float[] proba, byte[] dir, int ngbParam, float scale, float factor, int iterParam) {
 		// run SUR with weighting against normal directions
