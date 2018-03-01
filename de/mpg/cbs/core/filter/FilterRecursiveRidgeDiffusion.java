@@ -461,7 +461,7 @@ public class FilterRecursiveRidgeDiffusion {
 					    byte[] dl = directionNeighbor(linedir[x][y][z]);
 					    float pointscore = Numerics.minmag(inputImage[x][y][z]-inputImage[x+dl[X]][y+dl[Y]][z+dl[Z]],inputImage[x][y][z]-inputImage[x-dl[X]][y-dl[Y]][z-dl[Z]]);
 					    if (pointscore*linescore>0) {
-                            filter[xyz] = Numerics.sign(pointscore)*(float)FastMath.cbrt(planescore[x][y][z]*linescore*pointscore);
+                            filter[xyz] = (float)FastMath.cbrt(planescore[x][y][z]*linescore*pointscore);
                             direction[xyz] = -1;
                         } else {
                             filter[xyz] = 0.0f;
