@@ -46,7 +46,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 	
 	private ParamVolume locationImage;
 	
-	private ParamInteger nscalesParam;
+	private ParamInteger minscaleParam;
+	private ParamInteger maxscaleParam;
 	
 	//private ParamFloat thresholdParam;
 	
@@ -86,7 +87,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		
 		//inputParams.add(thresholdParam = new ParamFloat("Probability threshold", 0.0, 1.0, 0.5));
 		//inputParams.add(angleParam = new ParamFloat("Scale factor ", 0.25f, 2.0f, 1.0f));
-		inputParams.add(nscalesParam = new ParamInteger("Number of scales ", 0, 10, 3));
+		inputParams.add(minscaleParam = new ParamInteger("Minimum scale ", 0, 10, 0));
+		inputParams.add(maxscaleParam = new ParamInteger("Maximum scale ", 0, 10, 3));
 
 		inputParams.add(propagationParam = new ParamOption("Propagation model", FilterRecursiveRidgeDiffusion.propagationTypes));
 		inputParams.add(difffactorParam = new ParamFloat("Diffusion factor", 0.0f, 100.0f, 1.0f));
@@ -151,7 +153,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		
 		if (Interface.isValid(locationImage)) algorithm.setLocationPrior(Interface.getFloatImage3D(locationImage));
 		
-		algorithm.setNumberOfScales(nscalesParam.getValue().intValue());
+		algorithm.setMinimumScale(minscaleParam.getValue().intValue());
+		algorithm.setMaximumScale(maxscaleParam.getValue().intValue());
 		
 		algorithm.setPropagationModel(propagationParam.getValue());
 		algorithm.setDiffusionFactor(difffactorParam.getValue().floatValue());
