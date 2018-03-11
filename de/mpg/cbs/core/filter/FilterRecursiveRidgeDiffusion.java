@@ -346,7 +346,7 @@ public class FilterRecursiveRidgeDiffusion {
 		
 		float[] propag = new float[nxyz];
 		if (filterParam.equals("0D")) {
-		     propag = spatialExpansion0D(proba, maxscale);
+		     propag = spatialExpansion0D(proba, maxscale, inputImage);
 		} else
 		if (propagationParam.equals("SUR")) {
 			if (filterParam.equals("1D"))  propag = spatialUncertaintyRelaxation1D(proba, maxdirection, ngbParam, simscaleParam, difffactorParam, iterParam);
@@ -1421,7 +1421,7 @@ public class FilterRecursiveRidgeDiffusion {
 		return dv;
 	}	
 	
-	private final float[] spatialExpansion0D(float[] proba, int[] scale) {
+	private final float[] spatialExpansion0D(float[] proba, int[] scale, float[] intens) {
 		float[] propag = new float[nxyz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x + nx*y + nx*ny*z;
@@ -1431,7 +1431,8 @@ public class FilterRecursiveRidgeDiffusion {
 				for (int i=-dim;i<=dim;i++) for (int j=-dim;j<=dim;j++) for (int k=-dim;k<=dim;k++) {
 					if (x+i>=0 && x+i<nx && y+j>=0 && y+j<ny && z+k>=0 && z+k<nz) {
 					    float ratio = (float)FastMath.exp( - 0.5f*(i*i+j*j+k*k)/(scale[xyz]*scale[xyz]) );
-						propag[xyz+i+j*nx+k*nx*ny] = Numerics.max(propag[xyz+i+j*nx+k*nx*ny], ratio*proba[xyz]);
+					    float imgratio = intens[xyz+i+j*nx+k*nx*ny]*intens[xyz];
+						propag[xyz+i+j*nx+k*nx*ny] = Numerics.max(propag[xyz+i+j*nx+k*nx*ny], imgratio*ratio*proba[xyz]);
 					}
 				}
 			}
