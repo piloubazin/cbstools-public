@@ -241,6 +241,12 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 		}
 		delta = nimg*Sx2 - Sx*Sx;
 		
+		float maxval = 0.0f;
+		for (int i=0;i<nimg;i++) for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+		    if (vol[i][x][y][z]>maxval) maxval = vol[i][x][y][z];
+		}
+		maxval *= 1.20f;
+		
 		float[][][] s0 = new float[nx][ny][nz];
 		float[][][] r2 = new float[nx][ny][nz];
 		float[][][] t2 = new float[nx][ny][nz];
@@ -256,7 +262,7 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 					Sy += ydata;
 					Sxy += -ydata*TE[i];
 				}
-				s0[x][y][z] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, 4000);
+				s0[x][y][z] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, maxval);
 				r2[x][y][z] = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), 0.001f, 1.0f);
 				t2[x][y][z] = 1.0f/r2[x][y][z];
 				

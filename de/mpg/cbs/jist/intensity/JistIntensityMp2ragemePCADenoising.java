@@ -39,6 +39,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 	private ParamInteger    sizeParam;
 	
 	private ParamVolume 	denoisedInv1Image;
+	private ParamVolume 	denoisedInv2Image;
 	private ParamVolume 	denoisedInv2e1Image;
 	private ParamVolume 	denoisedInv2e2Image;
 	private ParamVolume 	denoisedInv2e3Image;
@@ -56,9 +57,13 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 		inputParams.add(inv2Image = new ParamVolume("Second Inversion Image (4D: N mag+ N phs)"));
 		inv2Image.setMandatory(false);
 		inputParams.add(inv2e1Image = new ParamVolume("Second Inversion Image Echo1 (4D:mag+phs)"));
+		inv2e1Image.setMandatory(false);
 		inputParams.add(inv2e2Image = new ParamVolume("Second Inversion Image Echo2 (4D:mag+phs)"));
+		inv2e2Image.setMandatory(false);
 		inputParams.add(inv2e3Image = new ParamVolume("Second Inversion Image Echo3 (4D:mag+phs)"));
+		inv2e3Image.setMandatory(false);
 		inputParams.add(inv2e4Image = new ParamVolume("Second Inversion Image Echo4 (4D:mag+phs)"));
+		inv2e4Image.setMandatory(false);
 		
 		inputParams.add(cutoffParam = new ParamFloat("Stdev cutoff", 0.0f, 100.0f, 2.3f));
 		inputParams.add(mindimParam = new ParamInteger("Minimum dimension", 0, 100, 3));
@@ -84,11 +89,17 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
 		outputParams.add(denoisedInv1Image = new ParamVolume("Denoised Inv1 Image",null,-1,-1,-1,-1));
+		outputParams.add(denoisedInv2Image = new ParamVolume("Denoised Inv2 Image",null,-1,-1,-1,-1));
+		denoisedInv2Image.setMandatory(false);
 		outputParams.add(denoisedInv2e1Image = new ParamVolume("Denoised Inv2 E1 Image",null,-1,-1,-1,-1));
+		denoisedInv2e1Image.setMandatory(false);
 		outputParams.add(denoisedInv2e2Image = new ParamVolume("Denoised Inv2 E2 Image",null,-1,-1,-1,-1));
+		denoisedInv2e2Image.setMandatory(false);
 		outputParams.add(denoisedInv2e3Image = new ParamVolume("Denoised Inv2 E3 Image",null,-1,-1,-1,-1));
+		denoisedInv2e3Image.setMandatory(false);
 		outputParams.add(denoisedInv2e4Image = new ParamVolume("Denoised Inv2 E4 Image",null,-1,-1,-1,-1));
-        outputParams.add(localdimImage = new ParamVolume("PCA Dimension Image",null,-1,-1,-1,-1));
+        denoisedInv2e4Image.setMandatory(false);
+		outputParams.add(localdimImage = new ParamVolume("PCA Dimension Image",null,-1,-1,-1,-1));
         outputParams.add(noisemagImage = new ParamVolume("Noise Magnitude Image",null,-1,-1,-1,-1));
 
 		outputParams.setName("denoised images");
@@ -112,10 +123,14 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 
 		System.out.println("load images");
 		algorithm.setFirstInversionImage(Interface.getFloatImage4D(inv1Image));
-		algorithm.setSecondInversionEcho1Image(Interface.getFloatImage4D(inv2e1Image));
-		algorithm.setSecondInversionEcho2Image(Interface.getFloatImage4D(inv2e2Image));
-		algorithm.setSecondInversionEcho3Image(Interface.getFloatImage4D(inv2e3Image));
-		algorithm.setSecondInversionEcho4Image(Interface.getFloatImage4D(inv2e4Image));
+		if (Interface.isValid(inv2Image)) {
+		    algorithm.setSecondInversionImage(Interface.getFloatImage4D(inv2Image));    
+		} else {
+            algorithm.setSecondInversionEcho1Image(Interface.getFloatImage4D(inv2e1Image));
+            algorithm.setSecondInversionEcho2Image(Interface.getFloatImage4D(inv2e2Image));
+            algorithm.setSecondInversionEcho3Image(Interface.getFloatImage4D(inv2e3Image));
+            algorithm.setSecondInversionEcho4Image(Interface.getFloatImage4D(inv2e4Image));
+		}
 		
 		algorithm.setStdevCutoff(cutoffParam.getValue().floatValue());
 		algorithm.setMinimumDimension(mindimParam.getValue().intValue());
@@ -126,10 +141,14 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 
 		System.out.println("save denoised images");
 		Interface.setFloatImage4D(algorithm.getFirstInversionImage(), dims, 2, denoisedInv1Image, Interface.getName(inv1Image)+"_lpca", Interface.getHeader(inv1Image));
-		Interface.setFloatImage4D(algorithm.getSecondInversionEcho1Image(), dims, 2, denoisedInv2e1Image, Interface.getName(inv2e1Image)+"_lpca", Interface.getHeader(inv2e1Image));
-		Interface.setFloatImage4D(algorithm.getSecondInversionEcho2Image(), dims, 2, denoisedInv2e2Image, Interface.getName(inv2e2Image)+"_lpca", Interface.getHeader(inv2e2Image));
-		Interface.setFloatImage4D(algorithm.getSecondInversionEcho3Image(), dims, 2, denoisedInv2e3Image, Interface.getName(inv2e3Image)+"_lpca", Interface.getHeader(inv2e3Image));
-		Interface.setFloatImage4D(algorithm.getSecondInversionEcho4Image(), dims, 2, denoisedInv2e4Image, Interface.getName(inv2e4Image)+"_lpca", Interface.getHeader(inv2e4Image));
+		if (Interface.isValid(inv2Image)) {
+		    Interface.setFloatImage4D(algorithm.getSecondInversionImage(), dims, 8, denoisedInv2Image, Interface.getName(inv2Image)+"_lpca", Interface.getHeader(inv2Image));
+		} else {
+            Interface.setFloatImage4D(algorithm.getSecondInversionEcho1Image(), dims, 2, denoisedInv2e1Image, Interface.getName(inv2e1Image)+"_lpca", Interface.getHeader(inv2e1Image));
+            Interface.setFloatImage4D(algorithm.getSecondInversionEcho2Image(), dims, 2, denoisedInv2e2Image, Interface.getName(inv2e2Image)+"_lpca", Interface.getHeader(inv2e2Image));
+            Interface.setFloatImage4D(algorithm.getSecondInversionEcho3Image(), dims, 2, denoisedInv2e3Image, Interface.getName(inv2e3Image)+"_lpca", Interface.getHeader(inv2e3Image));
+            Interface.setFloatImage4D(algorithm.getSecondInversionEcho4Image(), dims, 2, denoisedInv2e4Image, Interface.getName(inv2e4Image)+"_lpca", Interface.getHeader(inv2e4Image));
+        }
 		Interface.setFloatImage3D(algorithm.getLocalDimensionImage(), dims, localdimImage, Interface.getName(inv1Image)+"_ldim", Interface.getHeader(inv1Image));
 		Interface.setFloatImage3D(algorithm.getNoiseMagnitudeImage(), dims, noisemagImage, Interface.getName(inv1Image)+"_lerr", Interface.getHeader(inv1Image));
 	}

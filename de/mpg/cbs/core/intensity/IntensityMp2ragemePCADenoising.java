@@ -95,6 +95,37 @@ public class IntensityMp2ragemePCADenoising {
 	    }
 	}
 
+	public final void setSecondInversionImage(float[] in) {
+	    if (invmag==null || invphs==null) {
+	        if (nxyz==0) nxyz = in.length/8;
+	        invmag = new float[nxyz*nimg];
+	        invphs = new float[nxyz*nimg];
+	    }
+	    for (int xyz=0;xyz<nxyz;xyz++) {
+	        invmag[xyz+1*nxyz] = in[xyz];
+	        invmag[xyz+2*nxyz] = in[xyz+nxyz];
+	        invmag[xyz+3*nxyz] = in[xyz+2*nxyz];
+	        invmag[xyz+4*nxyz] = in[xyz+3*nxyz];
+	        
+	        invphs[xyz+1*nxyz] = in[xyz+4*nxyz];
+	        invphs[xyz+2*nxyz] = in[xyz+5*nxyz];
+	        invphs[xyz+3*nxyz] = in[xyz+6*nxyz];
+	        invphs[xyz+4*nxyz] = in[xyz+7*nxyz];
+	    }
+	}
+
+	public final void setMagnitudeAndPhaseImage(int num, float[] in) {
+	    if (invmag==null || invphs==null) {
+	        if (nxyz==0) nxyz = in.length/2;
+	        invmag = new float[nxyz*nimg];
+	        invphs = new float[nxyz*nimg];
+	    }
+	    for (int xyz=0;xyz<nxyz;xyz++) {
+	        invmag[xyz+(num-1)*nxyz] = in[xyz];
+	        invphs[xyz+(num-1)*nxyz] = in[xyz+nxyz];
+	    }
+	}
+	
 	public final void setImageNumber(int in) { nimg = in; }
 	public final void setStdevCutoff(float in) { stdevCutoff = in; }
 	public final void setMinimumDimension(int in) { minDimension = in; }
@@ -169,6 +200,21 @@ public class IntensityMp2ragemePCADenoising {
 	    return out;
 	}
 	
+	public float[] getSecondInversionImage() {
+	    float[] out = new float[8*nxyz];
+	    for (int xyz=0;xyz<nxyz;xyz++) {
+	        out[xyz+0*nxyz] = invmag[xyz+1*nxyz];
+	        out[xyz+1*nxyz] = invmag[xyz+2*nxyz];
+	        out[xyz+2*nxyz] = invmag[xyz+3*nxyz];
+	        out[xyz+3*nxyz] = invmag[xyz+4*nxyz];
+	        out[xyz+4*nxyz] = invphs[xyz+1*nxyz];
+	        out[xyz+5*nxyz] = invphs[xyz+2*nxyz];
+	        out[xyz+6*nxyz] = invphs[xyz+3*nxyz];
+	        out[xyz+7*nxyz] = invphs[xyz+4*nxyz];
+	    }
+	    return out;
+	}
+	
 	public void execute() {
 		// this assumes all the inputs are already set
 		
@@ -199,82 +245,85 @@ public class IntensityMp2ragemePCADenoising {
 		
 		// 2. estimate PCA in slabs of NxNxN size
 		int ngb = ngbSize;
-		int nstep = Numerics.ceil(ngb);
+		int nstep = Numerics.floor(ngb/2.0);
 		int nimg2 = 2*nimg;
-		float[][] denoised = new float[2*nimg][nxyz];
+		float[][] denoised = new float[nimg2][nxyz];
 		float[] weights = new float[nxyz];
 		pcadim = new float[nxyz];
 		// border issues should be cleaned-up, ignored so far
-		for (int x=0;x<nx-nstep;x+=nstep) for (int y=0;y<ny-nstep;y+=nstep) for (int z=0;z<nz-nstep;z+=nstep) {
+		for (int x=0;x<nx;x+=nstep) for (int y=0;y<ny;y+=nstep) for (int z=0;z<nz;z+=nstep) {
 		    int ngbx = Numerics.min(ngb, nx-x);
 		    int ngby = Numerics.min(ngb, ny-y);
 		    int ngbz = Numerics.min(ngb, nz-z);
 		    int ngb3 = ngbx*ngby*ngbz;
-		    if (ngb3<nimg2) System.out.println("!patch is too small!");
-		    double[][] patch = new double[ngb3][nimg2];
-		    for (int dx=0;dx<ngbx;dx++) for (int dy=0;dy<ngby;dy++) for (int dz=0;dz<ngbz;dz++) for (int i=0;i<nimg2;i++) {
-		        patch[dx+ngbx*dy+ngbx*ngby*dz][i] = images[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)];
-		    }
-		    // mean over samples
-		    double[] mean = new double[nimg2];
-		    for (int i=0;i<nimg2;i++) {
-		       for (int n=0;n<ngb3;n++) mean[i] += patch[n][i];
-		       mean[i] /= (double)ngb3;
-		       for (int n=0;n<ngb3;n++) patch[n][i] -= mean[i];
-		    }
-		    // PCA from SVD X = USVt
-		    //System.out.println("perform SVD");
-            Matrix M = new Matrix(patch);
-            SingularValueDecomposition svd = M.svd();
-		
-		    // estimate noise
-		    // simple version: compute the standard deviation of the patch
-		    double sigma = 0.0;
-		    for (int n=0;n<ngb3;n++) for (int i=0;i<nimg2;i++) {
-		        sigma += patch[n][i]*patch[n][i];
-		    }
-		    sigma /= nimg2*ngb3;
-		    sigma = FastMath.sqrt(sigma);
-		    
-		    // cutoff
-            //System.out.println("eigenvalues: ");
-            double[] eig = new double[nimg2];
-            int nzero=0;
-            for (int n=0;n<nimg2;n++) {
-                eig[n] = svd.getSingularValues()[n];
-                //System.out.print(" "+(eig[n]/sigma));
-                if (n>minDimension && Numerics.abs(eig[n]) < stdevCutoff*sigma) {
-                    eig[n] = 0.0;
-                    nzero++;
-                    //System.out.print("(-),");
-                } else {
-                    //System.out.print("(+),");
+		    if (ngb3<nimg2) {
+		        System.out.println("!patch is too small!");
+		    } else {
+                double[][] patch = new double[ngb3][nimg2];
+                for (int dx=0;dx<ngbx;dx++) for (int dy=0;dy<ngby;dy++) for (int dz=0;dz<ngbz;dz++) for (int i=0;i<nimg2;i++) {
+                    patch[dx+ngbx*dy+ngbx*ngby*dz][i] = images[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)];
                 }
-            }
-            // reconstruct
-            Matrix U = svd.getU();
-            Matrix V = svd.getV();
-            for (int n=0;n<ngb3;n++) for (int i=0;i<nimg2;i++) {
-                // Sum_s>0 s_kU_kV_kt
-                patch[n][i] = mean[i];
-                for (int j=0;j<nimg2;j++) if (eig[j]!=0) {
-                    patch[n][i] += U.get(n,j)*eig[j]*V.get(i,j);
-                }
-            }
-            // add to the denoised image
-            double wpatch = (1.0/(1.0 + nimg2 - nzero));
-            for (int dx=0;dx<ngbx;dx++) for (int dy=0;dy<ngby;dy++) for (int dz=0;dz<ngbz;dz++) {
+                // mean over samples
+                double[] mean = new double[nimg2];
                 for (int i=0;i<nimg2;i++) {
-                    denoised[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*patch[dx+ngbx*dy+ngbx*ngby*dz][i]);
+                   for (int n=0;n<ngb3;n++) mean[i] += patch[n][i];
+                   mean[i] /= (double)ngb3;
+                   for (int n=0;n<ngb3;n++) patch[n][i] -= mean[i];
                 }
-                weights[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)wpatch;
-                pcadim[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*(nimg2-nzero));
-		    }
+                // PCA from SVD X = USVt
+                //System.out.println("perform SVD");
+                Matrix M = new Matrix(patch);
+                SingularValueDecomposition svd = M.svd();
+            
+                // estimate noise
+                // simple version: compute the standard deviation of the patch
+                double sigma = 0.0;
+                for (int n=0;n<ngb3;n++) for (int i=0;i<nimg2;i++) {
+                    sigma += patch[n][i]*patch[n][i];
+                }
+                sigma /= nimg2*ngb3;
+                sigma = FastMath.sqrt(sigma);
+                
+                // cutoff
+                //System.out.println("eigenvalues: ");
+                double[] eig = new double[nimg2];
+                int nzero=0;
+                for (int n=0;n<nimg2;n++) {
+                    eig[n] = svd.getSingularValues()[n];
+                    //System.out.print(" "+(eig[n]/sigma));
+                    if (n>minDimension && Numerics.abs(eig[n]) < stdevCutoff*sigma) {
+                        eig[n] = 0.0;
+                        nzero++;
+                        //System.out.print("(-),");
+                    } else {
+                        //System.out.print("(+),");
+                    }
+                }
+                // reconstruct
+                Matrix U = svd.getU();
+                Matrix V = svd.getV();
+                for (int n=0;n<ngb3;n++) for (int i=0;i<nimg2;i++) {
+                    // Sum_s>0 s_kU_kV_kt
+                    patch[n][i] = mean[i];
+                    for (int j=0;j<nimg2;j++) if (eig[j]!=0) {
+                        patch[n][i] += U.get(n,j)*eig[j]*V.get(i,j);
+                    }
+                }
+                // add to the denoised image
+                double wpatch = (1.0/(1.0 + nimg2 - nzero));
+                for (int dx=0;dx<ngbx;dx++) for (int dy=0;dy<ngby;dy++) for (int dz=0;dz<ngbz;dz++) {
+                    for (int i=0;i<nimg2;i++) {
+                        denoised[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*patch[dx+ngbx*dy+ngbx*ngby*dz][i]);
+                    }
+                    weights[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)wpatch;
+                    pcadim[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*(nimg2-nzero));
+                }
+            }
         }
 		errmap = new float[nxyz];
         for (int xyz=0;xyz<nxyz;xyz++) {
             double err = 0.0;
-            for (int i=0;i<nimg;i++) {
+            for (int i=0;i<nimg2;i++) {
                 denoised[i][xyz] /= weights[xyz];
                 err += (denoised[i][xyz]-images[i][xyz])*(denoised[i][xyz]-images[i][xyz]);
             }
