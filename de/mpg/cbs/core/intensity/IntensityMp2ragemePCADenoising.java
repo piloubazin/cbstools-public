@@ -291,7 +291,7 @@ public class IntensityMp2ragemePCADenoising {
                 for (int n=0;n<nimg2;n++) {
                     eig[n] = svd.getSingularValues()[n];
                     //System.out.print(" "+(eig[n]/sigma));
-                    if (n>minDimension && Numerics.abs(eig[n]) < stdevCutoff*sigma) {
+                    if (n>=minDimension && Numerics.abs(eig[n]) < stdevCutoff*sigma) {
                         eig[n] = 0.0;
                         nzero++;
                         //System.out.print("(-),");
