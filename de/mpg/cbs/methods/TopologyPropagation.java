@@ -101,7 +101,7 @@ public class TopologyPropagation {
 	private 	boolean 		isCompleted;
 	
 	// for debug and display
-	 boolean		debug=false;
+	 boolean		debug=true;
 	 boolean		verbose=true;
 	/**
 	 *  constructor
@@ -800,7 +800,7 @@ public class TopologyPropagation {
 		int[] vec = new int[3];
 		
 		// init: reset the boundary tree, the labels
-		if (debug) BasicInfo.displayMessage("TP:start upward distance loop\n");
+		if (debug) BasicInfo.displayMessage("TP:start upward geometric distance loop\n");
 		
 		boundary.reset();
 		boundary.setMinTree();
@@ -898,7 +898,7 @@ public class TopologyPropagation {
 		int[] vec = new int[3];
 		
 		// init: reset the boundary tree, the labels
-		if (debug) BasicInfo.displayMessage("TP:start upward distance loop\n");
+		if (debug) BasicInfo.displayMessage("TP:start downward geometric distance loop\n");
 		
 		boundary.reset();
 		boundary.setMaxTree();
@@ -996,7 +996,7 @@ public class TopologyPropagation {
 		int[] vec = new int[3];
 		
 		// init: reset the boundary tree, the labels
-		if (debug) BasicInfo.displayMessage("TP:start upward distance loop\n");
+		if (debug) BasicInfo.displayMessage("TP:start upward unconstrained distance loop\n");
 		
 		boundary.reset();
 		boundary.setMinTree();
@@ -1095,7 +1095,7 @@ public class TopologyPropagation {
 		int[] vec = new int[3];
 		
 		// init: reset the boundary tree, the labels
-		if (debug) BasicInfo.displayMessage("TP:start upward distance loop\n");
+		if (debug) BasicInfo.displayMessage("TP:start downward unconstrained distance loop\n");
 		
 		boundary.reset();
 		boundary.setMaxTree();
@@ -1194,7 +1194,7 @@ public class TopologyPropagation {
 		int[] vec = new int[3];
 		
 		// init: reset the boundary tree, the labels
-		if (debug) BasicInfo.displayMessage("TP:start upward distance loop\n");
+		if (debug) BasicInfo.displayMessage("TP:start upward exact distance loop\n");
 		
 		boundary.reset();
 		boundary.setMinTree();
@@ -1301,7 +1301,7 @@ public class TopologyPropagation {
 		boolean		isCritical;
 		
 		// init: reset the boundary tree, the labels
-		if (debug) BasicInfo.displayMessage("TP:start upward distance loop\n");
+		if (debug) BasicInfo.displayMessage("TP:start downward exact distance loop\n");
 		
 		boundary.reset();
 		boundary.setMaxTree();
@@ -1428,7 +1428,7 @@ public class TopologyPropagation {
 		int[] vec = new int[3];
 		
 		// init: reset the boundary tree, the labels
-		if (debug) BasicInfo.displayMessage("TP:start upward distance loop\n");
+		if (debug) BasicInfo.displayMessage("TP:start upward approx distance loop\n");
 		
 		boundary.reset();
 		boundary.setMinTree();
@@ -1529,7 +1529,7 @@ public class TopologyPropagation {
         int[]       vec = new int[3];
 		
 		// init: reset the boundary tree, the labels
-		if (debug) BasicInfo.displayMessage("TP:start upward distance loop\n");
+		if (debug) BasicInfo.displayMessage("TP:start downward approx distance loop\n");
 		
 		boundary.reset();
 		boundary.setMaxTree();

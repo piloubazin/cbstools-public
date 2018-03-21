@@ -88,6 +88,7 @@ public class JistShapeTopologyCorrection extends ProcessingAlgorithm {
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
 		outputParams.add(correctImage = new ParamVolume("Corrected Image",null));
+		outputParams.add(correctobjImage = new ParamVolume("Corrected Object",null));
 		
 		outputParams.setName("skeleton images");
 		outputParams.setLabel("skeleton images");

@@ -360,7 +360,7 @@ public class ShapeTopologyCorrection {
 				algorithm = new TopologyPropagation(image, objectMask, mx, my, mz, lowestLevel, highestLevel, 
 													0.0f, minDistance, connectType, thresholdStop, 
 													"paint mask", null, paint);
-			else
+			else if (propagType.equals("object->background")) 
 				algorithm = new TopologyPropagation(image, objectMask, mx, my, mz, lowestLevel, highestLevel, 
 													0.0f, minDistance, connectType, thresholdStop, 
 													"paint mask", null, paint);
@@ -373,7 +373,7 @@ public class ShapeTopologyCorrection {
 			
 			if (propagType.equals("background->object")) 
 				algorithm.propagateUpwardExactSmoothing();
-			else 
+			else if (propagType.equals("object->background")) 
 				algorithm.propagateDownwardExactSmoothing();
 			
 			result = extendImageSize(algorithm.exportDistance());
@@ -399,7 +399,7 @@ public class ShapeTopologyCorrection {
 				algorithm.propagateDownwardUnconstrainedGeometricDistance();
 				image = algorithm.exportDistance();
 				algorithm.finalize();			
-			} else {
+			} else if (propagType.equals("object->background")) {
 				algorithm = new TopologyPropagation(ext, objectMask, mx, my, mz, 
 											0.5f, 1.0f, 0.0f, 0.0f,
 											connectType, false, 
@@ -492,7 +492,7 @@ public class ShapeTopologyCorrection {
 			
 			if (propagType.equals("background->object")) 
 				algorithm.propagateUpwardExactSmoothing();
-			else 
+			else if (propagType.equals("object->background")) 
 				algorithm.propagateDownwardExactSmoothing();
 			
 			result = extendImageSize(algorithm.exportDistance());

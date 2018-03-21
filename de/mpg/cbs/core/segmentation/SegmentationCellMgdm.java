@@ -240,7 +240,132 @@ public class SegmentationCellMgdm {
                     mgdmImage[xy+z*nx*ny] = mgdm.getFunctions()[0][xy];
                 }
 		    }
-		}
+		} else if (dimension==DIM3D) {
+            // 1. Get the initial segmentation from cell centroid detection + local maxima
+            boolean[] seg = new boolean[nx*ny*nz];
+            for (int xyz=0;xyz<nx*ny*nz;xyz++) seg[xyz] = (maxima[xyz]>0);
+            int[] initialization = ObjectLabeling.connected6Object3D(seg, nx,ny,nz);
+            // simple region growing: could be done more nicely
+            int[] growing = new int[nx*ny*nz];
+            float[] proba = new float[nx*ny*nz];
+            float[] maxproba = new float[nx*ny*nz];
+            for (int xyz=0;xyz<nx*ny*nz;xyz++) proba[xyz] = centroids[xyz];
+            for (int t=0;t<20;t++) {
+                for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+                    growing[xyz] = initialization[xyz];
+                    maxproba[xyz] = proba[xyz];
+                }
+                for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
+                    int xyz = x+nx*y+nx*ny*z;
+                    if (initialization[xyz]>0) {
+                        if (growing[xyz-1]==0 && proba[xyz-1]>centroidthresholdParam*proba[xyz]) {
+                            growing[xyz-1] = initialization[xyz];
+                            maxproba[xyz-1] = Numerics.max(maxproba[xyz-1], proba[xyz-1], proba[xyz]);
+                        }
+                        if (growing[xyz+1]==0 && proba[xyz+1]>centroidthresholdParam*proba[xyz]) {
+                            growing[xyz+1] = initialization[xyz];
+                            maxproba[xyz+1] = Numerics.max(maxproba[xyz+1], proba[xyz+1], proba[xyz]);
+                        }
+                        if (growing[xyz-nx]==0 && proba[xyz-nx]>centroidthresholdParam*proba[xyz]) {
+                            growing[xyz-nx] = initialization[xyz];
+                            maxproba[xyz-nx] = Numerics.max(maxproba[xyz-nx], proba[xyz-nx], proba[xyz]);
+                        }
+                        if (growing[xyz+nx]==0 && proba[xyz+nx]>centroidthresholdParam*proba[xyz]) {
+                            growing[xyz+nx] = initialization[xyz];
+                            maxproba[xyz+nx] = Numerics.max(maxproba[xyz+nx], proba[xyz+nx], proba[xyz]);
+                        }
+                        if (growing[xyz-nx*ny]==0 && proba[xyz-nx*ny]>centroidthresholdParam*proba[xyz]) {
+                            growing[xyz-nx*ny] = initialization[xyz];
+                            maxproba[xyz-nx*ny] = Numerics.max(maxproba[xyz-nx*ny], proba[xyz-nx*ny], proba[xyz]);
+                        }
+                        if (growing[xyz+nx*ny]==0 && proba[xyz+nx*ny]>centroidthresholdParam*proba[xyz]) {
+                            growing[xyz+nx*ny] = initialization[xyz];
+                            maxproba[xyz+nx*ny] = Numerics.max(maxproba[xyz+nx*ny], proba[xyz+nx*ny], proba[xyz]);
+                        }
+                    }
+                }
+                for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+                    initialization[xyz] = growing[xyz];
+                    proba[xyz] = maxproba[xyz];
+                }
+            }
+                
+            int nlb = ObjectLabeling.countLabels(initialization, nx,ny,nz);
+            System.out.print("full stack: "+nlb+" labels \n");
+            
+            // 2. Get the forces from foreground proba
+            float[][] forces = new float[nlb][];
+            if (intens==null) {
+                float[] fgmap = new float[nx*ny*nz];
+                float[] bgmap = new float[nx*ny*nz];
+                for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+                    fgmap[xyz] = fgproba[xyz];
+                    bgmap[xyz] = 1.0f - fgproba[xyz];
+                }
+                // trick so that each object has the same proba (foreground)
+                for (int lb=0;lb<nlb;lb++) forces[lb] = fgmap;
+           
+                // find background
+                // assume background to be the label with highest cumulative bg proba?
+                float[] bgscore = new float[nlb];
+                for (int lb=0;lb<nlb;lb++)
+                    for (int xyz=0;xyz<nx*ny*nz;xyz++)
+                        bgscore[lb] += bgmap[xyz];
+                int bglb = Numerics.argmax(bgscore);
+                forces[bglb] = bgmap;
+            } else {
+                // different model: propagate intensities to 50% of original intensity per cluster
+                float[] initmax = new float[nlb];
+                int bglb = 0;
+                for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+                    if (initialization[xyz]>0) {
+                        initmax[initialization[xyz]] = Numerics.max(initmax[initialization[xyz]],intens[xyz]);
+                    } else {
+                        bglb = initialization[xyz];
+                    }
+                }
+                // for the background, use the mean (over-estimating)?
+                double sumbg = 0.0, denbg = 0.0;
+                for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+                    if (initialization[xyz]==0) {
+                        sumbg += intens[xyz];
+                        denbg++;
+                    }
+                }
+                float initbg = (float)(sumbg/denbg);
+                for (int lb=0;lb<nlb;lb++) {
+                    if (lb!=bglb) {
+                        forces[lb] = new float[nx*ny*nz];
+                        for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+                            //forces[lb][xy] = Numerics.bounded( (intens[xy+z*nx*ny]/initmax[lb]-cellthresholdParam)/(1.0f-cellthresholdParam), -1.0f, 1.0f);
+                            forces[lb][xyz] = Numerics.bounded( ( (1.0f-cellthresholdParam)*initmax[lb] - Numerics.abs(initmax[lb]-intens[xyz]))
+                                                                    /( (1.0f-cellthresholdParam)*initmax[lb]), -1.0f, 1.0f);
+                        }
+                    } else {
+                        forces[lb] = new float[nx*ny*nz];
+                        for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+                            // not bad..
+                            //forces[lb][xy] = Numerics.bounded( (float)((initbg-intens[xy+z*nx*ny])/initbg), -1.0f, 1.0f);
+                            forces[lb][xyz] = Numerics.bounded( ( (1.0f-cellthresholdParam)*initbg -intens[xyz] + initbg)
+                                                                    /( (1.0f-cellthresholdParam)*initbg), -1.0f, 1.0f);
+                        }
+                    }
+                }
+            }
+                
+            // 3. Run MGDM!
+            Mgdm3d mgdm = new Mgdm3d(initialization, nx, ny, nz, nlb, nmgdm, rx, ry, rz, null, forces, 
+                                    0.0f, forceParam, curvParam, 0.0f, 
+                                    topologyParam, lutdir);
+            
+            mgdm.evolveNarrowBand(iterationParam, changeParam);
+            
+            // 4. copy the results
+            for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+                segmentImage[xyz] = mgdm.getLabels()[0][xyz];
+                mgdmImage[xyz] = mgdm.getFunctions()[0][xyz];
+            }
+        }		    
 		return;
 	}
 

@@ -67,6 +67,7 @@ public class Mgdm3d {
 	private 	int[]			objLabel;			// label values in the original image
 	private		BinaryHeap2D	heap;				// the heap used in fast marching
 	private		CriticalPointLUT	lut;				// the LUT for critical points
+	private String	lutdir = null;
 	private		boolean				checkComposed;		// check if the objects are well-composed too (different LUTs)
 	private		boolean				checkTopology;		// check if the objects are well-composed too (different LUTs)
 	private		byte[]			otherlabels;		// labels for the non-evolved region? 
@@ -154,16 +155,16 @@ public class Mgdm3d {
 						float rx_, float ry_, float rz_,
 						float[][] field_, float[][] balloon_, 
 						float fw_, float bw_, float sw_, float pw_,
-						String connectivityType_) {
+						String connectivityType_, String lutdir_) {
 	
-		init(init_, nx_, ny_, nz_, nobj_, nmgdm_, rx_, ry_, rz_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_);
+		init(init_, nx_, ny_, nz_, nobj_, nmgdm_, rx_, ry_, rz_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_, lutdir_);
 	}
 	
 	private void init(int[] init_, int nx_, int ny_, int nz_, int nobj_, int nmgdm_,
 						float rx_, float ry_, float rz_,
 						float[][] field_, float[][] balloon_, 
 						float fw_, float bw_, float sw_, float pw_,
-						String connectivityType_) {
+						String connectivityType_, String lutdir_) {
 		fieldforce = field_;
 		balloonforces = balloon_;
 		
@@ -185,6 +186,8 @@ public class Mgdm3d {
 		ry = ry_;
 		rz = rz_;
 		
+		lutdir = lutdir_;
+		
 		objLabel = ObjectLabeling.listOrderedLabels(init_, nx, ny, nz);
 		// note: we do expect that there are nb objects (not checked)
 		
@@ -205,17 +208,17 @@ public class Mgdm3d {
 			// topology luts
 			checkTopology=true;
 			checkComposed=false;
-				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT("critical266LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT("critical626LUT.raw.gz",200);
-			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT("critical186LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT("critical618LUT.raw.gz",200);
-			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				 if (connectivityType_.equals("26/6")) lut = new CriticalPointLUT(lutdir, "critical266LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/26")) lut = new CriticalPointLUT(lutdir, "critical626LUT.raw.gz",200);
+			else if (connectivityType_.equals("18/6")) lut = new CriticalPointLUT(lutdir, "critical186LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/18")) lut = new CriticalPointLUT(lutdir, "critical618LUT.raw.gz",200);
+			else if (connectivityType_.equals("6/6")) lut = new CriticalPointLUT(lutdir, "critical66LUT.raw.gz",200);
 			else if (connectivityType_.equals("wcs")) {
-				lut = new CriticalPointLUT("criticalWCLUT.raw.gz",200);
+				lut = new CriticalPointLUT(lutdir, "criticalWCLUT.raw.gz",200);
 				checkComposed=false;
 			}
 			else if (connectivityType_.equals("wco")) {
-				lut = new CriticalPointLUT("critical66LUT.raw.gz",200);
+				lut = new CriticalPointLUT(lutdir, "critical66LUT.raw.gz",200);
 				checkComposed=true;
 			}
 			else if (connectivityType_.equals("no")) {
@@ -260,12 +263,12 @@ public class Mgdm3d {
 						float rx_, float ry_, float rz_,
 						float[][] field_, float[][] balloon_, 
 						float fw_, float bw_, float sw_, float pw_,
-						String connectivityType_) {
+						String connectivityType_, String lutdir_) {
 		
 		int[] tmp = new int[nx_*ny_*nz_];
 		for (int n=0;n<nx_*ny_*nz_;n++) tmp[n] = init_[n];
 		
-		init(tmp, nx_, ny_, nz_, nobj_, nmgdm_, rx_, ry_, rz_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_);
+		init(tmp, nx_, ny_, nz_, nobj_, nmgdm_, rx_, ry_, rz_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_, lutdir_);
 	}
 		
 	public void finalize() {
@@ -691,7 +694,7 @@ public class Mgdm3d {
     *  	Evolution using the narrow band scheme 
     *	(the reinitialization is incorporated)
     */
-    public final void evolveNarrowBand(int iter) {
+    public final void evolveNarrowBand(int iter, float mindist) {
     	if (debug) System.out.print("level set evolution: narrow band\n");
 
     	// init
@@ -720,8 +723,9 @@ public class Mgdm3d {
 		double[] forces = new double[nmgdm+1];
 		int lbmax, lbsec;
 		double curr, next;
+		double curdist = mindist+1;
 		// evolve until a landmine is closer than minDist of the boundaries
-		for (int t=0;t<iter;t++) {
+		for (int t=0;t<iter && curdist>mindist;t++) {
 			if (debug) System.out.print("iteration "+t+"\n");
         			
 			boolean reinitLM = false;
@@ -841,7 +845,8 @@ public class Mgdm3d {
 					mgdmfunctions[lb][xyz] = narrowband.functions[lb][n];
 				}
 			}
-			if (debug) System.out.print("mean distance function change: "+(avgdiff/narrowband.currentsize)+"\n");
+			curdist = (avgdiff/narrowband.currentsize);
+			if (debug) System.out.print("mean distance function change: "+curdist+"\n");
 	
 			if (reinitLM) {
 				if (debug) System.out.print("re-initialization (LM: "+reinitLM+" | OL: "+reinitOL+" )\n");
