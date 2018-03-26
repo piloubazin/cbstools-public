@@ -62,7 +62,9 @@ public class SegmentationCellMgdm {
 	public final void setMaxIterations(int val) { iterationParam = val; }
 	public final void setMinChange(float val) { changeParam = val; }
 	public final void setCellThreshold(float val) { cellthresholdParam = val; }
-	
+
+	public final void setDataStackDimension(String val) { dimParam = val; }
+
 	public final void setTopology(String val) { topologyParam = val; }
 	public final void setTopologyLUTdirectory(String val) { lutdir = val; }
 	

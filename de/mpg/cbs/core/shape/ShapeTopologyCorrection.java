@@ -115,40 +115,11 @@ public class ShapeTopologyCorrection {
 	public final float[] getCorrectedImage() { return correctImage; }
     public final int[] getCorrectedObjectImage() { return correctobjImage; }
 
-	/*
-	public void execute(){
-           		
-		// import the image data into 3D arrays
-		float[][][] input = new float[nx][ny][nz];
-		for (short x=0;x<nx;x++) for (short y=0;y<ny;y++) for (short z=0;z<nz;z++) {
-			int xyz = x+nx*y+nx*ny*z;
-			input[x][y][z] = inputImage[xyz];
-		}
-		inputImage = null;
-		
-		byte mode;
-		if (inputType.equals("signed_distance")) mode = DIST;
-		else if (inputType.equals("probability_map")) mode = PROBA;
-		else mode = 0;
-		
-		float boundary = boundParam;
-		float distscale = distParam;
-		
-		int objsize=0;
-		for (short x=0;x<nx;x++) for (short y=0;y<ny;y++) for (short z=0;z<nz;z++) {
-			// just flip sign on distance functions
-			if (mode==DIST) input[x][y][z] *= -1.0f;
-			// could be optimized (e.g. 1.5x boundary size)
-			if (input[x][y][z]>boundary) objsize++;
-		}
-		
-	}*/
 				
     /**
     *	computes the topology correction for 3D images
     */
     public final void execute() {    
-    //private void calcTopology(float img[]){
 		float[][][]   	result=null; 
         float[][][]     image;
 		boolean[][][]     objectMask;

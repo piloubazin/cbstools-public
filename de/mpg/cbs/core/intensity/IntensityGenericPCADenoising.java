@@ -21,7 +21,8 @@ public class IntensityGenericPCADenoising {
 
 	private     int         nimg = 5;
 	private		float		stdevCutoff = 2.3f;
-	private     int         minDimension = 1;
+	private     int         minDimension = 2;
+	private     int         maxDimension = -1;
 	private     int         ngbSize = 4;
 		
 	// output parameters
@@ -43,6 +44,7 @@ public class IntensityGenericPCADenoising {
 	public final void setImageNumber(int in) { nimg = in; }
 	public final void setStdevCutoff(float in) { stdevCutoff = in; }
 	public final void setMinimumDimension(int in) { minDimension = in; }
+	public final void setMaximumDimension(int in) { maxDimension = in; }
 	public final void setPatchSize(int in) { ngbSize = in; }
 	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
@@ -72,6 +74,9 @@ public class IntensityGenericPCADenoising {
             }
             return out;
         }
+	}
+	public float[] getDenoisedImageAt(int n) { 
+	    return denoised[n];
 	}
 	public float[] getLocalDimensionImage() { return pcadim; }
 	public float[] getNoiseMagnitudeImage() { return errmap; }
@@ -135,6 +140,10 @@ public class IntensityGenericPCADenoising {
                         eig[n] = 0.0;
                         nzero++;
                         //System.out.print("(-),");
+                    } else if (maxDimension>0 && n>=maxDimension) {
+                        eig[n] = 0.0;
+                        nzero++;
+                        //System.out.print("(|),");
                     } else {
                         //System.out.print("(+),");
                     }

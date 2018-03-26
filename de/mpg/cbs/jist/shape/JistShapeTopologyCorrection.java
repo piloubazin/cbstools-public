@@ -51,7 +51,7 @@ public class JistShapeTopologyCorrection extends ProcessingAlgorithm {
 	private ParamVolume correctImage;
 	private ParamVolume correctobjImage;
 	
-	private ShapeTopologyCorrection algorithm;
+	private ShapeTopologyCorrection2 algorithm;
 	
 	protected void createInputParameters(ParamCollection inputParams) {
 		
@@ -63,12 +63,12 @@ public class JistShapeTopologyCorrection extends ProcessingAlgorithm {
 		inputParams.add(propagParam = new ParamOption("Correction direction", ShapeTopologyCorrection.propagTypes));
 		inputParams.add(connectParam = new ParamOption("Topology", ShapeTopologyCorrection.connectTypes));
 		
-		inputParams.add(highestParam = new ParamFloat("Highest (absolute or relative) value", -1e16f, 1e16f, 1.0f));
-		inputParams.add(lowestParam = new ParamFloat("Lowest (absolute or relative) value", -1e16f, 1e16f, 0.0f));
-		inputParams.add(normalizeParam = new ParamBoolean("Normalize intensity range", true));
+		//inputParams.add(highestParam = new ParamFloat("Highest (absolute or relative) value", -1e16f, 1e16f, 1.0f));
+		//inputParams.add(lowestParam = new ParamFloat("Lowest (absolute or relative) value", -1e16f, 1e16f, 0.0f));
+		//inputParams.add(normalizeParam = new ParamBoolean("Normalize intensity range", true));
 		inputParams.add(mindistParam = new ParamFloat("Minimum distance", 0.0f, 10.0f, 0.0001f));
 		
-		algorithm = new ShapeTopologyCorrection();
+		algorithm = new ShapeTopologyCorrection2();
 		
 		inputParams.setPackage(algorithm.getPackage());
 		inputParams.setCategory(algorithm.getCategory());
@@ -98,7 +98,7 @@ public class JistShapeTopologyCorrection extends ProcessingAlgorithm {
 	protected void execute(CalculationMonitor monitor){
 		
 		// main algorithm
-		algorithm = new ShapeTopologyCorrection();
+		algorithm = new ShapeTopologyCorrection2();
 		
 		// i/o variables
 		String name = Interface.getName(inputImage);
@@ -117,9 +117,9 @@ public class JistShapeTopologyCorrection extends ProcessingAlgorithm {
         algorithm.setPropagationDirection(propagParam.getValue());
         algorithm.setTopology(connectParam.getValue());
         
-		algorithm.setLowerThreshold(lowestParam.getValue().floatValue());
-		algorithm.setHigherThreshold(highestParam.getValue().floatValue());
-		algorithm.setNormalizeIntensityRange(normalizeParam.getValue().booleanValue());
+		//algorithm.setLowerThreshold(lowestParam.getValue().floatValue());
+		//algorithm.setHigherThreshold(highestParam.getValue().floatValue());
+		//algorithm.setNormalizeIntensityRange(normalizeParam.getValue().booleanValue());
 		algorithm.setMinimumDistance(mindistParam.getValue().floatValue());
 		
 		algorithm.execute();

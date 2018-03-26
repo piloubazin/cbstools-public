@@ -32,6 +32,7 @@ public class JistIntensityGenericPCADenoising extends ProcessingAlgorithm {
 	
 	private ParamFloat 		cutoffParam;
 	private ParamInteger    mindimParam;
+	private ParamInteger    maxdimParam;
 	private ParamInteger    sizeParam;
 	
 	private ParamVolumeCollection 	denoisedImages;
@@ -47,7 +48,8 @@ public class JistIntensityGenericPCADenoising extends ProcessingAlgorithm {
 		inputParams.add(inputImages = new ParamVolumeCollection("Input Images (3D or 4D)"));
 		
 		inputParams.add(cutoffParam = new ParamFloat("Stdev cutoff", 0.0f, 100.0f, 2.3f));
-		inputParams.add(mindimParam = new ParamInteger("Minimum dimension", 0, 100, 3));
+		inputParams.add(mindimParam = new ParamInteger("Minimum dimension", 0, 100, 2));
+        inputParams.add(maxdimParam = new ParamInteger("Maximum dimension", -1, 100, -1));
         inputParams.add(sizeParam = new ParamInteger("Patch size", 3, 20, 4));
 
 		algorithm = new IntensityGenericPCADenoising();
@@ -118,6 +120,7 @@ public class JistIntensityGenericPCADenoising extends ProcessingAlgorithm {
 		
 		algorithm.setStdevCutoff(cutoffParam.getValue().floatValue());
 		algorithm.setMinimumDimension(mindimParam.getValue().intValue());
+		algorithm.setMaximumDimension(maxdimParam.getValue().intValue());
 		algorithm.setPatchSize(sizeParam.getValue().intValue());
 		
 		System.out.println("run the algorithm");
