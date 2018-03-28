@@ -95,7 +95,8 @@ public class IntensityGenericPCADenoising {
 		denoised = new float[nimg][nxyz];
 		float[] weights = new float[nxyz];
 		pcadim = new float[nxyz];
-		// border issues should be cleaned-up, ignored so far
+        //errmap = new float[nxyz*(2+nimg)];
+        // border issues should be cleaned-up, ignored so far
 		for (int x=0;x<nx;x+=nstep) for (int y=0;y<ny;y+=nstep) for (int z=0;z<nz;z+=nstep) {
 		    int ngbx = Numerics.min(ngb, nx-x);
 		    int ngby = Numerics.min(ngb, ny-y);
@@ -133,18 +134,26 @@ public class IntensityGenericPCADenoising {
                 //System.out.println("eigenvalues: ");
                 double[] eig = new double[nimg];
                 int nzero=0;
+                boolean[] used = new boolean[nimg];
+                double eigsum = 0.0;
                 for (int n=0;n<nimg;n++) {
                     eig[n] = svd.getSingularValues()[n];
+                    eigsum += Numerics.abs(eig[n]);
+                }
+                for (int n=0;n<nimg;n++) {
                     //System.out.print(" "+(eig[n]/sigma));
-                    if (n>=minDimension && Numerics.abs(eig[n]) < stdevCutoff*sigma) {
-                        eig[n] = 0.0;
+                    if (n>=minDimension && nimg*Numerics.abs(eig[n]) < stdevCutoff*eigsum) {
+                        //eig[n] = 0.0;
+                        used[n] = false;
                         nzero++;
                         //System.out.print("(-),");
                     } else if (maxDimension>0 && n>=maxDimension) {
-                        eig[n] = 0.0;
+                        //eig[n] = 0.0;
+                        used[n] = false;
                         nzero++;
                         //System.out.print("(|),");
                     } else {
+                        used[n] = true;
                         //System.out.print("(+),");
                     }
                 }
@@ -154,7 +163,7 @@ public class IntensityGenericPCADenoising {
                 for (int n=0;n<ngb3;n++) for (int i=0;i<nimg;i++) {
                     // Sum_s>0 s_kU_kV_kt
                     patch[n][i] = mean[i];
-                    for (int j=0;j<nimg;j++) if (eig[j]!=0) {
+                    for (int j=0;j<nimg;j++) if (used[j]) {
                         patch[n][i] += U.get(n,j)*eig[j]*V.get(i,j);
                     }
                 }
@@ -163,9 +172,11 @@ public class IntensityGenericPCADenoising {
                 for (int dx=0;dx<ngbx;dx++) for (int dy=0;dy<ngby;dy++) for (int dz=0;dz<ngbz;dz++) {
                     for (int i=0;i<nimg;i++) {
                         denoised[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*patch[dx+ngbx*dy+ngbx*ngby*dz][i]);
+                        //errmap[x+dx+nx*(y+dy)+nx*ny*(z+dz)+i*nxyz] += (float)(wpatch*eig[i]);
                     }
                     weights[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)wpatch;
                     pcadim[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*(nimg-nzero));
+                    //errmap[x+dx+nx*(y+dy)+nx*ny*(z+dz)+nimg*nxyz] += (float)(wpatch*sigma);
                 }
             }
         }
@@ -175,8 +186,11 @@ public class IntensityGenericPCADenoising {
             for (int i=0;i<nimg;i++) {
                 denoised[i][xyz] /= weights[xyz];
                 err += (denoised[i][xyz]-images[i][xyz])*(denoised[i][xyz]-images[i][xyz]);
+                //errmap[xyz+i*nxyz] /= weights[xyz];
             }
             pcadim[xyz] /= weights[xyz];
+            //errmap[xyz+nimg*nxyz] /= weights[xyz];
+            //errmap[xyz+nimg*nxyz+nxyz] = (float)FastMath.sqrt(err/nimg);
             errmap[xyz] = (float)FastMath.sqrt(err/nimg);
         }
         images = null;

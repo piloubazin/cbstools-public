@@ -13,6 +13,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamString;
 import edu.jhu.ece.iacl.jist.structures.image.ImageData;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataByte;
+import edu.jhu.ece.iacl.jist.structures.image.ImageDataUByte;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataFloat;
 import edu.jhu.ece.iacl.jist.structures.image.ImageDataInt;
 import edu.jhu.ece.iacl.jist.structures.image.VoxelType;
@@ -61,12 +62,15 @@ public class JistStatisticsSegmentation extends ProcessingAlgorithm {
 												"False_positives","False_negatives",
 												"Dilated_Dice_overlap","Dilated_false_positive","Dilated_false_negative",
 												"Dilated_false_negative_volume","Dilated_false_positive_volume",
+												"--- Clusters ---",
 												"Detected_clusters", "False_detections",
+												"Cluster_numbers", "Man_cluster_sizes", "Cluster_maps",
 												"--- boundaries ---",
 												"Average_surface_distance", "Average_surface_difference", 
 												"Average_squared_surface_distance", "Hausdorff_distance"};
 	
 	private ParamFile 		outputParam;
+    private ParamVolume 	outputImage;
 		
 	private String delim = ",";
 		
@@ -108,6 +112,8 @@ public class JistStatisticsSegmentation extends ProcessingAlgorithm {
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
 		outputParams.add(outputParam=new ParamFile());
+		outputParams.add(outputImage=new ParamVolume("Ouput Image",null,-1,-1,-1,-1));
+		outputImage.setMandatory(false);
 		
 		outputParams.setName("spreadsheet result");
 		outputParams.setLabel("spreadsheet result");
@@ -521,6 +527,149 @@ public class JistStatisticsSegmentation extends ProcessingAlgorithm {
 				output.add(line);
 				System.out.println(line);
 			}
+			if (statistics.get(s).equals("Cluster_numbers")) {
+				// compare: requires same labels (use the reference as basis)
+				float[] trupos = new float[nlabels];
+				float[] falpos = new float[nlabels];
+				float[] falneg = new float[nlabels];
+				float[] totseg = new float[nlabels];
+				float[] tottpl = new float[nlabels];
+				for (int n=0;n<nlabels;n++) {
+					// get the connected components
+					boolean[][][] obj1 = ObjectExtraction.objectFromLabelImage(segmentation,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					int[][][] label1 = ObjectLabeling.connected18Object3D(obj1, nx,ny,nz);
+					int[] list1 = ObjectLabeling.listOrderedLabels(label1, nx,ny,nz);
+					
+					boolean[][][] obj2 = ObjectExtraction.objectFromLabelImage(template,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					int[][][] label2 = ObjectLabeling.connected18Object3D(obj2, nx,ny,nz);
+					int[] list2 = ObjectLabeling.listOrderedLabels(label2, nx,ny,nz);
+					// use the intersection to find which ones overlap
+					boolean[][][] and = ObjectGeometry.binaryOperation(obj1,obj2,ObjectExtraction.AND,nx,ny,nz);
+					BitSet true_positive = new BitSet(list2.length);
+					BitSet false_negative = new BitSet(list2.length);
+					BitSet false_positive = new BitSet(list1.length);
+					for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+					    if (and[x][y][z]) {
+                            for (int l=1;l<list2.length;l++) if (label2[x][y][z]==list2[l]) true_positive.set(l, true);    	
+                        } else if (obj1[x][y][z]) {
+                            for (int l=1;l<list1.length;l++) if (label1[x][y][z]==list1[l]) false_positive.set(l, true);    
+                        } else if (obj2[x][y][z]) {
+                            for (int l=1;l<list2.length;l++) if (label2[x][y][z]==list2[l]) false_negative.set(l, true);   
+                        }
+					}
+					// count the final numbers
+					trupos[n] = true_positive.length();
+					falpos[n] = false_positive.length();
+					falneg[n] = false_negative.length();
+					totseg[n] = list1.length;
+					tottpl[n] = list2.length;
+				}
+				line = "True_positive_clusters"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+trupos[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+				line = "False_positive_clusters"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+falpos[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+				line = "False_negative_clusters"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+falneg[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+				line = "Segmented_clusters"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+totseg[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+				line = "Template_clusters"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+tottpl[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+			}
+			if (statistics.get(s).equals("Mean_cluster_size")) {
+				// compare: requires same labels (use the reference as basis)
+				float[] tp_size = new float[nlabels];
+				float[] fp_size = new float[nlabels];
+				float[] fn_size = new float[nlabels];
+				float[] seg_size = new float[nlabels];
+				float[] tpl_size = new float[nlabels];
+				for (int n=0;n<nlabels;n++) {
+					// get the connected components
+					boolean[][][] obj1 = ObjectExtraction.objectFromLabelImage(segmentation,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					int[][][] label1 = ObjectLabeling.connected18Object3D(obj1, nx,ny,nz);
+					int[] list1 = ObjectLabeling.listOrderedLabels(label1, nx,ny,nz);
+					// not needed here... int[][][] label1 = ObjectLabeling.connected18Object3D(obj1, nx,ny,nz);
+					boolean[][][] obj2 = ObjectExtraction.objectFromLabelImage(template,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					int[][][] label2 = ObjectLabeling.connected18Object3D(obj2, nx,ny,nz);
+					int[] list2 = ObjectLabeling.listOrderedLabels(label2, nx,ny,nz);
+					// use the intersection to find which ones overlap
+					boolean[][][] and = ObjectGeometry.binaryOperation(obj1,obj2,ObjectExtraction.AND,nx,ny,nz);
+					BitSet true_positive = new BitSet(list2.length);
+					BitSet false_negative = new BitSet(list2.length);
+					BitSet false_positive = new BitSet(list1.length);
+					for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+					    if (and[x][y][z]) {
+                            for (int l=1;l<list2.length;l++) if (label2[x][y][z]==list2[l]) true_positive.set(l, true);    	
+                        } else if (obj1[x][y][z]) {
+                            for (int l=1;l<list1.length;l++) if (label1[x][y][z]==list1[l]) false_positive.set(l, true);    
+                        } else if (obj2[x][y][z]) {
+                            for (int l=1;l<list2.length;l++) if (label2[x][y][z]==list2[l]) false_negative.set(l, true);   
+                        }
+					}
+					// count the labels for true positive, false positive, false negative, total detected, total truth
+					tp_size[n] = 0.0f;
+					fp_size[n] = 0.0f;
+					fn_size[n] = 0.0f;
+					seg_size[n] = 0.0f;
+					tpl_size[n] = 0.0f;
+					for (int l=0;l<list1.length;l++) {
+					    float vol = ObjectStatistics.volume(label1, list1[l], nx,ny,nz);
+					    seg_size[n] += vol;
+					    if (false_positive.get(l)) fp_size[n] += vol;
+					}   
+					for (int l=1;l<list2.length;l++) {
+					    float vol = ObjectStatistics.volume(label1, list1[l], nx,ny,nz);
+					    tpl_size[n] += vol;
+					    if (false_negative.get(l)) fn_size[n] += vol;
+					    if (true_positive.get(l)) tp_size[n] += vol;
+					}
+					// normalize
+					tp_size[n] /= true_positive.length();
+					fp_size[n] /= false_positive.length();
+					fn_size[n] /= false_negative.length();
+					seg_size[n] /= list1.length;
+					tpl_size[n] /= list2.length;
+				}
+				line = "True_positive_cluster_size"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+tp_size[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+				line = "False_positive_cluster_size"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+fp_size[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+				line = "False_negative_cluster_size"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+fn_size[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+				line = "Segmented_cluster_size"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+seg_size[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+				line = "Template_cluster_size"+imgtag+reftag+notag;
+				for (int n=0;n<nlabels;n++) line+=(delim+tpl_size[n]);
+				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+			}
 			if (statistics.get(s).equals("Average_surface_distance")) {
 				// compare: requires same labels (use the reference as basis)
 				float[] dist = new float[nlabels];
@@ -821,6 +970,34 @@ public class JistStatisticsSegmentation extends ProcessingAlgorithm {
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
 				line+=("\n");
 				output.add(line);
+			}
+			if (statistics.get(s).equals("Cluster_maps")) {
+			    byte[][][][] map = new byte[nx][ny][nz][nlabels];
+				for (int n=0;n<nlabels;n++) {
+					// get the connected components
+					boolean[][][] obj1 = ObjectExtraction.objectFromLabelImage(segmentation,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					int[][][] label1 = ObjectLabeling.connected18Object3D(obj1, nx,ny,nz);
+					int[] list1 = ObjectLabeling.listOrderedLabels(label1, nx,ny,nz);
+					// not needed here... int[][][] label1 = ObjectLabeling.connected18Object3D(obj1, nx,ny,nz);
+					boolean[][][] obj2 = ObjectExtraction.objectFromLabelImage(template,nx,ny,nz,lbid[n],lbid[n],ObjectExtraction.SUPEQUAL,ObjectExtraction.INFEQUAL);
+					int[][][] label2 = ObjectLabeling.connected18Object3D(obj2, nx,ny,nz);
+					int[] list2 = ObjectLabeling.listOrderedLabels(label2, nx,ny,nz);
+					// use the intersection to find which ones overlap
+					boolean[][][] and = ObjectGeometry.binaryOperation(obj1,obj2,ObjectExtraction.AND,nx,ny,nz);
+					for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+					    if (and[x][y][z]) {
+                            for (int l=1;l<list2.length;l++) if (label2[x][y][z]==list2[l]) map[x][y][z][n] = 3;   	
+                        } else if (obj1[x][y][z]) {
+                            for (int l=1;l<list1.length;l++) if (label1[x][y][z]==list1[l]) map[x][y][z][n] = 2;  
+                        } else if (obj2[x][y][z]) {
+                            for (int l=1;l<list2.length;l++) if (label2[x][y][z]==list2[l]) map[x][y][z][n] = 1;
+                        }
+					}
+					ImageDataUByte outputData = new ImageDataUByte(map);		
+                    outputData.setHeader(segImg.getHeader());
+                    outputData.setName(segImg.getName()+"_cluster_map");
+                    outputImage.setValue(outputData);
+				}
 			}
 		}	
 		System.out.println("Result:");

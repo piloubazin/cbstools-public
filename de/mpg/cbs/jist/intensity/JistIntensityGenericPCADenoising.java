@@ -139,6 +139,7 @@ public class JistIntensityGenericPCADenoising extends ProcessingAlgorithm {
         }
 		Interface.setFloatImage3D(algorithm.getLocalDimensionImage(), dims, localdimImage, names[0]+"_ldim", headers[0]);
 		Interface.setFloatImage3D(algorithm.getNoiseMagnitudeImage(), dims, noisemagImage, names[0]+"_lerr", headers[0]);
+		//Interface.setFloatImage4D(algorithm.getNoiseMagnitudeImage(), dims, nimg+2, noisemagImage, names[0]+"_lerr", headers[0]);
 	}
 
 

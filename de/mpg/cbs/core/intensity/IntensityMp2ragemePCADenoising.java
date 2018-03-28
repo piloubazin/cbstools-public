@@ -23,6 +23,7 @@ public class IntensityMp2ragemePCADenoising {
 	private     int         nimg = 5;
 	private		float		stdevCutoff = 2.3f;
 	private     int         minDimension = 1;
+	private     int         maxDimension = -1;
 	private     int         ngbSize = 4;
 		
 	// output parameters
@@ -129,6 +130,7 @@ public class IntensityMp2ragemePCADenoising {
 	public final void setImageNumber(int in) { nimg = in; }
 	public final void setStdevCutoff(float in) { stdevCutoff = in; }
 	public final void setMinimumDimension(int in) { minDimension = in; }
+	public final void setMaximumDimension(int in) { maxDimension = in; }
 	public final void setPatchSize(int in) { ngbSize = in; }
 	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
@@ -288,13 +290,21 @@ public class IntensityMp2ragemePCADenoising {
                 //System.out.println("eigenvalues: ");
                 double[] eig = new double[nimg2];
                 int nzero=0;
+                double eigsum = 0.0;
                 for (int n=0;n<nimg2;n++) {
                     eig[n] = svd.getSingularValues()[n];
+                    eigsum += Numerics.abs(eig[n]);
+                }
+                for (int n=0;n<nimg2;n++) {
                     //System.out.print(" "+(eig[n]/sigma));
-                    if (n>=minDimension && Numerics.abs(eig[n]) < stdevCutoff*sigma) {
+                    if (n>=minDimension && nimg2*Numerics.abs(eig[n]) < stdevCutoff*eigsum) {
                         eig[n] = 0.0;
                         nzero++;
                         //System.out.print("(-),");
+                    } else  if (maxDimension>0 && n>=maxDimension) {
+                        eig[n] = 0.0;
+                        nzero++;
+                        //System.out.print("(|),");
                     } else {
                         //System.out.print("(+),");
                     }
