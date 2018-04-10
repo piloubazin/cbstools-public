@@ -37,7 +37,7 @@ public class IntensityMp2rageT1Fitting {
 	private		int			uniSamples = 4000;
 	
 	private		boolean		useB1correction = true;
-	private		float 		b1Scaling = 100.0f;
+	private		float 		b1Scaling = 1.0f;
 	private		float		b1min = 0.05f;
 	private		float		b1max = 2.0f;
 	private 	int			b1Samples = 1950;

@@ -136,6 +136,8 @@ public class JistSegmentationCellMgdm extends ProcessingAlgorithm {
 		algorithm.setContrastType1(type1Param.getValue());
 		algorithm.setContrastType2(type2Param.getValue());
 		algorithm.setContrastType3(type3Param.getValue());
+		
+		algorithm.setDataStackDimension(dimParam.getValue());
 			
 		algorithm.setDataWeight(forceParam.getValue().floatValue());
 		algorithm.setCurvatureWeight(curvParam.getValue().floatValue());

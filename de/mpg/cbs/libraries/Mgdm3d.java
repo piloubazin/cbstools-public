@@ -24,19 +24,19 @@ public class Mgdm3d {
 	
 	// object types
 
-	private	static	final	byte	EMPTY = -1;
+	private	static	final	int	EMPTY = -1;
 	
 	// fast marching flags
-	private final static byte X = 0;
-    private final static byte Y = 1;
-    private final static byte Z = 2;
+	private final static int X = 0;
+    private final static int Y = 1;
+    private final static int Z = 2;
     	
-	private final static byte NORTH 	= 0;
-    private final static byte SOUTH 	= 1;
-	private final static byte EAST 		= 2;
-    private final static byte WEST 		= 3;
-	private final static byte FRONT 	= 4;
-    private final static byte BACK 		= 5;
+	private final static int NORTH 	= 0;
+    private final static int SOUTH 	= 1;
+	private final static int EAST 		= 2;
+    private final static int WEST 		= 3;
+	private final static int FRONT 	= 4;
+    private final static int BACK 		= 5;
     
     // numerical quantities
 	private static final	float   INF=1e15f;
@@ -55,8 +55,8 @@ public class Mgdm3d {
 
 	// data and membership buffers
 	private 	float[][] 		mgdmfunctions;  	// MGDM's pseudo level set mgdmfunctions
-	private 	byte[][] 		mgdmlabels;   		// MGDM's label maps
-	private 	byte[] 			segmentation;   	// MGDM's segmentation
+	private 	int[][] 		mgdmlabels;   		// MGDM's label maps
+	private 	int[] 			segmentation;   	// MGDM's segmentation
 	private 	float[][] 		fieldforce;  		// original image forces, indep. object (e.g. boundaries)
 	private 	float[][] 		balloonforces;  	// original image forces, along object normals (e.g. from memberships)
 	private		boolean[]		mask;				// masking regions not used in computations
@@ -65,12 +65,12 @@ public class Mgdm3d {
 	private static	int 	  	nobj;					// total number of objects to represent (including background)
 	private static	int 	  	nmgdm;					// total number of MGDM mgdmlabels and mgdmfunctions
 	private 	int[]			objLabel;			// label values in the original image
-	private		BinaryHeap2D	heap;				// the heap used in fast marching
+	private		BinaryHeapPair	heap;				// the heap used in fast marching
 	private		CriticalPointLUT	lut;				// the LUT for critical points
 	private String	lutdir = null;
 	private		boolean				checkComposed;		// check if the objects are well-composed too (different LUTs)
 	private		boolean				checkTopology;		// check if the objects are well-composed too (different LUTs)
-	private		byte[]			otherlabels;		// labels for the non-evolved region? 
+	private		int[]			otherlabels;		// labels for the non-evolved region? 
 	
 	// parameters
 	private	double		smoothweight, fieldweight, balloonweight, pressureweight;
@@ -85,7 +85,7 @@ public class Mgdm3d {
 	
 	private static class NarrowBand {
 		public int[] id;
-		public byte[][] labels;
+		public int[][] labels;
 		public float[][] functions;
 		public int currentsize;
 		public int capacity;
@@ -98,7 +98,7 @@ public class Mgdm3d {
 			currentsize = 0;
 			
 			id = new int[capacity];
-			labels = new byte[nmgdm][capacity];
+			labels = new int[nmgdm][capacity];
 			functions = new float[nmgdm][capacity];
 		}
 		
@@ -109,17 +109,17 @@ public class Mgdm3d {
 			functions = null;
 		}
 		
-		public final void addPoint(int xyz, byte[][] mgdmlb, float[][] mgdmfn) {
+		public final void addPoint(int xyz, int[][] mgdmlb, float[][] mgdmfn) {
 			// check for size
 			if (currentsize>=capacity-1) {
 				capacity += update;
 				
 				int[] oldid = id;
-				byte[][] oldlabels = labels;
+				int[][] oldlabels = labels;
 				float[][] oldfunctions = functions;
 				
 				id = new int[capacity];
-				labels = new byte[nmgdm][capacity];
+				labels = new int[nmgdm][capacity];
 				functions = new float[nmgdm][capacity];
 				
 				for (int n=0;n<currentsize;n++) {
@@ -199,12 +199,12 @@ public class Mgdm3d {
 		// init all the arrays
 		try {
 			mgdmfunctions = new float[nmgdm][nx*ny*nz];
-			mgdmlabels = new byte[nmgdm][nx*ny*nz];	
-			segmentation = new byte[nx*ny*nz];	
+			mgdmlabels = new int[nmgdm][nx*ny*nz];	
+			segmentation = new int[nx*ny*nz];	
 			mask = new boolean[nx*ny*nz];
-			otherlabels = new byte[nx*ny*nz];	
+			otherlabels = new int[nx*ny*nz];	
 			// initalize the heap too so we don't have to do it multiple times
-			heap = new BinaryHeap2D(nx*ny+ny*nz+nz*nx, BinaryHeap2D.MINTREE);
+			heap = new BinaryHeapPair(nx*ny+ny*nz+nz*nx, BinaryHeapPair.MINTREE);
 			// topology luts
 			checkTopology=true;
 			checkComposed=false;
@@ -294,7 +294,7 @@ public class Mgdm3d {
 
 	public final float[][] getFunctions() { return mgdmfunctions; }
 	
-	public final byte[][] getLabels() { return mgdmlabels; }
+	public final int[][] getLabels() { return mgdmlabels; }
     
 	public final void fastMarchingInitializationFromSegmentation(int[] init) {
          // initialize the quantities
@@ -305,8 +305,8 @@ public class Mgdm3d {
             	mgdmlabels[n][xyz] = EMPTY;
             }
             // segmentation
-            byte nlb = EMPTY;
-			for (byte n=0; n<nobj; n++) {
+            int nlb = EMPTY;
+			for (int n=0; n<nobj; n++) {
 				if (objLabel[n]==init[xyz]) {
 					nlb = n;
 					continue;
@@ -316,7 +316,7 @@ public class Mgdm3d {
         }
 		
         // computation variables
-        byte[] processed = new byte[nx*ny*nz]; // note: using a byte instead of boolean for the second pass
+        int[] processed = new int[nx*ny*nz]; // note: using a int instead of boolean for the second pass
 		float[] nbdist = new float[6];
 		boolean[] nbflag = new boolean[6];
 					        		
@@ -342,8 +342,8 @@ public class Mgdm3d {
         while (heap.isNotEmpty()) {
         	// extract point with minimum distance
         	float dist = heap.getFirst();
-        	int xyz = heap.getFirstId();
-        	byte lb = heap.getFirstState();
+        	int xyz = heap.getFirstId1();
+        	int lb = heap.getFirstId2();
 			heap.removeFirst();
 
 			// if more than nmgdm labels have been found already, this is done
@@ -422,7 +422,7 @@ public class Mgdm3d {
       */
      public final void fastMarchingReinitialization() {
         // computation variables
-        byte[] processed = new byte[nx*ny*nz]; // note: using a byte instead of boolean for the second pass
+        int[] processed = new int[nx*ny*nz]; // note: using a int instead of boolean for the second pass
 		float[] nbdist = new float[6];
 		boolean[] nbflag = new boolean[6];
 					        		
@@ -455,8 +455,8 @@ public class Mgdm3d {
         while (heap.isNotEmpty()) {
         	// extract point with minimum distance
         	float dist = heap.getFirst();
-        	int xyz = heap.getFirstId();
-        	byte lb = heap.getFirstState();
+        	int xyz = heap.getFirstId1();
+        	int lb = heap.getFirstId2();
 			heap.removeFirst();
 
 			// if more than nmgdm labels have been found already, this is done
@@ -643,7 +643,7 @@ public class Mgdm3d {
 	 */
     public final float[][] reconstructedLevelsetForces() {
     	float[][] forces = new float[nobj][nx*ny*nz];
-    	for (byte n=0;n<nobj;n++) {
+    	for (int n=0;n<nobj;n++) {
     		for (int xyz=0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
     			forces[n][xyz] = (float)levelsetForces(xyz,n);
     		}
@@ -668,7 +668,7 @@ public class Mgdm3d {
 	 */
     public final float[][] reconstructedFastMarchingForces() {
     	float[][] forces = new float[nobj][nx*ny*nz];
-    	for (byte n=0;n<nobj;n++) {
+    	for (int n=0;n<nobj;n++) {
     		for (int xyz=0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
     			forces[n][xyz] = (float)fastMarchingForces(xyz,n);
     		}
@@ -709,7 +709,7 @@ public class Mgdm3d {
     	if (debug) System.out.print("init ("+size+")\n");
         
 		for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
-			// the criterion for being in the narrow band is to have a short distance to closest boundaries
+			// the criterion for being in the narrow band is to have a int distance to closest boundaries
 			if (mgdmfunctions[0][xyz]<narrowBandDist) {
 				narrowband.addPoint(xyz, mgdmlabels, mgdmfunctions);
 				// in addition, if close to the narrow band boundary, set a landmine
@@ -738,11 +738,11 @@ public class Mgdm3d {
 				
 				/* probably better; disabled for testing
 				// select best label somehow (use the balloon forces with highest value (e.g. coming from memberships)
-				byte olb = lastNeighborCandidate(xyz);
+				int olb = lastNeighborCandidate(xyz);
 				*/
 				
 				// select best label from previous initialization
-				byte olb = otherlabels[xyz];
+				int olb = otherlabels[xyz];
 				
 				// evolve the MGDM functions
 				
@@ -859,7 +859,7 @@ public class Mgdm3d {
 				narrowband.reset();
 				landmines.clear();
 				for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
-					// the criterion for being in the narrow band is to have a shortdistance to closest boundaries
+					// the criterion for being in the narrow band is to have a intdistance to closest boundaries
 					if (mgdmfunctions[0][xyz]<narrowBandDist) {
 						narrowband.addPoint(xyz, mgdmlabels, mgdmfunctions);
 						if (mgdmfunctions[0][xyz]>=landmineDist) {
@@ -881,14 +881,14 @@ public class Mgdm3d {
     /** method to select the nmgdm-th closest neighbor based on external information 
      *  (highly application-dependent, may not be usable in all cases) 
      */
-    private final byte lastNeighborCandidate(int xyz) {
+    private final int lastNeighborCandidate(int xyz) {
 		// select best label somehow (use the balloon forces with highest value (e.g. coming from memberships)
-		byte olb = EMPTY;
+		int olb = EMPTY;
 		if (balloonweight>0) {
 			float best=-INF;
-			for (byte n=1;n<nobj;n++) {
+			for (int n=1;n<nobj;n++) {
 				boolean outside = true;
-				for (byte l=0;l<nmgdm;l++) if (mgdmlabels[l][xyz]==n) outside = false;
+				for (int l=0;l<nmgdm;l++) if (mgdmlabels[l][xyz]==n) outside = false;
 				if (outside && balloonforces[n][xyz]>best) olb = n;
 			}
 			if (olb==EMPTY) System.out.print("?");
@@ -1020,7 +1020,7 @@ public class Mgdm3d {
     /**
 	 *  critical relation detection: groups objects with relations
 	 */
-    private final boolean homeomorphicLabeling(int xyz, byte lb) {
+    private final boolean homeomorphicLabeling(int xyz, int lb) {
     	// if we don't check, just exit
     	if (!checkTopology) return true;
     	
@@ -1059,8 +1059,8 @@ public class Mgdm3d {
 
 		// does it change the topology of a relation between the modified object and its neighbors ?
 		int  Nconfiguration = 0;
-		short[] lbs = new short[26];
-		for (short i=-1;i<=1;i++) for (short j=-1;j<=1;j++) for (short l=-1;l<=1;l++) {
+		int[] lbs = new int[26];
+		for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int l=-1;l<=1;l++) {
 			if ( (i*i+j*j+l*l>0) 
 				&& (segmentation[xyz+i+j*nx+l*nx*ny]!=lb) 
 				&& (segmentation[xyz+i+j*nx+l*nx*ny]!=segmentation[xyz]) ) {
@@ -1230,7 +1230,7 @@ public class Mgdm3d {
     	if (debug) System.out.print("level set evolution: fast marching\n");
 
     	// computation variables
-        boolean[] processed = new boolean[nx*ny*nz]; // note: using a byte instead of boolean for the second pass
+        boolean[] processed = new boolean[nx*ny*nz]; // note: using a int instead of boolean for the second pass
     	
         // init
     	
@@ -1238,7 +1238,7 @@ public class Mgdm3d {
     	int size = 0;
 		for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) if (mgdmfunctions[0][xyz]<=0.5f) size++;
 		// create the tree with initial estimates of size
-    	heap = new BinaryHeap2D(Numerics.ceil(1.25f*size), Numerics.ceil(0.1f*size), BinaryHeap2D.MINTREE);
+    	heap = new BinaryHeapPair(Numerics.ceil(1.25f*size), Numerics.ceil(0.1f*size), BinaryHeapPair.MINTREE);
     	
 		for (int t=0;t<iter;t++) {
 			if (debug) System.out.print("iteration "+t+"\n");
@@ -1251,7 +1251,7 @@ public class Mgdm3d {
 			float speed = 0;
 			int nbound = 0;
 			for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
-				// the criterion for being in the narrow band is to have a short distance to closest boundaries
+				// the criterion for being in the narrow band is to have a int distance to closest boundaries
 				if (mgdmfunctions[0][xyz]<1.0f) {
 					// add to the heap
 					curr = balloonweight*balloonforces[mgdmlabels[0][xyz]][xyz];
@@ -1276,8 +1276,8 @@ public class Mgdm3d {
 			while (heap.isNotEmpty()) {
 				// extract point with minimum distance
 				dist = heap.getFirst();
-				int xyz = heap.getFirstId();
-				byte lb = heap.getFirstState();
+				int xyz = heap.getFirstId1();
+				int lb = heap.getFirstId2();
 				heap.removeFirst();
 	
 				// if more than nmgdm labels have been found already, this is done
@@ -1328,7 +1328,7 @@ public class Mgdm3d {
         return;
     }
     
-    private final float fastMarchingForces(int xyz, byte lb) {
+    private final float fastMarchingForces(int xyz, int lb) {
     	if (balloonforces[lb][xyz]>0) return 1.0f/(float)(smoothweight+balloonweight*balloonforces[lb][xyz]);
     	else return 1.0f/(float)smoothweight;
     }

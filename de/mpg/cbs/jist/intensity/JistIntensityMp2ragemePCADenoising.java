@@ -7,6 +7,7 @@ import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamInteger;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamFloat;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamOption;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamBoolean;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.image.VoxelType;
@@ -38,6 +39,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 	private ParamInteger    mindimParam;
 	private ParamInteger    maxdimParam;
 	private ParamInteger    sizeParam;
+	private ParamBoolean    separateParam;
 	
 	private ParamVolume 	denoisedInv1Image;
 	private ParamVolume 	denoisedInv2Image;
@@ -47,6 +49,10 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 	private ParamVolume 	denoisedInv2e4Image;
 	private ParamVolume 	localdimImage;
 	private ParamVolume 	noisemagImage;
+	private ParamVolume 	rawcomplexImage;
+	private ParamVolume 	dencomplexImage;
+	private ParamVolume 	eigvalImage;
+	private ParamVolume 	eigvecImage;
 	
 	// parameters
 	//private		static final String[]	methods = IntensityMp2rageT1Fitting.methods;
@@ -66,10 +72,11 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 		inputParams.add(inv2e4Image = new ParamVolume("Second Inversion Image Echo4 (4D:mag+phs)"));
 		inv2e4Image.setMandatory(false);
 		
-		inputParams.add(cutoffParam = new ParamFloat("Stdev cutoff", 0.0f, 100.0f, 2.3f));
-		inputParams.add(mindimParam = new ParamInteger("Minimum dimension", 0, 100, 4));
+		inputParams.add(cutoffParam = new ParamFloat("Stdev cutoff", 0.0f, 100.0f, 1.0f));
+		inputParams.add(mindimParam = new ParamInteger("Minimum dimension", 0, 100, 2));
         inputParams.add(maxdimParam = new ParamInteger("Maximum dimension", -1, 100, -1));
-        inputParams.add(sizeParam = new ParamInteger("Patch size", 3, 20, 4));
+        inputParams.add(sizeParam = new ParamInteger("Patch size", 3, 20, 5));
+        inputParams.add(separateParam = new ParamBoolean("Separate mag/phs", false));
 
 		algorithm = new IntensityMp2ragemePCADenoising();
 		
@@ -103,6 +110,10 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
         denoisedInv2e4Image.setMandatory(false);
 		outputParams.add(localdimImage = new ParamVolume("PCA Dimension Image",null,-1,-1,-1,-1));
         outputParams.add(noisemagImage = new ParamVolume("Noise Magnitude Image",null,-1,-1,-1,-1));
+        outputParams.add(rawcomplexImage = new ParamVolume("Complex Image",null,-1,-1,-1,-1));
+        outputParams.add(dencomplexImage = new ParamVolume("Denoised Complex Image",null,-1,-1,-1,-1));
+        outputParams.add(eigvecImage = new ParamVolume("Eigenvectors Image",null,-1,-1,-1,-1));
+        outputParams.add(eigvalImage = new ParamVolume("Eigenvalues Image",null,-1,-1,-1,-1));
 
 		outputParams.setName("denoised images");
 		outputParams.setLabel("denoised images");
@@ -138,6 +149,7 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 		algorithm.setMinimumDimension(mindimParam.getValue().intValue());
 		algorithm.setMaximumDimension(maxdimParam.getValue().intValue());
 		algorithm.setPatchSize(sizeParam.getValue().intValue());
+		algorithm.setProcessSeparately(separateParam.getValue().booleanValue());
 		
 		System.out.println("run the algorithm");
 		algorithm.execute();
@@ -154,6 +166,10 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
         }
 		Interface.setFloatImage3D(algorithm.getLocalDimensionImage(), dims, localdimImage, Interface.getName(inv1Image)+"_ldim", Interface.getHeader(inv1Image));
 		Interface.setFloatImage3D(algorithm.getNoiseMagnitudeImage(), dims, noisemagImage, Interface.getName(inv1Image)+"_lerr", Interface.getHeader(inv1Image));
+		Interface.setFloatImage4D(algorithm.getRawComplexImage(), dims, 10, rawcomplexImage, Interface.getName(inv1Image)+"_lrcx", Interface.getHeader(inv1Image));
+		Interface.setFloatImage4D(algorithm.getDenComplexImage(), dims, 10, dencomplexImage, Interface.getName(inv1Image)+"_ldcx", Interface.getHeader(inv1Image));
+		Interface.setFloatImage4D(algorithm.getEigenvectorImage(), dims, 10, eigvecImage, Interface.getName(inv1Image)+"_leig", Interface.getHeader(inv1Image));
+		Interface.setFloatImage4D(algorithm.getEigenvalueImage(), dims, 10, eigvalImage, Interface.getName(inv1Image)+"_lerr", Interface.getHeader(inv1Image));
 	}
 
 

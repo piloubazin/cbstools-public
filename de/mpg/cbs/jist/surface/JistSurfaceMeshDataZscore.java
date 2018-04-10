@@ -52,12 +52,12 @@ import edu.jhu.ece.iacl.jist.structures.geom.EmbeddedSurface;
 
 
 public class JistSurfaceMeshDataZscore  extends ProcessingAlgorithm{
-	ParamSurface 	inputSurface;
+	private ParamSurface 	inputSurface;
 	//ParamFloat		fwhmParam;
-	ParamOption    statParam;
-	String[]         statTypes = {"standard","robust"};
+	private ParamOption    statParam;
+	private		static final String[]         statTypes = {"standard", "robust"};
 	
-	ParamSurface 	outputSurface;
+	private ParamSurface 	outputSurface;
 	    
 	
 	protected void createInputParameters(ParamCollection inputParams) {
@@ -103,7 +103,7 @@ public class JistSurfaceMeshDataZscore  extends ProcessingAlgorithm{
                 nval++;
             }
             
-		    if (statParam.equals("standard")) {
+		    if (statParam.getValue().equals("standard")) {
 		        for(int v=0; v<surf.getVertexCount(); v++) if (sdata[v][d]!=0.0) {
                     center[d] += sdata[v][d];
                 }
@@ -114,7 +114,7 @@ public class JistSurfaceMeshDataZscore  extends ProcessingAlgorithm{
                 if (nval>1) scale[d] /= (nval-1.0);
                 else scale[d] = 1.0;
                 scale[d] = FastMath.sqrt(scale[d]);
-            } else if (statParam.equals("robust")) {
+            } else if (statParam.getValue().equals("robust")) {
                 double[] samples = new double[(int)nval];
                 int n=0;
                 for(int v=0; v<surf.getVertexCount(); v++) if (sdata[v][d]!=0.0) {
@@ -125,6 +125,9 @@ public class JistSurfaceMeshDataZscore  extends ProcessingAlgorithm{
 				center[d] = measure.evaluate(samples, 50.0);
 				scale[d] = measure.evaluate(samples, 75.0) - measure.evaluate(samples, 25.0);
 			}
+			System.out.println("Dimension "+d+"("+nval+"; "+statParam.getValue()+"): ");
+			System.out.println("center "+center[d]);
+			System.out.println("scale "+scale[d]);
 			
 			for(int v=0; v<surf.getVertexCount(); v++) if (sdata[v][d]!=0.0) {
 			    sdata[v][d] = (sdata[v][d]-center[d])/scale[d];
@@ -132,6 +135,7 @@ public class JistSurfaceMeshDataZscore  extends ProcessingAlgorithm{
 		}
 		
 		surf.setVertexData(sdata);
+		surf = surf.clone();
 		
 		surf.setName(surf.getName()+"_zscore");
 		outputSurface.setValue(surf);
