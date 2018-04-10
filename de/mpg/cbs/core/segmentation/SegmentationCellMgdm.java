@@ -296,7 +296,11 @@ public class SegmentationCellMgdm {
             System.out.print("full stack: "+nlb+" labels \n");
             
             // 2. Get the forces from foreground proba
-            float[][] forces = new float[nlb][];
+            //float[][] forces = new float[nlb][];
+            float[][] forces = new float[1][];
+            float[] initmax = new float[nlb];
+            int bglb = 0;
+            float initbg = 0.0f;
             if (intens==null) {
                 float[] fgmap = new float[nx*ny*nz];
                 float[] bgmap = new float[nx*ny*nz];
@@ -313,12 +317,10 @@ public class SegmentationCellMgdm {
                 for (int lb=0;lb<nlb;lb++)
                     for (int xyz=0;xyz<nx*ny*nz;xyz++)
                         bgscore[lb] += bgmap[xyz];
-                int bglb = Numerics.argmax(bgscore);
+                bglb = Numerics.argmax(bgscore);
                 forces[bglb] = bgmap;
             } else {
                 // different model: propagate intensities to 50% of original intensity per cluster
-                float[] initmax = new float[nlb];
-                int bglb = 0;
                 for (int xyz=0;xyz<nx*ny*nz;xyz++) {
                     if (initialization[xyz]>0) {
                         initmax[initialization[xyz]] = Numerics.max(initmax[initialization[xyz]],intens[xyz]);
@@ -334,7 +336,9 @@ public class SegmentationCellMgdm {
                         denbg++;
                     }
                 }
-                float initbg = (float)(sumbg/denbg);
+                initbg = (float)(sumbg/denbg);
+                forces[0] = intens;
+                /*
                 for (int lb=0;lb<nlb;lb++) {
                     if (lb!=bglb) {
                         forces[lb] = new float[nx*ny*nz];
@@ -352,11 +356,12 @@ public class SegmentationCellMgdm {
                                                                     /( (1.0f-cellthresholdParam)*initbg), -1.0f, 1.0f);
                         }
                     }
-                }
+                }*/
             }
                 
             // 3. Run MGDM!
-            Mgdm3d mgdm = new Mgdm3d(initialization, nx, ny, nz, nlb, nmgdm, rx, ry, rz, null, forces, 
+            CellMgdm3d mgdm = new CellMgdm3d(initialization, nx, ny, nz, nlb, nmgdm, rx, ry, rz, null, 
+                                    forces, initmax, initbg, bglb,
                                     0.0f, forceParam, curvParam, 0.0f, 
                                     topologyParam, lutdir);
             
