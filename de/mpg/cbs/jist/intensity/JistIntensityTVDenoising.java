@@ -39,6 +39,7 @@ public class JistIntensityTVDenoising extends ProcessingAlgorithm {
 	private ParamInteger binParam;
 	private ParamBoolean adjustParam;
 	private ParamOption histParam;
+	private ParamBoolean wrappedParam;
 	
 	private ParamVolume denoiseImage;
 	private ParamVolume edgeImage;
@@ -64,6 +65,7 @@ public class JistIntensityTVDenoising extends ProcessingAlgorithm {
 		
 		inputParams.add(ratioParam = new ParamFloat("Scaling ratio", 0.0f, 1.0f, 0.05f));
 		inputParams.add(adjustParam = new ParamBoolean("Two-level denoising", false));
+		inputParams.add(wrappedParam = new ParamBoolean("Wrap intensities", false));
 		
 		inputParams.setPackage("CBS Tools");
 		inputParams.setCategory("Intensity.devel");
@@ -109,8 +111,9 @@ public class JistIntensityTVDenoising extends ProcessingAlgorithm {
 		// basic mask for zero values
 		boolean[][][] mask = new boolean[nx][ny][nz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			if (image[x][y][z]==0) mask[x][y][z] = false;
-			else mask[x][y][z]=true;
+			//if (image[x][y][z]==0) mask[x][y][z] = false;
+			//else mask[x][y][z]=true;
+			mask[x][y][z]=true;
 		}
 		
 		// rescale image to [0,1] for convenience
@@ -161,9 +164,12 @@ public class JistIntensityTVDenoising extends ProcessingAlgorithm {
 		System.out.println("start TV algorithm");
 		
 		// apply to TV algorithm
-		TotalVariation algo = new TotalVariation(image,mask,nx,ny,nz, ratioParam.getValue().floatValue(), 0.125f, 0.0001f, 100);
+		TotalVariation algo = new TotalVariation(image,mask,nx,ny,nz, ratioParam.getValue().floatValue(), 0.125f, 0.0001f, 200);
 		
-		algo.denoiseImage(stdev, adjustParam.getValue().booleanValue());
+		if (wrappedParam.getValue().booleanValue())
+		    algo.solveWrapped();
+		else 
+            algo.denoiseImage(stdev, adjustParam.getValue().booleanValue());
 		
 		// output
 		
@@ -171,7 +177,10 @@ public class JistIntensityTVDenoising extends ProcessingAlgorithm {
 		
 		byte[][] histo = hist.plotLogHistogram(threshold);
 		
-		float[][][] tvimg = algo.exportResult();
+		float[][][] tvimg;
+		if (wrappedParam.getValue().booleanValue()) tvimg = algo.exportResultWrapped();
+		else tvimg = algo.exportResult();
+
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			tvimg[x][y][z] = Imin + tvimg[x][y][z]*(Imax-Imin);
 		}	
