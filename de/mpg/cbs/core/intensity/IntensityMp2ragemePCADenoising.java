@@ -311,7 +311,7 @@ public class IntensityMp2ragemePCADenoising {
                System.out.println("global variations removal phase "+(i+1));
                  for (int xyz=0;xyz<nxyz;xyz++) tmp[xyz] = invphs[xyz+i*nxyz];
                 // separate the magnitude images
-                TotalVariation1D algo = new TotalVariation1D(tmp,null,nx,ny,nz, 0.5f, 0.125f, 0.001f, 100);
+                TotalVariation1D algo = new TotalVariation1D(tmp,null,nx,ny,nz, 0.33f, 0.125f, 0.001f, 100);
                 algo.solveWrapped();
                 tvimgphs[i] = algo.exportResultWrapped();
                 for (int xyz=0;xyz<nxyz;xyz++) invphs[xyz+i*nxyz] -= tvimgphs[i][xyz];

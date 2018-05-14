@@ -33,6 +33,7 @@ public class TotalVariation1D {
 	private 	float 		tauStep = 0.125f;		// internal step parameter (default 1/4)
 	private 	float 		maxdist = 0.0001f;		// maximum error for stopping
 	private 	int 		maxiter = 100;		// maximum number of iterations
+	private     float       wrapping = 1.0f;    // wrapping value, as a function of [Imin, Imax]
 			
 	// computation variables
 	private 	float[]			field;  // image difference field
@@ -102,6 +103,9 @@ public class TotalVariation1D {
 		//}
 		// scale parameter: invariant by intensity scaling
 		//lambdaScale *= (Imax-Imin)*(Imax-Imin);
+		
+		// the [Imin, Imax] part is taken care of
+		wrapping = 1.0f/lambdaScale;
 		
 		if (debug) BasicInfo.displayMessage("TV:initialisation\n");
 	}
@@ -186,13 +190,13 @@ public class TotalVariation1D {
 		    if (mask[xyz]) {
 		        divp = 0.0;
 		        // first compute the intermediate field
-                if (x-1>=0) divp += Numerics.modulo(proj[X][xyz]-proj[X][xyz-1], Imax-Imin);
-                if (y-1>=0) divp += Numerics.modulo(proj[Y][xyz]-proj[Y][xyz-nx], Imax-Imin);
-				if (z-1>=0) divp += Numerics.modulo(proj[Z][xyz]-proj[Z][xyz-nx*ny], Imax-Imin);
+                if (x-1>=0) divp += Numerics.modulo(proj[X][xyz]-proj[X][xyz-1], wrapping);
+                if (y-1>=0) divp += Numerics.modulo(proj[Y][xyz]-proj[Y][xyz-nx], wrapping);
+				if (z-1>=0) divp += Numerics.modulo(proj[Z][xyz]-proj[Z][xyz-nx*ny], wrapping);
 			
 				//  wrapping only for spatial derivatives
-                field[xyz] = (float)(divp - (image[xyz]-Imin)/(Imax-Imin)/lambdaScale);
-                //field[xyz] = (float)Numerics.modulo(divp - (image[xyz]-Imin)/(Imax-Imin)/lambdaScale, Imax-Imin);
+                //field[xyz] = (float)(divp - (image[xyz]-Imin)/(Imax-Imin)/lambdaScale);
+                field[xyz] = (float)Numerics.modulo(divp - (image[xyz]-Imin)/(Imax-Imin)/lambdaScale, wrapping);
             }
 		}
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
@@ -203,11 +207,11 @@ public class TotalVariation1D {
                 prev[Y] = proj[Y][xyz];
                 prev[Z] = proj[Z][xyz];
                 
-                if (x+1<nx) grad[X] = Numerics.modulo(field[xyz+1]-field[xyz], Imax-Imin);
+                if (x+1<nx) grad[X] = Numerics.modulo(field[xyz+1]-field[xyz], wrapping);
                 else grad[X] = 0.0;
-                if (y+1<ny) grad[Y] = Numerics.modulo(field[xyz+nx]-field[xyz], Imax-Imin);
+                if (y+1<ny) grad[Y] = Numerics.modulo(field[xyz+nx]-field[xyz], wrapping);
                 else grad[Y] = 0.0;
-                if (z+1<nz) grad[Z] = Numerics.modulo(field[xyz+nx*ny]-field[xyz], Imax-Imin);
+                if (z+1<nz) grad[Z] = Numerics.modulo(field[xyz+nx*ny]-field[xyz], wrapping);
                 else grad[Z] = 0.0;
                 norm = (1.0 + tauStep*FastMath.sqrt(grad[X]*grad[X]+grad[Y]*grad[Y]+grad[Z]*grad[Z]));
 			
@@ -215,9 +219,9 @@ public class TotalVariation1D {
                 proj[Y][xyz] = (float)( (prev[Y] + tauStep*grad[Y])/norm);
                 proj[Z][xyz] = (float)( (prev[Z] + tauStep*grad[Z])/norm);
 			
-                dist = 	 (proj[X][xyz]-prev[X])*(proj[X][xyz]-prev[X])
-                        +(proj[Y][xyz]-prev[Y])*(proj[Y][xyz]-prev[Y])
-                        +(proj[Z][xyz]-prev[Z])*(proj[Z][xyz]-prev[Z]);
+                dist = 	 Numerics.modulo(proj[X][xyz]-prev[X], wrapping)*Numerics.modulo(proj[X][xyz]-prev[X], wrapping)
+                        +Numerics.modulo(proj[Y][xyz]-prev[Y], wrapping)*Numerics.modulo(proj[Y][xyz]-prev[Y], wrapping)
+                        +Numerics.modulo(proj[Z][xyz]-prev[Z], wrapping)*Numerics.modulo(proj[Z][xyz]-prev[Z], wrapping);
 					
                 if (dist>distance) distance = dist;
             }

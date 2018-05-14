@@ -48,6 +48,7 @@ public class LaminarSmoothContrastMapping {
 	private static final byte MAX = 4;
 	private static final byte MEDIAN = 5;
 		
+	private static final float MASKVAL = 1e13f;
 	
 	// create inputs
 	public final void setLayerSurfaceImage(float[] val) { layersImage = val; }
@@ -144,13 +145,13 @@ public class LaminarSmoothContrastMapping {
 		}
 		byte interp = NEAREST;
 		if (interpParam.equals("linear")) interp = LINEAR;
-		
-			
+					
 		// smooth before sample, if selected
+		boolean[] mappedcontrastmask = new boolean[nxyz];
 		if (smoothFirstParam) {
-			contrastImage = mapContrastToLayers(contrastImage, contrastMask, ctxmask, interp);
+			contrastImage = mapContrastToLayers(contrastImage, contrastMask, ctxmask, mappedcontrastmask, interp);
 			if (fwhmParam>0) {
-				directLaminarSmoothing(contrastImage, nit, layers, nlayers, ctxmask);
+				directLaminarSmoothing(contrastImage, nit, layers, nlayers, mappedcontrastmask, ctxmask);
 			}
 		}
 		
@@ -166,7 +167,7 @@ public class LaminarSmoothContrastMapping {
 		float[] contrastMeasure = new float[nxyz*nit];
 		float[][] samples = new float[nlayers+1][nit];
 		boolean[] sampled = new boolean[nlayers+1];
-		float maskval = 1e13f;
+		float maskval = MASKVAL;
 		for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
 			int xyz = x + nx*y + nx*ny*z;
 			if (ctxmask[xyz]) {
@@ -183,10 +184,10 @@ public class LaminarSmoothContrastMapping {
 						// data already in layer space
 						if (interp==NEAREST) {
 							for (int t=0;t<nit;t++) 
-								samples[l][t] = ImageInterpolation.nearestNeighborInterpolation(contrastImage, t*nxyz, ctxmask, maskval, xl,yl,zl, nx,ny,nz);
+								samples[l][t] = ImageInterpolation.nearestNeighborInterpolation(contrastImage, t*nxyz, mappedcontrastmask, maskval, xl,yl,zl, nx,ny,nz);
 						} else {
 							for (int t=0;t<nit;t++) 
-								samples[l][t] = ImageInterpolation.linearInterpolation(contrastImage, t*nxyz, ctxmask, maskval, xl,yl,zl, nx,ny,nz);
+								samples[l][t] = ImageInterpolation.linearInterpolation(contrastImage, t*nxyz, mappedcontrastmask, maskval, xl,yl,zl, nx,ny,nz);
 						}						
 					} else {
 						// find the coordinates in contrasts space
@@ -220,7 +221,13 @@ public class LaminarSmoothContrastMapping {
 							sum += samples[l][t];
 							den++;
 						}
-						if (den>0) contrastMeasure[xyz+t*nixyz] = (float)(sum/den);
+						if (den>0) {
+						    contrastMeasure[xyz+t*nxyz] = (float)(sum/den);
+						    mappedcontrastmask[xyz] = true;
+						} else {
+						    contrastMeasure[xyz+t*nxyz] = maskval;
+						    mappedcontrastmask[xyz] = false;
+						}
 					}
 				} else {
 					System.out.println("not implemented yet");
@@ -230,19 +237,19 @@ public class LaminarSmoothContrastMapping {
 		
 		// post smoothing
 		if (!smoothFirstParam && fwhmParam>0) {
-			directLaminarSmoothing(contrastMeasure, 1, layers, nlayers, ctxmask);
+			directLaminarSmoothing(contrastMeasure, nit, layers, nlayers, mappedcontrastmask, ctxmask);
 		}
 		
 		// output
 		mappedContrastImage = contrastMeasure;
 		mappedMaskImage = new int[nxyz];
 		for (int xyz=0;xyz<nixyz;xyz++) {
-			if (ctxmask[xyz]) mappedMaskImage[xyz] = 1;
+			if (ctxmask[xyz] && mappedcontrastmask[xyz]) mappedMaskImage[xyz] = 1;
 			else mappedMaskImage[xyz] = 0;
 		}
 	}
 
-	private final void directLaminarSmoothing(float[] data, int nd, float[][] layers, int nlayers, boolean[] ctxmask) {
+	private final void directLaminarSmoothing(float[] data, int nd, float[][] layers, int nlayers, boolean[] datamask, boolean[] ctxmask) {
 				
 		// get estimates for partial voluming of each layer
 		System.out.println("Define partial volume coefficients");
@@ -272,6 +279,7 @@ public class LaminarSmoothContrastMapping {
 		
 		// no black & white iterations: the layers are generally too thin
 		float[] sdata = new float[nxyz*nd];
+		boolean[] sdatamask = new boolean[nxyz];
 		double[] layerval = new double[nd];
 		double layersum = 0.0f;
 	
@@ -288,37 +296,54 @@ public class LaminarSmoothContrastMapping {
 				for (int l=0;l<nlayers;l++) {
 					double pvweight = Numerics.max(pvol[l+1][xyz]-pvol[l][xyz],0.0f);
 					if (pvweight>0) {
-						for (int t=0;t<nd;t++) layerval[t] = pvweight*data[xyz+nxyz*t];
-						layersum = pvweight;
+					    if (datamask[xyz]) {
+                            for (int t=0;t<nd;t++) layerval[t] = pvweight*data[xyz+nxyz*t];
+                            layersum = pvweight;
+                        } else {
+                            for (int t=0;t<nd;t++) layerval[t] = 0.0;
+                            layersum = 0.0;
+                        }
 						for (byte k=0; k<26; k++) {
 							int xyzn = Ngb.neighborIndex(k, xyz, nx, ny, nz);
 							float dw = 1.0f/Ngb.neighborDistance(k);
-							if (ctxmask[xyzn]) {
+							if (ctxmask[xyzn] && datamask[xyzn]) {
 								double pv = Numerics.max(pvol[l+1][xyzn]-pvol[l][xyzn],0.0f);
 								for (int t=0;t<nd;t++) layerval[t] += pv*weight*dw*data[xyzn+nxyz*t];
 								layersum += pv*weight*dw;
 							}
 						}
-						for (int t=0;t<nd;t++) layerval[t] /= layersum;
+						if (layersum>0) {
+                            for (int t=0;t<nd;t++) layerval[t] /= layersum;
+                        } else {
+                            pvweight = 0.0;
+                        }
 					}
+					// if no data, pvweight is zero
 					for (int t=0;t<nd;t++) sdata[xyz+nxyz*t] += (float)(pvweight*layerval[t]);
 					sumweight += pvweight;
 				}
-				for (int t=0;t<nd;t++) sdata[xyz+nxyz*t] /= (float)sumweight;
+				if (sumweight>0) {
+                    for (int t=0;t<nd;t++) sdata[xyz+nxyz*t] /= (float)sumweight;
+                    sdatamask[xyz] = true;
+                } else {
+                    sdatamask[xyz] = false;
+                }
 			}
 			// copy back to original data image
 			for (int xyz=0;xyz<nxyz;xyz++) if (ctxmask[xyz]) {
 				for (int t=0;t<nd;t++) data[xyz+nxyz*t] = sdata[xyz+nxyz*t];
+				// update mask: values at boundaries with actual data get filled in
+				datamask[xyz] = sdatamask[xyz];
 			}
 		}
 		
 		return;
 	}
 
-	private final float[] mapContrastToLayers(float[] input, boolean[] inputmask, boolean[] ctxmask, byte interp) {
+	private final float[] mapContrastToLayers(float[] input, boolean[] inputmask, boolean[] ctxmask, boolean[] mappedmask, byte interp) {
 				
 		float[] data = new float[nxyz*nit];
-		float maskval = 1e13f;
+		float maskval = MASKVAL;
 		for (int x=0; x<nx; x++) for (int y=0; y<ny; y++) for (int z = 0; z<nz; z++) {
 			int xyz = x + nx*y + nx*ny*z;
 			if (ctxmask[xyz]) {
@@ -335,10 +360,11 @@ public class LaminarSmoothContrastMapping {
 					for (int t=0;t<nit;t++) 
 						data[xyz+nxyz*t] = ImageInterpolation.linearInterpolation(input, t*nixyz, inputmask, maskval, xi,yi,zi, nix,niy,niz);
 				}
-				// update the mask
+				// set the output mask
+				mappedmask[xyz] = true;
 				for (int t=0;t<nit;t++) 
 					if (data[xyz+nxyz*t]==maskval)
-						ctxmask[xyz] = false;
+						mappedmask[xyz] = false;
 			}
 		}
 		return data;
