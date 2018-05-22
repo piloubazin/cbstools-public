@@ -32,19 +32,12 @@ public class ShapeTopologyCorrection2 {
     private final static byte Y = 1;
     private final static byte Z = 2;
     	
-	private final static byte NORTH 	= 0;
-    private final static byte SOUTH 	= 1;
-	private final static byte EAST 		= 2;
-    private final static byte WEST 		= 3;
-	private final static byte FRONT 	= 4;
-    private final static byte BACK 		= 5;
-    
     // numerical quantities
 	private final static float	UNKNOWN=1e15f;
 	
-	private static int[] xoff;
-    private static int[] yoff;
-    private static int[] zoff;
+	//private static int[] xoff;
+    //private static int[] yoff;
+    //private static int[] zoff;
 
 	// data and membership buffers
 	private 	float[] 		levelset;  			// level set function
@@ -61,6 +54,7 @@ public class ShapeTopologyCorrection2 {
 	private     String	            lutdir = null;
 	private		boolean				checkComposed;		// check if the objects are well-composed too (different LUTs)
 	private		boolean				checkTopology;		// check if the objects are well-composed too (different LUTs)
+	private     byte            ngb = 6;
 	
 	// parameters
 	private float[] inputImage;
@@ -73,7 +67,7 @@ public class ShapeTopologyCorrection2 {
 	public static final String[] inputTypes = {"binary_object", "probability_map", "signed_distance_function"}; 
 	
 	private String connectType = "wcs";
-	public static final String[] connectTypes = {"wcs","6/18","6/26","18/6","26/6"};
+	public static final String[] connectTypes = {"wcs","wco", "6/18","6/26","18/6","26/6"};
 	
 	private String propagType = "object->background";
 	public static final String[] propagTypes = {"object->background","background->object"};
@@ -133,9 +127,9 @@ public class ShapeTopologyCorrection2 {
 		    propagationDir = BG2OBJ;
 				
 		// 6-neighborhood: pre-compute the index offsets
-		xoff = new int[]{1, -1, 0, 0, 0, 0};
-		yoff = new int[]{0, 0, nx, -nx, 0, 0};
-		zoff = new int[]{0, 0, 0, 0, nx*ny, -nx*ny};
+		//xoff = new int[]{1, -1, 0, 0, 0, 0};
+		//yoff = new int[]{0, 0, nx, -nx, 0, 0};
+		//zoff = new int[]{0, 0, 0, 0, nx*ny, -nx*ny};
 		
 		// init the arrays : only one should be valid here
 		if (inputType.equals("binary_object")) {
@@ -165,27 +159,32 @@ public class ShapeTopologyCorrection2 {
 			// topology luts
 			checkTopology=true;
 			checkComposed=false;
-				 if (connectType.equals("26/6")) lut = new CriticalPointLUT(lutdir, "critical266LUT.raw.gz",200);
-			else if (connectType.equals("6/26")) lut = new CriticalPointLUT(lutdir, "critical626LUT.raw.gz",200);
-			else if (connectType.equals("18/6")) lut = new CriticalPointLUT(lutdir, "critical186LUT.raw.gz",200);
-			else if (connectType.equals("6/18")) lut = new CriticalPointLUT(lutdir, "critical618LUT.raw.gz",200);
-			else if (connectType.equals("6/6")) lut = new CriticalPointLUT(lutdir, "critical66LUT.raw.gz",200);
+				 if (connectType.equals("26/6")) { lut = new CriticalPointLUT(lutdir, "critical266LUT.raw.gz",200); ngb = 26; }
+			else if (connectType.equals("6/26")) { lut = new CriticalPointLUT(lutdir, "critical626LUT.raw.gz",200); ngb = 26; }
+			else if (connectType.equals("18/6")) { lut = new CriticalPointLUT(lutdir, "critical186LUT.raw.gz",200); ngb = 18; }
+			else if (connectType.equals("6/18")) { lut = new CriticalPointLUT(lutdir, "critical618LUT.raw.gz",200); ngb = 18; }
+			else if (connectType.equals("6/6")) { lut = new CriticalPointLUT(lutdir, "critical66LUT.raw.gz",200); ngb = 26; }
 			else if (connectType.equals("wcs")) {
-				lut = new CriticalPointLUT(lutdir,"critical66LUT.raw.gz",200);
-				checkComposed=true;
+				lut = new CriticalPointLUT(lutdir,"criticalWCLUT.raw.gz",200);
+				ngb = 26;
+				//checkComposed=true;
+				checkComposed=false;
 			}
 			else if (connectType.equals("wco")) {
 				lut = null;
+				ngb = 26;
 				checkTopology=false;
 				checkComposed=true;
 			}
 			else if (connectType.equals("no")) {
 				lut = null;
+				ngb = 26;
 				checkTopology=false;
 			}
 			else {
 			    BasicInfo.displayMessage("Specified LUT type not found: "+connectType+"\n");
 				lut = null;
+				ngb = 26;
 				checkTopology=false;
 			}
 			if (checkTopology) {
@@ -268,8 +267,9 @@ public class ShapeTopologyCorrection2 {
         	if (mask[xyz]) {
         		processed[xyz] = false;
 				// search for boundaries
-				for (int k = 0; k<6; k++) {
-					int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+				for (byte k = 0; k<6; k++) {
+					//int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+					int xyzn = Ngb.neighborIndex(k, xyz, nx,ny,nz);
 					if (segmentation[xyzn]!=segmentation[xyz]) if (mask[xyzn]) {
 						
 						// add to the heap
@@ -301,17 +301,19 @@ public class ShapeTopologyCorrection2 {
  			maxdist = dist;	// keep track of distance if stopping at the narrow band
 			
 			// find new neighbors
-			for (int k = 0; k<6; k++) {
-				int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+			for (byte k = 0; k<6; k++) {
+				//int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+				int xyzn = Ngb.neighborIndex(k, xyz, nx,ny,nz);
 				
 				if (mask[xyzn]) {
 					// must be in outside the object or its processed neighborhood
 					if (segmentation[xyzn]==lb && !processed[xyzn]) {
 						// compute new distance based on processed neighbors for the same object
-						for (int l=0; l<6; l++) {
+						for (byte l=0; l<6; l++) {
 							nbdist[l] = UNKNOWN;
 							nbflag[l] = false;
-							int xyznb = xyzn + xoff[l] + yoff[l] + zoff[l];
+							//int xyznb = xyzn + xoff[l] + yoff[l] + zoff[l];
+							int xyznb = Ngb.neighborIndex(l, xyzn, nx,ny,nz);
 							// note that there is at most one value used here
 							if (processed[xyznb]) if (mask[xyznb]) if (segmentation[xyznb]==lb) {
 								nbdist[l] = Numerics.abs(levelset[xyznb]);
@@ -362,7 +364,7 @@ public class ShapeTopologyCorrection2 {
 
      private final void initializationFromMinimumLevelset() {
          if (debug) BasicInfo.displayMessage("intialize from min levelset\n");		
-         // initialize to the highest value
+         // initialize to the lowest value
          float best = 1e-9f;
          int idx = -1;
          for (int xyz = 0; xyz<nx*ny*nz; xyz++) if (mask[xyz]) {
@@ -405,8 +407,7 @@ public class ShapeTopologyCorrection2 {
 		
         // computation variables
         boolean[] processed = new boolean[nx*ny*nz];
-		float[] nbdist = new float[6];
-		boolean[] nbflag = new boolean[6];
+		//boolean[] critical = new boolean[nx*ny*nz];
 					        		
 		// compute the neighboring labels and corresponding distance functions (! not the MGDM functions !)
         if (debug) BasicInfo.displayMessage("fast marching correction (levelsets)\n");	
@@ -432,9 +433,10 @@ public class ShapeTopologyCorrection2 {
 				    else if (propagationDir==BG2OBJ && corrected[xyz]<mainval) mainval = corrected[xyz];
 				    
 				    // add neighbors to the heap
-				    for (int k = 0; k<6; k++) {
-                        int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
-				
+				    for (byte k = 0; k<ngb; k++) {
+                        //int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+                        int xyzn = Ngb.neighborIndex(k, xyz, nx,ny,nz);
+                        
                         if (mask[xyzn] && !processed[xyzn]) {
                             heap.addValue(levelset[xyzn],xyzn,OBJ);
                         }
@@ -456,41 +458,67 @@ public class ShapeTopologyCorrection2 {
 
 			// if more than nmgdm labels have been found already, this is done
 			if (processed[xyz])  continue;
-			
 			/*
-			if (propagationDir==OBJ2BG && val<mainval) {
-			    // lower (=inside) than current value -> restack
-			    heap.addValue(mainval+minDistance, xyz, OBJ);
-			} else if (propagationDir==BG2OBJ && val>mainval) {
-			    // higher (=outside) than current value -> restack
-			    heap.addValue(mainval-minDistance, xyz, OBJ);
-			} else */
+			// check for neighbor value constraint
+			float higher = higherNeighborConstraint(val, xyz, corrected, processed);
+			float lower = lowerNeighborConstraint(val, xyz, corrected, processed);
+			
+			if (propagationDir==OBJ2BG && val<higher) {
+			    // lower (=inside) than neighbor value -> restack
+			    heap.addValue(higher, xyz, OBJ);
+			} else if (propagationDir==BG2OBJ && val>lower) {
+			    // higher (=outside) than neighbor value -> restack
+			    heap.addValue(lower, xyz, OBJ);
+			} else
+			*/
 			if (homeomorphicLabeling(xyz, OBJ)) {
 			    // all correct: update and find new neighbors
 			    
 			        // update the distance functions at the current level
                 corrected[xyz] = val;
-                processed[xyz]=true; // update the current level
+                processed[xyz] = true; // update the current level
+                //critical[xyz] = false;
                 segmentation[xyz] = OBJ;
                 mainval = val;	// keep track of distance if stopping at the narrow band
             
                 // find new neighbors
-                for (int k = 0; k<6; k++) {
-                    int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+                for (byte k = 0; k<ngb; k++) {
+                    //int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+                    int xyzn = Ngb.neighborIndex(k, xyz, nx,ny,nz);
                     
                     if (mask[xyzn]) {
                         // must be in outside the object or its processed neighborhood
                         if (!processed[xyzn]) {
                             // add to the heap
                             if (propagationDir==OBJ2BG) {
-                                heap.addValue(Numerics.max(levelset[xyzn],mainval+minDistance),xyzn,OBJ);
+                                heap.addValue(Numerics.max(levelset[xyzn],val+minDistance),xyzn,OBJ);
                             } else if (propagationDir==BG2OBJ) {
-                                heap.addValue(Numerics.min(levelset[xyzn],mainval-minDistance),xyzn,OBJ);
+                                heap.addValue(Numerics.min(levelset[xyzn],val-minDistance),xyzn,OBJ);
                             }
                         }
                     }
                 }
-            }
+                /*
+                // for adding back the critical points only
+                for (byte k = 0; k<6; k++) {
+                    //int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+                    int xyzn = Ngb.neighborIndex(k, xyz, nx,ny,nz);
+                    
+                    if (mask[xyzn]) {
+                        // must be in outside the object or its processed neighborhood
+                        if (critical[xyzn]) {
+                            // add to the heap
+                            if (propagationDir==OBJ2BG) {
+                                heap.addValue(val,xyzn,OBJ);
+                            } else if (propagationDir==BG2OBJ) {
+                                heap.addValue(val,xyzn,OBJ);
+                            }
+                        }
+                    }
+                }*/
+            } /*else {
+                critical[xyz] = true;
+            }*/
 		}
 		// keep it out for debug
 		for (int xyz = 0; xyz<nx*ny*nz; xyz++) {
@@ -500,7 +528,7 @@ public class ShapeTopologyCorrection2 {
 		if (debug) BasicInfo.displayMessage("done\n");		
 		
        return;
-     }
+    }
 
     private final void fastMarchingTopologyPropagationIntensity() {
          // initialize the quantities
@@ -518,11 +546,9 @@ public class ShapeTopologyCorrection2 {
 		
         // computation variables
         boolean[] processed = new boolean[nx*ny*nz];
-		float[] nbdist = new float[6];
-		boolean[] nbflag = new boolean[6];
 					        		
 		// compute the neighboring labels and corresponding distance functions (! not the MGDM functions !)
-        if (debug) BasicInfo.displayMessage("fast marching correction (levelsets)\n");	
+        if (debug) BasicInfo.displayMessage("fast marching correction (intensity)\n");	
         
         // propagation direction
         if (propagationDir==OBJ2BG) heap.setMaxTree();
@@ -545,9 +571,10 @@ public class ShapeTopologyCorrection2 {
 				    else if (propagationDir==BG2OBJ && corrected[xyz]>mainval) mainval = corrected[xyz];
 				     
 				    // add neighbors to the heap
-				    for (int k = 0; k<6; k++) {
-                        int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
-				
+				    for (byte k = 0; k<ngb; k++) {
+                        //int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+                        int xyzn = Ngb.neighborIndex(k, xyz, nx,ny,nz);
+                        
                         if (mask[xyzn] && !processed[xyzn]) {
                             heap.addValue(intensity[xyzn],xyzn,OBJ);
                         }
@@ -587,17 +614,18 @@ public class ShapeTopologyCorrection2 {
                 mainval = val;	// keep track of distance if stopping at the narrow band
             
                 // find new neighbors
-                for (int k = 0; k<6; k++) {
-                    int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+                for (byte k = 0; k<ngb; k++) {
+                    //int xyzn = xyz + xoff[k] + yoff[k] + zoff[k];
+                    int xyzn = Ngb.neighborIndex(k, xyz, nx,ny,nz);
                     
                     if (mask[xyzn]) {
                         // must be in outside the object or its processed neighborhood
                         if (!processed[xyzn]) {
                             // add to the heap
                             if (propagationDir==OBJ2BG) {
-                                heap.addValue(Numerics.min(intensity[xyzn],mainval-minDistance),xyzn,OBJ);
+                                heap.addValue(Numerics.min(intensity[xyzn],val-minDistance),xyzn,OBJ);
                             } else if (propagationDir==BG2OBJ) {
-                                heap.addValue(Numerics.max(intensity[xyzn],mainval+minDistance),xyzn,OBJ);
+                                heap.addValue(Numerics.max(intensity[xyzn],val+minDistance),xyzn,OBJ);
                             }
                         }
                     }
@@ -678,7 +706,7 @@ public class ShapeTopologyCorrection2 {
 		
 		if (checkComposed) if (!ObjectStatistics.isWellComposed(obj,1,1,1)) return false;		
 		if (!lut.get(lut.keyFromPattern(obj,1,1,1))) return false;
-			
+		/*	
 		// does it change the topology of the object it modifies ?
 		for (int i=-1;i<=1;i++) for (int j=-1;j<=1;j++) for (int l=-1;l<=1;l++) {
 			if (segmentation[xyz+i+j*nx+l*nx*ny]==segmentation[xyz]) {
@@ -691,10 +719,30 @@ public class ShapeTopologyCorrection2 {
 		
 		if (checkComposed) if (!ObjectStatistics.isWellComposed(obj,1,1,1)) return false;		
 		if (!lut.get(lut.keyFromPattern(obj,1,1,1))) return false;
-
+		*/
 		// else, it works
 		return true;
     }
 
+    private final float lowerNeighborConstraint(float val, int xyz, float[] corrected, boolean[] processed) {
+        float lower = val;
+        for (byte k=0;k<26;k++) {
+            int xyzn = Ngb.neighborIndex(k, xyz, nx,ny,nz);
+            if (processed[xyzn]) {
+                if (corrected[xyzn]<lower) lower = corrected[xyzn];
+            }
+        }
+        return lower;
+    }
+    private final float higherNeighborConstraint(float val, int xyz, float[] corrected, boolean[] processed) {
+        float higher = val;
+        for (byte k=0;k<26;k++) {
+            int xyzn = Ngb.neighborIndex(k, xyz, nx,ny,nz);
+            if (processed[xyzn]) {
+                if (corrected[xyzn]>higher) higher = corrected[xyzn];
+            }
+        }
+        return higher;
+    }
 }
 
