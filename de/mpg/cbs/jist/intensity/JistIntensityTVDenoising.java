@@ -164,7 +164,7 @@ public class JistIntensityTVDenoising extends ProcessingAlgorithm {
 		System.out.println("start TV algorithm");
 		
 		// apply to TV algorithm
-		TotalVariation algo = new TotalVariation(image,mask,nx,ny,nz, ratioParam.getValue().floatValue(), 0.125f, 0.0001f, 200);
+		TotalVariation algo = new TotalVariation(image,mask,nx,ny,nz, ratioParam.getValue().floatValue(), 0.125f, 0.00001f, 500);
 		
 		if (wrappedParam.getValue().booleanValue())
 		    algo.solveWrapped();

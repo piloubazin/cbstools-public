@@ -731,9 +731,22 @@ public class Numerics {
 	}
 	
 	public static final double modulo(double val, double mod) {
-	    //return val-Numerics.round(val/mod)*mod;
+	    return val-Numerics.round(val/mod)*mod;
+	    /*
 	    if (val>mod/2.0) return val-mod;  
 	    else if (val<-mod/2.0) return val+mod;
 	    else return val;
+	    */
+	}
+	public static final float modulo(float val, float mod) {
+	    return val-Numerics.round(val/mod)*mod;
+	    /*
+	    if (val>mod/2.0) return val-mod;  
+	    else if (val<-mod/2.0) return val+mod;
+	    else return val;
+	    */
+	}
+	public static final int wrap(float val, float mod) {
+	    return Numerics.round(val/mod);
 	}
 }

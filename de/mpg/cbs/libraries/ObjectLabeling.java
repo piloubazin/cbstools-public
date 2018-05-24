@@ -734,6 +734,7 @@ public class ObjectLabeling {
     
    public static final boolean[] largestObjectFromLabel(int[] label, int nlb, int nx, int ny, int nz) {
         boolean[] obj = new boolean[nx*ny*nz];
+        
         int[] Nobj = new int[nlb];
         int best,size;
         
@@ -940,7 +941,6 @@ public class ObjectLabeling {
 			System.out.println("Unsupported connectivity: " + conn + " \n");
 			return null;
 		}
-		
 		object = largestObjectFromLabel(lb, countLabels(lb, nx, ny, nz), nx, ny, nz);
 		
 		return object;
