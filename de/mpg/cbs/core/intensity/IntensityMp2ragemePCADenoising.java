@@ -317,12 +317,12 @@ public class IntensityMp2ragemePCADenoising {
                     // unwrap phase images
                     IntensityFastMarchingUnwrapping unwrap = new IntensityFastMarchingUnwrapping();
                     unwrap.setPhaseImage(phs);
-                    unwrap.setMagnitudeImage(mag);
+                    //unwrap.setMagnitudeImage(mag);
                     unwrap.setDimensions(nx,ny,nz);
                     unwrap.setResolutions(rx,ry,rz);
                     unwrap.setTVScale(0.33f);
                     unwrap.setTVPostProcessing("TV-approximation");
-                    unwrap.executeImportance();
+                    unwrap.execute();
                     tvimgphs[i] = unwrap.getCorrectedImage();
                     //for (int xyz=0;xyz<nxyz;xyz++) tvimgphs[i][xyz] = invphs[xyz+i*nxyz] - tvimgphs[i][xyz];
                 } else {
