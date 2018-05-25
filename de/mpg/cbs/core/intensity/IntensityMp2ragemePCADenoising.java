@@ -322,7 +322,7 @@ public class IntensityMp2ragemePCADenoising {
                     unwrap.setResolutions(rx,ry,rz);
                     unwrap.setTVScale(0.33f);
                     unwrap.setTVPostProcessing("TV-approximation");
-                    unwrap.execute();
+                    unwrap.executeImportance();
                     tvimgphs[i] = unwrap.getCorrectedImage();
                     //for (int xyz=0;xyz<nxyz;xyz++) tvimgphs[i][xyz] = invphs[xyz+i*nxyz] - tvimgphs[i][xyz];
                 } else {
