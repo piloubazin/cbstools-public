@@ -188,7 +188,7 @@ public class IntensityGenericPCADenoising {
                 for (int n=0;n<nimg;n++) {
                     //System.out.print(" "+(eig[n]/sigma));
                     //if (n>=minDimension && nimg*Numerics.abs(eig[n]) < stdevCutoff*eigsum) {
-                    if (n>=minDimension && nimg*Numerics.abs(eig[n]) < stdevCutoff*expected[n]) {
+                    if (n>=minDimension && Numerics.abs(eig[n]) < stdevCutoff*expected[n]) {
                         //eig[n] = 0.0;
                         used[n] = false;
                         nzero++;
