@@ -59,9 +59,9 @@ public class JistShapeTopologyCorrection extends ProcessingAlgorithm {
 		inputParams.add(startImage = new ParamVolume("Starting object image (opt)"));
 		startImage.setMandatory(false);
 		
-		inputParams.add(inputParam = new ParamOption("Shape image type", ShapeTopologyCorrection.inputTypes));
-		inputParams.add(propagParam = new ParamOption("Correction direction", ShapeTopologyCorrection.propagTypes));
-		inputParams.add(connectParam = new ParamOption("Topology", ShapeTopologyCorrection.connectTypes));
+		inputParams.add(inputParam = new ParamOption("Shape image type", ShapeTopologyCorrection2.inputTypes));
+		inputParams.add(propagParam = new ParamOption("Correction direction", ShapeTopologyCorrection2.propagTypes));
+		inputParams.add(connectParam = new ParamOption("Topology", ShapeTopologyCorrection2.connectTypes));
 		
 		//inputParams.add(highestParam = new ParamFloat("Highest (absolute or relative) value", -1e16f, 1e16f, 1.0f));
 		//inputParams.add(lowestParam = new ParamFloat("Lowest (absolute or relative) value", -1e16f, 1e16f, 0.0f));

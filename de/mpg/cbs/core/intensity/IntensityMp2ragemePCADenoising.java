@@ -22,7 +22,7 @@ public class IntensityMp2ragemePCADenoising {
 	private 	float 		rx, ry, rz;
 
 	private     int         nimg = 5;
-	private		float		stdevCutoff = 1.0f;
+	private		float		stdevCutoff = 1.1f;
 	private     int         minDimension = 2;
 	private     int         maxDimension = -1;
 	private     int         ngbSize = 5;
@@ -289,6 +289,7 @@ public class IntensityMp2ragemePCADenoising {
 		double phsscale = (phsmax-phsmin)/(2.0*FastMath.PI);
 		
 		// opt. remove TV global variations
+		/*
 		float[][] tvimgmag = null;
 		if (tvmag) {
 		    tvimgmag = new float[nimg][];
@@ -297,23 +298,40 @@ public class IntensityMp2ragemePCADenoising {
                 System.out.println("global variations removal magnitude "+(i+1));
                 for (int xyz=0;xyz<nxyz;xyz++) tmp[xyz] = invmag[xyz+i*nxyz];
                 // separate the magnitude images
-                TotalVariation1D algo = new TotalVariation1D(tmp,null,nx,ny,nz, 0.33f, 0.125f, 0.001f, 100);
+                TotalVariation1D algo = new TotalVariation1D(tmp,null,nx,ny,nz, 0.01f, 0.125f, 0.0001f, 100);
                 algo.solve();
                 tvimgmag[i] = algo.exportResult();
                 for (int xyz=0;xyz<nxyz;xyz++) invmag[xyz+i*nxyz] -= tvimgmag[i][xyz];
             }
-        }
+        }*/
         float[][] tvimgphs = null;
 		if (tvphs) {
 		    tvimgphs = new float[nimg][];
-		    float[] tmp = new float[nxyz];
+		    float[] phs = new float[nxyz];
+		    float[] mag = new float[nxyz];
 		    for (int i=0;i<nimg;i++) {
-               System.out.println("global variations removal phase "+(i+1));
-                 for (int xyz=0;xyz<nxyz;xyz++) tmp[xyz] = invphs[xyz+i*nxyz];
-                // separate the magnitude images
-                TotalVariation1D algo = new TotalVariation1D(tmp,null,nx,ny,nz, 0.33f, 0.125f, 0.001f, 100);
-                algo.solveWrapped();
-                tvimgphs[i] = algo.exportResultWrapped();
+		        System.out.println("global variations removal phase "+(i+1));
+                for (int xyz=0;xyz<nxyz;xyz++) phs[xyz] = invphs[xyz+i*nxyz];
+                if (tvmag) {
+                    for (int xyz=0;xyz<nxyz;xyz++) mag[xyz] = invmag[xyz+i*nxyz];
+                    // unwrap phase images
+                    IntensityFastMarchingUnwrapping unwrap = new IntensityFastMarchingUnwrapping();
+                    unwrap.setPhaseImage(phs);
+                    //unwrap.setMagnitudeImage(mag);
+                    unwrap.setDimensions(nx,ny,nz);
+                    unwrap.setResolutions(rx,ry,rz);
+                    unwrap.setTVScale(0.33f);
+                    unwrap.setTVPostProcessing("TV-approximation");
+                    unwrap.execute();
+                    tvimgphs[i] = unwrap.getCorrectedImage();
+                    //for (int xyz=0;xyz<nxyz;xyz++) tvimgphs[i][xyz] = invphs[xyz+i*nxyz] - tvimgphs[i][xyz];
+                } else {
+                    TotalVariation1D algo = new TotalVariation1D(phs,null,nx,ny,nz, 0.33f, 0.125f, 0.0001f, 100);
+                    algo.solveWrapped();
+                    tvimgphs[i] = algo.exportResultWrapped();
+                    //algo.solve();
+                    //tvimgphs[i] = algo.exportResult();
+                }
                 for (int xyz=0;xyz<nxyz;xyz++) invphs[xyz+i*nxyz] -= tvimgphs[i][xyz];
             }
         }
@@ -496,14 +514,11 @@ public class IntensityMp2ragemePCADenoising {
         }
         
         // opt. add back the TV estimate, if needed
-        if (tvmag) {
-            for (int i=0;i<nimg;i++) for (int xyz=0;xyz<nxyz;xyz++) {
-                invmag[xyz+i*nxyz] += tvimgmag[i][xyz];
-            }
-        }
         if (tvphs) {
             for (int i=0;i<nimg;i++) for (int xyz=0;xyz<nxyz;xyz++) {
                 invphs[xyz+i*nxyz] += tvimgphs[i][xyz];
+                // wrap around phase values?
+                invphs[xyz+i*nxyz] = Numerics.modulo(invphs[xyz+i*nxyz], phsmax-phsmin);
             }
         }
 		return;

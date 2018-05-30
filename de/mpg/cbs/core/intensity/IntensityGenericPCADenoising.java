@@ -20,10 +20,10 @@ public class IntensityGenericPCADenoising {
 	private 	float 		rx, ry, rz;
 
 	private     int         nimg = 5;
-	private		float		stdevCutoff = 2.3f;
+	private		float		stdevCutoff = 1.1f;
 	private     int         minDimension = 2;
 	private     int         maxDimension = -1;
-	private     int         ngbSize = 4;
+	private     int         ngbSize = 5;
 		
 	// output parameters
 	private		float[][] denoised = null;
@@ -140,9 +140,55 @@ public class IntensityGenericPCADenoising {
                     eig[n] = svd.getSingularValues()[n];
                     eigsum += Numerics.abs(eig[n]);
                 }
+                // fit second half linear decay model
+                int nimgh = Numerics.ceil(nimg/2.0f);
+                double[] loc = new double[nimgh];
+                double[][] fit = new double[nimgh][1];
+                for (int n=nimg-nimgh;n<nimg;n++) {
+                    loc[n-nimg+nimgh] = (n-nimg+nimgh)/(double)nimgh;
+                    fit[n-nimg+nimgh][0] = Numerics.abs(eig[n]);
+                }
+                double[][] poly = new double[nimgh][2];
+                for (int n=0;n<nimgh;n++) {
+                    poly[n][0] = 1.0;
+                    poly[n][1] = loc[n];
+                }
+                // invert the linear model
+                Matrix mtx = new Matrix(poly);
+                Matrix smp = new Matrix(fit);
+                Matrix val = mtx.solve(smp);
+		
+                /*
+                // use robust measurement?
+                // Teil-Shen estimator ? not working properly...
+                double[] slopes = new double[nimg*(nimg-1)];
+                int s=0;
+                for (int n=nimg;n<nimg2;n++) for (int m=n+1;m<nimg2;m++) {
+                    slopes[s] = (Numerics.abs(eig[n]) - Numerics.abs(eig[m]))/(double)(n-m);
+                    s++;
+                }
+                Percentile measure = new Percentile();
+				double slope = measure.evaluate(slopes, 50.0);
+				double[] intercepts = new double[nimg];
+				for (int n=nimg;n<nimg2;n++) {
+				    intercepts[n-nimg] = Numerics.abs(eig[n]) - n*slope;
+				}
+				double intercept = measure.evaluate(intercepts, 50.0);
+				*/
+                // compute the expected value:
+                double[] expected = new double[nimg];
+                for (int n=0;n<nimg;n++) {
+                    double n0 = (n-nimg+nimgh)/(double)nimgh;
+                    // linear coeffs,
+                    expected[n] = (val.get(0,0) + n0*val.get(1,0));
+                    //expected[n] = n*slope + intercept;
+                }
+                
+				
                 for (int n=0;n<nimg;n++) {
                     //System.out.print(" "+(eig[n]/sigma));
-                    if (n>=minDimension && nimg*Numerics.abs(eig[n]) < stdevCutoff*eigsum) {
+                    //if (n>=minDimension && nimg*Numerics.abs(eig[n]) < stdevCutoff*eigsum) {
+                    if (n>=minDimension && Numerics.abs(eig[n]) < stdevCutoff*expected[n]) {
                         //eig[n] = 0.0;
                         used[n] = false;
                         nzero++;

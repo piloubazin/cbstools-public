@@ -64,7 +64,6 @@ public class IntensityPropagate {
 		// different settings
 		byte ZERO = 1, MASK = 2, LOWER = 3, HIGHER = 4;
 		byte target = ZERO;
-		boolean[] mask = null;
 		if (targetParam.equals("mask")) target = MASK;
 		if (targetParam.equals("lower")) target = LOWER;
 		if (targetParam.equals("higher")) target = HIGHER;
