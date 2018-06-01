@@ -67,8 +67,8 @@ public class JistIntensityComplexPCADenoising extends ProcessingAlgorithm {
 		inputParams.add(cutoffParam = new ParamFloat("Stdev cutoff", 0.0f, 100.0f, 1.0f));
 		inputParams.add(mindimParam = new ParamInteger("Minimum dimension", 0, 100, 2));
         inputParams.add(maxdimParam = new ParamInteger("Maximum dimension", -1, 100, -1));
-        inputParams.add(sizeParam = new ParamInteger("Patch size", 3, 20, 5));
-        inputParams.add(windowParam = new ParamInteger("Window size", 3, 500, 5));
+        inputParams.add(sizeParam = new ParamInteger("Patch size", 2, 20, 5));
+        inputParams.add(windowParam = new ParamInteger("Window size", -1, 1000, 5));
         //inputParams.add(separateParam = new ParamBoolean("Separate mag/phs", false));
         //inputParams.add(tvmagParam = new ParamBoolean("Magnitude TV subtraction", false));
         //inputParams.add(tvphsParam = new ParamBoolean("Phase TV subtraction", false));
