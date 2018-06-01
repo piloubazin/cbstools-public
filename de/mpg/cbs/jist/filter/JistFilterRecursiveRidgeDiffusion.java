@@ -87,8 +87,8 @@ public class JistFilterRecursiveRidgeDiffusion extends ProcessingAlgorithm {
 		
 		//inputParams.add(thresholdParam = new ParamFloat("Probability threshold", 0.0, 1.0, 0.5));
 		//inputParams.add(angleParam = new ParamFloat("Scale factor ", 0.25f, 2.0f, 1.0f));
-		inputParams.add(minscaleParam = new ParamInteger("Minimum scale ", 0, 10, 0));
-		inputParams.add(maxscaleParam = new ParamInteger("Maximum scale ", 0, 10, 3));
+		inputParams.add(minscaleParam = new ParamInteger("Minimum scale ", 0, 100, 0));
+		inputParams.add(maxscaleParam = new ParamInteger("Maximum scale ", 0, 100, 3));
 
 		inputParams.add(propagationParam = new ParamOption("Propagation model", FilterRecursiveRidgeDiffusion.propagationTypes));
 		inputParams.add(difffactorParam = new ParamFloat("Diffusion factor", 0.0f, 100.0f, 1.0f));

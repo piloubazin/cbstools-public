@@ -95,7 +95,7 @@ public class IntensityGenericPCADenoising {
 		denoised = new float[nimg][nxyz];
 		float[] weights = new float[nxyz];
 		pcadim = new float[nxyz];
-        //errmap = new float[nxyz*(2+nimg)];
+		errmap = new float[nxyz];
         // border issues should be cleaned-up, ignored so far
 		for (int x=0;x<nx;x+=nstep) for (int y=0;y<ny;y+=nstep) for (int z=0;z<nz;z+=nstep) {
 		    int ngbx = Numerics.min(ngb, nx-x);
@@ -183,8 +183,18 @@ public class IntensityGenericPCADenoising {
                     expected[n] = (val.get(0,0) + n0*val.get(1,0));
                     //expected[n] = n*slope + intercept;
                 }
-                
-				
+                double residual = 0.0;
+                double meaneig = 0.0;
+                double variance = 0.0;
+                for (int n=nimgh;n<nimg;n++) meaneig += Numerics.abs(eig[n]);
+                meaneig /= (nimg-nimgh);
+                for (int n=nimgh;n<nimg;n++) {
+                    variance += (meaneig-Numerics.abs(eig[n]))*(meaneig-Numerics.abs(eig[n]));
+                    residual += (expected[n]-Numerics.abs(eig[n]))*(expected[n]-Numerics.abs(eig[n]));
+                }
+                double rsquare = 1.0;
+                if (variance>0) rsquare -= (residual/variance);
+               
                 for (int n=0;n<nimg;n++) {
                     //System.out.print(" "+(eig[n]/sigma));
                     //if (n>=minDimension && nimg*Numerics.abs(eig[n]) < stdevCutoff*eigsum) {
@@ -222,22 +232,23 @@ public class IntensityGenericPCADenoising {
                     }
                     weights[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)wpatch;
                     pcadim[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*(nimg-nzero));
-                    //errmap[x+dx+nx*(y+dy)+nx*ny*(z+dz)+nimg*nxyz] += (float)(wpatch*sigma);
+                    errmap[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*rsquare);
                 }
             }
         }
-		errmap = new float[nxyz];
+        
+		//errmap = new float[nxyz];
         for (int xyz=0;xyz<nxyz;xyz++) {
             double err = 0.0;
             for (int i=0;i<nimg;i++) {
                 denoised[i][xyz] /= weights[xyz];
-                err += (denoised[i][xyz]-images[i][xyz])*(denoised[i][xyz]-images[i][xyz]);
+                //err += (denoised[i][xyz]-images[i][xyz])*(denoised[i][xyz]-images[i][xyz]);
                 //errmap[xyz+i*nxyz] /= weights[xyz];
             }
             pcadim[xyz] /= weights[xyz];
-            //errmap[xyz+nimg*nxyz] /= weights[xyz];
+            errmap[xyz] /= weights[xyz];
             //errmap[xyz+nimg*nxyz+nxyz] = (float)FastMath.sqrt(err/nimg);
-            errmap[xyz] = (float)FastMath.sqrt(err/nimg);
+            //errmap[xyz] = (float)FastMath.sqrt(err/nimg);
         }
         images = null;
               

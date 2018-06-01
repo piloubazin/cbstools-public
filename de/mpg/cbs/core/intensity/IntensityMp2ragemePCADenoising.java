@@ -443,6 +443,17 @@ public class IntensityMp2ragemePCADenoising {
                     expected[n] = (val.get(0,0) + n0*val.get(1,0));
                     //expected[n] = n*slope + intercept;
                 }
+                double residual = 0.0;
+                double meaneig = 0.0;
+                double variance = 0.0;
+                for (int n=nimg;n<nimg2;n++) meaneig += Numerics.abs(eig[n]);
+                meaneig /= nimg;
+                for (int n=nimg;n<nimg2;n++) {
+                    variance += (meaneig-Numerics.abs(eig[n]))*(meaneig-Numerics.abs(eig[n]));
+                    residual += (expected[n]-Numerics.abs(eig[n]))*(expected[n]-Numerics.abs(eig[n]));
+                }
+                double rsquare = 1.0;
+                if (variance>0) rsquare -= (residual/variance);
                 
 				
                 for (int n=0;n<nimg2;n++) {
@@ -478,12 +489,12 @@ public class IntensityMp2ragemePCADenoising {
                     for (int i=0;i<nimg2;i++) {
                         denoised[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*patch[dx+ngbx*dy+ngbx*ngby*dz][i]);
                         eigval[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*eig[i]);
-                        //eigvec[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*U.get(dx+ngbx*dy+ngbx*ngby*dz,i));
-                        eigvec[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*expected[i]);
+                        eigvec[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*U.get(dx+ngbx*dy+ngbx*ngby*dz,i));
+                        //eigvec[i][x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*expected[i]);
                     }
                     weights[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)wpatch;
                     pcadim[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*(nimg2-nzero));
-                    errmap[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*val.get(1,0));
+                    errmap[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*rsquare);
                     //errmap[x+dx+nx*(y+dy)+nx*ny*(z+dz)] += (float)(wpatch*slope);
                 }
             }
