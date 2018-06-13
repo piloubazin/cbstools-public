@@ -16,8 +16,8 @@ import Jama.*;
 public class IntensityComplexPCADenoising {
 
 	// input parameters
-	private		float[] 	invmag = null;
-	private		float[] 	invphs = null;
+	private		float[][] 	invmag = null;
+	private		float[][] 	invphs = null;
 	private		int			nx, ny, nz, nxyz;
 	private 	float 		rx, ry, rz;
 
@@ -26,7 +26,7 @@ public class IntensityComplexPCADenoising {
 	private     int         minDimension = 2;
 	private     int         maxDimension = -1;
 	private     int         ngbSize = 5;
-	private     int         winSize = 5;
+	private     int         winSize = -1;
 	//private     boolean     separate = false;
 	//private     boolean     tvmag = false;
 	//private     boolean     tvphs = false;
@@ -47,21 +47,50 @@ public class IntensityComplexPCADenoising {
 	private	float[][] errmap;
 	
 	// set inputs
-	public final void setMagnitudeImages(float[] in) { invmag = in; }
-	public final void setPhaseImages(float[] in) { invphs = in; }
-
-	public final void setMagnitudeAndPhaseImage(float[] in) {
-	    if (invmag==null || invphs==null) {
-	        if (nxyz==0) nxyz = in.length/2;
-	        invmag = new float[nxyz*nimg];
-	        invphs = new float[nxyz*nimg];
+	public final void setMagnitudeImages(float[] in)  {
+	    if (invmag==null) {
+	        invmag = new float[nimg][nxyz];
 	    }
 	    for (int i=0;i<nimg;i++) {
             for (int xyz=0;xyz<nxyz;xyz++) {
-                invmag[xyz+i*nxyz] = in[xyz+i*nxyz];
-                invphs[xyz+i*nxyz] = in[xyz+i*nxyz+nimg*nxyz];
+                invmag[i][xyz] = in[xyz+i*nxyz];
             }
         }
+	}
+	public final void setPhaseImages(float[] in)  {
+	    if (invphs==null) {
+	        invphs = new float[nimg][nxyz];
+	    }
+	    for (int i=0;i<nimg;i++) {
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                invphs[i][xyz] = in[xyz+i*nxyz+nimg*nxyz];
+            }
+        }
+	}
+
+	public final void setMagnitudeAndPhaseImage(float[] in) {
+	    if (invmag==null || invphs==null) {
+	        invmag = new float[nimg][nxyz];
+	        invphs = new float[nimg][nxyz];
+	    }
+	    for (int i=0;i<nimg;i++) {
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                invmag[i][xyz] = in[xyz+i*nxyz];
+                invphs[i][xyz] = in[xyz+i*nxyz+nimg*nxyz];
+            }
+        }
+	}
+	
+	public final void setMagnitudeImageAt(int n, float[] in) {
+	    if (invmag==null) invmag = new float[nimg][];
+	    
+	    invmag[n] = in;
+	}
+	
+	public final void setPhaseImageAt(int n, float[] in) {
+	    if (invphs==null) invphs = new float[nimg][];
+	    
+	    invphs[n] = in;
 	}
 	
 	public final void setImageNumber(int in) { nimg = in; }
@@ -93,14 +122,33 @@ public class IntensityComplexPCADenoising {
 	public final String getVersion() { return "3.1.3"; }
 
 	// get outputs
-	public float[] getDenoisedMagnitudeImages() { return invmag; }
-	public float[] getDenoisedPhaseImages() { return invphs; }
+	public float[] getDenoisedMagnitudeImageAt(int n) { return invmag[n]; }
+	public float[] getDenoisedPhaseImageAt(int n) { return invphs[n]; }
+	
+	public float[] getDenoisedMagnitudeImages() {
+	    float[] combi = new float[nxyz*nimg];
+	    for (int i=0;i<nimg;i++) {
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                combi[xyz+i*nxyz] = invmag[i][xyz];
+            }
+	    }
+	    return combi;
+	}
+	public float[] getDenoisedPhaseImages(){
+	    float[] combi = new float[nxyz*nimg];
+	    for (int i=0;i<nimg;i++) {
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                combi[xyz+i*nxyz] = invphs[i][xyz];
+            }
+	    }
+	    return combi;
+	}
 	public float[] getDenoisedMagnitudeAndPhaseImage() {
 	    float[] combi = new float[2*nxyz*nimg];
 	    for (int i=0;i<nimg;i++) {
             for (int xyz=0;xyz<nxyz;xyz++) {
-                combi[xyz+i*nxyz] = invmag[xyz+i*nxyz];
-                combi[xyz+i*nxyz+nimg*nxyz] = invphs[xyz+i*nxyz];
+                combi[xyz+i*nxyz] = invmag[i][xyz];
+                combi[xyz+i*nxyz+nimg*nxyz] = invphs[i][xyz];
             }
 	    }
 	    return combi;
@@ -157,11 +205,13 @@ public class IntensityComplexPCADenoising {
 		if (invmag==null || invphs==null) System.out.print("data stacks not properly initialized!\n");
 		
 		// renormalize phase
-		float phsmin = invphs[0];
-		float phsmax = invphs[0];
-        for (int xyz=0;xyz<nimg*nxyz;xyz++) {
-			if (invphs[xyz]<phsmin) phsmin = invphs[xyz];
-			if (invphs[xyz]>phsmax) phsmax = invphs[xyz];
+		float phsmin = invphs[0][0];
+		float phsmax = invphs[0][0];
+        for (int i=0;i<nimg;i++) {
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                if (invphs[i][xyz]<phsmin) phsmin = invphs[i][xyz];
+                if (invphs[i][xyz]>phsmax) phsmax = invphs[i][xyz];
+            }
 		}
 		double phsscale = (phsmax-phsmin)/(2.0*FastMath.PI);
 		
@@ -172,7 +222,7 @@ public class IntensityComplexPCADenoising {
         float[] phs = new float[nxyz];
         for (int i=0;i<nimg;i++) {
             System.out.print("global variations removal phase "+(i+1)+"\n");
-            for (int xyz=0;xyz<nxyz;xyz++) phs[xyz] = invphs[xyz+i*nxyz];
+            for (int xyz=0;xyz<nxyz;xyz++) phs[xyz] = invphs[i][xyz];
              // unwrap phase images
             IntensityFastMarchingUnwrapping unwrap = new IntensityFastMarchingUnwrapping();
             unwrap.setPhaseImage(phs);
@@ -182,7 +232,7 @@ public class IntensityComplexPCADenoising {
             unwrap.setTVPostProcessing("TV-approximation");
             unwrap.execute();
             tvimgphs[i] = unwrap.getCorrectedImage();
-            for (int xyz=0;xyz<nxyz;xyz++) invphs[xyz+i*nxyz] -= tvimgphs[i][xyz];
+            for (int xyz=0;xyz<nxyz;xyz++) invphs[i][xyz] -= tvimgphs[i][xyz];
         }
         //}
 		
@@ -190,8 +240,8 @@ public class IntensityComplexPCADenoising {
 		images = new float[2*nimg][nxyz];
 		for (int i=0;i<nimg;i++) {
             for (int xyz=0;xyz<nxyz;xyz++) {
-                images[2*i][xyz] = (float)(invmag[xyz+i*nxyz]*FastMath.cos(invphs[xyz+i*nxyz]/phsscale));
-                images[2*i+1][xyz] = (float)(invmag[xyz+i*nxyz]*FastMath.sin(invphs[xyz+i*nxyz]/phsscale));
+                images[2*i][xyz] = (float)(invmag[i][xyz]*FastMath.cos(invphs[i][xyz]/phsscale));
+                images[2*i+1][xyz] = (float)(invmag[i][xyz]*FastMath.sin(invphs[i][xyz]/phsscale));
             }
         }
         invmag = null;
@@ -376,29 +426,39 @@ public class IntensityComplexPCADenoising {
         //images = null;
           
         // 3. rebuild magnitude and phase images
-        invmag = new float[nimg*nxyz];
-        invphs = new float[nimg*nxyz];
+        invmag = new float[nimg][nxyz];
+        invphs = new float[nimg][nxyz];
   		for (int i=0;i<nimg;i++) {
             for (int xyz=0;xyz<nxyz;xyz++) {
-                invmag[xyz+i*nxyz] = (float)FastMath.sqrt(denoised[2*i][xyz]*denoised[2*i][xyz]+denoised[2*i+1][xyz]*denoised[2*i+1][xyz]);
-                invphs[xyz+i*nxyz] = (float)(FastMath.atan2(denoised[2*i+1][xyz],denoised[2*i][xyz])*phsscale);
+                invmag[i][xyz] = (float)FastMath.sqrt(denoised[2*i][xyz]*denoised[2*i][xyz]+denoised[2*i+1][xyz]*denoised[2*i+1][xyz]);
+                invphs[i][xyz] = (float)(FastMath.atan2(denoised[2*i+1][xyz],denoised[2*i][xyz])*phsscale);
              }
         }
-        globalpcadim = new float[nimg*nxyz];
-        globalerrmap = new float[nimg*nxyz];
-  		for (int i=0;i<nimg;i++) {
+        
+        if (ntime==nimg) {
+            globalpcadim = new float[nxyz];
+            globalerrmap = new float[nxyz];
             for (int xyz=0;xyz<nxyz;xyz++) {
-                globalpcadim[xyz+i*nxyz] = pcadim[i][xyz];
-                globalerrmap[xyz+i*nxyz] = errmap[i][xyz];
+                globalpcadim[xyz] = pcadim[0][xyz];
+                globalerrmap[xyz] = errmap[0][xyz];
+            }
+        } else {
+            globalpcadim = new float[nimg*nxyz];
+            globalerrmap = new float[nimg*nxyz];
+            for (int i=0;i<nimg;i++) {
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    globalpcadim[xyz+i*nxyz] = pcadim[i][xyz];
+                    globalerrmap[xyz+i*nxyz] = errmap[i][xyz];
+                }
             }
         }
         
         // opt. add back the TV estimate, if needed
         //if (tvphs) {
         for (int i=0;i<nimg;i++) for (int xyz=0;xyz<nxyz;xyz++) {
-            invphs[xyz+i*nxyz] += tvimgphs[i][xyz];
+            invphs[i][xyz] += tvimgphs[i][xyz];
             // wrap around phase values?
-            invphs[xyz+i*nxyz] = Numerics.modulo(invphs[xyz+i*nxyz], phsmax-phsmin);
+            invphs[i][xyz] = Numerics.modulo(invphs[i][xyz], phsmax-phsmin);
         }
         //}
 		return;
@@ -413,13 +473,16 @@ public class IntensityComplexPCADenoising {
 		if (invmag==null) System.out.print("data stacks not properly initialized!\n");
 		
 		// 1. pass directly the magnitude signal
+		/*
 		images = new float[nimg][nxyz];
 		for (int i=0;i<nimg;i++) {
             for (int xyz=0;xyz<nxyz;xyz++) {
-                images[i][xyz] = invmag[xyz+i*nxyz];
+                images[i][xyz] = invmag[i][xyz];
             }
         }
         invmag = null;
+        */
+        images = invmag;
         
 		// 2. estimate PCA in slabs of NxNxN size xT windows
 		int ngb = ngbSize;
@@ -600,18 +663,31 @@ public class IntensityComplexPCADenoising {
         //images = null;
           
         // 3. rebuild magnitude and phase images
-        invmag = new float[nimg*nxyz];
+        /*
+        invmag = new float[nimg][nxyz];
         for (int i=0;i<nimg;i++) {
             for (int xyz=0;xyz<nxyz;xyz++) {
-                invmag[xyz+i*nxyz] = (float)denoised[i][xyz];
+                invmag[i][xyz] = denoised[i][xyz];
             }
         }
-        globalpcadim = new float[nimg*nxyz];
-        globalerrmap = new float[nimg*nxyz];
-  		for (int i=0;i<nimg;i++) {
+        */
+        invmag = denoised;
+        
+        if (ntime==nimg) {
+            globalpcadim = new float[nxyz];
+            globalerrmap = new float[nxyz];
             for (int xyz=0;xyz<nxyz;xyz++) {
-                globalpcadim[xyz+i*nxyz] = pcadim[i][xyz];
-                globalerrmap[xyz+i*nxyz] = errmap[i][xyz];
+                globalpcadim[xyz] = pcadim[0][xyz];
+                globalerrmap[xyz] = errmap[0][xyz];
+            }
+        } else {
+            globalpcadim = new float[nimg*nxyz];
+            globalerrmap = new float[nimg*nxyz];
+            for (int i=0;i<nimg;i++) {
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    globalpcadim[xyz+i*nxyz] = pcadim[i][xyz];
+                    globalerrmap[xyz+i*nxyz] = errmap[i][xyz];
+                }
             }
         }
   		return;
