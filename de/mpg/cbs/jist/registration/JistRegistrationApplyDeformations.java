@@ -30,13 +30,16 @@ import java.io.*;
 import java.util.*;
 import gov.nih.mipav.view.*;
 
-import gov.nih.mipav.model.algorithms.AlgorithmWSinc;
+//import gov.nih.mipav.model.algorithms.AlgorithmWSinc;
+import de.mpg.cbs.core.registration.RegistrationApplyDeformations;
 
 /*
  * @author Pierre-Louis Bazin
  */
 public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 
+    private RegistrationApplyDeformation algorithm;
+    
 	// jist containers
 	private ParamVolume sourceImage;
 	private ParamVolume referenceImage;
@@ -49,11 +52,11 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 	private ParamOption interpOption;
 	private ParamOption padOption;
 	
-	private static final String[] types = {"none", "deformation(voxels)", "mapping(voxels)", "deformation(mm)", "mapping(mm)"};
-	private static final String[] interp = {"NN", "linear", "WSinc"};
-	private static final String[] pads = {"closest", "zero", "min", "max"};
+	//private static final String[] types = {"none", "deformation(voxels)", "mapping(voxels)", "deformation(mm)", "mapping(mm)"};
+	//private static final String[] interp = {"NN", "linear", "WSinc"};
+	//private static final String[] pads = {"closest", "zero", "min", "max"};
 	
-	private ParamVolume mappedImage;
+	private ParamVolume deformedImage;
 	
 	// global variables
 	private static final byte X = 0;
@@ -67,42 +70,44 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 		inputParams.add(sourceImage = new ParamVolume("Image to deform",null,-1,-1,-1,-1));
 		inputParams.add(referenceImage = new ParamVolume("Reference Image",null,-1,-1,-1,-1));
 		inputParams.add(deformation1Image = new ParamVolume("Deformation 1",null,-1,-1,-1,-1));
-		inputParams.add(type1Option = new ParamOption("Deformation type 1",types));
+		inputParams.add(type1Option = new ParamOption("Deformation type 1",RegistrationApplyDeformations.types));
 		type1Option.setValue("mapping(voxels)");
 		inputParams.add(deformation2Image = new ParamVolume("Deformation 2",null,-1,-1,-1,-1));
-		inputParams.add(type2Option = new ParamOption("Deformation type 2",types));
+		inputParams.add(type2Option = new ParamOption("Deformation type 2",RegistrationApplyDeformations.types));
 		deformation2Image.setMandatory(false);
 		type2Option.setValue("none");
 		inputParams.add(deformation3Image = new ParamVolume("Deformation 3",null,-1,-1,-1,-1));
-		inputParams.add(type3Option = new ParamOption("Deformation type 3",types));
+		inputParams.add(type3Option = new ParamOption("Deformation type 3",RegistrationApplyDeformations.types));
 		deformation3Image.setMandatory(false);
 		type3Option.setValue("none");
-		inputParams.add(interpOption = new ParamOption("Interpolation type",interp));
-		inputParams.add(padOption = new ParamOption("Image padding",pads));
+		inputParams.add(interpOption = new ParamOption("Interpolation type",RegistrationApplyDeformations.interp));
+		inputParams.add(padOption = new ParamOption("Image padding",RegistrationApplyDeformations.pads));
 		
 		sourceImage.setLoadAndSaveOnValidate(false);
 		referenceImage.setLoadAndSaveOnValidate(false);
 		deformation1Image.setLoadAndSaveOnValidate(false);
 		deformation2Image.setLoadAndSaveOnValidate(false);
 		
-		inputParams.setPackage("CBS Tools");
-		inputParams.setCategory("Registration");
-		inputParams.setLabel("Apply Deformations");
-		inputParams.setName("ApplyDeformations");
+		algorithm = new RegistrationApplyDeformations();
+		
+		inputParams.setPackage(algorithm.getPackage());
+		inputParams.setCategory(algorithm.getCategory());
+		inputParams.setLabel(algorithm.getLabel());
+		inputParams.setName(algorithm.getName());
 
 		AlgorithmInformation info = getAlgorithmInformation();
-		info.add(new AlgorithmAuthor("Pierre-Louis Bazin", "bazin@cbs.mpg.de","http://www.cbs.mpg.de/"));
-		info.setAffiliation("Max Planck Institute for Human Cognitive and Brain Sciences");
-		info.setDescription("Apply multiple deformations from non-linear transformations. Transformations can be a deformation field or a coordinate mapping.");
+		info.add(References.getAuthor(algorithm.getAlgorithmAuthors()[0]));
+		info.setAffiliation(algorithm.getAffiliation());
+		info.setDescription(algorithm.getDescription());
 		
-		info.setVersion("3.1.2");
+		info.setVersion(algorithm.getVersion());
 		info.setStatus(DevelopmentStatus.RC);
 		info.setEditable(false);
 	}
 
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
-		outputParams.add(mappedImage = new ParamVolume("Deformed Image",null,-1,-1,-1,-1));
+		outputParams.add(deformedImage = new ParamVolume("Deformed Image",null,-1,-1,-1,-1));
 		
 		outputParams.setName("deformed images");
 		outputParams.setLabel("deformed images");
@@ -110,7 +115,43 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 
 	@Override
 	protected void execute(CalculationMonitor monitor){
+		// i/o variables
+		int[] dims = Interface.getDimensions4D(sourceImage);
+		float[] res = Interface.getResolutions(sourceImage);
+		String name = Interface.getName(sourceImage);
+		ImageHeader header = Interface.getHeader(sourceImage);
 		
+		// main algorithm
+		algorithm = new RegistrationApplyDeformations();
+		
+		if (dims[T]>1) algorithm.setSourceImage(Interface.getFloatImage4D(sourceImage));
+		else algorithm.setSourceImage(Interface.getFloatImage3D(sourceImage));
+		algorithm.setImageDimensions(dims);
+		algorithm.setImageResolutions(res);
+		
+		// load the deformations
+		algorithm.setDeformationMapping1(Interface.getFloatImage4D(deformation1Image));
+		algorithm.setDeformationType1(type1Option.getValue()); 
+		algorithm.setDeformation1Dimensions(Interface.getDimensions(deformation1Image));
+		algorithm.setDeformation1Resolutions(nterface.getResolutions(deformation1Image));
+		
+		if (!type2Option.getValue().equals("none") && Interface.isValid(deformation2Image)) {
+		    algorithm.setDeformationMapping2(Interface.getFloatImage4D(deformation2Image));
+            algorithm.setDeformationType2(type2Option.getValue()); 
+            algorithm.setDeformation2Dimensions(Interface.getDimensions(deformation2Image));
+            algorithm.setDeformation2Resolutions(nterface.getResolutions(deformation2Image));
+            
+            if (!type3Option.getValue().equals("none") && Interface.isValid(deformation3Image)) {
+                algorithm.setDeformationMapping3(Interface.getFloatImage4D(deformation3Image));
+                algorithm.setDeformationType3(type3Option.getValue()); 
+                algorithm.setDeformation3Dimensions(Interface.getDimensions(deformation3Image));
+                algorithm.setDeformation3Resolutions(nterface.getResolutions(deformation3Image));
+                
+                
+            }
+               
+		}
+		 
 		// import the image data into 1D arrays : TO DO
 		
 		ImageDataFloat	sourceImg = new ImageDataFloat(sourceImage.getImageData());
