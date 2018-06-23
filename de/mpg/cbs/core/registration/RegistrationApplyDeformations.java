@@ -67,6 +67,7 @@ public class RegistrationApplyDeformations {
 	public final void setImagePadding(String val) { padOption = val; }
 		
 	
+	public final void setImageDimensions(int x, int y, int z) { nsx=x; nsy=y; nsz=z; nst=1; nsxyz=nsx*nsy*nsz; }
 	public final void setImageDimensions(int x, int y, int z, int t) { nsx=x; nsy=y; nsz=z; nst=t; nsxyz=nsx*nsy*nsz; }
 	public final void setImageDimensions(int[] dim) { nsx=dim[0]; nsy=dim[1]; nsz=dim[2]; nst=dim[3]; nsxyz=nsx*nsy*nsz; }
 	
