@@ -34,7 +34,7 @@ public class ShapeLevelsetFusion {
 	public final void setLevelsetImageAt(int n, float[] val) { lvlImages[n] = val; }
 	
 	//public static final void setFollowSkeleton(boolean val) { skelParam=val; }
-	public final void setCorrectkeletonTopology(boolean val) { topoParam=val; }
+	public final void setCorrectSkeletonTopology(boolean val) { topoParam=val; }
 	public final void setTopologyLUTdirectory(String val) { lutdir = val; }
 
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }

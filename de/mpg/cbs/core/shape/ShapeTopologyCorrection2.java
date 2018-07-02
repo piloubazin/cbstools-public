@@ -72,7 +72,7 @@ public class ShapeTopologyCorrection2 {
 	private String propagType = "object->background";
 	public static final String[] propagTypes = {"object->background","background->object"};
 	
-	private float		minDistance = 0.0001f;
+	private float		minDistance = 0.00001f;
 	
 	public static final int    OBJ2BG = 1;
 	public static final int    BG2OBJ = -1;
