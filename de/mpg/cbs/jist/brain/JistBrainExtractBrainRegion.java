@@ -165,17 +165,17 @@ public class JistBrainExtractBrainRegion extends ProcessingAlgorithm {
 		
 		algorithm.execute();
 		
-		Interface.setUByteImage3D(algorithm.getInsideWMmask(), dims, segInsideImage, segName+algorithm.getInsideName(), header);
-		Interface.setUByteImage3D(algorithm.getStructureGMmask(), dims, segStructureImage, segName+algorithm.getStructureName(), header);
-		Interface.setUByteImage3D(algorithm.getBackgroundCSFmask(), dims, segBackgroundImage, segName+algorithm.getBackgroundName(), header);
+		Interface.setUByteImage3D(algorithm.getInsideWMmask(), dims, segInsideImage, segName+"_"+algorithm.getInsideName(), header);
+		Interface.setUByteImage3D(algorithm.getStructureGMmask(), dims, segStructureImage, segName+"_"+algorithm.getStructureName(), header);
+		Interface.setUByteImage3D(algorithm.getBackgroundCSFmask(), dims, segBackgroundImage, segName+"_"+algorithm.getBackgroundName(), header);
 		
-		Interface.setFloatImage3D(algorithm.getInsideWMprobability(), dims, probaInsideImage, functName+algorithm.getInsideName(), header);
-		Interface.setFloatImage3D(algorithm.getStructureGMprobability(), dims, probaStructureImage, functName+algorithm.getStructureName(), header);
-		Interface.setFloatImage3D(algorithm.getBackgroundCSFprobability(), dims, probaBackgroundImage, functName+algorithm.getBackgroundName(), header);
+		Interface.setFloatImage3D(algorithm.getInsideWMprobability(), dims, probaInsideImage, functName+"_"+algorithm.getInsideName(), header);
+		Interface.setFloatImage3D(algorithm.getStructureGMprobability(), dims, probaStructureImage, functName+"_"+algorithm.getStructureName(), header);
+		Interface.setFloatImage3D(algorithm.getBackgroundCSFprobability(), dims, probaBackgroundImage, functName+"_"+algorithm.getBackgroundName(), header);
 		
-		Interface.setFloatImage3D(algorithm.getInsideWMlevelset(), dims, lvlInsideImage, mgdmName+algorithm.getInsideName(), header);
-		Interface.setFloatImage3D(algorithm.getStructureGMlevelset(), dims, lvlStructureImage, mgdmName+algorithm.getStructureName(), header);
-		Interface.setFloatImage3D(algorithm.getBackgroundCSFlevelset(), dims, lvlBackgroundImage, mgdmName+algorithm.getBackgroundName(), header);
+		Interface.setFloatImage3D(algorithm.getInsideWMlevelset(), dims, lvlInsideImage, mgdmName+"_"+algorithm.getInsideName(), header);
+		Interface.setFloatImage3D(algorithm.getStructureGMlevelset(), dims, lvlStructureImage, mgdmName+"_"+algorithm.getStructureName(), header);
+		Interface.setFloatImage3D(algorithm.getBackgroundCSFlevelset(), dims, lvlBackgroundImage, mgdmName+"_"+algorithm.getBackgroundName(), header);
 		
 		return;
 	}

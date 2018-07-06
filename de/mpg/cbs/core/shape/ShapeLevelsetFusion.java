@@ -83,7 +83,7 @@ public class ShapeLevelsetFusion {
             topocorrect.setPropagationDirection("background->object");
             topocorrect.setTopology("26/6");
             topocorrect.setTopologyLUTdirectory(lutdir);
-            topocorrect.setMinimumDistance(0.0001f);
+            topocorrect.setMinimumDistance(0.00001f);
 		
             topocorrect.execute();
 		

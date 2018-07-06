@@ -251,11 +251,16 @@ public class IntensityComplexPCADenoising {
 		int ngb = ngbSize;
 		int nstep = Numerics.floor(ngb/2.0);
 		int nimg2 = 2*nimg;
+		boolean timeWindow=false;
 		int ntime = Numerics.min(winSize,nimg);
 		if (ntime<0) ntime = nimg;
+		else timeWindow=true;
 		int ntime2 = 2*ntime;
 		int tstep = Numerics.floor(ntime/2.0);
 		int nsample = Numerics.ceil(nimg/tstep);
+        System.out.print("patch dimensions ["+ngb+" x "+ntime+"] shifting by ["+nstep+" x "+tstep+"]\n");
+		if (timeWindow) System.out.print("time steps: "+nsample+" (over "+nimg+" time points)\n");
+		 
 		denoised = new float[nimg2][nxyz];
 		//eigvec = new float[nimg2][nxyz];
 		//eigval = new float[nimg2][nxyz];
@@ -266,21 +271,22 @@ public class IntensityComplexPCADenoising {
         for (int t=0;t<nimg;t+=tstep) {
             boolean last = false;
 		    boolean skip = false;
-		    System.out.print("step "+(t/tstep));
-    		if (t+ntime>nimg) {
+		    if (t+ntime>nimg) {
 		        if (ntime<nimg) {
                     // shift windows at the end of the time domain if needed
                     t = nimg-ntime;
-                    System.out.print(":");
+                    if (timeWindow) System.out.print("step "+(t/tstep)+":");
                     last = true;
                 } else {
                     // skip this round entirely
-                    System.out.print("x\n");
+                    //System.out.print("x\n");
                     skip = true;
                 }
+            } else {
+                if (timeWindow) System.out.print("step "+(t/tstep));
             }
             if (!skip) {
-                System.out.print("...\n");
+                if (timeWindow) System.out.print("...\n");
                 for (int x=0;x<nx;x+=nstep) for (int y=0;y<ny;y+=nstep) for (int z=0;z<nz;z+=nstep) {
                     int ngbx = Numerics.min(ngb, nx-x);
                     int ngby = Numerics.min(ngb, ny-y);
@@ -487,12 +493,15 @@ public class IntensityComplexPCADenoising {
 		// 2. estimate PCA in slabs of NxNxN size xT windows
 		int ngb = ngbSize;
 		int nstep = Numerics.floor(ngb/2.0);
+		
+		boolean timeWindow = false;
 		int ntime = Numerics.min(winSize,nimg);
 		if (ntime<0) ntime = nimg;
+		else timeWindow = true;
 		int tstep = Numerics.floor(ntime/2.0);
 		int nsample = Numerics.ceil(nimg/tstep);
         System.out.print("patch dimensions ["+ngb+" x "+ntime+"] shifting by ["+nstep+" x "+tstep+"]\n");
-		System.out.print("time steps: "+nsample+" (over "+nimg+" time points)\n");
+		if (timeWindow) System.out.print("time steps: "+nsample+" (over "+nimg+" time points)\n");
 		 
 		denoised = new float[nimg][nxyz];
 		//eigvec = new float[nimg][nxyz];
@@ -504,21 +513,22 @@ public class IntensityComplexPCADenoising {
 		for (int t=0;t<nimg;t+=tstep) {
 		    boolean last = false;
 		    boolean skip = false;
-		    System.out.print("step "+(t/tstep));
-    		if (t+ntime>nimg) {
+		    if (t+ntime>nimg) {
 		        if (ntime<nimg) {
                     // shift windows at the end of the time domain if needed
                     t = nimg-ntime;
-                    System.out.print(":");
+                    if (timeWindow) System.out.print("step "+(t/tstep)+":");
                     last = true;
                 } else {
                     // skip this round entirely
-                    System.out.print("x\n");
+                    //System.out.print("x\n");
                     skip = true;
                 }
-            }
+            } else {
+                if (timeWindow) System.out.print("step "+(t/tstep));
+    		}
             if (!skip) {
-                System.out.print("...\n");
+                if (timeWindow) System.out.print("...\n");
                 for (int x=0;x<nx;x+=nstep) for (int y=0;y<ny;y+=nstep) for (int z=0;z<nz;z+=nstep) {
                     int ngbx = Numerics.min(ngb, nx-x);
                     int ngby = Numerics.min(ngb, ny-y);
