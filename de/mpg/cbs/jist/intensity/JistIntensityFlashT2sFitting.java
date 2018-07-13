@@ -19,6 +19,7 @@ import edu.jhu.ece.iacl.jist.structures.image.ImageDataMipav;
 
 import de.mpg.cbs.utilities.*;
 import org.apache.commons.math3.util.FastMath;
+import de.mpg.cbs.core.intensity.IntensityFlashT2sFitting;
 
 /*
  * @author Pierre-Louis bazin (bazin@cbs.mpg.de)
@@ -48,12 +49,8 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 	ParamVolume r2Param;
 	ParamVolume errParam;
 	
-	private static final String cvsversion = "$Revision: 1.1f0 $";
-	private static final String revnum = cvsversion.replace("Revision: ", "").replace("$", "").replace(" ", "");
-	private static final String shortDescription = "Fits multiple echos of a T2* sequence with an exponential to get T2* estimates";
-	private static final String longDescription = "";
-
-
+	IntensityFlashT2sFitting algorithm;
+	
 	protected void createInputParameters(ParamCollection inputParams) {
 		inputParams.add(vol1Param=new ParamVolume("Echo 1"));
 		inputParams.add(te1Param=new ParamFloat("TE 1"));
@@ -85,20 +82,20 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 		te8Param.setMandatory(false);
 		//inputParams.add(noiseParam=new ParamBoolean("Estimate background noise"));
 		
-
-		inputParams.setPackage("CBS Tools");
-		inputParams.setCategory("Intensity.devel");
-		inputParams.setLabel("Flash T2* Fitting");
-		inputParams.setName("FlashT2sFitting");
-
+		algorithm = new IntensityFlashT2sFitting();
+		inputParams.setPackage(algorithm.getPackage());
+		inputParams.setCategory(algorithm.getCategory());
+		inputParams.setLabel(algorithm.getLabel());
+		inputParams.setName(algorithm.getName());
 
 		AlgorithmInformation info = getAlgorithmInformation();
-		info.setWebsite("http://www.cbs.mpg.de/");
-		info.setDescription(shortDescription);
-		info.setLongDescription(shortDescription + longDescription);
-		info.setVersion("3.1.0");
-		info.setEditable(false);
+		info.add(References.getAuthor(algorithm.getAlgorithmAuthors()[0]));
+		info.setAffiliation(algorithm.getAffiliation());
+		info.setDescription(algorithm.getDescription());
+		
+		info.setVersion(algorithm.getVersion());
 		info.setStatus(DevelopmentStatus.RC);
+		info.setEditable(false);
 	}
 
 
@@ -118,9 +115,11 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 		int nx = vol1Img.getRows();
 		int ny = vol1Img.getCols();
 		int nz = vol1Img.getSlices();
+		int nxyz = nx*ny*nz;
 		ImageHeader header = vol1Img.getHeader();
 		String name = vol1Param.getImageData().getName();
-
+        float[] res = Interface.getResolutions(vol1Param);
+		
 		float[][][] vol1;
 		if (Interface.isImage4D(vol1Param)) {
 		    float[][][][] tmp = vol1Img.toArray4d();
@@ -209,18 +208,18 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
             } else vol8 = vol8Img.toArray3d();
 			nimg++;
 		}
-		float[][][][] vol = new float[nimg][][][];
-		vol[0] = vol1;
-		vol[1] = vol2;
-		if (nimg>2) vol[2] = vol3;
-		if (nimg>3) vol[3] = vol4;
-		if (nimg>4) vol[4] = vol5;
-		if (nimg>5) vol[5] = vol6;
-		if (nimg>6) vol[6] = vol7;
-		if (nimg>7) vol[7] = vol8;
-		
-		System.out.println("data loaded...");
-		
+		float[][] vol = new float[nimg][nxyz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+		    int xyz = x+nx*y+nx*ny*z;
+            vol[0][xyz] = vol1[x][y][z];
+            vol[1][xyz] = vol2[x][y][z];
+            if (nimg>2) vol[2][xyz] = vol3[x][y][z];
+            if (nimg>3) vol[3][xyz] = vol4[x][y][z];
+            if (nimg>4) vol[4][xyz] = vol5[x][y][z];
+            if (nimg>5) vol[5][xyz] = vol6[x][y][z];
+            if (nimg>6) vol[6][xyz] = vol7[x][y][z];
+            if (nimg>7) vol[7][xyz] = vol8[x][y][z];
+        }		
 		// retrieve the corresponding TE
 		float[] TE = new float[nimg];
 		TE[0] = te1Param.getValue().floatValue();
@@ -231,80 +230,64 @@ public class JistIntensityFlashT2sFitting extends ProcessingAlgorithm{
 		if (nimg>5) TE[5] = te6Param.getValue().floatValue();
 		if (nimg>6) TE[6] = te7Param.getValue().floatValue();
 		if (nimg>7) TE[7] = te8Param.getValue().floatValue();
+
+        algorithm = new IntensityFlashT2sFitting();
+        
+        algorithm.setNumberOfEchoes(nimg);
+        algorithm.setDimensions(nx, ny, nz);
+        algorithm.setResolutions(res);
+        for (int  i=0;i<nimg;i++) {
+            algorithm.setEchoImageAt(i, vol[i]);
+            algorithm.setEchoTimeAt(i, TE[i]);
+        }
+        
+		System.out.println("data loaded...");
 		
-		// fit the exponential
-		double Sx, Sx2, Sy, Sxy, delta;
-		Sx = 0.0f; Sx2 = 0.0f; delta = 0.0f;
-		for (int i=0;i<nimg;i++) {
-			Sx += -TE[i];
-			Sx2 += Numerics.square(-TE[i]);
-		}
-		delta = nimg*Sx2 - Sx*Sx;
-		
-		float maxval = 0.0f;
-		for (int i=0;i<nimg;i++) for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-		    if (vol[i][x][y][z]>maxval) maxval = vol[i][x][y][z];
-		}
-		maxval *= 1.20f;
-		
-		float[][][] s0 = new float[nx][ny][nz];
-		float[][][] r2 = new float[nx][ny][nz];
-		float[][][] t2 = new float[nx][ny][nz];
-		float[][][] err = new float[nx][ny][nz];
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			boolean process=true;
-			for (int i=0;i<nimg;i++) if (vol[i][x][y][z]<=0) process=false;
-			if (process) {
-				Sy = 0.0f;
-				Sxy = 0.0f;
-				for (int i=0;i<nimg;i++) {
-					double ydata = FastMath.log(vol[i][x][y][z]);
-					Sy += ydata;
-					Sxy += -ydata*TE[i];
-				}
-				s0[x][y][z] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, maxval);
-				r2[x][y][z] = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), 0.001f, 1.0f);
-				t2[x][y][z] = 1.0f/r2[x][y][z];
-				
-				err[x][y][z] = 0.0f;
-				for (int i=0;i<nimg;i++) {
-					err[x][y][z] += Numerics.square( FastMath.log(vol[i][x][y][z]) 
-													 - FastMath.log(s0[x][y][z]) + TE[i]*r2[x][y][z] );
-				}
-				err[x][y][z] = (float)FastMath.sqrt(err[x][y][z]);
-			} else {
-				
-			}
-		}
+		algorithm.execute();
+
 		System.out.println("T2* fitting..");
 		
-		ImageDataFloat s0Data = new ImageDataFloat(s0);
+		float[][][] tmp = new float[nx][ny][nz];
+		
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+		    int xyz = x+nx*y+nx*ny*z;
+		    tmp[x][y][z] = algorithm.getS0Image()[xyz];
+		}
+		ImageDataFloat s0Data = new ImageDataFloat(tmp);
 		//s0Data.setHeader(header);
 		s0Data.setName(name+"_s0");
 		s0Param.setValue(s0Data);
 		s0Data = null;
-		s0 = null;
 		
-		ImageDataFloat r2Data = new ImageDataFloat(r2);
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+		    int xyz = x+nx*y+nx*ny*z;
+		    tmp[x][y][z] = algorithm.getR2sImage()[xyz];
+		}
+		ImageDataFloat r2Data = new ImageDataFloat(tmp);
 		//r2Data.setHeader(header);
 		r2Data.setName(name+"_r2");
 		r2Param.setValue(r2Data);
 		r2Data = null;
-		r2 = null;
 		
-		ImageDataFloat t2Data = new ImageDataFloat(t2);
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+		    int xyz = x+nx*y+nx*ny*z;
+		    tmp[x][y][z] = algorithm.getT2sImage()[xyz];
+		}
+		ImageDataFloat t2Data = new ImageDataFloat(tmp);
 		//t2Data.setHeader(header);
 		t2Data.setName(name+"_t2");
 		t2Param.setValue(t2Data);
 		t2Data = null;
-		t2 = null;
 		
-		ImageDataFloat errData = new ImageDataFloat(err);
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+		    int xyz = x+nx*y+nx*ny*z;
+		    tmp[x][y][z] = algorithm.getResidualImage()[xyz];
+		}
+		ImageDataFloat errData = new ImageDataFloat(tmp);
 		//errData.setHeader(header);
 		errData.setName(name+"_err");
 		errParam.setValue(errData);
 		errData = null;
-		err = null;
 		
 		System.out.println("Done.");
 	}

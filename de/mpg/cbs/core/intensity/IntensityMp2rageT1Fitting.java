@@ -14,8 +14,8 @@ import org.apache.commons.math3.util.FastMath;
 public class IntensityMp2rageT1Fitting {
 
 	// input parameters
-	private		float[] 	inv1;
-	private		float[] 	inv2;
+	private		float[] 	inv1 = null;
+	private		float[] 	inv2 = null;
 	private		float[]		b1map = null;
 	private		int			nx, ny, nz, nxyz;
 	private 	float 		rx, ry, rz;
@@ -55,6 +55,23 @@ public class IntensityMp2rageT1Fitting {
 	public final void setFirstInversionImage(float[] in) { inv1 = in; }
 	public final void setSecondInversionImage(float[] in) { inv2 = in; }
 	public final void setB1mapImage(float[] in) { b1map = in; }
+	
+	public final void setFirstInversionMagnitude(float[] in) {
+	    if (inv1==null) inv1 = new float[2*nxyz];
+	    for (int xyz=0;xyz:nxyz;xyz++) inv1[xyz] = in[xyz];
+	}
+	public final void setFirstInversionPhase(float[] in) {
+	    if (inv1==null) inv1 = new float[2*nxyz];
+	    for (int xyz=0;xyz:nxyz;xyz++) inv1[xyz+nxyz] = in[xyz];
+	}
+	public final void setSecondInversionMagnitude(float[] in) {
+	    if (inv2==null) inv2 = new float[2*nxyz];
+	    for (int xyz=0;xyz:nxyz;xyz++) inv2[xyz] = in[xyz];
+	}
+	public final void setSecondInversionPhase(float[] in) {
+	    if (inv2==null) inv2 = new float[2*nxyz];
+	    for (int xyz=0;xyz:nxyz;xyz++) inv2[xyz+nxyz] = in[xyz];
+	}
 	
 	public final void setInversionRepetitionTime(float in) { TRinversion = in; }
 	public final void setExcitationRepetitionTime(float in) { TRexcitation1 = in; TRexcitation2 = in; }

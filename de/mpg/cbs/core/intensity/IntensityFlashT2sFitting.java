@@ -7,15 +7,19 @@ import org.apache.commons.math3.util.FastMath;
  * @author Pierre-Louis bazin (bazin@cbs.mpg.de)
  *
  */
-public class InimgensityFlashT2sFitting {
+public class IntensityFlashT2sFitting {
 	float[][] image = null;
 	float[] te;
+	
+	int nx, ny, nz, nxyz;
+	float rx, ry, rz;
+	
 	int nimg = 4;
 	float imax = 4000.0f;
 	
 	float[] s0img;
-	float[] t2simg;
-	float[] r2simg;
+	float[] t2img;
+	float[] r2img;
 	float[] errimg;
 	
 	// set inputs
@@ -25,6 +29,7 @@ public class InimgensityFlashT2sFitting {
 	    te = new float[nimg];
 	}
 	public final void setEchoImageAt(int num, float[] val) { image[num] = val; }
+	public final void setEchoTimeAt(int num, float val) { te[num] = val; }
 
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
@@ -45,8 +50,8 @@ public class InimgensityFlashT2sFitting {
 
 	// outputs
 	public final float[] getS0Image() { return s0img; }
-	public final float[] getT2sImage() { return t2simg; }
-	public final float[] getR2sImage() { return r2simg; }
+	public final float[] getT2sImage() { return t2img; }
+	public final float[] getR2sImage() { return r2img; }
 	public final float[] getResidualImage() { return errimg; }
 
 	public void execute() {
@@ -63,7 +68,7 @@ public class InimgensityFlashT2sFitting {
 		r2img = new float[nxyz];
 		t2img = new float[nxyz];
 		errimg = new float[nxyz];
-		for (int xyz=0;xyz<nxyz;x++) {
+		for (int xyz=0;xyz<nxyz;xyz++) {
 			boolean process=true;
 			for (int i=0;i<nimg;i++) if (image[i][xyz]<=0) process=false;
 			if (process) {
