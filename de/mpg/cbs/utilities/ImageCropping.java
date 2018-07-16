@@ -714,6 +714,35 @@ public class ImageCropping {
         
         return;
     }
+    /** sets the bounding box for cropping, including two images */
+    public void findCroppingBoundaries(boolean[] mask1, boolean[] mask2) {
+		x0 = Nx;
+        xN = 0;
+        y0 = Ny;
+        yN = 0;
+        z0 = Nz;
+        zN = 0;
+        for (int x=borderSize;x<Nx-borderSize;x++)
+			for (int y=borderSize;y<Ny-borderSize;y++)
+				for (int z=borderSize;z<Nz-borderSize;z++) {
+				    int xyz  = x+nx*y+nx*ny*z;
+                    if ( (mask1[xyz]) || (mask2[xyz]) ) {
+                        if (x < x0) x0 = x;
+                        if (x > xN) xN = x;
+                        if (y < y0) y0 = y;
+                        if (y > yN) yN = y;
+                        if (z < z0) z0 = z;
+                        if (z > zN) zN = z;
+                    }
+                }
+        mx = xN-x0+1+2*borderSize;
+        my = yN-y0+1+2*borderSize;
+        mz = zN-z0+1+2*borderSize;
+        // debug
+        if (debug) System.out.print("boundaries: ["+x0+","+xN+"] ["+y0+","+yN+"] ["+z0+","+zN+"]\n");
+        
+        return;
+    }
 
     /** sets the bounding box for cropping */
     public void findCroppingBoundaries(float[][][] image, float val) {
@@ -1092,6 +1121,24 @@ public class ImageCropping {
             for (int y=y0;y<=yN;y++) {
                 for (int z=z0;z<=zN;z++) {
 					smaller[x-x0+borderSize][y-y0+borderSize][z-z0+borderSize] = image[x][y][z];
+				}
+			}
+		}
+		return smaller;
+	}
+    /** crop image into smaller one */
+	public boolean[] cropImage(boolean[] image) {
+		boolean[] smaller = new boolean[mx*my*mz];
+
+		for (int xyz=0;xyz<mx*my*mz;xyz++) {
+			smaller[xyz] = false;
+		}
+		for (int x=x0;x<=xN;x++) {
+            for (int y=y0;y<=yN;y++) {
+                for (int z=z0;z<=zN;z++) {
+                    int xyz = x+nx*y+nx*ny*z;
+                    int xyzs = x-x0+borderSize + mx*(y-y0+borderSize) + mx*my*(z-z0+borderSize);
+					smaller[xyzs] = image[xyz];
 				}
 			}
 		}

@@ -187,7 +187,31 @@ public class Morphology {
         return dilated;
     }
 
-    /** dilate binary object with a square kernel */
+ 	public static boolean[] dilateObject(boolean[] img, int nx, int ny, int nz, int dx, int dy, int dz) {
+        int x,y,z;
+		int i,j,k;
+        boolean[] dilated = new boolean[nx*ny*nz];
+		
+		// dx,dy,dz describe the structuring element ( x+/-dx, y+/-dy, z+/-dz )
+
+        for (x=0;x<nx;x++) for (y=0;y<ny;y++) for (z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			dilated[xyz] = false;
+			for (i=-dx;i<=dx;i++) for (j=-dy;j<=dy;j++) for (k=-dz;k<=dz;k++) {
+				
+				if ( (x+i>=0) && (x+i<nx) && (y+j>=0) && (y+j<ny) && (z+k>=0) && (z+k<nz) ) {
+			
+					if (img[x+i + nx*(y+j) + nx*ny*(z+k)]==true) {
+						dilated[xyz] = true;
+						break;
+					}
+				}
+			}
+		}
+        return dilated;
+    }
+
+   /** dilate binary object with a square kernel */
 	public static byte[][][] dilateObject(byte[][][] img, int nx, int ny, int nz, int dx, int dy, int dz) {
         int x,y,z;
 		int i,j,k;
@@ -311,5 +335,4 @@ public class Morphology {
 		}
         return dilated;
     }
-
 }

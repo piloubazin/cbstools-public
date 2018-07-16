@@ -844,6 +844,16 @@ public class ObjectStatistics {
 		return count;
 	}
 	
+    public static final int volume(int img[], int lb, int nx, int ny, int nz) {
+		int count=0;
+		
+		for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+			if (img[xyz]==lb) count++;
+		}
+
+		return count;
+	}
+	
 	
 	/**
      *  compute object volumes
@@ -945,6 +955,48 @@ public class ObjectStatistics {
 	}
 		
 	/**
+	 *	compute the Hausdorff distance
+	 *  between two objects
+	 */
+	public static final float hausdorffDistance(boolean[] obj1, boolean[] obj2, float rx, float ry, float rz, int nx, int ny, int nz) {
+		float maxdist = 0.0f;
+		boolean[] bound1, bound2;
+		float[] dist1,dist2;
+		
+		// crop the objects for speed
+		ImageCropping crop = new ImageCropping(nx,ny,nz);
+		crop.setBorderSize(1);
+		crop.findCroppingBoundaries(obj1,obj2);
+		obj1 = crop.cropImage(obj1);
+		obj2 = crop.cropImage(obj2);
+		nx = crop.mx();
+		ny = crop.my();
+		nz = crop.mz();
+		
+		// check for empty objects
+		if ( volume(obj1,nx,ny,nz)==0 || volume(obj2,nx,ny,nz)==0 ) return -1.0f;
+		
+		// convert to boundaries
+		bound1 = ObjectGeometry.objectBoundary(obj1,nx,ny,nz);
+		bound2 = ObjectGeometry.objectBoundary(obj2,nx,ny,nz);
+		
+		// use distance maps
+		dist1 = ObjectTransforms.voronoiFeatureSquaredDistance(bound1,nx,ny,nz);
+		dist2 = ObjectTransforms.voronoiFeatureSquaredDistance(bound2,nx,ny,nz);
+		
+		// find all correspondences: compute both distances
+		for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+			if (bound1[xyz]) {
+				if (dist2[xyz]>maxdist) maxdist = dist2[xyz];
+			}
+			if (bound2[xyz]) {
+				if (dist1[xyz]>maxdist) maxdist = dist1[xyz];
+			}
+		}
+		return (float)Math.sqrt(maxdist);	
+	}
+		
+	/**
 	 *	compute the average surface distance
 	 *  between two objects
 	 */
@@ -986,6 +1038,54 @@ public class ObjectStatistics {
 			if (bound2[x][y][z]) {
 				// same boundary
 				avgdist += (float)Math.sqrt(dist1[x][y][z]);
+				avgnb++;
+			}
+		}
+		return avgdist/avgnb;	
+	}
+		
+	/**
+	 *	compute the average surface distance
+	 *  between two objects
+	 */
+	public static final float averageSurfaceDistance(boolean[] obj1, boolean[] obj2, float rx, float ry, float rz, int nx, int ny, int nz) {
+		float avgdist = 0.0f;
+		float avgnb = 0.0f;
+		float minres = Numerics.min(Numerics.min(rx,ry),rz);
+		boolean[] bound1, bound2;
+		float[] dist1,dist2;
+		
+		// crop the objects for speed
+		ImageCropping crop = new ImageCropping(nx,ny,nz);
+		crop.setBorderSize(1);
+		crop.findCroppingBoundaries(obj1,obj2);
+		obj1 = crop.cropImage(obj1);
+		obj2 = crop.cropImage(obj2);
+		nx = crop.mx();
+		ny = crop.my();
+		nz = crop.mz();
+		
+		// check for empty objects
+		if ( volume(obj1,nx,ny,nz)==0 || volume(obj2,nx,ny,nz)==0 ) return -1.0f;
+		
+		// convert to boundaries
+		bound1 = ObjectGeometry.objectBoundary(obj1,nx,ny,nz);
+		bound2 = ObjectGeometry.objectBoundary(obj2,nx,ny,nz);
+		
+		// use distance maps
+		dist1 = ObjectTransforms.voronoiFeatureSquaredDistance(bound1,nx,ny,nz);
+		dist2 = ObjectTransforms.voronoiFeatureSquaredDistance(bound2,nx,ny,nz);
+		
+		// find all correspondences: compute both distances
+		for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+			if (bound1[xyz]) {
+				// same boundary
+				avgdist += (float)Math.sqrt(dist2[xyz]);
+				avgnb++;
+			}
+			if (bound2[xyz]) {
+				// same boundary
+				avgdist += (float)Math.sqrt(dist1[xyz]);
 				avgnb++;
 			}
 		}
@@ -1056,6 +1156,66 @@ public class ObjectStatistics {
 	 *	compute the average surface distance
 	 *  between two objects
 	 */
+	public static final float averageSurfaceDifference(boolean[] obj1, boolean[] obj2, float rx, float ry, float rz, int nx, int ny, int nz) {
+		float avgdist = 0.0f;
+		float avgnb = 0.0f;
+		float minres = Numerics.min(Numerics.min(rx,ry),rz);
+		boolean[] bound1, bound2;
+		float[] dist1,dist2;
+		
+		// crop the objects for speed
+		ImageCropping crop = new ImageCropping(nx,ny,nz);
+		crop.setBorderSize(1);
+		crop.findCroppingBoundaries(obj1,obj2);
+		obj1 = crop.cropImage(obj1);
+		obj2 = crop.cropImage(obj2);
+		nx = crop.mx();
+		ny = crop.my();
+		nz = crop.mz();
+		
+		// check for empty objects
+		if ( volume(obj1,nx,ny,nz)==0 || volume(obj2,nx,ny,nz)==0 ) return -1.0f;
+		
+		// convert to boundaries
+		bound1 = ObjectGeometry.objectBoundary(obj1,nx,ny,nz);
+		bound2 = ObjectGeometry.objectBoundary(obj2,nx,ny,nz);
+		
+		// use distance maps
+		dist1 = ObjectTransforms.voronoiFeatureSquaredDistance(bound1,nx,ny,nz);
+		dist2 = ObjectTransforms.voronoiFeatureSquaredDistance(bound2,nx,ny,nz);
+		
+		// find all correspondences: compute both distances
+		for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+			if (bound1[xyz]) {
+				if (obj2[xyz]) {
+					// inside: positive
+					avgdist += (float)Math.sqrt(dist2[xyz]);
+					avgnb++;
+				} else {
+					//outside: negative
+					avgdist +=-(float)Math.sqrt(dist2[xyz]);
+					avgnb++;
+				}
+			}
+			if (bound2[xyz]) {
+				if (obj1[xyz]) {
+					// inside: negative
+					avgdist +=-(float)Math.sqrt(dist1[xyz]);
+					avgnb++;
+				} else {
+					// outside: positive
+					avgdist += (float)Math.sqrt(dist1[xyz]);
+					avgnb++;
+				}					
+			}
+		}
+		return avgdist/avgnb;	
+	}
+		
+	/**
+	 *	compute the average surface distance
+	 *  between two objects
+	 */
 	public static final float averageSquaredSurfaceDistance(boolean[][][] obj1, boolean[][][] obj2, float rx, float ry, float rz, int nx, int ny, int nz) {
 		float avgdist = 0.0f;
 		float avgnb = 0.0f;
@@ -1096,6 +1256,56 @@ public class ObjectStatistics {
 			if (bound2[x][y][z]) {
 				// same boundary
 				avgdist += dist1[x][y][z];
+				avgnb++;
+			}
+		}
+		return (float)Math.sqrt(avgdist/avgnb);	
+	}
+		
+	/**
+	 *	compute the average surface distance
+	 *  between two objects
+	 */
+	public static final float averageSquaredSurfaceDistance(boolean[] obj1, boolean[] obj2, float rx, float ry, float rz, int nx, int ny, int nz) {
+		float avgdist = 0.0f;
+		float avgnb = 0.0f;
+		float minres = Numerics.min(Numerics.min(rx,ry),rz);
+		boolean[] bound1, bound2;
+		float[] dist1,dist2;
+		
+		// crop the objects for speed
+		ImageCropping crop = new ImageCropping(nx,ny,nz);
+		crop.setBorderSize(1);
+		crop.findCroppingBoundaries(obj1,obj2);
+		obj1 = crop.cropImage(obj1);
+		obj2 = crop.cropImage(obj2);
+		nx = crop.mx();
+		ny = crop.my();
+		nz = crop.mz();
+		
+		// check for empty objects
+		if ( volume(obj1,nx,ny,nz)==0 || volume(obj2,nx,ny,nz)==0 ) return -1.0f;
+		
+		// convert to boundaries
+		bound1 = ObjectGeometry.objectBoundary(obj1,nx,ny,nz);
+		bound2 = ObjectGeometry.objectBoundary(obj2,nx,ny,nz);
+		
+		// use distance maps
+		dist1 = ObjectTransforms.voronoiFeatureSquaredDistance(bound1,nx,ny,nz);
+		dist2 = ObjectTransforms.voronoiFeatureSquaredDistance(bound2,nx,ny,nz);
+		
+		// no used maps: average
+		
+		// find all correspondences
+		for (int xyz=0;xyz<nx*ny*nz;xyz++) {
+			if (bound1[xyz]) {
+				// same boundary
+				avgdist += dist2[xyz];
+				avgnb++;
+			}
+			if (bound2[xyz]) {
+				// same boundary
+				avgdist += dist1[xyz];
 				avgnb++;
 			}
 		}
