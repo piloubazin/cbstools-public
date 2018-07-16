@@ -15,7 +15,7 @@ public class IntensityFlashT2sFitting {
 	float rx, ry, rz;
 	
 	int nimg = 4;
-	float imax = 4000.0f;
+	float imax = 10000.0f;
 	
 	float[] s0img;
 	float[] t2img;
@@ -64,6 +64,12 @@ public class IntensityFlashT2sFitting {
 		}
 		delta = nimg*Sx2 - Sx*Sx;
 		
+		System.out.print("Loading data\n");
+		
+		System.out.print("Echo times: [ ");
+		for (int i=0;i<nimg;i++) System.out.print(te[i]+" ");
+		System.out.print("]\n");
+		
 		s0img = new float[nxyz];
 		r2img = new float[nxyz];
 		t2img = new float[nxyz];
@@ -72,6 +78,7 @@ public class IntensityFlashT2sFitting {
 			boolean process=true;
 			for (int i=0;i<nimg;i++) if (image[i][xyz]<=0) process=false;
 			if (process) {
+			    //System.out.print(".");
 				Sy = 0.0f;
 				Sxy = 0.0f;
 				for (int i=0;i<nimg;i++) {
@@ -79,17 +86,34 @@ public class IntensityFlashT2sFitting {
 					Sy += ydata;
 					Sxy += -ydata*te[i];
 				}
-				s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
+				//s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
+				s0img[xyz] = (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta );
 				r2img[xyz] = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), 0.001f, 1.0f);
 				t2img[xyz] = 1.0f/r2img[xyz];
-				
+				/*
 				errimg[xyz] = 0.0f;
 				for (int i=0;i<nimg;i++) {
 					errimg[xyz] += Numerics.square( FastMath.log(image[i][xyz]) 
 													 - FastMath.log(s0img[xyz]) + te[i]*r2img[xyz] )/nimg;
 				}
 				errimg[xyz] = (float)FastMath.sqrt(errimg[xyz]);
+				*/
+				double residual = 0.0;
+                double mean = 0.0;
+                double variance = 0.0;
+                for (int i=0;i<nimg;i++) mean += FastMath.log(image[i][xyz]);
+                mean /= nimg;
+                for (int i=0;i<nimg;i++) {
+                    double expected = FastMath.log(s0img[xyz]) - te[i]*r2img[xyz];
+                    variance += Numerics.square(mean-FastMath.log(image[i][xyz]));
+                    residual += Numerics.square(expected-FastMath.log(image[i][xyz]));
+                }
+                double rsquare = 1.0;
+                if (variance>0) rsquare = Numerics.max(1.0 - (residual/variance), 0.0);
+                errimg[xyz] = (float)rsquare;        
 			}
 		}
+		System.out.print("Done\n");
+		
 	}
 }

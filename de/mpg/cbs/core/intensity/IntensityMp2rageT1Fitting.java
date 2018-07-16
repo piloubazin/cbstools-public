@@ -57,20 +57,32 @@ public class IntensityMp2rageT1Fitting {
 	public final void setB1mapImage(float[] in) { b1map = in; }
 	
 	public final void setFirstInversionMagnitude(float[] in) {
-	    if (inv1==null) inv1 = new float[2*nxyz];
-	    for (int xyz=0;xyz:nxyz;xyz++) inv1[xyz] = in[xyz];
+	    if (inv1==null) {
+	        System.out.print("build combined image\n");
+	        inv1 = new float[2*nxyz];
+	    }
+	    for (int xyz=0;xyz<nxyz;xyz++) inv1[xyz] = in[xyz];
 	}
 	public final void setFirstInversionPhase(float[] in) {
-	    if (inv1==null) inv1 = new float[2*nxyz];
-	    for (int xyz=0;xyz:nxyz;xyz++) inv1[xyz+nxyz] = in[xyz];
+	    if (inv1==null) {
+	        System.out.print("build combined image\n");
+	        inv1 = new float[2*nxyz];
+	    }
+	    for (int xyz=0;xyz<nxyz;xyz++) inv1[xyz+nxyz] = in[xyz];
 	}
 	public final void setSecondInversionMagnitude(float[] in) {
-	    if (inv2==null) inv2 = new float[2*nxyz];
-	    for (int xyz=0;xyz:nxyz;xyz++) inv2[xyz] = in[xyz];
+	    if (inv2==null) {
+	        System.out.print("build combined image\n");
+	        inv2 = new float[2*nxyz];
+	    }
+	    for (int xyz=0;xyz<nxyz;xyz++) inv2[xyz] = in[xyz];
 	}
 	public final void setSecondInversionPhase(float[] in) {
-	    if (inv2==null) inv2 = new float[2*nxyz];
-	    for (int xyz=0;xyz:nxyz;xyz++) inv2[xyz+nxyz] = in[xyz];
+	    if (inv2==null) {
+	        System.out.print("build combined image\n");
+	        inv2 = new float[2*nxyz];
+	    }
+	    for (int xyz=0;xyz<nxyz;xyz++) inv2[xyz+nxyz] = in[xyz];
 	}
 	
 	public final void setInversionRepetitionTime(float in) { TRinversion = in; }
@@ -151,6 +163,7 @@ public class IntensityMp2rageT1Fitting {
 		// this assumes all the inputs are already set
 		
 		// main algorithm
+		System.out.print("Loading data\n");
 		
 		// we assume 4D images: dim 0 magnitude, dim 1 phase
 		
@@ -167,7 +180,9 @@ public class IntensityMp2rageT1Fitting {
 		}
 		double phscale1 = (phsmax1-phsmin1)/(2.0*FastMath.PI);
 		double phscale2 = (phsmax2-phsmin2)/(2.0*FastMath.PI);
-		//System.out.println("Phase scaling: ["+phsmin+", "+phsmax+"] -> [-PI, PI]");
+		System.out.print("Phase scaling: ["+phsmin1+", "+phsmax1+"] -> [-PI, PI]\n");
+		System.out.print("Phase scaling: ["+phsmin2+", "+phsmax2+"] -> [-PI, PI]\n");
+		
 		
 		uni = new float[nxyz];
 		snr = new float[nxyz];
@@ -194,12 +209,14 @@ public class IntensityMp2rageT1Fitting {
 		double TB = TI2 - TI1 - Nexcitations/2.0f*TRexcitation1 - Nexcitations/2.0f*TRexcitation2;
 		double TC = TRinversion - TI2 - Nexcitations/2.0f*TRexcitation2;
 		
-		System.out.println("timings: TA = "+TA+", TB = "+TB+", TC = "+TC); 
+		System.out.print("timings: TA = "+TA+", TB = "+TB+", TC = "+TC+"\n"); 
 		
 		double a1rad = angle1/180.0*FastMath.PI;
 		double a2rad = angle2/180.0*FastMath.PI;
 		
 		for (int b=0;b<b1Samples;b++) {
+		    System.out.print(".");
+		
 			double b1 = b1min + b*(b1max-b1min)/(b1Samples-1.0);
 			if (!useB1correction) b1 = 1.0;
 			double cosA1cosA2n = FastMath.pow( FastMath.cos(b1*a1rad)*FastMath.cos(b1*a2rad), Nexcitations );
@@ -256,6 +273,7 @@ public class IntensityMp2rageT1Fitting {
 			}*/
 		}
 		// invert the LUT for speed
+		System.out.print("\n invert lookup table\n"); 
 		unilookup = new double[b1Samples][uniSamples];
 		for (int b=0;b<b1Samples;b++) {
 			for (int u=0;u<uniSamples;u++) {
@@ -277,6 +295,7 @@ public class IntensityMp2rageT1Fitting {
 			}
 		}
 		
+		System.out.print(" compute final maps\n"); 
 		t1map = new float[nxyz];
 		r1map = new float[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
@@ -322,6 +341,7 @@ public class IntensityMp2rageT1Fitting {
 			    				   +tratio*bratio*T1lookup[b1][t1]);			    
 			}
 		}
+		System.out.print(" scale outputs\n"); 
 		
 		// rescale the UNI to [0 4000]
 		for (int xyz=0;xyz<nxyz;xyz++) {
