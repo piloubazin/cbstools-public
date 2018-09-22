@@ -39,9 +39,9 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 	private ParamInteger    mindimParam;
 	private ParamInteger    maxdimParam;
 	private ParamInteger    sizeParam;
-	private ParamBoolean    separateParam;
-	private ParamBoolean    tvphsParam;
-	private ParamBoolean    tvmagParam;
+	//private ParamBoolean    separateParam;
+	//private ParamBoolean    tvphsParam;
+	//private ParamBoolean    tvmagParam;
 	
 	private ParamVolume 	denoisedInv1Image;
 	private ParamVolume 	denoisedInv2Image;
@@ -77,10 +77,10 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 		inputParams.add(cutoffParam = new ParamFloat("Stdev cutoff", 0.0f, 100.0f, 1.0f));
 		inputParams.add(mindimParam = new ParamInteger("Minimum dimension", 0, 100, 2));
         inputParams.add(maxdimParam = new ParamInteger("Maximum dimension", -1, 100, -1));
-        inputParams.add(sizeParam = new ParamInteger("Patch size", 3, 20, 5));
+        inputParams.add(sizeParam = new ParamInteger("Patch size", 2, 20, 5));
         //inputParams.add(separateParam = new ParamBoolean("Separate mag/phs", false));
-        inputParams.add(tvmagParam = new ParamBoolean("Magnitude TV subtraction", false));
-        inputParams.add(tvphsParam = new ParamBoolean("Phase TV subtraction", false));
+        //inputParams.add(tvmagParam = new ParamBoolean("Magnitude TV subtraction", false));
+        //inputParams.add(tvphsParam = new ParamBoolean("Phase TV subtraction", false));
 
 		algorithm = new IntensityMp2ragemePCADenoising();
 		
@@ -154,8 +154,8 @@ public class JistIntensityMp2ragemePCADenoising extends ProcessingAlgorithm {
 		algorithm.setMaximumDimension(maxdimParam.getValue().intValue());
 		algorithm.setPatchSize(sizeParam.getValue().intValue());
 		//algorithm.setProcessSeparately(separateParam.getValue().booleanValue());
-		algorithm.setMagnitudeTVSubtraction(tvmagParam.getValue().booleanValue());
-		algorithm.setPhaseTVSubtraction(tvphsParam.getValue().booleanValue());
+		//algorithm.setMagnitudeTVSubtraction(tvmagParam.getValue().booleanValue());
+		//algorithm.setPhaseTVSubtraction(tvphsParam.getValue().booleanValue());
 		
 		System.out.println("run the algorithm");
 		algorithm.execute();
