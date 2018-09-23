@@ -153,5 +153,33 @@ public class VectorField {
         }
 		return rot;
 	}
+	
+	public static final float[] jacobian(float[][] vect, int nx, int ny, int nz) {
+	    float[] det = new float[nx*ny*nz];
+	    double[][] dvdx = new double[3][3];
+	    for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
+        	int xyz = x+nx*y+nx*ny*z;
+		
+        	dvdx[X][X] = 0.5*(vect[X][xyz+1]-vect[X][xyz-1]);
+        	dvdx[X][Y] = 0.5*(vect[X][xyz+nx]-vect[X][xyz-nx]);
+        	dvdx[X][Z] = 0.5*(vect[X][xyz+nx*ny]-vect[X][xyz-nx*ny]);
+		
+        	dvdx[Y][X] = 0.5*(vect[Y][xyz+1]-vect[X][xyz-1]);
+        	dvdx[Y][Y] = 0.5*(vect[Y][xyz+nx]-vect[X][xyz-nx]);
+        	dvdx[Y][Z] = 0.5*(vect[Y][xyz+nx*ny]-vect[X][xyz-nx*ny]);
+		
+        	dvdx[Z][X] = 0.5*(vect[Z][xyz+1]-vect[X][xyz-1]);
+        	dvdx[Z][Y] = 0.5*(vect[Z][xyz+nx]-vect[X][xyz-nx]);
+        	dvdx[Z][Z] = 0.5*(vect[Z][xyz+nx*ny]-vect[X][xyz-nx*ny]);
+        	
+            det[xyz] = (float)(dvdx[X][X]*dvdx[Y][Y]*dvdx[Z][Z] 
+                             + dvdx[Y][X]*dvdx[Z][Y]*dvdx[X][Z] 
+                             + dvdx[Z][X]*dvdx[X][Y]*dvdx[Y][Z]
+                             - dvdx[Z][X]*dvdx[Y][Y]*dvdx[X][Z] 
+                             - dvdx[Z][Y]*dvdx[Y][Z]*dvdx[X][X] 
+                             - dvdx[Z][Z]*dvdx[Y][X]*dvdx[X][Y]);
+        }
+        return det;
+	}
 
 }
