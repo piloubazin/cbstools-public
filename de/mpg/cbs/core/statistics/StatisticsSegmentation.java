@@ -35,11 +35,12 @@ public class StatisticsSegmentation {
 	
 	private String 		statsParam;
 	
-	private String 	stat1Param;
-	private String 	stat2Param;
-	private String 	stat3Param;
+	private String 	stat1Param = null;
+	private String 	stat2Param = null;
+	private String 	stat3Param = null;
 	private static final String[] statTypes = {"none", "Voxels", "Volume", "--- intensity ---", "Mean_intensity", "Std_intensity",
 												"10_intensity","25_intensity","50_intensity","75_intensity","90_intensity",
+												"Boundary_gradient","Boundary_magnitude",
 												"--- overlap ---", 
 												"Volumes", "Dice_overlap", "Jaccard_overlap", "Volume_difference",
 												"False_positives","False_negatives",
@@ -163,15 +164,18 @@ public class StatisticsSegmentation {
 		}
 		
 		// create label name list
-		String lbline = "labels"+notag+notag+notag;
+		//String lbline = "labels"+notag+notag+notag;
+		//for (int n=0;n<nlabels;n++) lbline += (delim+lbname[n]);
+		//lbline +=("\n");
+		String lbline = "Measure"+delim+"Segmentation"+delim+"Template"+delim+"Intensity";
 		for (int n=0;n<nlabels;n++) lbline += (delim+lbname[n]);
 		lbline +=("\n");
 		System.out.print(lbline);
 		
 		ArrayList<String> statistics = new ArrayList();
-		statistics.add(stat1Param);
-		statistics.add(stat2Param);
-		statistics.add(stat3Param);
+		if (stat1Param!=null) statistics.add(stat1Param);
+		if (stat2Param!=null) statistics.add(stat2Param);
+		if (stat3Param!=null) statistics.add(stat3Param);
 		
 		// pre-compute redundant measures ?
 		
@@ -970,6 +974,62 @@ public class StatisticsSegmentation {
 				line+=("\n");
 				output.add(line);
 			}
+			if (statistics.get(s).equals("Boundary_gradient")) {
+				float[] grad = new float[nlabels];
+				float[] den = new float[nlabels];
+				boolean ignoreZero = ignoreZeroParam;
+				for (int n=0;n<nlabels;n++) {
+					grad[n] = 0.0f;
+					den[n] = 0.0f;
+				}
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+					    // look for neighbors
+					    for (byte k=0;k<26;k++) {
+					        int ngb = Ngb.neighborIndex(k, xyz, nx, ny, nz);
+					        if ( (!ignoreZero || intensity[xyz]!=0) && segmentation[xyz]!=lbid[n]) {
+					            grad[n] += (intensity[xyz]-intensity[ngb]);
+                                den[n] += 1.0f;
+                            }
+                        }
+					}
+				}
+				for (int n=0;n<nlabels;n++) {
+					if (den[n]>0) grad[n] = grad[n]/den[n];
+				}
+				line = "Boundary_gradient"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+grad[n]);
+				line+=("\n");
+				output.add(line);
+			}
+			if (statistics.get(s).equals("Boundary_magnitude")) {
+				float[] mag = new float[nlabels];
+				float[] den = new float[nlabels];
+				boolean ignoreZero = ignoreZeroParam;
+				for (int n=0;n<nlabels;n++) {
+					mag[n] = 0.0f;
+					den[n] = 0.0f;
+				}
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+					    // look for neighbors
+					    for (byte k=0;k<26;k++) {
+					        int ngb = Ngb.neighborIndex(k, xyz, nx, ny, nz);
+					        if ( (!ignoreZero || intensity[xyz]!=0) && segmentation[xyz]!=lbid[n]) {
+					            mag[n] += Numerics.abs(intensity[xyz]-intensity[ngb]);
+                                den[n] += 1.0f;
+                            }
+                        }
+					}
+				}
+				for (int n=0;n<nlabels;n++) {
+					if (den[n]>0) mag[n] = mag[n]/den[n];
+				}
+				line = "Boundary_magnitude"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+mag[n]);
+				line+=("\n");
+				output.add(line);
+			}
 			if (statistics.get(s).equals("Cluster_maps")) {
 			    float[] map = new float[nxyz*nlabels];
 				for (int n=0;n<nlabels;n++) {
@@ -1021,6 +1081,7 @@ public class StatisticsSegmentation {
 	}
 	
 	private	final void appendStatistics(ArrayList<String> main, ArrayList<String> added, String lbline) {
+	    if (main.size()<=0) main.add(lbline);
 		for (int n=0;n<added.size();n++) {
 			// extract statistics type
 			String type = added.get(n).substring(0,added.get(n).indexOf(delim));
@@ -1037,7 +1098,8 @@ public class StatisticsSegmentation {
 				main.add(last+1, added.get(n));
 			} else {
 				// add a space after each different statistic as well as labels before
-				main.add(lbline);
+				// removed for cleaner .csv files
+				// main.add(lbline);
 				main.add(added.get(n));
 				main.add(" \n");
 			}
@@ -1054,13 +1116,13 @@ public class StatisticsSegmentation {
             String line = br.readLine();
 			
 			// Exact corresponding template for first line ?
-            if (!line.startsWith("MIPAV Volumetric Statistics File")) {
-                System.out.println("not a proper MIPAV statistics file");
-                br.close();
-                fr.close();
-                return null;
-            }
-			line = br.readLine();
+            //if (!line.startsWith("CBSTools Volumetric Statistics File")) {
+            //    System.out.println("not a proper CBSTools statistics file");
+            //    br.close();
+            //    fr.close();
+            //    return null;
+            //}
+			//line = br.readLine();
 			while (line!=null) {
 				list.add(line+"\n");
 				line = br.readLine();
@@ -1089,7 +1151,7 @@ public class StatisticsSegmentation {
             File f = new File(name);
             FileWriter fw = new FileWriter(f);
             PrintWriter pw = new PrintWriter( fw );
-			pw.write("MIPAV Volumetric Statistics File\n");
+			//pw.write("CBSTools Volumetric Statistics File\n");
             for (int n=0;n<list.size();n++) {
 				pw.write(list.get(n));
 				System.out.print(list.get(n));
