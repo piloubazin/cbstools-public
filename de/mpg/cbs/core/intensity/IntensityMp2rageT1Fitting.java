@@ -30,6 +30,7 @@ public class IntensityMp2rageT1Fitting {
 	private 	int			Nexcitations = 160;
 	private		float		inversionEfficiency = 0.96f;
 	
+	private     boolean     scalePhase = true;
 	private		float		intensityScale = 4000.0f;
 	private		float		t1Max = 4.0f;
 	private		float		t1Min = 0.05f;
@@ -97,6 +98,7 @@ public class IntensityMp2rageT1Fitting {
 	public final void setInversionEfficiency(float in) { inversionEfficiency = in; }
 	public final void setCorrectB1inhomogeneities(boolean in) { useB1correction = in; }
 	public final void setB1mapScaling(float in) { b1Scaling = in;}
+	public final void setScalePhaseImagess(boolean in) { scalePhase = in; }
 	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
@@ -168,21 +170,24 @@ public class IntensityMp2rageT1Fitting {
 		// we assume 4D images: dim 0 magnitude, dim 1 phase
 		
 		// estimate angular scale (range should be [-PI +PI]
-		float phsmin1 = inv1[nxyz];
-		float phsmax1 = inv1[nxyz];
-		float phsmin2 = inv1[nxyz];
-		float phsmax2 = inv1[nxyz];
-		for (int xyz=0;xyz<nxyz;xyz++) {
-			if (inv1[xyz+nxyz]<phsmin1) phsmin1 = inv1[xyz+nxyz];
-			if (inv1[xyz+nxyz]>phsmax1) phsmax1 = inv1[xyz+nxyz];
-			if (inv2[xyz+nxyz]<phsmin2) phsmin2 = inv2[xyz+nxyz];
-			if (inv2[xyz+nxyz]>phsmax2) phsmax2 = inv2[xyz+nxyz];
+		double phscale1 = 1.0;
+		double phscale2 = 1.0;
+		if (scalePhase) {
+            float phsmin1 = inv1[nxyz];
+            float phsmax1 = inv1[nxyz];
+            float phsmin2 = inv1[nxyz];
+            float phsmax2 = inv1[nxyz];
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                if (inv1[xyz+nxyz]<phsmin1) phsmin1 = inv1[xyz+nxyz];
+                if (inv1[xyz+nxyz]>phsmax1) phsmax1 = inv1[xyz+nxyz];
+                if (inv2[xyz+nxyz]<phsmin2) phsmin2 = inv2[xyz+nxyz];
+                if (inv2[xyz+nxyz]>phsmax2) phsmax2 = inv2[xyz+nxyz];
+            }
+            phscale1 = (phsmax1-phsmin1)/(2.0*FastMath.PI);
+            phscale2 = (phsmax2-phsmin2)/(2.0*FastMath.PI);
+            System.out.print("Phase scaling: ["+phsmin1+", "+phsmax1+"] -> [-PI, PI]\n");
+            System.out.print("Phase scaling: ["+phsmin2+", "+phsmax2+"] -> [-PI, PI]\n");
 		}
-		double phscale1 = (phsmax1-phsmin1)/(2.0*FastMath.PI);
-		double phscale2 = (phsmax2-phsmin2)/(2.0*FastMath.PI);
-		System.out.print("Phase scaling: ["+phsmin1+", "+phsmax1+"] -> [-PI, PI]\n");
-		System.out.print("Phase scaling: ["+phsmin2+", "+phsmax2+"] -> [-PI, PI]\n");
-		
 		
 		uni = new float[nxyz];
 		snr = new float[nxyz];

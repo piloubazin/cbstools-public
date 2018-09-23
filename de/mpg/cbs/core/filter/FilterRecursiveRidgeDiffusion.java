@@ -342,7 +342,7 @@ public class FilterRecursiveRidgeDiffusion {
 		}
 		
 		// 3. diffuse the data to neighboring structures with SUR
-		BasicInfo.displayMessage("...diffusion\n");
+		BasicInfo.displayMessage("...diffusion ("+propagationParam+")\n");
 		
 		float[] propag = new float[nxyz];
 		if (filterParam.equals("0D")) {
