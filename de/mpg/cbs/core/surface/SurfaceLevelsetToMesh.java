@@ -12,9 +12,9 @@ import java.util.ArrayList;
 
 /**
  * Generates a topologically consistent iso-surface for a levelel set with a
- * specified digital connectivityectivity rule.
+ * specified digital connectivity rule.
  * 
- * adapted from the Connectivityectivity-consistent Marching Cubes code
+ * adapted from the Connectivity-consistent Marching Cubes code
  * from Xiao Han and Blake Lucas
  * 
  */
