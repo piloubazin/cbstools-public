@@ -630,11 +630,21 @@ public class MgdmFastAtlasSegmentation2 {
 							pvval = atlas.getMap(intensityId[c])[n][1];
 						}
 					}
+					
+					// new intensity combination mode: multiple probabilities
+					for (int c=0;c<nc;c++) {
+					    if (atlas.isMultiProbabilityContrast(intensityId[c])) {
+					        float factor = atlas.getMap(intensityId[c])[n][0];
+					        contrast[c] = factor*image[c][xyzi];
+					    }
+					}
+					
 					// combine the intensities and probabilities
 					//intens[n] = 1.0f;
 					intens[n] = 0.0f;
 					
-					for (int c=0;c<nc;c++) if (atlas.isIntensityContrast(intensityId[c])) {
+					for (int c=0;c<nc;c++) if (atlas.isIntensityContrast(intensityId[c]) 
+					                        || atlas.isMultiProbabilityContrast(intensityId[c])) {
 						//intens[n] = Numerics.min(intens[n], contrast[c]);
 						// use maxmag: score closest to -1 or +1 wins!
 						intens[n] = Numerics.maxmag(intens[n], contrast[c]);
