@@ -990,6 +990,13 @@ public class SimpleShapeAtlas2 {
 		else return false;
 	}					
 		
+	public boolean isMultiProbabilityContrast(int id) {
+		if (intensityName[id].startsWith("RandomForest") 
+			|| intensityName[id].startsWith("AutoEncoder") 
+			|| intensityName[id].startsWith("Prior")) return true;
+		else return false;
+	}					
+		
 	/** transformations: re-compute the template using the transform
 	 */
 	public final void computeTransformedTemplate() {

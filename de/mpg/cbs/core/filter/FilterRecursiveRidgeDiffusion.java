@@ -886,7 +886,7 @@ public class FilterRecursiveRidgeDiffusion {
 					val1 = 	 inputImage[x][y][z]		+inputImage[x][y][z-1]	+inputImage[x][y][z+1]
 							-inputImage[x][y-1][z]	-inputImage[x][y-1][z-1]	-inputImage[x][y-1][z+1];
 					val2 = 	 inputImage[x][y][z]		+inputImage[x][y][z-1]	+inputImage[x][y][z+1]
-							-inputImage[x][y+1][z+1]	-inputImage[x][y+1][z-1]	-inputImage[x][y+1][z+1];
+							-inputImage[x][y+1][z]	-inputImage[x][y+1][z-1]	-inputImage[x][y+1][z+1];
 					direction = Z;		
 				} else if (d==2) {
 					val1 = 	 inputImage[x][y][z]		+inputImage[x][y-1][z-1]	+inputImage[x][y+1][z+1]
