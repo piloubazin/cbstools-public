@@ -264,6 +264,8 @@ public class RegistrationApplyDeformations {
         }
         nrxyz = nrx*nry*nrz;
         
+        System.out.println("output dimensions: "+nrx+" x "+nry+" x "+nrz+"("+nst+")");
+        
         // new image
         System.out.println("deform image");
         float min = 1e10f, max = -1e10f;
