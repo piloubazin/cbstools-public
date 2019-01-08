@@ -35,9 +35,8 @@ public class StatisticsSegmentation {
 	
 	private String 		statsParam;
 	
-	private String 	stat1Param = null;
-	private String 	stat2Param = null;
-	private String 	stat3Param = null;
+	private int nstat = 3;
+	private String[] 	statParam = new String[nstat];
 	private static final String[] statTypes = {"none", "Voxels", "Volume", "--- intensity ---", "Mean_intensity", "Std_intensity",
 												"10_intensity","25_intensity","50_intensity","75_intensity","90_intensity",
 												"Boundary_gradient","Boundary_magnitude",
@@ -74,9 +73,11 @@ public class StatisticsSegmentation {
 	public final void setSpreadsheetDirectory(String val) { statsParam = val+"/volume_statistics.csv"; }
 	public final void setSpreadsheetFile(String val) { statsParam = val; }
 		
-	public final void setStatistic1(String val) {stat1Param = val; }
-	public final void setStatistic2(String val) {stat2Param = val; }
-	public final void setStatistic3(String val) {stat3Param = val; }
+	public final void setStatisticAt(int n, String val) {statParam[n] = val; }
+	public final void setStatisticNumber(int  val) {nstat = val; statParam = new String[nstat]; }
+	public final void setStatistic1(String val) {statParam[0] = val; }
+	public final void setStatistic2(String val) {statParam[1] = val; }
+	public final void setStatistic3(String val) {statParam[2] = val; }
 
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nc=1; nxyz=nx*ny*nz; }
 	public final void setDimensions(int x, int y, int z, int c) { nx=x; ny=y; nz=z; nc=c; nxyz=nx*ny*nz; }
@@ -173,9 +174,8 @@ public class StatisticsSegmentation {
 		System.out.print(lbline);
 		
 		ArrayList<String> statistics = new ArrayList();
-		if (stat1Param!=null) statistics.add(stat1Param);
-		if (stat2Param!=null) statistics.add(stat2Param);
-		if (stat3Param!=null) statistics.add(stat3Param);
+		for (int n=0;n<nstat;n++) 
+            if (statParam[n]!=null) statistics.add(statParam[n]);
 		
 		// pre-compute redundant measures ?
 		
@@ -987,7 +987,7 @@ public class StatisticsSegmentation {
 					    // look for neighbors
 					    for (byte k=0;k<26;k++) {
 					        int ngb = Ngb.neighborIndex(k, xyz, nx, ny, nz);
-					        if ( (!ignoreZero || intensity[xyz]!=0) && segmentation[xyz]!=lbid[n]) {
+					        if ( (!ignoreZero || intensity[ngb]!=0) && segmentation[ngb]!=lbid[n]) {
 					            grad[n] += (intensity[xyz]-intensity[ngb]);
                                 den[n] += 1.0f;
                             }
@@ -1015,7 +1015,7 @@ public class StatisticsSegmentation {
 					    // look for neighbors
 					    for (byte k=0;k<26;k++) {
 					        int ngb = Ngb.neighborIndex(k, xyz, nx, ny, nz);
-					        if ( (!ignoreZero || intensity[xyz]!=0) && segmentation[xyz]!=lbid[n]) {
+					        if ( (!ignoreZero || intensity[ngb]!=0) && segmentation[ngb]!=lbid[n]) {
 					            mag[n] += Numerics.abs(intensity[xyz]-intensity[ngb]);
                                 den[n] += 1.0f;
                             }
