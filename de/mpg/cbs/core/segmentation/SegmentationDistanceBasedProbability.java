@@ -18,7 +18,7 @@ public class SegmentationDistanceBasedProbability {
 	public static final String 		mergingType = "product";
 	
 	private float[] probaImage;
-	private byte[] bgmaskImage;
+	private int[] bgmaskImage;
 	private float[] mgdmImage;
 	
 	private float bgscaleParam = 5.0f;
@@ -64,7 +64,7 @@ public class SegmentationDistanceBasedProbability {
 	public final String getVersion() { return "3.1.0"; };
 	
 	public final float[] getProbabilityImage() { return probaImage; }
-	public final byte[] getBackgroundMaskImage() { return bgmaskImage; }
+	public final int[] getBackgroundMaskImage() { return bgmaskImage; }
 	public final float[] getMgdmImage() { return mgdmImage; }
 	public final int getLabelNumber() { return nlabels; }
 	
@@ -182,7 +182,7 @@ public class SegmentationDistanceBasedProbability {
 		}
 		
 		// compute a mask of non-one background values
-		bgmaskImage = new byte[nxyz];
+		bgmaskImage = new int[nxyz];
 		int b = 1;
 		for (int x=b;x<nx-b;x++) for (int y=b;y<ny-b;y++) for (int z=b;z<nz-b;z++) {
 			int xyz = x+nx*y+nx*ny*z;
