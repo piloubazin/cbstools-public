@@ -19,6 +19,7 @@ public class SegmentationDistanceBasedProbability {
 	
 	private float[] probaImage;
 	private byte[] bgmaskImage;
+	private float[] mgdmImage;
 	
 	private float bgscaleParam = 5.0f;
 	private float bgprobaParam = 0.5f;
@@ -64,6 +65,7 @@ public class SegmentationDistanceBasedProbability {
 	
 	public final float[] getProbabilityImage() { return probaImage; }
 	public final byte[] getBackgroundMaskImage() { return bgmaskImage; }
+	public final float[] getMgdmImage() { return mgdmImage; }
 	public final int getLabelNumber() { return nlabels; }
 	
 	public void execute() {
@@ -105,10 +107,13 @@ public class SegmentationDistanceBasedProbability {
 		boolean[] mask = mgdm.getMask();
 		
 		probaImage = new float[nlabels*nxyz];
+		mgdmImage = new float[nxyz];
 		float[] maxobjdist = new float[nlabels];
-		for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
-			for (int l=0;l<nlabels;l++) if (segImage[xyz] == objlb[l]) {
-				if (mgdm.getFunctions()[0][xyz]>maxobjdist[l]) maxobjdist[l] = mgdm.getFunctions()[0][xyz];
+		for (int xyz=0;xyz<nxyz;xyz++) {
+		    mgdmImage[xyz] =  mgdm.getFunctions()[0][xyz];
+		    if (mask[xyz]) for (int l=0;l<nlabels;l++) if (segImage[xyz] == objlb[l]) {
+				//if (mgdm.getFunctions()[0][xyz]>maxobjdist[l]) maxobjdist[l] = mgdm.getFunctions()[0][xyz];
+				if (mgdmImage[xyz]>maxobjdist[l]) maxobjdist[l] = mgdmImage[xyz];
 			}
 		}
 		
