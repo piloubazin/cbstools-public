@@ -18,7 +18,8 @@ public class SegmentationDistanceBasedProbability {
 	public static final String 		mergingType = "product";
 	
 	private float[] probaImage;
-	private byte[] bgmaskImage;
+	private int[] bgmaskImage;
+	private float[] mgdmImage;
 	
 	private float bgscaleParam = 5.0f;
 	private float bgprobaParam = 0.5f;
@@ -63,7 +64,8 @@ public class SegmentationDistanceBasedProbability {
 	public final String getVersion() { return "3.1.0"; };
 	
 	public final float[] getProbabilityImage() { return probaImage; }
-	public final byte[] getBackgroundMaskImage() { return bgmaskImage; }
+	public final int[] getBackgroundMaskImage() { return bgmaskImage; }
+	public final float[] getMgdmImage() { return mgdmImage; }
 	public final int getLabelNumber() { return nlabels; }
 	
 	public void execute() {
@@ -105,10 +107,13 @@ public class SegmentationDistanceBasedProbability {
 		boolean[] mask = mgdm.getMask();
 		
 		probaImage = new float[nlabels*nxyz];
+		mgdmImage = new float[nxyz];
 		float[] maxobjdist = new float[nlabels];
-		for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
-			for (int l=0;l<nlabels;l++) if (segImage[xyz] == objlb[l]) {
-				if (mgdm.getFunctions()[0][xyz]>maxobjdist[l]) maxobjdist[l] = mgdm.getFunctions()[0][xyz];
+		for (int xyz=0;xyz<nxyz;xyz++) {
+		    mgdmImage[xyz] =  mgdm.getFunctions()[0][xyz];
+		    if (mask[xyz]) for (int l=0;l<nlabels;l++) if (segImage[xyz] == objlb[l]) {
+				//if (mgdm.getFunctions()[0][xyz]>maxobjdist[l]) maxobjdist[l] = mgdm.getFunctions()[0][xyz];
+				if (mgdmImage[xyz]>maxobjdist[l]) maxobjdist[l] = mgdmImage[xyz];
 			}
 		}
 		
@@ -177,7 +182,7 @@ public class SegmentationDistanceBasedProbability {
 		}
 		
 		// compute a mask of non-one background values
-		bgmaskImage = new byte[nxyz];
+		bgmaskImage = new int[nxyz];
 		int b = 1;
 		for (int x=b;x<nx-b;x++) for (int y=b;y<ny-b;y++) for (int z=b;z<nz-b;z++) {
 			int xyz = x+nx*y+nx*ny*z;
