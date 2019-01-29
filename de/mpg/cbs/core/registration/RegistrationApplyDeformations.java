@@ -142,6 +142,48 @@ public class RegistrationApplyDeformations {
                 deformation1Image[xyz + Z*nd1xyz] += z;
             }
         }
+        // check for bad borders
+        boolean[] boundary = new boolean[nd1x*nd1y*nd1z];
+        boolean growBoundaries = false;
+        for (int x=0;x<nd1x;x++) for (int y=0;y<nd1y;y++) for (int z=0;z<nd1z;z++) {
+            int xyz = x + nd1x*y + nd1x*nd1y*z;
+            if (deformation1Image[xyz + X*nd1xyz]==0 && deformation1Image[xyz + Y*nd1xyz]==0 && deformation1Image[xyz + Z*nd1xyz]==0) {
+                for (byte k=0;k<6;k++) {
+                    if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd1x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd1y && z+Ngb.z[k]>=0 && z+Ngb.z[k]<nd1z) {
+                        int ngb = Ngb.neighborIndex(k, xyz,nd1x,nd1y,nd1z);
+                        if (deformation1Image[ngb + X*nd1xyz]!=0 || deformation1Image[ngb + Y*nd1xyz]!=0 || deformation1Image[ngb + Z*nd1xyz]!=0) {
+                            growBoundaries = true;
+                            boundary[ngb] = true;
+                            k=6;
+                        }
+                    }
+                }
+            }
+        }
+        while (growBoundaries) {
+            boolean[] changed = new boolean[nd1x*nd1y*nd1z];
+            growBoundaries = false;
+            for (int x=0;x<nd1x;x++) for (int y=0;y<nd1y;y++) for (int z=0;z<nd1z;z++) {
+                int xyz = x + nd1x*y + nd1x*nd1y*z;
+                if (boundary[xyz]) {
+                    for (byte k=0;k<6;k++) {
+                        if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd1x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd1y && z+Ngb.z[k]>=0 && z+Ngb.z[k]<nd1z) {
+                            int ngb = Ngb.neighborIndex(k, xyz,nd1x,nd1y,nd1z);
+                            if (deformation1Image[ngb + X*nd1xyz]==0 && deformation1Image[ngb + Y*nd1xyz]==0 && deformation1Image[ngb + Z*nd1xyz]==0) {
+                                deformation1Image[ngb + X*nd1xyz] = deformation1Image[xyz + X*nd1xyz];
+                                deformation1Image[ngb + Y*nd1xyz] = deformation1Image[xyz + Y*nd1xyz];
+                                deformation1Image[ngb + Z*nd1xyz] = deformation1Image[xyz + Z*nd1xyz];
+                                growBoundaries = true;
+                                changed[ngb] = true;
+                            }
+                        }
+                    }
+                }
+            }
+            boundary = changed;
+        }
+        
+        // add to final deformation
         float[] deformation = deformation1Image;
         
         nrx = nd1x; nry = nd1y; nrz = nd1z;
@@ -169,6 +211,47 @@ public class RegistrationApplyDeformations {
                     deformation2Image[xyz + Z*nd2xyz] += z;
                 }
             }
+            // check for bad borders
+            boundary = new boolean[nd2x*nd2y*nd2z];
+            growBoundaries = false;
+            for (int x=0;x<nd2x;x++) for (int y=0;y<nd2y;y++) for (int z=0;z<nd2z;z++) {
+                int xyz = x + nd2x*y + nd2x*nd2y*z;
+                if (deformation2Image[xyz + X*nd2xyz]==0 && deformation2Image[xyz + Y*nd2xyz]==0 && deformation2Image[xyz + Z*nd2xyz]==0) {
+                    for (byte k=0;k<6;k++) {
+                        if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd2x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd2y && z+Ngb.z[k]>=0 && z+Ngb.z[k]<nd2z) {
+                            int ngb = Ngb.neighborIndex(k, xyz,nd2x,nd2y,nd2z);
+                            if (deformation2Image[ngb + X*nd2xyz]!=0 || deformation2Image[ngb + Y*nd2xyz]!=0 || deformation2Image[ngb + Z*nd2xyz]!=0) {
+                                growBoundaries = true;
+                                boundary[ngb] = true;
+                                k=6;
+                            }
+                        }
+                    }
+                }
+            }
+            while (growBoundaries) {
+                boolean[] changed = new boolean[nd2x*nd2y*nd2z];
+                growBoundaries = false;
+                for (int x=0;x<nd2x;x++) for (int y=0;y<nd2y;y++) for (int z=0;z<nd2z;z++) {
+                    int xyz = x + nd2x*y + nd2x*nd2y*z;
+                    if (boundary[xyz]) {
+                        for (byte k=0;k<6;k++) {
+                            if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd2x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd2y && z+Ngb.z[k]>=0 && z+Ngb.z[k]<nd2z) {
+                                int ngb = Ngb.neighborIndex(k, xyz,nd2x,nd2y,nd2z);
+                                if (deformation2Image[ngb + X*nd2xyz]==0 && deformation2Image[ngb + Y*nd2xyz]==0 && deformation2Image[ngb + Z*nd2xyz]==0) {
+                                    deformation2Image[ngb + X*nd2xyz] = deformation2Image[xyz + X*nd2xyz];
+                                    deformation2Image[ngb + Y*nd2xyz] = deformation2Image[xyz + Y*nd2xyz];
+                                    deformation2Image[ngb + Z*nd2xyz] = deformation2Image[xyz + Z*nd2xyz];
+                                    growBoundaries = true;
+                                    changed[ngb] = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                boundary = changed;
+            }
+        
             // compose the deformations: X' = def1(def2(X))
             System.out.println("compose deformations");
             float[] composed12 = new float[nd2x*nd2y*nd2z*3];
@@ -207,6 +290,47 @@ public class RegistrationApplyDeformations {
                         deformation3Image[xyz + Z*nd3xyz] += z;
                     }
                 }
+                // check for bad borders
+                boundary = new boolean[nd3x*nd3y*nd3z];
+                growBoundaries = false;
+                for (int x=0;x<nd3x;x++) for (int y=0;y<nd3y;y++) for (int z=0;z<nd3z;z++) {
+                    int xyz = x + nd3x*y + nd3x*nd3y*z;
+                    if (deformation3Image[xyz + X*nd3xyz]==0 && deformation3Image[xyz + Y*nd3xyz]==0 && deformation3Image[xyz + Z*nd3xyz]==0) {
+                        for (byte k=0;k<6;k++) {
+                            if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd3x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd3y && z+Ngb.z[k]>=0 && z+Ngb.z[k]<nd3z) {
+                                int ngb = Ngb.neighborIndex(k, xyz,nd3x,nd3y,nd3z);
+                                if (deformation3Image[ngb + X*nd3xyz]!=0 || deformation3Image[ngb + Y*nd3xyz]!=0 || deformation3Image[ngb + Z*nd3xyz]!=0) {
+                                    growBoundaries = true;
+                                    boundary[ngb] = true;
+                                    k=6;
+                                }
+                            }
+                        }
+                    }
+                }
+                while (growBoundaries) {
+                    boolean[] changed = new boolean[nd3x*nd3y*nd3z];
+                    growBoundaries = false;
+                    for (int x=0;x<nd3x;x++) for (int y=0;y<nd3y;y++) for (int z=0;z<nd3z;z++) {
+                        int xyz = x + nd3x*y + nd3x*nd3y*z;
+                        if (boundary[xyz]) {
+                            for (byte k=0;k<6;k++) {
+                                if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd3x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd3y && z+Ngb.z[k]>=0 && z+Ngb.z[k]<nd3z) {
+                                    int ngb = Ngb.neighborIndex(k, xyz,nd3x,nd3y,nd3z);
+                                    if (deformation3Image[ngb + X*nd3xyz]==0 && deformation3Image[ngb + Y*nd3xyz]==0 && deformation3Image[ngb + Z*nd3xyz]==0) {
+                                        deformation3Image[ngb + X*nd3xyz] = deformation3Image[xyz + X*nd3xyz];
+                                        deformation3Image[ngb + Y*nd3xyz] = deformation3Image[xyz + Y*nd3xyz];
+                                        deformation3Image[ngb + Z*nd3xyz] = deformation3Image[xyz + Z*nd3xyz];
+                                        growBoundaries = true;
+                                        changed[ngb] = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    boundary = changed;
+                }
+            
                 // compose the deformations: X' = def1(def2(def3(X)))
                 System.out.println("compose deformations");
                 float[] composed123 = new float[nd3x*nd3y*nd3z*3];
@@ -243,6 +367,46 @@ public class RegistrationApplyDeformations {
                             deformation4Image[xyz + Y*nd4xyz] += y;
                             deformation4Image[xyz + Z*nd4xyz] += z;
                         }
+                    }
+                    // check for bad borders
+                    boundary = new boolean[nd4x*nd4y*nd4z];
+                    growBoundaries = false;
+                    for (int x=0;x<nd4x;x++) for (int y=0;y<nd4y;y++) for (int z=0;z<nd4z;z++) {
+                        int xyz = x + nd4x*y + nd4x*nd4y*z;
+                        if (deformation4Image[xyz + X*nd4xyz]==0 && deformation4Image[xyz + Y*nd4xyz]==0 && deformation4Image[xyz + Z*nd4xyz]==0) {
+                            for (byte k=0;k<6;k++) {
+                                if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd4x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd4y && z+Ngb.z[k]>=0 && z+Ngb.z[k]<nd4z) {
+                                    int ngb = Ngb.neighborIndex(k, xyz,nd4x,nd4y,nd4z);
+                                    if (deformation4Image[ngb + X*nd4xyz]!=0 || deformation4Image[ngb + Y*nd4xyz]!=0 || deformation4Image[ngb + Z*nd4xyz]!=0) {
+                                        growBoundaries = true;
+                                        boundary[ngb] = true;
+                                        k=6;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    while (growBoundaries) {
+                        boolean[] changed = new boolean[nd4x*nd4y*nd4z];
+                        growBoundaries = false;
+                        for (int x=0;x<nd4x;x++) for (int y=0;y<nd4y;y++) for (int z=0;z<nd4z;z++) {
+                            int xyz = x + nd4x*y + nd4x*nd4y*z;
+                            if (boundary[xyz]) {
+                                for (byte k=0;k<6;k++) {
+                                    if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd4x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd4y && z+Ngb.z[k]>=0 && z+Ngb.z[k]<nd4z) {
+                                        int ngb = Ngb.neighborIndex(k, xyz,nd4x,nd4y,nd4z);
+                                        if (deformation4Image[ngb + X*nd4xyz]==0 && deformation4Image[ngb + Y*nd4xyz]==0 && deformation4Image[ngb + Z*nd4xyz]==0) {
+                                            deformation4Image[ngb + X*nd4xyz] = deformation4Image[xyz + X*nd4xyz];
+                                            deformation4Image[ngb + Y*nd4xyz] = deformation4Image[xyz + Y*nd4xyz];
+                                            deformation4Image[ngb + Z*nd4xyz] = deformation4Image[xyz + Z*nd4xyz];
+                                            growBoundaries = true;
+                                            changed[ngb] = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        boundary = changed;
                     }
                     // compose the deformations: X' = def1(def2(def3(X)))
                     System.out.println("compose deformations");
