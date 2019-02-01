@@ -256,7 +256,7 @@ public class BrainIntensityBasedSkullStripping {
 
 				gdm = new Gdm3d(toposeg, nx, ny, nz+12, rx, ry, rz, null, balloonb, 0.0f, 0.1f, 0.9f, "wcs", lutdir);
 						
-				gdm.evolveNarrowBand(200, 0.0005f);
+				gdm.evolveNarrowBand(1000, 0.0005f);
 				
 				float[] brainb = gdm.exportSegmentation();
 				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
@@ -264,7 +264,7 @@ public class BrainIntensityBasedSkullStripping {
 				}
 			} else {
 				// topology correction for the mask?
-				topo = new BinaryTopology(mask, nx, ny, nz, rx, ry, rz, "wcs");
+				topo = new BinaryTopology(mask, nx, ny, nz, rx, ry, rz, "wcs", lutdir);
 				
 				topo.outsideSphericalTopology();
 				
@@ -272,7 +272,7 @@ public class BrainIntensityBasedSkullStripping {
 				
 				gdm = new Gdm3d(toposeg, nx, ny, nz, rx, ry, rz, null, balloon, 0.0f, 0.1f, 0.9f, "wcs", lutdir);
 						
-				gdm.evolveNarrowBand(200, 0.0005f);
+				gdm.evolveNarrowBand(1000, 0.0005f);
 
 				brain = gdm.exportSegmentation();
 			}
