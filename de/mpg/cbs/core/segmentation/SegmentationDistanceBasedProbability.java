@@ -46,6 +46,7 @@ public class SegmentationDistanceBasedProbability {
 	public final void setDistanceRatio(float val) { ratioParam = val; }
 	public final void setBackgroundIncluded(boolean val) { bgincludedParam = val; }
 	public final void setProbabilityMerging(String val) { mergeParam = val; }
+	public final void setComputeMaxProbability(boolean val) { maxprobaParam = val; }
 	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
