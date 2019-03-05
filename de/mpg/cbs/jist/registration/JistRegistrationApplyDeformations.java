@@ -143,24 +143,32 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 		algorithm.setDeformationType1(type1Option.getValue()); 
 		algorithm.setDeformation1Dimensions(Interface.getDimensions(deformation1Image));
 		algorithm.setDeformation1Resolutions(Interface.getResolutions(deformation1Image));
+		int[] defdims = Interface.getDimensions(deformation1Image);
+		ImageHeader defheader = Interface.getHeader(deformation1Image);
 		
 		if (!type2Option.getValue().equals("none") && Interface.isValid(deformation2Image)) {
 		    algorithm.setDeformationMapping2(Interface.getFloatImage4D(deformation2Image));
             algorithm.setDeformationType2(type2Option.getValue()); 
             algorithm.setDeformation2Dimensions(Interface.getDimensions(deformation2Image));
             algorithm.setDeformation2Resolutions(Interface.getResolutions(deformation2Image));
+            defdims = Interface.getDimensions(deformation2Image);
+            defheader = Interface.getHeader(deformation2Image);
             
             if (!type3Option.getValue().equals("none") && Interface.isValid(deformation3Image)) {
                 algorithm.setDeformationMapping3(Interface.getFloatImage4D(deformation3Image));
                 algorithm.setDeformationType3(type3Option.getValue()); 
                 algorithm.setDeformation3Dimensions(Interface.getDimensions(deformation3Image));
                 algorithm.setDeformation3Resolutions(Interface.getResolutions(deformation3Image));
+                defdims = Interface.getDimensions(deformation3Image);
+		  defheader = Interface.getHeader(deformation3Image);
                 
                 if (!type4Option.getValue().equals("none") && Interface.isValid(deformation4Image)) {
                     algorithm.setDeformationMapping4(Interface.getFloatImage4D(deformation4Image));
                     algorithm.setDeformationType4(type4Option.getValue()); 
                     algorithm.setDeformation4Dimensions(Interface.getDimensions(deformation4Image));
                     algorithm.setDeformation4Resolutions(Interface.getResolutions(deformation4Image));                    
+                    defdims = Interface.getDimensions(deformation4Image);
+                    defheader = Interface.getHeader(deformation4Image);
                 }
             }
 		}
@@ -171,7 +179,7 @@ public class JistRegistrationApplyDeformations extends ProcessingAlgorithm {
 		 
 		algorithm.execute();
 		
-		if (dims[T]>1) Interface.setFloatImage4D(algorithm.getDeformedImage(), dims, dims[T], deformedImage, name+"_def_img", header);
-		else Interface.setFloatImage3D(algorithm.getDeformedImage(), dims, deformedImage, name+"def_img", header);
+		if (dims[T]>1) Interface.setFloatImage4D(algorithm.getDeformedImage(), defdims, dims[T], deformedImage, name+"_def_img", defheader);
+		else Interface.setFloatImage3D(algorithm.getDeformedImage(), defdims, deformedImage, name+"def_img", defheader);
 	}
 }
