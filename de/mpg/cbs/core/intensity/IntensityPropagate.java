@@ -64,7 +64,6 @@ public class IntensityPropagate {
 		// different settings
 		byte ZERO = 1, MASK = 2, LOWER = 3, HIGHER = 4;
 		byte target = ZERO;
-		boolean[] mask = null;
 		if (targetParam.equals("mask")) target = MASK;
 		if (targetParam.equals("lower")) target = LOWER;
 		if (targetParam.equals("higher")) target = HIGHER;
@@ -80,8 +79,12 @@ public class IntensityPropagate {
 		// main algorithm
 		resultImage = new float[nxyz*nc];
 		byte[] count = new byte[nxyz];
-		for (int xyzc=0;xyzc<nxyz*nc;xyzc++) {
-			resultImage[xyzc] = inputImage[xyzc];
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			if (target==MASK && maskImage[xyz]==0) {
+				for (int c=0;c<nc;c++) resultImage[xyz+nxyz*c] = 0.0f;
+			} else {
+				for (int c=0;c<nc;c++) resultImage[xyz+nxyz*c] = inputImage[xyz+nxyz*c];
+			}
 		}
 		for (int n=0;n<nd;n++) {
 			System.out.println("step "+(n+1));
@@ -90,30 +93,42 @@ public class IntensityPropagate {
 			}
 			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
 				int xyz = x+nx*y+nx*ny*z;
-		
-				for (int dx=-1;dx<=1;dx++) for (int dy=-1;dy<=1;dy++) for (int dz=-1;dz<=1;dz++) for (int c=0;c<nc;c++) {
-					int xyzd = xyz + dx+nx*dy+nx*ny*dz;
-					if ( (target==ZERO && inputImage[xyzd + nxyz*c]==0)
-						|| (target==MASK && maskImage[xyzd]==0)
-						|| (target==LOWER && inputImage[xyzd + nxyz*c] < scalingParam*inputImage[xyz + nxyz*c])
-						|| (target==HIGHER && inputImage[xyzd + nxyz*c] > scalingParam*inputImage[xyz + nxyz*c]) ) {
-						//System.out.print(".");
-						if (merge==MIN) {
-							if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
-							else resultImage[xyzd+nxyz*c] = Numerics.min(resultImage[xyzd+nxyz*c], scalingParam*inputImage[xyz+nxyz*c]);
-						} else if (merge==MAX) {
-							if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
-							else resultImage[xyzd+nxyz*c] = Numerics.max(resultImage[xyzd+nxyz*c], scalingParam*inputImage[xyz+nxyz*c]);
-						} else if (merge==MEAN) {
-							resultImage[xyzd+nxyz*c] += scalingParam*inputImage[xyz+nxyz*c];
+				for (int c=0;c<nc;c++) {								
+					// only for places with actual values inside..
+					if ( (target==ZERO && inputImage[xyz+nxyz*c]!=0)
+						|| (target==MASK && maskImage[xyz]!=0)
+						|| target==LOWER || target==HIGHER) {
+						// propagate to neighbors
+						for (int dx=-1;dx<=1;dx++) for (int dy=-1;dy<=1;dy++) for (int dz=-1;dz<=1;dz++) {
+							int xyzd = xyz + dx+nx*dy+nx*ny*dz;
+							if ( (target==ZERO && inputImage[xyzd + nxyz*c]==0)
+								|| (target==MASK && maskImage[xyzd]==0)
+								|| (target==LOWER && inputImage[xyzd + nxyz*c] < scalingParam*inputImage[xyz + nxyz*c])
+								|| (target==HIGHER && inputImage[xyzd + nxyz*c] > scalingParam*inputImage[xyz + nxyz*c]) ) {
+								//System.out.print(".");
+								if (merge==MIN) {
+									if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
+									else resultImage[xyzd+nxyz*c] = Numerics.min(resultImage[xyzd+nxyz*c], scalingParam*inputImage[xyz+nxyz*c]);
+								} else if (merge==MAX) {
+									if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
+									else resultImage[xyzd+nxyz*c] = Numerics.max(resultImage[xyzd+nxyz*c], scalingParam*inputImage[xyz+nxyz*c]);
+								} else if (merge==MEAN) {
+									resultImage[xyzd+nxyz*c] += scalingParam*inputImage[xyz+nxyz*c];
+								}
+								if (c==nc-1) count[xyzd]++;
+							}
 						}
-						if (c==nc-1) count[xyzd]++;
 					}
 				}
 			}
-			for (int xyz=0;xyz<nxyz;xyz++) for (int c=0;c<nc;c++) {
-				if (merge==MEAN) resultImage[xyz+nxyz*c] /= (1.0f+count[xyz]);
-				inputImage[xyz+nxyz*c] = resultImage[xyz+nxyz*c];
+			for (int xyz=0;xyz<nxyz;xyz++) {
+				if (merge==MEAN && (target==ZERO || target==MASK) && count[xyz]>0) {
+					for (int c=0;c<nc;c++) resultImage[xyz+nxyz*c] /= (count[xyz]);
+				} else if (merge==MEAN) {
+					for (int c=0;c<nc;c++) resultImage[xyz+nxyz*c] /= (1.0f+count[xyz]);
+				}
+				for (int c=0;c<nc;c++) inputImage[xyz+nxyz*c] = resultImage[xyz+nxyz*c];
+				if (target==MASK && inputImage[xyz]!=0) maskImage[xyz] = (byte)1;
 			}
 		}
 	}

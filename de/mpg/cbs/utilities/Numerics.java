@@ -44,8 +44,8 @@ public class Numerics {
 	
     public static final int round(double num) {		
 		if (num==(int)num) return (int)num;
-		else if (num>0) return (int)(num+0.5f);
-		else return (int)(num-0.5f);
+		else if (num>0) return (int)(num+0.5);
+		else return (int)(num-0.5);
     }
     public static final int floor(double num) {		
 		if (num==(int)num) return (int)num;
@@ -730,6 +730,23 @@ public class Numerics {
 		return (float)Math.sqrt(val);
 	}
 	
-	
-
+	public static final double modulo(double val, double mod) {
+	    return val-Numerics.round(val/mod)*mod;
+	    /*
+	    if (val>mod/2.0) return val-mod;  
+	    else if (val<-mod/2.0) return val+mod;
+	    else return val;
+	    */
+	}
+	public static final float modulo(float val, float mod) {
+	    return val-Numerics.round(val/mod)*mod;
+	    /*
+	    if (val>mod/2.0) return val-mod;  
+	    else if (val<-mod/2.0) return val+mod;
+	    else return val;
+	    */
+	}
+	public static final int wrap(float val, float mod) {
+	    return Numerics.round(val/mod);
+	}
 }

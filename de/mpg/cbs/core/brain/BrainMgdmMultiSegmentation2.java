@@ -46,7 +46,8 @@ public class BrainMgdmMultiSegmentation2 {
 													"-- 7T --", "T1MAP7T", "MP2RAGE7T", "T2SW7T", "QSM7T", 
 													"-- 9.4T --", "T1MAP9T", "MP2RAGE9T",
 													"-- MPM --", "mpmPD3T", "mpmMT3T", "mpmR13T", "mpmR2s3T",
-													"-- misc --", "Filters", "WMLesions", "PVDURA", "Labeling","none"};
+													"-- Priors --", "PriorDura", "PriorCSF", "PriorGM", "PriorWM",
+													"-- misc --", "Filters", "WMLesions", "PVDURA", "Labeling", "none"};
 	
 	public static final String inputTypeInfo = "Currently available contrasts:\n"
 			+"T1MAP7T: a 7T quantitative T1 map, \n"

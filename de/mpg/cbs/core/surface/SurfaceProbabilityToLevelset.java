@@ -56,31 +56,49 @@ public class SurfaceProbabilityToLevelset {
 		//System.out.println("transform data (scale: "+scale);
 		
 		// buidl levelset on boundary
-		for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
-			int xyz = x+nx*y+nx*ny*z;
-			if (proba[xyz]>=0.5f && (proba[xyz+1]<0.5f || proba[xyz-1]<0.5f
-									   || proba[xyz+nx]<0.5f || proba[xyz-nx]<0.5f
-									   || proba[xyz+nx*ny]<0.5f || proba[xyz-nx*ny]<0.5f)) 
-				levelset[xyz] = 0.5f-proba[xyz];
-			else if (proba[xyz]<0.5f && (proba[xyz+1]>=0.5f || proba[xyz-1]>=0.5f
-										   || proba[xyz+nx]>=0.5f || proba[xyz-nx]>=0.5f
-									   	   || proba[xyz+nx*ny]>=0.5f || proba[xyz-nx*ny]>=0.5f))
-				levelset[xyz] = 0.5f-proba[xyz];
-			else if (proba[xyz]>=0.5f) levelset[xyz] = -1.0f;
-			else levelset[xyz] = +1.0f;
-		}
+		if (nz==1) {
+            for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) {
+                int xyz = x+nx*y;
+                if (proba[xyz]>=0.5f && (proba[xyz+1]<0.5f || proba[xyz-1]<0.5f
+                                           || proba[xyz+nx]<0.5f || proba[xyz-nx]<0.5f)) 
+                    levelset[xyz] = 0.5f-proba[xyz];
+                else if (proba[xyz]<0.5f && (proba[xyz+1]>=0.5f || proba[xyz-1]>=0.5f
+                                               || proba[xyz+nx]>=0.5f || proba[xyz-nx]>=0.5f))
+                    levelset[xyz] = 0.5f-proba[xyz];
+                else if (proba[xyz]>=0.5f) levelset[xyz] = -1.0f;
+                else levelset[xyz] = +1.0f;
+            }		    
+		} else {
+            for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
+                int xyz = x+nx*y+nx*ny*z;
+                if (proba[xyz]>=0.5f && (proba[xyz+1]<0.5f || proba[xyz-1]<0.5f
+                                           || proba[xyz+nx]<0.5f || proba[xyz-nx]<0.5f
+                                           || proba[xyz+nx*ny]<0.5f || proba[xyz-nx*ny]<0.5f)) 
+                    levelset[xyz] = 0.5f-proba[xyz];
+                else if (proba[xyz]<0.5f && (proba[xyz+1]>=0.5f || proba[xyz-1]>=0.5f
+                                               || proba[xyz+nx]>=0.5f || proba[xyz-nx]>=0.5f
+                                               || proba[xyz+nx*ny]>=0.5f || proba[xyz-nx*ny]>=0.5f))
+                    levelset[xyz] = 0.5f-proba[xyz];
+                else if (proba[xyz]>=0.5f) levelset[xyz] = -1.0f;
+                else levelset[xyz] = +1.0f;
+            }
+        }
 		// no masking
 		boolean[] bgmask = new boolean[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			bgmask[xyz] = true;
 		}
 		// expand boundary? yes!
-		InflateGdm gdm = new InflateGdm(levelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no", null);
-		gdm.evolveNarrowBand(0, 1.0f);
-		
+		if (nz==1) {
+            InflateGdm2D gdm = new InflateGdm2D(levelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no", null);
+            gdm.evolveNarrowBand(0, 1.0f);
+            lvlImage = gdm.getLevelSet();
+		} else {
+            InflateGdm gdm = new InflateGdm(levelset, nx, ny, nz, rx, ry, rz, bgmask, 0.4f, 0.4f, "no", null);
+            gdm.evolveNarrowBand(0, 1.0f);
+            lvlImage = gdm.getLevelSet();
+        }
 		System.out.println("\n done");
-		
-		lvlImage = gdm.getLevelSet();
 	}
 
 

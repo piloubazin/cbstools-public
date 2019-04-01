@@ -809,7 +809,7 @@ public class Mgdm2d {
 				}
 			}
 			curdist = (avgdiff/narrowband.currentsize);
-			if (debug) System.out.print("mean distance function change: "+(avgdiff/narrowband.currentsize)+"\n");
+			if (debug) System.out.print("mean distance function change: "+curdist+"\n");
 	
 			if (reinitLM) {
 				if (debug) System.out.print("re-initialization (LM: "+reinitLM+" | OL: "+reinitOL+" )\n");

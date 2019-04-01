@@ -31,6 +31,7 @@ import edu.jhu.ece.iacl.jist.structures.image.VoxelType;
 import edu.jhu.ece.iacl.jist.structures.image.ImageHeader;
 import edu.jhu.ece.iacl.jist.structures.geom.EmbeddedSurface;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolume;
+import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamVolumeCollection;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurface;
 import edu.jhu.ece.iacl.jist.pipeline.parameter.ParamSurfaceCollection;
 
@@ -426,6 +427,14 @@ public class Interface {
 		container.setValue(surf);
 	}
 	
+	public static final ParamVolume getVolumeFromCollection(int n, ParamVolumeCollection input) {
+	    return input.getParamVolume(n);
+	}
+	
+	public static final int getVolumeCollectionSize(ParamVolumeCollection input) {
+	    return input.size();
+	}
+	
     public static final float[] getFloatImage3D(ParamVolume input) {
 		// import the image data into 1D arrays
 		ImageDataFloat inImg = new ImageDataFloat(input.getImageData());
@@ -439,6 +448,23 @@ public class Interface {
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x+nx*y+nx*ny*z;
 			image[xyz] = buffer[x][y][z];
+		}
+		return image;
+	}
+
+    public static final float[] getFloatImageComponent4D(ParamVolume input, int c) {
+		// import the image data into 1D arrays
+		ImageDataFloat inImg = new ImageDataFloat(input.getImageData());
+		float[][][][] buffer = inImg.toArray4d();
+		int nx = inImg.getRows();
+		int ny = inImg.getCols();
+		int nz = inImg.getSlices();
+		//int nxyz = nx*ny*nz;
+		
+		float[] image = new float[nx*ny*nz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			image[xyz] = buffer[x][y][z][c];
 		}
 		return image;
 	}
@@ -714,6 +740,48 @@ public class Interface {
 		bufferData.setHeader(header);
 		bufferData.setName(name);
 		container.setValue(bufferData);
+		
+		return;
+	}
+	
+	// outputs
+	public static final void addFloatImage4D(float[] image, int[] dimensions, int length, ParamVolumeCollection container, String name, ImageHeader header) {
+		int nx = dimensions[0];
+		int ny = dimensions[1];
+		int nz = dimensions[2];
+		//int nxyz = nx*ny*nz;
+		
+		float[][][][] buffer = new float[nx][ny][nz][length];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) for (int l=0;l<length;l++) {
+			int xyz = x+nx*y+nx*ny*z+nx*ny*nz*l;
+			buffer[x][y][z][l] = image[xyz];
+		}
+		
+		ImageDataFloat bufferData = new ImageDataFloat(buffer);
+		bufferData.setHeader(header);
+		bufferData.setName(name);
+		container.add(bufferData);
+		
+		return;
+	}
+	
+	// outputs
+	public static final void addFloatImage3D(float[] image, int[] dimensions, ParamVolumeCollection container, String name, ImageHeader header) {
+		int nx = dimensions[0];
+		int ny = dimensions[1];
+		int nz = dimensions[2];
+		//int nxyz = nx*ny*nz;
+		
+		float[][][] buffer = new float[nx][ny][nz];
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			buffer[x][y][z] = image[xyz];
+		}
+		
+		ImageDataFloat bufferData = new ImageDataFloat(buffer);
+		bufferData.setHeader(header);
+		bufferData.setName(name);
+		container.add(bufferData);
 		
 		return;
 	}

@@ -1,10 +1,11 @@
-package de.mpg.cbs.libraries;
+package de.mpg.cbs.methods;
 
 import java.io.*;
 import java.util.*;
 
 import de.mpg.cbs.structures.*;
 import de.mpg.cbs.utilities.*;
+import de.mpg.cbs.libraries.*;
 
 /**
  *
@@ -20,7 +21,7 @@ import de.mpg.cbs.utilities.*;
  *
  */
  
-public class Mgdm3d {
+public class CellMgdm3d {
 	
 	// object types
 
@@ -59,6 +60,9 @@ public class Mgdm3d {
 	private 	int[] 			segmentation;   	// MGDM's segmentation
 	private 	float[][] 		fieldforce;  		// original image forces, indep. object (e.g. boundaries)
 	private 	float[][] 		balloonforces;  	// original image forces, along object normals (e.g. from memberships)
+	private     float[]         intmax;
+	private     float           intbg;
+	private     int             bglb;
 	private		boolean[]		mask;				// masking regions not used in computations
 	private static	int 		nx,ny,nz;   		// images dimensions
 	private static	float 		rx,ry,rz;   		// images resolutions
@@ -151,22 +155,28 @@ public class Mgdm3d {
 	/**
 	 *  constructors for different cases: with/out outliers, with/out selective constraints
 	 */
-	public Mgdm3d(int[] init_, int nx_, int ny_, int nz_, int nobj_, int nmgdm_,
+	public CellMgdm3d(int[] init_, int nx_, int ny_, int nz_, int nobj_, int nmgdm_,
 						float rx_, float ry_, float rz_,
 						float[][] field_, float[][] balloon_, 
+						float[] intmax_, float intbg_, int bglb_,
 						float fw_, float bw_, float sw_, float pw_,
 						String connectivityType_, String lutdir_) {
 	
-		init(init_, nx_, ny_, nz_, nobj_, nmgdm_, rx_, ry_, rz_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_, lutdir_);
+		init(init_, nx_, ny_, nz_, nobj_, nmgdm_, rx_, ry_, rz_, field_, balloon_,  intmax_, intbg_, bglb_, fw_, bw_, sw_, pw_, connectivityType_, lutdir_);
 	}
 	
 	private void init(int[] init_, int nx_, int ny_, int nz_, int nobj_, int nmgdm_,
 						float rx_, float ry_, float rz_,
 						float[][] field_, float[][] balloon_, 
+						float[] intmax_, float intbg_, int bglb_,
 						float fw_, float bw_, float sw_, float pw_,
 						String connectivityType_, String lutdir_) {
 		fieldforce = field_;
 		balloonforces = balloon_;
+		
+		intmax = intmax_;
+		intbg = intbg_;
+		bglb = bglb_;
 		
 		fieldweight = fw_;
 		balloonweight = bw_;
@@ -259,16 +269,17 @@ public class Mgdm3d {
 	/**
 	 *  constructors for different cases: with/out outliers, with/out selective constraints
 	 */
-	public Mgdm3d(byte[] init_, int nx_, int ny_, int nz_, int nobj_, int nmgdm_,
+	public CellMgdm3d(byte[] init_, int nx_, int ny_, int nz_, int nobj_, int nmgdm_,
 						float rx_, float ry_, float rz_,
 						float[][] field_, float[][] balloon_, 
+						float[] intmax_, float intbg_, int bglb_,
 						float fw_, float bw_, float sw_, float pw_,
 						String connectivityType_, String lutdir_) {
 		
 		int[] tmp = new int[nx_*ny_*nz_];
 		for (int n=0;n<nx_*ny_*nz_;n++) tmp[n] = init_[n];
 		
-		init(tmp, nx_, ny_, nz_, nobj_, nmgdm_, rx_, ry_, rz_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_, lutdir_);
+		init(tmp, nx_, ny_, nz_, nobj_, nmgdm_, rx_, ry_, rz_, field_, balloon_,  intmax_, intbg_, bglb_, fw_, bw_, sw_, pw_, connectivityType_, lutdir_);
 	}
 		
 	public void finalize() {
@@ -878,24 +889,6 @@ public class Mgdm3d {
         return;
     }
     
-    /** method to select the nmgdm-th closest neighbor based on external information 
-     *  (highly application-dependent, may not be usable in all cases) 
-     */
-    private final int lastNeighborCandidate(int xyz) {
-		// select best label somehow (use the balloon forces with highest value (e.g. coming from memberships)
-		int olb = EMPTY;
-		if (balloonweight>0) {
-			float best=-INF;
-			for (int n=1;n<nobj;n++) {
-				boolean outside = true;
-				for (int l=0;l<nmgdm;l++) if (mgdmlabels[l][xyz]==n) outside = false;
-				if (outside && balloonforces[n][xyz]>best) olb = n;
-			}
-			if (olb==EMPTY) System.out.print("?");
-		}
-		return olb;
-	}
-    
 	/** specific forces applied to the level sets (application dependent) */
     private final double levelsetForces(int xyz, int lb) {
     	
@@ -991,7 +984,14 @@ public class Mgdm3d {
 									 +Numerics.square(Numerics.max(Dpy, 0.0)) + Numerics.square(Numerics.min(Dmy, 0.0))
 									 +Numerics.square(Numerics.max(Dpz, 0.0)) + Numerics.square(Numerics.min(Dmz, 0.0)));
 			
-			balloon = balloonweight*stepsize*(Numerics.max(balloonforces[lb][xyz], 0.0)*DeltaP + Numerics.min(balloonforces[lb][xyz], 0.0)*DeltaM);
+			// build the balloon forces for different cells
+			double bforce = 0.0;
+			if (lb==bglb) {
+			    bforce = Numerics.bounded( (2.0*intbg - balloonforces[0][xyz])/intbg, -1.0f, 1.0f);
+			} else {
+			    bforce = Numerics.bounded( (intmax[lb] - Numerics.abs(intmax[lb]-balloonforces[0][xyz]))/intmax[lb], -1.0f, 1.0f);
+            }
+			balloon = balloonweight*stepsize*(Numerics.max(bforce, 0.0)*DeltaP + Numerics.min(bforce, 0.0)*DeltaM);
 		}
 		
 		// external force field

@@ -292,7 +292,7 @@ public class MgdmSegmentationRefinement {
 									byte[] init_, float[] bound_,
 									int nmgdm_, float fw_, float sw_, float ew_, float sd_,
 									String connectivityType_) {
-		this(img_, mask_, nix_, niy_, niz_, rix_, riy_, riz_, init_, bound_, nmgdm_, fw_, sw_, 0.0f, ew_, sd_, null, true, connectivityType_);
+		this(img_, mask_, nix_, niy_, niz_, rix_, riy_, riz_, init_, bound_, nmgdm_, fw_, sw_, 0.0f, ew_, sd_, "none", true, connectivityType_);
 	}
 	
 	public void finalize() {

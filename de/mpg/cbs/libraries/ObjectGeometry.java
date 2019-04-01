@@ -551,6 +551,13 @@ public class ObjectGeometry {
 	/**
 	 *  compute the object boundary
 	 */
+	public static final boolean[] objectBoundary(boolean[] obj, int nx, int ny, int nz) {
+		return objectInsideBoundary(obj,nx,ny,nz,6);
+	}
+	
+	/**
+	 *  compute the object boundary
+	 */
 	public static final boolean[][][] objectInsideBoundary(boolean[][][] obj, int nx, int ny, int nz, int connectivity) {
 		boolean[][][]		boundary = new boolean[nx][ny][nz];
 		

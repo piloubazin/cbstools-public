@@ -518,17 +518,37 @@ public class ObjectTransforms {
 		return dist;
 	}
 	
-	public static final float[][][] voronoiFeatureDistance(boolean[][][] obj, int nx, int ny, int nz) {
-		short[][][][]	ft = voronoiFeatureTransform(obj,nx,ny,nz);
-		float[][][] dist = new float[nx][ny][nz];
+	public static final float[] voronoiFeatureSquaredDistance(boolean[] obj, int nx, int ny, int nz) {
+		short[][]	ft = voronoiFeatureTransform(obj,nx,ny,nz);
+		float[] dist = new float[nx*ny*nz];
 		
 		// compute the distances
 		for (short x=0;x<nx;x++) for (short y=0;y<ny;y++) for (short z=0;z<nz;z++) {
-			if (ft[x][y][z][0]>-1) {
+		    int xyz = x+nx*y+nx*ny*z;
+			if (ft[xyz][0]>-1) {
 				short[] pt = new short[]{x,y,z};
-				dist[x][y][z] = (float)Math.sqrt(ftDistance(pt, ft[x][y][z]));
+				dist[xyz] = ftDistance(pt, ft[xyz]);
 			} else {
-				dist[x][y][z] = -1;
+				dist[xyz] = -1;
+			}
+		}
+		ft = null;
+		
+		return dist;
+	}
+	
+	public static final float[] voronoiFeatureDistance(boolean[] obj, int nx, int ny, int nz) {
+		short[][]	ft = voronoiFeatureTransform(obj,nx,ny,nz);
+		float[] dist = new float[nx*ny*nz];
+		
+		// compute the distances
+		for (short x=0;x<nx;x++) for (short y=0;y<ny;y++) for (short z=0;z<nz;z++) {
+		    int xyz = x+nx*y+nx*ny*z;
+			if (ft[xyz][0]>-1) {
+				short[] pt = new short[]{x,y,z};
+				dist[xyz] = (float)Math.sqrt(ftDistance(pt, ft[xyz]));
+			} else {
+				dist[xyz] = -1;
 			}
 		}
 		ft = null;

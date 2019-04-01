@@ -65,7 +65,55 @@ public class BrainExtractBrainRegion {
 	
 	public final void setAtlasFile(String val) { atlasParam = val; }
 	
-	public final void setExtractedRegion(String val) { regionParam = val; }
+	public final void setExtractedRegion(String val) {
+	    regionParam = val; 
+	    // set up the structure names here in case we need to skip computations
+	    if (regionParam.equals("left_cerebrum")) {
+            structureName = "lcrgm";
+            insideName = "lcrwm";
+            backgroundName = "lcrbg";
+		} else
+		if (regionParam.equals("right_cerebrum")) {
+            structureName = "rcrgm";
+            insideName = "rcrwm";
+            backgroundName = "rcrbg";
+		} else
+		if (regionParam.equals("cerebrum")) {
+            structureName = "crgm";
+            insideName = "crwm";
+            backgroundName = "crbg";
+		} else
+		if (regionParam.equals("cerebellum")) {
+            structureName = "cbgm";
+            insideName = "cbwm";
+            backgroundName = "cbbg";
+		} else
+		if (regionParam.equals("cerebellum_brainstem")) {
+            structureName = "cbsgm";
+            insideName = "cbswm";
+            backgroundName = "cbsbg";
+		} else
+		if (regionParam.equals("subcortex")) {
+            structureName = "subgm";
+            insideName = "subwmbg";
+            backgroundName = "subcsf";
+		} else
+		if (regionParam.equals("tissues(anat)")) {
+            structureName = "angm";
+            insideName = "anwm";
+            backgroundName = "ancsf";
+		} else
+		if (regionParam.equals("tissues(func)")) {
+            structureName = "fngm";
+            insideName = "fnwm";
+            backgroundName = "fncsf";
+		} else
+		if (regionParam.equals("brain_mask")) {
+            structureName = "csf";
+            insideName = "brain";
+            backgroundName = "bg";
+		}	    
+	}
 	public final void setNormalizeProbabilities(boolean val) { normalizeParam = val; }
 	public final void setEstimateTissueDensities(boolean val) { densityParam = val; }
 	public final void setPartialVolumingDistance(float val) { scalingParam = val; }
@@ -133,11 +181,10 @@ public class BrainExtractBrainRegion {
 				else if (atlas.getNames()[nobj].equals("GlobusPallidusL")) isInside.set(atlas.getLabels()[nobj]);
 			
 				else isBackground.set(atlas.getLabels()[nobj]);
-				
-				structureName = "_lcrgm";
-				insideName = "_lcrwm";
-				backgroundName = "_lcrbg";
 			}
+            structureName = "lcrgm";
+            insideName = "lcrwm";
+            backgroundName = "lcrbg";
 		} else
 		if (regionParam.equals("right_cerebrum")) {
 			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
@@ -154,11 +201,10 @@ public class BrainExtractBrainRegion {
 				else if (atlas.getNames()[nobj].equals("GlobusPallidusR")) isInside.set(atlas.getLabels()[nobj]);
 			
 				else isBackground.set(atlas.getLabels()[nobj]);
-				
-				structureName = "_rcrgm";
-				insideName = "_rcrwm";
-				backgroundName = "_rcrbg";
 			}
+            structureName = "rcrgm";
+            insideName = "rcrwm";
+            backgroundName = "rcrbg";
 		} else
 		if (regionParam.equals("cerebrum")) {
 			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
@@ -192,11 +238,10 @@ public class BrainExtractBrainRegion {
 				else if (atlas.getNames()[nobj].equals("SubCorticalGM")) isInside.set(atlas.getLabels()[nobj]);
 				
 				else isBackground.set(atlas.getLabels()[nobj]);
-				
-				structureName = "_crgm";
-				insideName = "_crwm";
-				backgroundName = "_crbg";
 			}
+            structureName = "crgm";
+            insideName = "crwm";
+            backgroundName = "crbg";
 		} else
 		if (regionParam.equals("cerebellum")) {
 			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
@@ -206,11 +251,10 @@ public class BrainExtractBrainRegion {
 				//else if (atlas.getNames()[nobj].equals("Ventricle4")) isInside.set(atlas.getLabels()[nobj]);
 				
 				else isBackground.set(atlas.getLabels()[nobj]);
-				
-				structureName = "_cbgm";
-				insideName = "_cbwm";
-				backgroundName = "_cbbg";
 			}
+            structureName = "cbgm";
+            insideName = "cbwm";
+            backgroundName = "cbbg";
 		} else
 		if (regionParam.equals("cerebellum_brainstem")) {
 			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
@@ -221,11 +265,10 @@ public class BrainExtractBrainRegion {
 				//else if (atlas.getNames()[nobj].equals("Ventricle4")) isInside.set(atlas.getLabels()[nobj]);
 				
 				else isBackground.set(atlas.getLabels()[nobj]);
-				
-				structureName = "_cbsgm";
-				insideName = "_cbswm";
-				backgroundName = "_cbsbg";
 			}
+            structureName = "cbsgm";
+            insideName = "cbswm";
+            backgroundName = "cbsbg";
 		} else
 		if (regionParam.equals("subcortex")) {
 			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
@@ -253,11 +296,10 @@ public class BrainExtractBrainRegion {
 				else if (atlas.getNames()[nobj].equals("HippocampusR")) isStructure.set(atlas.getLabels()[nobj]);
 				
 				else isInside.set(atlas.getLabels()[nobj]);
-				
-				structureName = "_subgm";
-				insideName = "_subwmbg";
-				backgroundName = "_subcsf";
 			}
+            structureName = "subgm";
+            insideName = "subwmbg";
+            backgroundName = "subcsf";
 		} else
 		if (regionParam.equals("tissues(anat)")) {
 			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
@@ -296,11 +338,10 @@ public class BrainExtractBrainRegion {
 				else if (atlas.getNames()[nobj].equals("Ventricle3")) isBackground.set(atlas.getLabels()[nobj]);
 				else if (atlas.getNames()[nobj].equals("Ventricle4")) isBackground.set(atlas.getLabels()[nobj]);
 				else if (atlas.getNames()[nobj].equals("Ventricles")) isBackground.set(atlas.getLabels()[nobj]);
-				
-				structureName = "_angm";
-				insideName = "_anwm";
-				backgroundName = "_ancsf";
 			}
+            structureName = "angm";
+            insideName = "anwm";
+            backgroundName = "ancsf";
 		} else
 		if (regionParam.equals("tissues(func)")) {
 			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
@@ -340,11 +381,10 @@ public class BrainExtractBrainRegion {
 				else if (atlas.getNames()[nobj].equals("Ventricle4")) isBackground.set(atlas.getLabels()[nobj]);
 				else if (atlas.getNames()[nobj].equals("Ventricles")) isBackground.set(atlas.getLabels()[nobj]);
 				else if (atlas.getNames()[nobj].equals("Arteries")) isBackground.set(atlas.getLabels()[nobj]);
-				
-				structureName = "_fngm";
-				insideName = "_fnwm";
-				backgroundName = "_fncsf";
 			}
+            structureName = "fngm";
+            insideName = "fnwm";
+            backgroundName = "fncsf";
 		} else
 		if (regionParam.equals("brain_mask")) {
 			for (int nobj=0;nobj<atlas.getNumber();nobj++) {
@@ -356,11 +396,10 @@ public class BrainExtractBrainRegion {
 				else if (atlas.getNames()[nobj].equals("Dura")) isBackground.set(atlas.getLabels()[nobj]);
 				
 				else isInside.set(atlas.getLabels()[nobj]);
-				
-				structureName = "_csf";
-				insideName = "_brain";
-				backgroundName = "_bg";
 			}
+            structureName = "csf";
+            insideName = "brain";
+            backgroundName = "bg";
 		}
 		//System.out.println("(output extensions: "+structureName+", "+insideName+", "+backgroundName+")");
 		
