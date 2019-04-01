@@ -324,7 +324,7 @@ public class SimpleShapeAtlas2 {
 		for (int xyz=0;xyz<nix*niy*niz;xyz++) {
 			boolean isMasked = true;
 			for (int i=0;i<nimg;i++) {
-				if (Numerics.abs(image[i][xyz])-imgmin[i]>0.1f*(imgmax[i]-imgmin[i])) isMasked = false;
+				if (Numerics.abs(image[i][xyz])-imgmin[i]>0.01f*(imgmax[i]-imgmin[i])) isMasked = false;
 			}
 			if (!isMasked) imgvol++;
 		}
@@ -987,6 +987,13 @@ public class SimpleShapeAtlas2 {
 			|| intensityName[id].equalsIgnoreCase("PV") 
 			|| intensityName[id].equalsIgnoreCase("PVDURA") 
 			|| intensityName[id].equalsIgnoreCase("T1pv")) return true;
+		else return false;
+	}					
+		
+	public boolean isMultiProbabilityContrast(int id) {
+		if (intensityName[id].startsWith("RandomForest") 
+			|| intensityName[id].startsWith("AutoEncoder") 
+			|| intensityName[id].startsWith("Prior")) return true;
 		else return false;
 	}					
 		

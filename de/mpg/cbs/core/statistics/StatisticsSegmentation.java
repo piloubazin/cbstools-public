@@ -35,11 +35,11 @@ public class StatisticsSegmentation {
 	
 	private String 		statsParam;
 	
-	private String 	stat1Param = null;
-	private String 	stat2Param = null;
-	private String 	stat3Param = null;
+	private int nstat = 3;
+	private String[] 	statParam = new String[nstat];
 	private static final String[] statTypes = {"none", "Voxels", "Volume", "--- intensity ---", "Mean_intensity", "Std_intensity",
 												"10_intensity","25_intensity","50_intensity","75_intensity","90_intensity",
+												"Median_intensity","IQR_intensity","SNR_intensity","rSNR_intensity",
 												"Boundary_gradient","Boundary_magnitude",
 												"--- overlap ---", 
 												"Volumes", "Dice_overlap", "Jaccard_overlap", "Volume_difference",
@@ -74,9 +74,11 @@ public class StatisticsSegmentation {
 	public final void setSpreadsheetDirectory(String val) { statsParam = val+"/volume_statistics.csv"; }
 	public final void setSpreadsheetFile(String val) { statsParam = val; }
 		
-	public final void setStatistic1(String val) {stat1Param = val; }
-	public final void setStatistic2(String val) {stat2Param = val; }
-	public final void setStatistic3(String val) {stat3Param = val; }
+	public final void setStatisticAt(int n, String val) {statParam[n] = val; }
+	public final void setStatisticNumber(int  val) {nstat = val; statParam = new String[nstat]; }
+	public final void setStatistic1(String val) {statParam[0] = val; }
+	public final void setStatistic2(String val) {statParam[1] = val; }
+	public final void setStatistic3(String val) {statParam[2] = val; }
 
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nc=1; nxyz=nx*ny*nz; }
 	public final void setDimensions(int x, int y, int z, int c) { nx=x; ny=y; nz=z; nc=c; nxyz=nx*ny*nz; }
@@ -173,9 +175,8 @@ public class StatisticsSegmentation {
 		System.out.print(lbline);
 		
 		ArrayList<String> statistics = new ArrayList();
-		if (stat1Param!=null) statistics.add(stat1Param);
-		if (stat2Param!=null) statistics.add(stat2Param);
-		if (stat3Param!=null) statistics.add(stat3Param);
+		for (int n=0;n<nstat;n++) 
+            if (statParam[n]!=null) statistics.add(statParam[n]);
 		
 		// pre-compute redundant measures ?
 		
@@ -804,6 +805,38 @@ public class StatisticsSegmentation {
 				line+=("\n");
 				output.add(line);
 			}
+			if (statistics.get(s).equals("SNR_intensity")) {
+				float[] mean = new float[nlabels];
+				float[] std = new float[nlabels];
+				float[] den = new float[nlabels];
+				boolean ignoreZero = ignoreZeroParam;
+				for (int n=0;n<nlabels;n++) {
+					mean[n] = 0.0f;
+					std[n] = 0.0f;
+					den[n] = 0.0f;
+				}
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+						mean[n] += intensity[xyz];
+						den[n] += 1.0f;
+					}
+				}
+				for (int n=0;n<nlabels;n++) {
+					if (den[n]>0) mean[n] = mean[n]/den[n];
+				}
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+						std[n] += (intensity[xyz]-mean[n])*(intensity[xyz]-mean[n]);
+					}
+				}
+				for (int n=0;n<nlabels;n++) {
+					if (den[n]>0) std[n] = (float)Math.sqrt(std[n]/den[n]);
+				}
+				line = "SNR_intensity"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+mean[n]/std[n]);
+				line+=("\n");
+				output.add(line);
+			}
 			if (statistics.get(s).equals("50_intensity")) {
 				float Imin = intensity[0];
 				float Imax = intensity[0];
@@ -811,7 +844,7 @@ public class StatisticsSegmentation {
 					if (intensity[xyz]> Imax) Imax = intensity[xyz];
 					if (intensity[xyz]< Imin) Imin = intensity[xyz];
 				}
-				int Nbins = 100;
+				int Nbins = 1000;
 				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
 				for (int xyz=0;xyz<nxyz;xyz++) {
@@ -838,6 +871,40 @@ public class StatisticsSegmentation {
 				line+=("\n");
 				output.add(line);
 			}
+			if (statistics.get(s).equals("Median_intensity")) {
+				float Imin = intensity[0];
+				float Imax = intensity[0];
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					if (intensity[xyz]> Imax) Imax = intensity[xyz];
+					if (intensity[xyz]< Imin) Imin = intensity[xyz];
+				}
+				int Nbins = 1000;
+				float[][] hist = new float[nlabels][Nbins+1];
+				boolean ignoreZero = ignoreZeroParam;
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
+						if (bin<0) bin = 0;
+						if (bin>=Nbins) bin = Nbins-1;
+						hist[n][bin]++;
+						hist[n][Nbins]++;	// total number
+					}
+				}
+				float[] per = new float[nlabels];
+				for (int n=0;n<nlabels;n++) {
+					float count = 0.0f;
+					int bin = 0;
+					while (count<0.5f*hist[n][Nbins]) {
+						count += hist[n][bin];
+						bin++;
+					}
+					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+				}
+				line = "Median_intensity"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
+				line+=("\n");
+				output.add(line);
+			}
 			if (statistics.get(s).equals("90_intensity")) {
 				float Imin = intensity[0];
 				float Imax = intensity[0];
@@ -845,7 +912,7 @@ public class StatisticsSegmentation {
 					if (intensity[xyz]> Imax) Imax = intensity[xyz];
 					if (intensity[xyz]< Imin) Imin = intensity[xyz];
 				}
-				int Nbins = 100;
+				int Nbins = 1000;
 				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
 				for (int xyz=0;xyz<nxyz;xyz++) {
@@ -879,7 +946,7 @@ public class StatisticsSegmentation {
 					if (intensity[xyz]> Imax) Imax = intensity[xyz];
 					if (intensity[xyz]< Imin) Imin = intensity[xyz];
 				}
-				int Nbins = 100;
+				int Nbins = 1000;
 				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
 				for (int xyz=0;xyz<nxyz;xyz++) {
@@ -913,7 +980,7 @@ public class StatisticsSegmentation {
 					if (intensity[xyz]> Imax) Imax = intensity[xyz];
 					if (intensity[xyz]< Imin) Imin = intensity[xyz];
 				}
-				int Nbins = 100;
+				int Nbins = 1000;
 				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
 				for (int xyz=0;xyz<nxyz;xyz++) {
@@ -947,7 +1014,7 @@ public class StatisticsSegmentation {
 					if (intensity[xyz]> Imax) Imax = intensity[xyz];
 					if (intensity[xyz]< Imin) Imin = intensity[xyz];
 				}
-				int Nbins = 100;
+				int Nbins = 1000;
 				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
 				for (int xyz=0;xyz<nxyz;xyz++) {
@@ -974,6 +1041,89 @@ public class StatisticsSegmentation {
 				line+=("\n");
 				output.add(line);
 			}
+			if (statistics.get(s).equals("IQR_intensity")) {
+				float Imin = intensity[0];
+				float Imax = intensity[0];
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					if (intensity[xyz]> Imax) Imax = intensity[xyz];
+					if (intensity[xyz]< Imin) Imin = intensity[xyz];
+				}
+				int Nbins = 1000;
+				float[][] hist = new float[nlabels][Nbins+1];
+				boolean ignoreZero = ignoreZeroParam;
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
+						if (bin<0) bin = 0;
+						if (bin>=Nbins) bin = Nbins-1;
+						hist[n][bin]++;
+						hist[n][Nbins]++;	// total number
+					}
+				}
+				float[] per = new float[nlabels];
+				for (int n=0;n<nlabels;n++) {
+					float count = 0.0f;
+					int binmin = 0;
+					while (count<0.25f*hist[n][Nbins]) {
+						count += hist[n][binmin];
+						binmin++;
+					}
+					int binmax = binmin;
+					while (count<0.75f*hist[n][Nbins]) {
+						count += hist[n][binmax];
+						binmax++;
+					}
+					per[n] = (binmax-binmin)/(float)Nbins*(Imax-Imin);
+				}
+				line = "IQR_intensity"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
+				line+=("\n");
+				output.add(line);
+			}
+			if (statistics.get(s).equals("rSNR_intensity")) {
+				float Imin = intensity[0];
+				float Imax = intensity[0];
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					if (intensity[xyz]> Imax) Imax = intensity[xyz];
+					if (intensity[xyz]< Imin) Imin = intensity[xyz];
+				}
+				int Nbins = 1000;
+				float[][] hist = new float[nlabels][Nbins+1];
+				boolean ignoreZero = ignoreZeroParam;
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
+						if (bin<0) bin = 0;
+						if (bin>=Nbins) bin = Nbins-1;
+						hist[n][bin]++;
+						hist[n][Nbins]++;	// total number
+					}
+				}
+				float[] per = new float[nlabels];
+				for (int n=0;n<nlabels;n++) {
+					float count = 0.0f;
+					int binmin = 0;
+					while (count<0.25f*hist[n][Nbins]) {
+						count += hist[n][binmin];
+						binmin++;
+					}
+					int binmed = binmin;
+					while (count<0.5f*hist[n][Nbins]) {
+						count += hist[n][binmed];
+						binmed++;
+					}
+					int binmax = binmed;
+					while (count<0.75f*hist[n][Nbins]) {
+						count += hist[n][binmax];
+						binmax++;
+					}
+					per[n] = (Imin + (binmed-1)/(float)Nbins*(Imax-Imin)) / ((binmax-binmin)/(float)Nbins*(Imax-Imin));
+				}
+				line = "rSNR_intensity"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
+				line+=("\n");
+				output.add(line);
+			}
 			if (statistics.get(s).equals("Boundary_gradient")) {
 				float[] grad = new float[nlabels];
 				float[] den = new float[nlabels];
@@ -987,7 +1137,7 @@ public class StatisticsSegmentation {
 					    // look for neighbors
 					    for (byte k=0;k<26;k++) {
 					        int ngb = Ngb.neighborIndex(k, xyz, nx, ny, nz);
-					        if ( (!ignoreZero || intensity[xyz]!=0) && segmentation[xyz]!=lbid[n]) {
+					        if ( (!ignoreZero || intensity[ngb]!=0) && segmentation[ngb]!=lbid[n]) {
 					            grad[n] += (intensity[xyz]-intensity[ngb]);
                                 den[n] += 1.0f;
                             }
@@ -1015,7 +1165,7 @@ public class StatisticsSegmentation {
 					    // look for neighbors
 					    for (byte k=0;k<26;k++) {
 					        int ngb = Ngb.neighborIndex(k, xyz, nx, ny, nz);
-					        if ( (!ignoreZero || intensity[xyz]!=0) && segmentation[xyz]!=lbid[n]) {
+					        if ( (!ignoreZero || intensity[ngb]!=0) && segmentation[ngb]!=lbid[n]) {
 					            mag[n] += Numerics.abs(intensity[xyz]-intensity[ngb]);
                                 den[n] += 1.0f;
                             }

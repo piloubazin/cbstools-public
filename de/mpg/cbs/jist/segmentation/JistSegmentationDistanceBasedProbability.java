@@ -43,6 +43,7 @@ public class JistSegmentationDistanceBasedProbability extends ProcessingAlgorith
 	
 	private ParamVolume 	probaImage;
 	private ParamVolume 	bgmaskImage;
+	private ParamVolume 	mgdmImage;
 		
 	private SegmentationDistanceBasedProbability algorithm;
 	
@@ -79,7 +80,8 @@ public class JistSegmentationDistanceBasedProbability extends ProcessingAlgorith
 	@Override
 	protected void createOutputParameters(ParamCollection outputParams) {
 		outputParams.add(probaImage = new ParamVolume("Distance-based Probability Image (4D)",VoxelType.FLOAT,-1,-1,-1,-1));
-		outputParams.add(bgmaskImage = new ParamVolume("Background mask",VoxelType.UBYTE));
+		outputParams.add(bgmaskImage = new ParamVolume("Background mask",VoxelType.INT));
+		outputParams.add(mgdmImage = new ParamVolume("Distance-based MGDM Function",VoxelType.FLOAT));
 		
 		outputParams.setName(algorithm.getName());
 		outputParams.setLabel(algorithm.getLabel());
@@ -126,7 +128,8 @@ public class JistSegmentationDistanceBasedProbability extends ProcessingAlgorith
 		
 		// outputs
 		Interface.setFloatImage4D(algorithm.getProbabilityImage(), dims, algorithm.getLabelNumber(), probaImage, name+"_prob", header);
-		Interface.setUByteImage3D(algorithm.getBackgroundMaskImage(), dims, bgmaskImage, name+"_mask", header);
+		Interface.setIntegerImage3D(algorithm.getBackgroundMaskImage(), dims, bgmaskImage, name+"_mask", header);
+		Interface.setFloatImage3D(algorithm.getMgdmImage(), dims, mgdmImage, name+"_mgdm", header);
 		
 		return;
 	}
