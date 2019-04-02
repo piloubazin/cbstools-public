@@ -1574,6 +1574,27 @@ public class ObjectStatistics {
 		}
 		return center;
 	}
+    public static final float[] center(boolean img[], int nx, int ny, int nz) {
+		float[] center = new float[3];
+		float count=0.0f;
+		int ind = -1;
+		for (int n=0;n<3;n++) center[n] = 0.0f;
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			ind = x + y*nx + z*nx*ny;
+			if (img[ind]) {
+				center[0] += x;
+				center[1] += y;
+				center[2] += z;
+				count++;
+			}
+		}
+		if (count>0) {
+			center[0] = center[0]/count;
+			center[1] = center[1]/count;
+			center[2] = center[2]/count;
+		}
+		return center;
+	}
 	
 	/**
      *  compute the object deviation from the center
