@@ -42,7 +42,7 @@ public class StatisticsSegmentation {
 	private static final String[] statTypes = {"none", "Voxels", "Volume", "--- intensity ---", "Mean_intensity", "Std_intensity",
 												"10_intensity","25_intensity","50_intensity","75_intensity","90_intensity",
 												"Median_intensity","IQR_intensity","SNR_intensity","rSNR_intensity",
-												"Boundary_gradient","Boundary_magnitude",
+												"Boundary_gradient","Boundary_magnitude","Center_of_mass",
 												"--- overlap ---", 
 												"Volumes", "Dice_overlap", "Jaccard_overlap", "Volume_difference",
 												"False_positives","False_negatives",
@@ -437,6 +437,29 @@ public class StatisticsSegmentation {
 				}
 				line = "CenterDist"+imgtag+notag+notag;
 				for (int n=0;n<nlabels;n++) line += (delim+distances[n]);
+				line +="\n";
+				output.add(line);
+				System.out.println(line);
+			}
+			if (statistics.get(s).equals("Center_of_mass")) {
+				// compute the distance between centers
+				float[][] centers = new float[nlabels][];
+				for (int n=0;n<nlabels;n++) {
+					boolean[] obj = ObjectExtraction.objectFromLabelImage(segmentation,nx,ny,nz,lbid[n],ObjectLabeling.EQUAL);
+					centers[n] = ObjectStatistics.center(obj,nx,ny,nz);
+				}
+				line = "CenterOfMassX"+imgtag+notag+notag;
+				for (int n=0;n<nlabels;n++) line += (delim+centers[n][0]);
+				line +="\n";
+				output.add(line);
+				System.out.println(line);
+				line = "CenterOfMassY"+imgtag+notag+notag;
+				for (int n=0;n<nlabels;n++) line += (delim+centers[n][1]);
+				line +="\n";
+				output.add(line);
+				System.out.println(line);
+				line = "CenterOfMassZ"+imgtag+notag+notag;
+				for (int n=0;n<nlabels;n++) line += (delim+centers[n][2]);
 				line +="\n";
 				output.add(line);
 				System.out.println(line);
