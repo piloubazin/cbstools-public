@@ -1680,7 +1680,7 @@ public class FilterRecursiveRidgeDiffusion {
 
 		factor /= (float)ngbParam;
 		for (int t=0;t<iterParam;t++) {
-			BasicInfo.displayMessage("iterParamation "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
 				float prev = diffused[xyz];
@@ -1734,7 +1734,7 @@ public class FilterRecursiveRidgeDiffusion {
 		}
 
 		for (int t=0;t<iterParam;t++) {
-			BasicInfo.displayMessage("iterParamation "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
 				previous[xyz] = diffused[xyz];
 			}
@@ -1881,7 +1881,7 @@ public class FilterRecursiveRidgeDiffusion {
 
 		factor /= (float)ngbParam;
 		for (int t=0;t<iterParam;t++) {
-			BasicInfo.displayMessage("iterParamation "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
 				float prev = diffused[xyz];
@@ -1933,7 +1933,7 @@ public class FilterRecursiveRidgeDiffusion {
 		}
 
 		for (int t=0;t<iterParam;t++) {
-			BasicInfo.displayMessage("iterParamation "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			for (int xyz=0;xyz<nxyz;xyz++) if (proba[xyz]>0) {
 				previous[xyz] = diffused[xyz];
 			}
@@ -2280,7 +2280,7 @@ public class FilterRecursiveRidgeDiffusion {
 		
 		// message passing
 		for (int t=0;t<iterParam;t++) {
-			BasicInfo.displayMessage("iterParamation "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			//float prev;
 			int ngb;
@@ -2390,7 +2390,7 @@ public class FilterRecursiveRidgeDiffusion {
 		
 		// message passing
 		for (int t=0;t<iterParam;t++) {
-			BasicInfo.displayMessage("iterParamation "+(t+1)+": ");
+			BasicInfo.displayMessage("iteration "+(t+1)+": ");
 			float diff = 0.0f;
 			//float prev;
 			int ngb;
