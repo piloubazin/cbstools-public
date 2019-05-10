@@ -265,6 +265,7 @@ public class BrainMgdmMultiSegmentation2 {
 		rigid.register();
 		atlas.updateRigidTransform(rigid.getTransform());
 		atlas.refreshShapeMapping();
+		BasicInfo.displayMessage("transform: "+atlas.displayTransform(atlas.getTransform()));
 
 		// clean-up
 		rigid.finalize();
