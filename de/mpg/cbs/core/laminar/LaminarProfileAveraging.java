@@ -186,7 +186,7 @@ public class LaminarProfileAveraging {
 		    sampleWeights[n] = Numerics.max(sampleWeights[n]-sampleWeightMin, 0.0f);
 		    sampleWeightAvg += sampleWeights[n]/nsample;
 		}
-		System.out.print(" avg. correlation score: "+sampleWeightAvg);
+		System.out.println(" avg. correlation score: "+sampleWeightAvg);
 		/*
 		// correlate and recompute a weighted median, iqr, loop
 		for (int t=0;t<10;t++) {
@@ -247,7 +247,7 @@ public class LaminarProfileAveraging {
 		// random sampling
 		int best = -1;
 		double bestscore = 0.0;
-		for (int t=0;t<100;t++) {
+		for (int t=0;t<1000;t++) {
 		    int idx = Numerics.round(FastMath.random()*(nsample-1));
 		    if (sampleWeights[idx]>0) {
                 //double avg = 0.0;
@@ -263,7 +263,10 @@ public class LaminarProfileAveraging {
 		            score += Numerics.max(corr-mincorr, 0.0)/nsample;
 		        }
 		        System.out.println(" sample correlation score: "+score);
-		        if (score>bestscore) best = idx;
+		        if (score>bestscore) {
+		            best = idx;
+		            bestscore = score;
+		        }
 		    }
 		}
 		// recalculateeverything for the bestone
@@ -271,6 +274,7 @@ public class LaminarProfileAveraging {
         //for (int l=0;l<nlayers+1;l++) avg += profileWeights[l]*mapping[index[best]][l];
         //double var = 0.0;
         //for (int l=0;l<nlayers+1;l++) var += profileWeights[l]*(mapping[index[best]][l]-avg)*(mapping[index[best]][l]-avg);
+		System.out.println(" best sample correlation score: "+bestscore);
         double score = 0.0;
         for (int n=0;n<nsample;n++) {
             double corr = 0.0;
@@ -288,8 +292,32 @@ public class LaminarProfileAveraging {
             median[l] = dist.percentage(0.5f);
             iqr[l] = dist.percentage(0.75f) - dist.percentage(0.25f);
         }
-		           
-		// output: weight map, median and iqr profile
+
+        profileWeightSum = 0.0;
+		for (int l=0;l<nlayers+1;l++) {
+		    // constant values are just discarded
+		    if (iqr[l]>0) profileWeights[l] = 1.0/iqr[l];   
+		    else profileWeights[l] = 0.0;
+		    profileWeightSum += profileWeights[l];
+		}
+		for (int l=0;l<nlayers+1;l++) profileWeights[l] /= profileWeightSum;
+		
+		avgmed = 0.0;
+		for (int l=0;l<nlayers+1;l++) avgmed += profileWeights[l]*median[l];
+		varmed = 0.0;
+		for (int l=0;l<nlayers+1;l++) varmed += profileWeights[l]*(median[l]-avgmed)*(median[l]-avgmed);
+
+        score = 0.0;
+        for (int n=0;n<nsample;n++) {
+            double corr = 0.0;
+            for (int l=0;l<nlayers+1;l++) {
+                corr += profileWeights[l]*(mapping[index[n]][l]-avgmed)*(median[l]-avgmed)/varmed;
+            }
+            score += Numerics.max(corr-mincorr, 0.0)/nsample;
+        }
+        System.out.println(" best median correlation score: "+score);
+
+        // output: weight map, median and iqr profile
 		weightImage = new float[nxyz];
 		for (int n=0;n<nsample;n++) {
 		    weightImage[index[n]] = (float)sampleWeights[n];
