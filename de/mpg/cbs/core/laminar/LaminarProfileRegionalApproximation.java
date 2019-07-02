@@ -5,6 +5,10 @@ import de.mpg.cbs.structures.*;
 import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.methods.*;
 
+import org.apache.commons.math3.util.FastMath;
+import org.apache.commons.math3.stat.descriptive.rank.*;
+
+import Jama.*;
 
 /*
  * @author Pierre-Louis Bazin
@@ -22,8 +26,11 @@ public class LaminarProfileRegionalApproximation {
 	
 	private int    nbins = 20;
 	private boolean optimize = true;
+	private int degree = 5;
 
 	private float[] weightImage;
+	private float[] resImage;
+	private int[] degImage;
 	private float[] medianProfile;
 	private float[] perc25Profile;
 	private float[] perc75Profile;
@@ -61,8 +68,11 @@ public class LaminarProfileRegionalApproximation {
 			
 	// create outputs
 	public final float[] getMedianProfile() { return medianProfile; }
-	public final float[] getIqrProfile() { return iqrProfile; }
+	public final float[] get25PercentProfile() { return perc25Profile; }
+	public final float[] get75PercentProfile() { return perc75Profile; }
 	public final float[] getProfileWeights() { return weightImage; }
+	public final float[] getProfileResiduals() { return resImage; }
+	public final int[] getProfileDegree() { return degImage; }
 	
 	public void execute(){
 		
@@ -144,10 +154,10 @@ public class LaminarProfileRegionalApproximation {
 		int[] mapdeg = new int[nsample];
 		degree = Numerics.min(nlayers, 5);
 		double[][] chebcoeff = new double[nlayers+1][degree+1];
-		double[][] data = new double[nlayers+][1];
+		double[][] data = new double[nlayers+1][1];
 		for (int n=0;n<nsample;n++) {
-		    for (int l=0;l<=layers;l++) {
-                computeChebyshevCoefficients(chebcoeff[l], (double)l/nlayers, degree);
+		    for (int l=0;l<=nlayers;l++) {
+                computeChebyshevCoefficients(chebcoeff[l], (float)l/(float)nlayers, degree);
                 data[l][0] = mapping[index[n]][l];
 			}
             // invert the linear model
@@ -162,7 +172,7 @@ public class LaminarProfileRegionalApproximation {
             // optimise the degree?
             mapdeg[n] = (byte)degree;
 				
-            if (otpimize) {
+            if (optimize) {
                 double mean = 0.0;
                 double variance = 0.0;
                 for (int l=0;l<nlayers+1;l++) mean += mapping[index[n]][l]/(nlayers+1.0);
@@ -192,12 +202,14 @@ public class LaminarProfileRegionalApproximation {
 		}
 		
 		// estimate the median, iqr over Chebyshev samples
-		double[] median = new double[ndegree+1];
-		double[] perc25 = new double[ndegree+1];
-		double[] perc75 = new double[ndegree+1];
-		for (int d=0;d<ndegree+1;d++) {
+		
+		// note: use only up to maximum evidence??
+		double[] median = new double[degree+1];
+		double[] perc25 = new double[degree+1];
+		double[] perc75 = new double[degree+1];
+		for (int d=0;d<=degree;d++) {
 		    double[] val = new double[nsample];
-		    for (int n=0;n<nsample;n++) val[n] = mapcoef[n][d];
+		    for (int n=0;n<nsample;n++) val[n] = mapcoefs[n][d];
 		    Histogram dist = new Histogram(val, nbins, nsample);
 		    median[d] = dist.percentage(0.50f);
 		    perc75[d] = dist.percentage(0.75f);
@@ -209,9 +221,9 @@ public class LaminarProfileRegionalApproximation {
 		
 		for (int n=0;n<nsample;n++) {
 		    double dist = 0.0;
-		    for (int d=0;d<ndegree+1;d++) dist += Numerics.square( (mapcoef[n][d]-median[d])/(1.349*(perc75[d]-perc25[d])) );
+		    for (int d=0;d<=degree;d++) dist += Numerics.square( (mapcoefs[n][d]-median[d])/(1.349*(perc75[d]-perc25[d])) );
 		    
-		    sampleWeights[n] = FastMath.exp(-0.5*dist);
+		    sampleWeights[n] = (float)FastMath.exp(-0.5*dist);
 		}
 
 		// output: weight map, median and iqr profile
@@ -221,17 +233,19 @@ public class LaminarProfileRegionalApproximation {
 		}
 		resImage = new float[nxyz];
 		for (int n=0;n<nsample;n++) {
-		    resImage[index[n]] = (float)sampleWeights[n];
+		    resImage[index[n]] = (float)mapres[n];
 		}
 		degImage = new int[nxyz];
 		for (int n=0;n<nsample;n++) {
-		    degImage[index[n]] = (float)sampleWeights[n];
+		    degImage[index[n]] = mapdeg[n];
 		}
 		medianProfile = new float[nlayers+1];
-		iqrProfile = new float[nlayers+1];
+		perc25Profile = new float[nlayers+1];
+		perc75Profile = new float[nlayers+1];
 		for (int l=0;l<nlayers+1;l++) {
 		    medianProfile[l] = (float)median[l];
-		    iqrProfile[l] = (float)iqr[l];
+		    perc25Profile[l] = (float)perc25[l];
+		    perc75Profile[l] = (float)perc75[l];
 		}
 		return;
 	}
