@@ -21,7 +21,7 @@ public class ShapeSimpleSkeleton {
 
 	private float boundParam;
 	private float distParam;
-	private String featureParam;
+	private String featureParam = "probability_map";
 	private static final String[] featureTypes = {"signed_distance","probability_map"}; 
 	
 	private byte[] medialImage;
@@ -65,6 +65,7 @@ public class ShapeSimpleSkeleton {
 	public final void setBoundaryThreshold(float val) {boundParam = val; }
 	public final void setSkeletonThreshold(float val) {distParam = val; }
 	public final void setTopologyLUTdirectory(String val) { lutdir = val; }
+	public final void setFeatureType(String val) {featureParam = val; }
 			
 	// to be used for JIST definitions, generic info / help
 	public final String getPackage() { return "CBS Tools"; }
