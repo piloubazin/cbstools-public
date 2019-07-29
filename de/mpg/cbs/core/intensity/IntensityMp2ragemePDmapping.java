@@ -56,7 +56,37 @@ public class IntensityMp2ragemePDmapping {
 	// set inputs
 	public final void setFirstInversionImage(float[] in) { inv1 = in; }
 	public final void setSecondInversionImage(float[] in) { inv2 = in; }
-	public final void setB1mapImage(float[] in) { b1map = in; }
+
+	public final void setFirstInversionMagnitude(float[] in) {
+	    if (inv1==null) {
+	        System.out.print("build combined image\n");
+	        inv1 = new float[2*nxyz];
+	    }
+	    for (int xyz=0;xyz<nxyz;xyz++) inv1[xyz] = in[xyz];
+	}
+	public final void setFirstInversionPhase(float[] in) {
+	    if (inv1==null) {
+	        System.out.print("build combined image\n");
+	        inv1 = new float[2*nxyz];
+	    }
+	    for (int xyz=0;xyz<nxyz;xyz++) inv1[xyz+nxyz] = in[xyz];
+	}
+	public final void setSecondInversionMagnitude(float[] in) {
+	    if (inv2==null) {
+	        System.out.print("build combined image\n");
+	        inv2 = new float[2*nxyz];
+	    }
+	    for (int xyz=0;xyz<nxyz;xyz++) inv2[xyz] = in[xyz];
+	}
+	public final void setSecondInversionPhase(float[] in) {
+	    if (inv2==null) {
+	        System.out.print("build combined image\n");
+	        inv2 = new float[2*nxyz];
+	    }
+	    for (int xyz=0;xyz<nxyz;xyz++) inv2[xyz+nxyz] = in[xyz];
+	}
+	
+    public final void setB1mapImage(float[] in) { b1map = in; }
 	public final void setT1mapImage(float[] in) { t1map = in; }
 	public final void setR2smapImage(float[] in) { r2smap = in; }
 	public final void setS0Image(float[] in) { s0img = in; }
@@ -106,6 +136,27 @@ public class IntensityMp2ragemePDmapping {
 		// main algorithm
 		System.out.print("Loading data\n");
 				
+		// we assume 4D images: dim 0 magnitude, dim 1 phase
+		
+		// estimate angular scale (range should be [-PI +PI]
+		double phscale1 = 1.0;
+		double phscale2 = 1.0;
+		if (scalePhase) {
+            float phsmin1 = inv1[nxyz];
+            float phsmax1 = inv1[nxyz];
+            float phsmin2 = inv1[nxyz];
+            float phsmax2 = inv1[nxyz];
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                if (inv1[xyz+nxyz]<phsmin1) phsmin1 = inv1[xyz+nxyz];
+                if (inv1[xyz+nxyz]>phsmax1) phsmax1 = inv1[xyz+nxyz];
+                if (inv2[xyz+nxyz]<phsmin2) phsmin2 = inv2[xyz+nxyz];
+                if (inv2[xyz+nxyz]>phsmax2) phsmax2 = inv2[xyz+nxyz];
+            }
+            phscale1 = (phsmax1-phsmin1)/(2.0*FastMath.PI);
+            phscale2 = (phsmax2-phsmin2)/(2.0*FastMath.PI);
+            System.out.print("Phase scaling: ["+phsmin1+", "+phsmax1+"] -> [-PI, PI]\n");
+            System.out.print("Phase scaling: ["+phsmin2+", "+phsmax2+"] -> [-PI, PI]\n");
+		}
 		double TA = TI1 - Nexcitations/2.0f*TRexcitation1;
 		double TB = TI2 - TI1 - Nexcitations/2.0f*TRexcitation1 - Nexcitations/2.0f*TRexcitation2;
 		double TC = TRinversion - TI2 - Nexcitations/2.0f*TRexcitation2;
@@ -167,8 +218,12 @@ public class IntensityMp2ragemePDmapping {
             double gre1 = FastMath.sin(b1*a1rad)*factora;
             double gre2 = FastMath.sin(b1*a2rad)*factorc;
             
-            pd1map[xyz] = (float)(inv1[xyz]/gre1/expr2s);
-            pd2map[xyz] = (float)(inv2[xyz]/gre2/expr2s);
+            double prod = inv1[xyz]*inv2[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1-inv2[xyz+nxyz]/phscale2);
+            
+            pdmap[xyz] = prod/(gre1*gre2*expr2s*expr2s);
+            
+            pd1map[xyz] = (float)(inv1[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1)/gre1/expr2s);
+            pd2map[xyz] = (float)(inv2[xyz]*FastMath.cos(inv2[xyz+nxyz]/phscale2)/gre2/expr2s);
             
             if (s0img!=null) pd0map[xyz] = (float)(s0img[xyz]/gre2);
             
