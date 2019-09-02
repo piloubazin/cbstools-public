@@ -43,6 +43,8 @@ public class FilterRecursiveRidgeDiffusion2D {
 	private int iterParam = 100;
 	private float maxdiffParam = 0.001f;
 	
+	private float detectionThreshold = 0.5f;
+	
 	private float[] pvImage;
 	private float[] filterImage;
 	private float[] probaImage;
@@ -99,6 +101,8 @@ public class FilterRecursiveRidgeDiffusion2D {
 	public final void setNeighborhoodSize(int val) { ngbParam = val; }
 	public final void setMaxIterations(int val) { iterParam = val; }
 	public final void setMaxDifference(float val) { maxdiffParam = val; }
+		
+	public final void setDetectionThreshold(float val) { detectionThreshold = val; }
 		
 	// set generic inputs	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
@@ -345,7 +349,7 @@ public class FilterRecursiveRidgeDiffusion2D {
 		
 		
 		// 4. Measure size of connected region
-		boolean[] detected = ObjectExtraction.objectFromImage(propag, nx, ny, nz, 0.5f, ObjectExtraction.SUPEQUAL);
+		boolean[] detected = ObjectExtraction.objectFromImage(propag, nx, ny, nz, detectionThreshold, ObjectExtraction.SUPEQUAL);
 		int[] components = ObjectLabeling.connected26Object3D(detected, nx, ny, nz);
 		int Ncomp = ObjectLabeling.countLabels(components, nx, ny, nz);
 		float[] length = new float[Ncomp];
@@ -361,7 +365,7 @@ public class FilterRecursiveRidgeDiffusion2D {
 		float[] pvol = new float[nxyz];
 		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
 			int xyz = x + nx*y + nx*ny*z;
-			if (propag[xyz]>0.0f) {
+			if (propag[xyz]>detectionThreshold) {
 				// when the diameter is smaller than the voxel, linear approx
 				pvol[xyz] = Numerics.bounded(propag[xyz], 0.0f, 1.0f);
 				float radius = Numerics.max(0.0f, maxscale[xyz]/2.0f); // scale is diameter

@@ -971,6 +971,7 @@ public class SimpleShapeAtlas2 {
 			|| intensityName[id].equalsIgnoreCase("T1MAP9T")
 			|| intensityName[id].startsWith("MPM")
 			|| intensityName[id].startsWith("mpm")
+			|| intensityName[id].startsWith("bf")
 			|| intensityName[id].startsWith("DWI")
 			|| intensityName[id].equalsIgnoreCase("QSM7T") ) return true;
 		else return false;

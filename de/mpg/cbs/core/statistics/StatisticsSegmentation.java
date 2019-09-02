@@ -11,6 +11,8 @@ import de.mpg.cbs.structures.*;
 import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.methods.*;
 
+import org.apache.commons.math3.util.FastMath;
+
 
 /*
  * @author Pierre-Louis Bazin
@@ -40,12 +42,13 @@ public class StatisticsSegmentation {
 	private static final String[] statTypes = {"none", "Voxels", "Volume", "--- intensity ---", "Mean_intensity", "Std_intensity",
 												"10_intensity","25_intensity","50_intensity","75_intensity","90_intensity",
 												"Median_intensity","IQR_intensity","SNR_intensity","rSNR_intensity",
-												"Boundary_gradient","Boundary_magnitude",
+												"Boundary_gradient","Boundary_magnitude","Center_of_mass",
 												"--- overlap ---", 
 												"Volumes", "Dice_overlap", "Jaccard_overlap", "Volume_difference",
 												"False_positives","False_negatives",
 												"Dilated_Dice_overlap","Dilated_false_positive","Dilated_false_negative",
 												"Dilated_false_negative_volume","Dilated_false_positive_volume",
+												"Center_distance",
 												"--- Clusters ---",
 												"Detected_clusters", "False_detections",
 												"Cluster_numbers", "Mean_cluster_sizes", "Cluster_maps",
@@ -417,6 +420,47 @@ public class StatisticsSegmentation {
 				line = "Dilated_false_negative_volume"+imgtag+reftag+notag;
 				for (int n=0;n<nlabels;n++) line+=(delim+fneg[n]);
 				line+=("\n");
+				output.add(line);
+				System.out.println(line);
+			}
+			if (statistics.get(s).equals("Center_distance")) {
+				// compute the distance between centers
+				float[] distances = new float[nlabels];
+				for (int n=0;n<nlabels;n++) {
+					boolean[] obj1 = ObjectExtraction.objectFromLabelImage(segmentation,nx,ny,nz,lbid[n],ObjectLabeling.EQUAL);
+					boolean[] obj2 = ObjectExtraction.objectFromLabelImage(template,nx,ny,nz,lbid[n],ObjectLabeling.EQUAL);
+					float[] center1 = ObjectStatistics.center(obj1,nx,ny,nz);
+					float[] center2 = ObjectStatistics.center(obj2,nx,ny,nz);
+					distances[n] = (float)FastMath.sqrt(Numerics.square((center1[0]-center2[0])*rx)
+					                                   +Numerics.square((center1[1]-center2[1])*ry)
+					                                   +Numerics.square((center1[2]-center2[2])*rz));
+				}
+				line = "CenterDist"+imgtag+notag+notag;
+				for (int n=0;n<nlabels;n++) line += (delim+distances[n]);
+				line +="\n";
+				output.add(line);
+				System.out.println(line);
+			}
+			if (statistics.get(s).equals("Center_of_mass")) {
+				// compute the distance between centers
+				float[][] centers = new float[nlabels][];
+				for (int n=0;n<nlabels;n++) {
+					boolean[] obj = ObjectExtraction.objectFromLabelImage(segmentation,nx,ny,nz,lbid[n],ObjectLabeling.EQUAL);
+					centers[n] = ObjectStatistics.center(obj,nx,ny,nz);
+				}
+				line = "CenterOfMassX"+imgtag+notag+notag;
+				for (int n=0;n<nlabels;n++) line += (delim+centers[n][0]);
+				line +="\n";
+				output.add(line);
+				System.out.println(line);
+				line = "CenterOfMassY"+imgtag+notag+notag;
+				for (int n=0;n<nlabels;n++) line += (delim+centers[n][1]);
+				line +="\n";
+				output.add(line);
+				System.out.println(line);
+				line = "CenterOfMassZ"+imgtag+notag+notag;
+				for (int n=0;n<nlabels;n++) line += (delim+centers[n][2]);
+				line +="\n";
 				output.add(line);
 				System.out.println(line);
 			}

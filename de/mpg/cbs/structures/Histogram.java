@@ -200,6 +200,34 @@ public class Histogram {
 			}
 		}
 	}
+
+	/**
+     *    1D histogram building with unequal weights
+     */
+    public Histogram(double[] data, double[] weight, int bins, int size) {
+    	this.bins = bins;
+		hist = new double[bins];
+		
+		for (int n=0;n<bins;n++) hist[n] = 0;
+		
+		min = INF;
+		max = -INF;
+		for (int s=0;s<size;s++) {
+			if (data[s] > max) max = (float)data[s];
+			if (data[s] < min) min = (float)data[s];
+		}
+		
+		for (int s=0;s<size;s++) {
+			// compute histogram within min, max (rest is ignored)
+			if (  (data[s] >= min )
+					&& (data[s] <= min + 1.0f/(float)bins*(max-min) ) ) hist[0]+=weight[s];
+			
+			for (int n=1;n<bins;n++) {
+				if (  (data[s] >  min + (float)n/(float)bins*(max-min) )
+					&& (data[s] <= min + (float)(n+1)/(float)bins*(max-min) ) ) hist[n]+=weight[s];	
+			}
+		}
+	}
 	/**
      *    1D histogram building
      */
