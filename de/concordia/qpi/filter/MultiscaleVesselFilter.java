@@ -57,6 +57,7 @@ public class MultiscaleVesselFilter {
 	private float[] pvImage;
 	private float[] scaleMap;
 	private float[] labelImage;
+	private float[] directionImage;
 	
 	//private ParamFile 	outputParam;
 	// global variables
@@ -148,6 +149,7 @@ public class MultiscaleVesselFilter {
 	public final float[] getPVimage() { return pvImage;}
 	public final float[] getLengthImage() { return lengthImage;}
 	public final float[] getLabelImage() { return labelImage;}
+	public final float[] getDirectionImage() { return directionImage;}
 
 	
 	public void execute() {
@@ -721,6 +723,20 @@ public class MultiscaleVesselFilter {
 			int id = x + nx*y + nx*ny*z;
 			labelImage[id] = (float)vessels[id];
 		}				
+		
+		//Direction image
+		directionImage = new float[nx*ny*nz*3];
+        	for (int x = 0; x < nx; x++) for (int y = 0; y < ny; y++) for (int z = 0; z < nz; z++) {
+			int id = x + nx * y + nx * ny * z;
+			if (objdiff[id]) {
+
+				float[] finalDir = directionVector(finalDirection[id]);
+
+				directionImage[id] = finalDir[X];
+				directionImage[id + nx * ny * nz * 1] = finalDir[Y];
+				directionImage[id + nx * ny * nz * 2] = finalDir[Z];
+			}
+		}
 
 		
 //		return;
