@@ -30,7 +30,7 @@ public class SurfaceInflation {
     private float[] inflationScore;
     
     private float   stepSize = 0.75f;       // BETA step size
-    private int     step = 3;               // number of iterations at which to rescale surface to preserve volume
+    private int     step = 10;               // number of iterations at which to rescale surface to preserve volume
     private float   max_curv = 10.0f;       // EPS curvature threshold for termintion
     private int     max_iter = 2000;          // imax maximum number of iterations
     //private boolean useLorentzian = true;   // if Lorentzian scaling should be used
@@ -152,9 +152,6 @@ public class SurfaceInflation {
         float EPS = max_curv;
         int imax = max_iter;
 		float scaleL = 0;
-		int N = 1, MR_N = 1; // number of multi-resolution steps
-		float MR_step = 2; // difference on the L2 norm of mean curvature
-							// between different multiresolution levels					
 							
 		int npt = pointList.length/3;
 		int nface = triangleList.length/3;
@@ -167,26 +164,11 @@ public class SurfaceInflation {
 		for (int i = 0; i < nface; ++i) {
 			areaO += getTriangleArea(i, pointList, triangleList);
 		}
-		/*
-		if (useLorentzian) {
-			if (scaleL == 0)
-				scaleL = (float) updateScaleL(pointList, triangleList, ngbPoints, ngbFaces, npt);
-			System.out.printf("Lorentzian scale factor = %g\n", scaleL);
-			double value = FastMath.sqrt(FastMath.log(1 + 0.5 / (scaleL * scaleL)));
-			System.out
-					.printf(
-							"... the mean curvature measure threshold will be scaled accordingly\n... i.e., %g*%g=%g\n",
-							EPS, value, EPS * value);
-			EPS *= value;
-			if (MR_N > 1) {
-				System.out
-						.printf(
-								"... the delta_measure between multires. levels will be scaled accordingly\n... i.e., %g*%g=%g\n",
-								MR_step, value, MR_step * value);
-				MR_step *= value;
-			}
-		}*/
-
+        scaleL = (float) updateScaleL(pointList, triangleList, ngbPoints, ngbFaces, npt);
+		System.out.printf("Lorentzian scale factor = %g\n", scaleL);
+		double value = FastMath.sqrt(FastMath.log(1 + 0.5 / (scaleL * scaleL)));
+		EPS *= value;
+					
 		System.out.printf("\n");
 		double hCurv, hCurv_0, hCurvOld;
 		double origVolume = getVolume(pointList, triangleList);
@@ -196,14 +178,14 @@ public class SurfaceInflation {
             oldpt[i]  = pointList[i];
         }
         
-		hCurv = meanCurv(pointList, triangleList, ngbPoints, ngbFaces, npt);
+		hCurv = meanCurv(pointList, triangleList, ngbPoints, ngbFaces, npt, scaleL);
 		hCurv_0 = hCurv;
 		hCurvOld = hCurv;
 		double hCurvFirst = -1;
 		int iter = 0;
 		System.out.println("initial mean curvature  = "+hCurv_0);
 		do {
-		    float[] newpt = new float[3*npt];
+		    //float[] newpt = new float[3*npt];
 			for (int i = 0; i < npt; i++) {
 			    double ptx = 0.0, pty = 0.0, ptz = 0.0;
 			    double totalA = 0.0;
@@ -226,16 +208,20 @@ public class SurfaceInflation {
 					pty /= totalA;
 					ptz /= totalA;
 				}
-				newpt[3*i+0] = (float) (pointList[3*i+0] * (1 - BETA) + BETA * ptx);
-				newpt[3*i+1] = (float) (pointList[3*i+1] * (1 - BETA) + BETA * pty);
-				newpt[3*i+2] = (float) (pointList[3*i+2] * (1 - BETA) + BETA * ptz);
+				//newpt[3*i+0] = (float) (pointList[3*i+0] * (1 - BETA) + BETA * ptx);
+				//newpt[3*i+1] = (float) (pointList[3*i+1] * (1 - BETA) + BETA * pty);
+				//newpt[3*i+2] = (float) (pointList[3*i+2] * (1 - BETA) + BETA * ptz);
+				pointList[3*i+0] = (float) (pointList[3*i+0] * (1 - BETA) + BETA * ptx);
+				pointList[3*i+1] = (float) (pointList[3*i+1] * (1 - BETA) + BETA * pty);
+				pointList[3*i+2] = (float) (pointList[3*i+2] * (1 - BETA) + BETA * ptz);
 				// System.out.println("POINT "+i+" "+V);
 			}
+			/*
 			for (int i = 0; i < npt; i++) {
 			    pointList[3*i+0] = newpt[3*i+0];
 			    pointList[3*i+1] = newpt[3*i+1];
 			    pointList[3*i+2] = newpt[3*i+2];
-			}
+			}*/
 			if (iter % step == 0) {
 			    
 				// Rescale vertices to preserve volume
@@ -248,16 +234,10 @@ public class SurfaceInflation {
 				}
 				
 				// Calculate Total Mean Curvature
-				hCurv = meanCurv(pointList, triangleList, ngbPoints, ngbFaces, npt);
+				hCurv = meanCurv(pointList, triangleList, ngbPoints, ngbFaces, npt, scaleL);
 				float max = (float) (Math.abs(hCurv - hCurvOld) / hCurv_0);
 				hCurvOld = hCurv;
 
-				if ((hCurv < (EPS + (N - 1) * MR_step)) || (iter == (imax))) {
-					// Compute Shape Not Used
-					N -= 1;
-				}
-				if (hCurvFirst == -1)
-					hCurvFirst = hCurv;
 				//System.out.println("Completed: "+(1 - (hCurv - EPS) / (hCurvFirst - EPS)));
 				System.out.println("Mean Curvature " + hCurv);
 			}
@@ -282,7 +262,7 @@ public class SurfaceInflation {
 	}
 
 	/********************************************************/
-	private double meanCurv(float[] pointList, int[] faceList, int[][] ngbPoints, int[][] ngbFaces, int npt) {
+	private double meanCurv(float[] pointList, int[] faceList, int[][] ngbPoints, int[][] ngbFaces, int npt, double scaleL) {
 
 		double curv = 0;
 		double totalA = 0.0;
@@ -349,7 +329,8 @@ public class SurfaceInflation {
                 vz += factor*(pointList[3*i+2]-pointList[3*ngb+2]);
             }
                 
-		    curv += area*( vx*vx + vy*vy + vz*vz );
+		    //curv += ( vx*vx + vy*vy + vz*vz )/(2.0*area);
+		    curv += FastMath.log(1.0 + 0.5*( vx*vx + vy*vy + vz*vz ) / (scaleL*scaleL))*area;
 		    /*
             if (useLorentzian)
                 curv += Math.log(1 + 0.5 * ( vx*vx + vy*vy + vz*vz )
@@ -359,7 +340,7 @@ public class SurfaceInflation {
                 curv += ( vx*vx + vy*vy + vz*vz )/(2.0*area);
             */  
         }
-        curv = FastMath.sqrt(curvNorm*curv/totalA);
+        curv = FastMath.sqrt(curvNorm*curv);
 		// curv /= area;
 		//curv *= curvNorm;
 		//curv = FastMath.sqrt(curv);
