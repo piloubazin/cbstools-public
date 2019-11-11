@@ -220,7 +220,7 @@ public class IntensityMp2ragemePDmapping {
             
             double prod = inv1[xyz]*inv2[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1-inv2[xyz+nxyz]/phscale2);
             
-            pdmap[xyz] = prod/(gre1*gre2*expr2s*expr2s);
+            pdmap[xyz] = (float)(prod/(gre1*gre2*expr2s*expr2s));
             
             pd1map[xyz] = (float)(inv1[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1)/gre1/expr2s);
             pd2map[xyz] = (float)(inv2[xyz]*FastMath.cos(inv2[xyz+nxyz]/phscale2)/gre2/expr2s);
