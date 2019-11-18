@@ -103,7 +103,8 @@ public class SurfaceMeshToLevelsetPseudoNormals {
 		
 		System.out.print("Calculate edge maps...\n");
 		int[] edgeList = generateEdgePointList(triangleList);
-		int[] edgeFaceList = generateEdgeFaceList(triangleList);
+		int[][] ngbFaceList = generateFaceNeighborTable(npoints, triangleList);
+		int[] edgeFaceList = generateEdgeFaceList(edgeList,ngbFaceList);
 		int[] faceEdgeList = new int[3*nfaces];
 		for (int fid=0;fid<3*nfaces;fid++) faceEdgeList[fid] = -1;
 		
@@ -133,7 +134,6 @@ public class SurfaceMeshToLevelsetPseudoNormals {
 		
 		System.out.print("Calculate vertex normals. Looping through vertices...\n");
 		float[][] vertexNormals = new float[npoints][3];
-		int[][] ngbFaceList = generateFaceNeighborTable(npoints, triangleList);
 		for(int i=0; i<npoints; i++) {
 		    double vx = 0.0;
 		    double vy = 0.0;
@@ -581,63 +581,24 @@ public class SurfaceMeshToLevelsetPseudoNormals {
         return edgeList;
 	}
 	
-	private final int[] generateEdgeFaceList(int[] faceList) {
-	    int nedges = faceList.length/2;
+	private final int[] generateEdgeFaceList(int[] edgeList, int[][] pointFaceList) {
+	    int nedges = edgeList.length;
 	    
-	    int[] edgeList = new int[6*nedges];
-	    int ne = 0;
-	    for (int f=0;f<faceList.length;f+=3) {
-	        // count all edges, then remove the ones that are double
-	        if (faceList[f+0]<faceList[f+1]) {
-                edgeList[ne+0] =  faceList[f+0];
-                edgeList[ne+1] =  faceList[f+1];
-                edgeList[ne+2] =  f/3;
-                ne += 3;
-            }
-	        if (faceList[f+1]<faceList[f+2]) {
-                edgeList[ne+0] =  faceList[f+1];
-                edgeList[ne+1] =  faceList[f+2];
-                edgeList[ne+2] =  f/3;
-                ne += 3;
-            }
-	        if (faceList[f+2]<faceList[f+0]) {
-                edgeList[ne+0] =  faceList[f+2];
-                edgeList[ne+1] =  faceList[f+0];
-                edgeList[ne+2] =  f/3;
-                ne += 3;
-            }
-        }
- 	    for (int f=0;f<faceList.length;f+=3) {
-	        // count all edges, then remove the ones that are double
-	        if (faceList[f+0]>faceList[f+1]) {
-                edgeList[ne+0] =  faceList[f+0];
-                edgeList[ne+1] =  faceList[f+1];
-                edgeList[ne+2] =  f/3;
-                ne += 3;
-            }
-	        if (faceList[f+1]>faceList[f+2]) {
-                edgeList[ne+0] =  faceList[f+1];
-                edgeList[ne+1] =  faceList[f+2];
-                edgeList[ne+2] =  f/3;
-                ne += 3;
-            }
-	        if (faceList[f+2]>faceList[f+0]) {
-                edgeList[ne+0] =  faceList[f+2];
-                edgeList[ne+1] =  faceList[f+0];
-                edgeList[ne+2] =  f/3;
-                ne += 3;
-            }
-        }
         int[] edgeFaceList = new int[2*nedges];
-	    for (int e=0;e<nedges;e++) {
-	        edgeFaceList[e+0] = edgeList[3*e+2];
-	        // search for second edge explicitly...
-	        for (int e2=0;e2<nedges;e2++) {
-	            if (edgeList[3*e+0]==edgeList[3*nedges+3*e2+0] && edgeList[3*e+1]==edgeList[3*nedges+3*e2+1]) {
-	                edgeFaceList[e+1] = edgeList[3*nedges+3*e2+2];
-	                e2 = nedges;
-	            }
-	        }
+        for (int e=0;e<nedges;e++) {
+            int p0 = edgeList[2*e+0];
+            int p1 = edgeList[2*e+1];
+            
+            int de=0;
+            for (int f0=0;f0<pointFaceList[p0].length;f0++) {
+                for (int f1=0;f1<pointFaceList[p1].length;f1++) {
+                    if (pointFaceList[p0][f0]==pointFaceList[p1][f1]) {
+                        edgeFaceList[2*e+de] = pointFaceList[p0][f0];
+                        de++;
+                    }
+                }
+            }
+            if (de!=2) System.out.print("!");
 	    }
 	    return edgeFaceList;   
 	}
