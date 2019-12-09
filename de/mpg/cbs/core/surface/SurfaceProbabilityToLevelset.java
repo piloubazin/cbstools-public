@@ -17,12 +17,14 @@ public class SurfaceProbabilityToLevelset {
 	private float[] lvlImage;
 	private float scaleParam = 5.0f;
 	private float[] probaImage;
+	private int[] maskImage = null;
 	
 	private int nx, ny, nz, nxyz;
 	private float rx, ry, rz;
 
 	// create inputs
 	public final void setProbabilityImage(float[] val) { probaImage = val; }
+	public final void setMaskImage(int[] val) { maskImage = val; }
 	public final void setScale_mm(float val) { scaleParam = val; }
 	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
@@ -86,7 +88,9 @@ public class SurfaceProbabilityToLevelset {
 		// no masking
 		boolean[] bgmask = new boolean[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			bgmask[xyz] = true;
+		    if (maskImage==null) bgmask[xyz] = true;
+		    else if (maskImage[xyz]>0) bgmask[xyz] = true;
+		    else bgmask[xyz] = false;
 		}
 		// expand boundary? yes!
 		if (nz==1) {
