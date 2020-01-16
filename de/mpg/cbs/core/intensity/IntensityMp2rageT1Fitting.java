@@ -56,6 +56,7 @@ public class IntensityMp2rageT1Fitting {
 	public final void setFirstInversionImage(float[] in) { inv1 = in; }
 	public final void setSecondInversionImage(float[] in) { inv2 = in; }
 	public final void setB1mapImage(float[] in) { b1map = in; }
+	public final void setUniformImage(float[] in) { uni = in; }
 	
 	public final void setFirstInversionMagnitude(float[] in) {
 	    if (inv1==null) {
@@ -167,44 +168,62 @@ public class IntensityMp2rageT1Fitting {
 		// main algorithm
 		System.out.print("Loading data\n");
 		
-		// we assume 4D images: dim 0 magnitude, dim 1 phase
-		
-		// estimate angular scale (range should be [-PI +PI]
-		double phscale1 = 1.0;
-		double phscale2 = 1.0;
-		if (scalePhase) {
-            float phsmin1 = inv1[nxyz];
-            float phsmax1 = inv1[nxyz];
-            float phsmin2 = inv1[nxyz];
-            float phsmax2 = inv1[nxyz];
-            for (int xyz=0;xyz<nxyz;xyz++) {
-                if (inv1[xyz+nxyz]<phsmin1) phsmin1 = inv1[xyz+nxyz];
-                if (inv1[xyz+nxyz]>phsmax1) phsmax1 = inv1[xyz+nxyz];
-                if (inv2[xyz+nxyz]<phsmin2) phsmin2 = inv2[xyz+nxyz];
-                if (inv2[xyz+nxyz]>phsmax2) phsmax2 = inv2[xyz+nxyz];
+		// separate cases for builidng or getting the UNI pre-computed
+		if (uni==null) {
+            // we assume 4D images: dim 0 magnitude, dim 1 phase
+            
+            // estimate angular scale (range should be [-PI +PI]
+            double phscale1 = 1.0;
+            double phscale2 = 1.0;
+            if (scalePhase) {
+                float phsmin1 = inv1[nxyz];
+                float phsmax1 = inv1[nxyz];
+                float phsmin2 = inv1[nxyz];
+                float phsmax2 = inv1[nxyz];
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (inv1[xyz+nxyz]<phsmin1) phsmin1 = inv1[xyz+nxyz];
+                    if (inv1[xyz+nxyz]>phsmax1) phsmax1 = inv1[xyz+nxyz];
+                    if (inv2[xyz+nxyz]<phsmin2) phsmin2 = inv2[xyz+nxyz];
+                    if (inv2[xyz+nxyz]>phsmax2) phsmax2 = inv2[xyz+nxyz];
+                }
+                phscale1 = (phsmax1-phsmin1)/(2.0*FastMath.PI);
+                phscale2 = (phsmax2-phsmin2)/(2.0*FastMath.PI);
+                System.out.print("Phase scaling: ["+phsmin1+", "+phsmax1+"] -> [-PI, PI]\n");
+                System.out.print("Phase scaling: ["+phsmin2+", "+phsmax2+"] -> [-PI, PI]\n");
             }
-            phscale1 = (phsmax1-phsmin1)/(2.0*FastMath.PI);
-            phscale2 = (phsmax2-phsmin2)/(2.0*FastMath.PI);
-            System.out.print("Phase scaling: ["+phsmin1+", "+phsmax1+"] -> [-PI, PI]\n");
-            System.out.print("Phase scaling: ["+phsmin2+", "+phsmax2+"] -> [-PI, PI]\n");
-		}
-		
-		uni = new float[nxyz];
-		snr = new float[nxyz];
-		for (int xyz=0;xyz<nxyz;xyz++) {
-			double prod = inv1[xyz]*inv2[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1-inv2[xyz+nxyz]/phscale2);
-			double norm = inv1[xyz]*inv1[xyz] + inv2[xyz]*inv2[xyz];
-			
-			double diff2 = (inv1[xyz]*inv1[xyz] - inv2[xyz]*inv2[xyz])*(inv1[xyz]*inv1[xyz] - inv2[xyz]*inv2[xyz]);
-			double norm3 = norm*norm*norm;
-			
-			if (intensityScale*norm>prod) uni[xyz] = (float)(prod/norm);
-			else uni[xyz] = 0.0f;
-			
-			if (intensityScale*intensityScale*norm3>diff2) snr[xyz] = (float)FastMath.sqrt(diff2/norm3);
-			else snr[xyz] = 1.0f;
-		}
-		
+            
+            uni = new float[nxyz];
+            snr = new float[nxyz];
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                double prod = inv1[xyz]*inv2[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1-inv2[xyz+nxyz]/phscale2);
+                double norm = inv1[xyz]*inv1[xyz] + inv2[xyz]*inv2[xyz];
+                
+                double diff2 = (inv1[xyz]*inv1[xyz] - inv2[xyz]*inv2[xyz])*(inv1[xyz]*inv1[xyz] - inv2[xyz]*inv2[xyz]);
+                double norm3 = norm*norm*norm;
+                
+                if (intensityScale*norm>prod) uni[xyz] = (float)(prod/norm);
+                else uni[xyz] = 0.0f;
+                
+                if (intensityScale*intensityScale*norm3>diff2) snr[xyz] = (float)FastMath.sqrt(diff2/norm3);
+                else snr[xyz] = 1.0f;
+            }
+            inv1 = null;
+            inv2 = null;
+            
+        } else {
+            
+            // rescale the uni into [-0.5,+0.5]
+            float umin = uni[0];
+            float umax = uni[0];
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                if (uni[xyz]<umin) umin = uni[xyz];
+                if (uni[xyz]>umax) umax = uni[xyz];
+            }
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                uni[xyz] = (uni[xyz]-0.5f*(umax+umin))/(umax-umin);
+            }
+        }
+                
 		if (!useB1correction) b1Samples = 1;	
 		
 		// for the T1 map, more complicated: first estimate the inv1, inv2 you would get for a range of t1 values, then find the fit?
