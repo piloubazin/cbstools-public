@@ -16,7 +16,7 @@ public class IntensityFlashT2sFitting {
 	
 	int nimg = 4;
 	float imax = 10000.0f;
-	float r2max = 30.0f;
+	float r2max = 1000.0f;
 	
 	float[] s0img;
 	float[] t2img;
@@ -120,15 +120,7 @@ public class IntensityFlashT2sFitting {
 		
 	}
 	
-	public void variableEchoEstimation() {
-	    // fit the exponential
-		double Sx, Sx2, Sy, Sxy, delta;
-		Sx = 0.0f; Sx2 = 0.0f; delta = 0.0f;
-		for (int i=0;i<nimg;i++) {
-			Sx += -te[i];
-			Sx2 += Numerics.square(-te[i]);
-		}
-		delta = nimg*Sx2 - Sx*Sx;
+	public void minEchoEstimation() {
 		
 		System.out.print("Loading data\n");
 		
@@ -145,6 +137,14 @@ public class IntensityFlashT2sFitting {
 			for (int i=0;i<nimg;i++) if (image[i][xyz]<=0) process=false;
 			if (process) {
 			    //System.out.print(".");
+                // fit the exponential
+                double Sx, Sx2, Sy, Sxy, delta;
+                Sx = 0.0f; Sx2 = 0.0f; delta = 0.0f;
+                for (int i=0;i<nimg;i++) {
+                    Sx += -te[i];
+                    Sx2 += Numerics.square(-te[i]);
+                }
+                delta = nimg*Sx2 - Sx*Sx;
 				Sy = 0.0f;
 				Sxy = 0.0f;
 				for (int i=0;i<nimg;i++) {
@@ -159,21 +159,126 @@ public class IntensityFlashT2sFitting {
 				
 				// check if over the boundary: if so, reduce the echo train
 				int necho = nimg-1;
-				while (r2img[xyz]>r2max && necho>1) {
-				    Sy = 0.0f;
+				while (necho>1) {
+				    Sx = 0.0f; Sx2 = 0.0f; delta = 0.0f;
+                    for (int i=0;i<necho;i++) {
+                        Sx += -te[i];
+                        Sx2 += Numerics.square(-te[i]);
+                    }
+                    delta = necho*Sx2 - Sx*Sx;
+                    Sy = 0.0f;
                     Sxy = 0.0f;
                     for (int i=0;i<necho;i++) {
                         double ydata = FastMath.log(image[i][xyz]);
                         Sy += ydata;
                         Sxy += -ydata*te[i];
                     }
-                    //s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
-                    s0img[xyz] = (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta );
-                    r2img[xyz] = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
-                    t2img[xyz] = 1.0f/r2img[xyz];
-				
+                    float r2val = Numerics.bounded( (float)( (necho*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+                    if (r2val<r2img[xyz]) {
+                        r2img[xyz] = r2val;
+                        //s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
+                        s0img[xyz] = (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta );
+                        t2img[xyz] = 1.0f/r2img[xyz];
+                    }
 				    necho = necho-1;
 				}   
+				/*
+				errimg[xyz] = 0.0f;
+				for (int i=0;i<nimg;i++) {
+					errimg[xyz] += Numerics.square( FastMath.log(image[i][xyz]) 
+													 - FastMath.log(s0img[xyz]) + te[i]*r2img[xyz] )/nimg;
+				}
+				errimg[xyz] = (float)FastMath.sqrt(errimg[xyz]);
+				*/
+				double residual = 0.0;
+                double mean = 0.0;
+                double variance = 0.0;
+                for (int i=0;i<nimg;i++) mean += FastMath.log(image[i][xyz]);
+                mean /= nimg;
+                for (int i=0;i<nimg;i++) {
+                    double expected = FastMath.log(s0img[xyz]) - te[i]*r2img[xyz];
+                    variance += Numerics.square(mean-FastMath.log(image[i][xyz]));
+                    residual += Numerics.square(expected-FastMath.log(image[i][xyz]));
+                }
+                double rsquare = 1.0;
+                if (variance>0) rsquare = Numerics.max(1.0 - (residual/variance), 0.0);
+                errimg[xyz] = (float)rsquare;        
+			}
+		}
+		System.out.print("Done\n");
+		
+	}
+
+	public void variableEchoEstimation() {
+		
+		System.out.print("Loading data\n");
+		
+		System.out.print("Echo times: [ ");
+		for (int i=0;i<nimg;i++) System.out.print(te[i]+" ");
+		System.out.print("]\n");
+		
+		s0img = new float[nxyz];
+		r2img = new float[nxyz];
+		t2img = new float[nxyz];
+		errimg = new float[nxyz];
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			boolean process=true;
+			for (int i=0;i<nimg;i++) if (image[i][xyz]<=0) process=false;
+			if (process) {
+			    //System.out.print(".");
+                // fit the exponential
+                double Sx, Sx2, Sy, Sxy, delta;
+                Sx = 0.0f; Sx2 = 0.0f; delta = 0.0f;
+                for (int i=0;i<nimg;i++) {
+                    Sx += -te[i];
+                    Sx2 += Numerics.square(-te[i]);
+                }
+                delta = nimg*Sx2 - Sx*Sx;
+				Sy = 0.0f;
+				Sxy = 0.0f;
+				for (int i=0;i<nimg;i++) {
+					double ydata = FastMath.log(image[i][xyz]);
+					Sy += ydata;
+					Sxy += -ydata*te[i];
+				}
+				//s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
+				float r2full = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+				float s0full = (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta );
+				r2img[xyz] = r2full;
+				t2img[xyz] = 1/0f/r2full;
+				s0img[xyz] = s0full;
+				
+				// check if over the boundary: if so, reduce the echo train
+				int necho = nimg-1;
+				while (necho>1) {
+				    Sx = 0.0f; Sx2 = 0.0f; delta = 0.0f;
+                    for (int i=0;i<necho;i++) {
+                        Sx += -te[i];
+                        Sx2 += Numerics.square(-te[i]);
+                    }
+                    delta = necho*Sx2 - Sx*Sx;
+                    Sy = 0.0f;
+                    Sxy = 0.0f;
+                    for (int i=0;i<necho;i++) {
+                        double ydata = FastMath.log(image[i][xyz]);
+                        Sy += ydata;
+                        Sxy += -ydata*te[i];
+                    }
+                    float r2val = Numerics.bounded( (float)( (necho*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+                    if (r2val<r2img[xyz]) {
+                        r2img[xyz] = r2val;
+                        //s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
+                        s0img[xyz] = (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta );
+                        t2img[xyz] = 1.0f/r2img[xyz];
+                    }
+				    necho = necho-1;
+				}   
+				// test for difference: if below threshold then use full estimate
+				if (r2full-r2img[xyz]<r2max) {
+                    r2img[xyz] = r2full;
+                    t2img[xyz] = 1/0f/r2full;
+                    s0img[xyz] = s0full;
+                }				    
 				/*
 				errimg[xyz] = 0.0f;
 				for (int i=0;i<nimg;i++) {

@@ -146,8 +146,8 @@ public class RegistrationApplyDeformations2D {
             int xy = x + nd1x*y;
             if (deformation1Image[xy + X*nd1xy]==0 && deformation1Image[xy + Y*nd1xy]==0) {
                 for (byte k=0;k<4;k++) {
-                    if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd1x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd1y) {
-                        int ngb = Ngb.neighborIndex(k, xy,nd1x,nd1y,1);
+                    if (x+Ngb2.x[k]>=0 && x+Ngb2.x[k]<nd1x && y+Ngb2.y[k]>=0 && y+Ngb2.y[k]<nd1y) {
+                        int ngb = Ngb2.neighborIndex(k, xy,nd1x,nd1y,1);
                         if (deformation1Image[ngb + X*nd1xy]!=0 || deformation1Image[ngb + Y*nd1xy]!=0 ) {
                             growBoundaries = true;
                             boundary[ngb] = true;
@@ -164,8 +164,8 @@ public class RegistrationApplyDeformations2D {
                 int xy = x + nd1x*y;
                 if (boundary[xy]) {
                     for (byte k=0;k<4;k++) {
-                        if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd1x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd1y) {
-                            int ngb = Ngb.neighborIndex(k, xy,nd1x,nd1y,1);
+                        if (x+Ngb2.x[k]>=0 && x+Ngb2.x[k]<nd1x && y+Ngb2.y[k]>=0 && y+Ngb2.y[k]<nd1y) {
+                            int ngb = Ngb2.neighborIndex(k, xy,nd1x,nd1y,1);
                             if (deformation1Image[ngb + X*nd1xy]==0 && deformation1Image[ngb + Y*nd1xy]==0) {
                                 deformation1Image[ngb + X*nd1xy] = deformation1Image[xy + X*nd1xy];
                                 deformation1Image[ngb + Y*nd1xy] = deformation1Image[xy + Y*nd1xy];
@@ -212,8 +212,8 @@ public class RegistrationApplyDeformations2D {
                 int xy = x + nd2x*y;
                 if (deformation2Image[xy + X*nd2xy]==0 && deformation2Image[xy + Y*nd2xy]==0) {
                     for (byte k=0;k<4;k++) {
-                        if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd2x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd2y) {
-                            int ngb = Ngb.neighborIndex(k, xy,nd2x,nd2y,1);
+                        if (x+Ngb2.x[k]>=0 && x+Ngb2.x[k]<nd2x && y+Ngb2.y[k]>=0 && y+Ngb2.y[k]<nd2y) {
+                            int ngb = Ngb2.neighborIndex(k, xy,nd2x,nd2y,1);
                             if (deformation2Image[ngb + X*nd2xy]!=0 || deformation2Image[ngb + Y*nd2xy]!=0) {
                                 growBoundaries = true;
                                 boundary[ngb] = true;
@@ -230,8 +230,8 @@ public class RegistrationApplyDeformations2D {
                     int xy = x + nd2x*y;
                     if (boundary[xy]) {
                         for (byte k=0;k<4;k++) {
-                            if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd2x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd2y) {
-                                int ngb = Ngb.neighborIndex(k, xy,nd2x,nd2y,1);
+                            if (x+Ngb2.x[k]>=0 && x+Ngb2.x[k]<nd2x && y+Ngb2.y[k]>=0 && y+Ngb2.y[k]<nd2y) {
+                                int ngb = Ngb2.neighborIndex(k, xy,nd2x,nd2y,1);
                                 if (deformation2Image[ngb + X*nd2xy]==0 && deformation2Image[ngb + Y*nd2xy]==0) {
                                     deformation2Image[ngb + X*nd2xy] = deformation2Image[xy + X*nd2xy];
                                     deformation2Image[ngb + Y*nd2xy] = deformation2Image[xy + Y*nd2xy];
@@ -287,8 +287,8 @@ public class RegistrationApplyDeformations2D {
                     int xy = x + nd3x*y;
                     if (deformation3Image[xy + X*nd3xy]==0 && deformation3Image[xy + Y*nd3xy]==0) {
                         for (byte k=0;k<4;k++) {
-                            if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd3x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd3y) {
-                                int ngb = Ngb.neighborIndex(k, xy,nd3x,nd3y,1);
+                            if (x+Ngb2.x[k]>=0 && x+Ngb2.x[k]<nd3x && y+Ngb2.y[k]>=0 && y+Ngb2.y[k]<nd3y) {
+                                int ngb = Ngb2.neighborIndex(k, xy,nd3x,nd3y,1);
                                 if (deformation3Image[ngb + X*nd3xy]!=0 || deformation3Image[ngb + Y*nd3xy]!=0) {
                                     growBoundaries = true;
                                     boundary[ngb] = true;
@@ -305,8 +305,8 @@ public class RegistrationApplyDeformations2D {
                         int xy = x + nd3x*y;
                         if (boundary[xy]) {
                             for (byte k=0;k<4;k++) {
-                                if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd3x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd3y) {
-                                    int ngb = Ngb.neighborIndex(k, xy,nd3x,nd3y,1);
+                                if (x+Ngb2.x[k]>=0 && x+Ngb2.x[k]<nd3x && y+Ngb2.y[k]>=0 && y+Ngb2.y[k]<nd3y) {
+                                    int ngb = Ngb2.neighborIndex(k, xy,nd3x,nd3y,1);
                                     if (deformation3Image[ngb + X*nd3xy]==0 && deformation3Image[ngb + Y*nd3xy]==0) {
                                         deformation3Image[ngb + X*nd3xy] = deformation3Image[xy + X*nd3xy];
                                         deformation3Image[ngb + Y*nd3xy] = deformation3Image[xy + Y*nd3xy];
@@ -361,8 +361,8 @@ public class RegistrationApplyDeformations2D {
                         int xy = x + nd4x*y;
                         if (deformation4Image[xy + X*nd4xy]==0 && deformation4Image[xy + Y*nd4xy]==0) {
                             for (byte k=0;k<4;k++) {
-                                if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd4x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd4y) {
-                                    int ngb = Ngb.neighborIndex(k, xy,nd4x,nd4y,1);
+                                if (x+Ngb2.x[k]>=0 && x+Ngb2.x[k]<nd4x && y+Ngb2.y[k]>=0 && y+Ngb2.y[k]<nd4y) {
+                                    int ngb = Ngb2.neighborIndex(k, xy,nd4x,nd4y,1);
                                     if (deformation4Image[ngb + X*nd4xy]!=0 || deformation4Image[ngb + Y*nd4xy]!=0) {
                                         growBoundaries = true;
                                         boundary[ngb] = true;
@@ -379,8 +379,8 @@ public class RegistrationApplyDeformations2D {
                             int xy = x + nd4x*y;
                             if (boundary[xy]) {
                                 for (byte k=0;k<4;k++) {
-                                    if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd4x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd4y) {
-                                        int ngb = Ngb.neighborIndex(k, xy,nd4x,nd4y,1);
+                                    if (x+Ngb2.x[k]>=0 && x+Ngb2.x[k]<nd4x && y+Ngb2.y[k]>=0 && y+Ngb2.y[k]<nd4y) {
+                                        int ngb = Ngb2.neighborIndex(k, xy,nd4x,nd4y,1);
                                         if (deformation4Image[ngb + X*nd4xy]==0 && deformation4Image[ngb + Y*nd4xy]==0) {
                                             deformation4Image[ngb + X*nd4xy] = deformation4Image[xy + X*nd4xy];
                                             deformation4Image[ngb + Y*nd4xy] = deformation4Image[xy + Y*nd4xy];
