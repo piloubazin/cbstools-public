@@ -423,8 +423,10 @@ public class FilterRecursiveRidgeDiffusion2D {
                 minmaxlineScore(inputImage, linescore, linedir, x,y,z, NC);
                 // now measure along the line
                 byte[] dl = directionNeighbor(linedir[x][y][z]);
-                float pointscore = Numerics.minmag(inputImage[x][y][z]-inputImage[x+dl[X]][y+dl[Y]][z],inputImage[x][y][z]-inputImage[x-dl[X]][y-dl[Y]][z]);
-                if (pointscore*linescore[x][y][z]>0) {
+                float diff1 = inputImage[x][y][z]-inputImage[x+dl[X]][y+dl[Y]][z];
+                float diff2 = inputImage[x][y][z]-inputImage[x-dl[X]][y-dl[Y]][z];
+                float pointscore = Numerics.minmag(diff1,diff2);
+                if (diff1*diff2>0 && pointscore*linescore[x][y][z]>0) {
                     filter[xyz] = (float)FastMath.sqrt(linescore[x][y][z]*pointscore);
                     direction[xyz] = -1;
                 } else {

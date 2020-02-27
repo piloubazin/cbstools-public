@@ -276,7 +276,7 @@ public class IntensityFlashT2sFitting {
 				// test for difference: if below threshold then use full estimate
 				if (r2full-r2img[xyz]<r2max) {
                     r2img[xyz] = r2full;
-                    t2img[xyz] = 1/0f/r2full;
+                    t2img[xyz] = 1.0f/r2full;
                     s0img[xyz] = s0full;
                 }				    
 				/*
