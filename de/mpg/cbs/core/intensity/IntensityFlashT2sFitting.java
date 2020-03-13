@@ -1,5 +1,6 @@
 package de.mpg.cbs.core.intensity;
 
+import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.utilities.*;
 import org.apache.commons.math3.util.FastMath;
 
@@ -217,6 +218,74 @@ public class IntensityFlashT2sFitting {
 		for (int i=0;i<nimg;i++) System.out.print(te[i]+" ");
 		System.out.print("]\n");
 		
+		// step 1: compute the difference between full R2* fit and minimum
+		float[] diff = new float[nxyz];
+		boolean[] mask = new boolean[nxyz];
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			mask[xyz] = false;
+		    boolean process=true;
+			for (int i=0;i<nimg;i++) if (image[i][xyz]<=0) process=false;
+			if (process) {
+			    //System.out.print(".");
+                // fit the exponential
+                double Sx, Sx2, Sy, Sxy, delta;
+                Sx = 0.0f; Sx2 = 0.0f; delta = 0.0f;
+                for (int i=0;i<nimg;i++) {
+                    Sx += -te[i];
+                    Sx2 += Numerics.square(-te[i]);
+                }
+                delta = nimg*Sx2 - Sx*Sx;
+				Sy = 0.0f;
+				Sxy = 0.0f;
+				for (int i=0;i<nimg;i++) {
+					double ydata = FastMath.log(image[i][xyz]);
+					Sy += ydata;
+					Sxy += -ydata*te[i];
+				}
+				//s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
+				float r2full = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+				float r2min = r2full;
+				
+				// mask very high values by default
+				if (r2full>2.0*r2max) mask[xyz] = true;
+				
+				// check if over the boundary: if so, reduce the echo train
+				int necho = nimg-1;
+				while (necho>1) {
+				    Sx = 0.0f; Sx2 = 0.0f; delta = 0.0f;
+                    for (int i=0;i<necho;i++) {
+                        Sx += -te[i];
+                        Sx2 += Numerics.square(-te[i]);
+                    }
+                    delta = necho*Sx2 - Sx*Sx;
+                    Sy = 0.0f;
+                    Sxy = 0.0f;
+                    for (int i=0;i<necho;i++) {
+                        double ydata = FastMath.log(image[i][xyz]);
+                        Sy += ydata;
+                        Sxy += -ydata*te[i];
+                    }
+                    float r2val = Numerics.bounded( (float)( (necho*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+                    if (r2val<r2min) r2min = r2val;
+				    necho = necho-1;
+				}
+				diff[xyz] = r2full-r2min;
+			}
+		}
+		// step 2: look for neighborhoods
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+		    int xyz = x+nx*y+nx*ny*z;
+		    if (diff[xyz]>r2max) {
+                int neighbors=0;
+                for (byte n=0;n<26;n++) {
+                    int ngb = Ngb.neighborIndex(n, xyz, nx, ny, nz);
+                    if (diff[ngb]>r2max) neighbors++;
+                }
+                if (neighbors>8) mask[xyz] = true;
+            }   
+		}
+		// step 3: find nearby voxels with higher R2* value
+		
 		s0img = new float[nxyz];
 		r2img = new float[nxyz];
 		t2img = new float[nxyz];
@@ -247,46 +316,70 @@ public class IntensityFlashT2sFitting {
 				r2img[xyz] = r2full;
 				t2img[xyz] = 1/0f/r2full;
 				s0img[xyz] = s0full;
-				
-				// check if over the boundary: if so, reduce the echo train
-				int necho = nimg-1;
-				while (necho>1) {
-				    Sx = 0.0f; Sx2 = 0.0f; delta = 0.0f;
-                    for (int i=0;i<necho;i++) {
-                        Sx += -te[i];
-                        Sx2 += Numerics.square(-te[i]);
+			}
+		}
+		// expand mask on neighbors with high values
+		int nmask = ObjectStatistics.volume(mask, nx,ny,nz);
+        int added = nmask;
+		while (added>0.01*nmask) {
+		    System.out.print(".");
+            boolean[] expand = new boolean[nxyz];
+            for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+                int xyz = x+nx*y+nx*ny*z;
+                if (mask[xyz]) {
+                    int neighbors=0;
+                    for (byte n=0;n<6;n++) {
+                        int ngb = Ngb.neighborIndex(n, xyz, nx, ny, nz);
+                        if (r2img[ngb]>r2img[xyz]) expand[ngb] = true;
                     }
-                    delta = necho*Sx2 - Sx*Sx;
-                    Sy = 0.0f;
-                    Sxy = 0.0f;
-                    for (int i=0;i<necho;i++) {
-                        double ydata = FastMath.log(image[i][xyz]);
-                        Sy += ydata;
-                        Sxy += -ydata*te[i];
-                    }
-                    float r2val = Numerics.bounded( (float)( (necho*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
-                    if (r2val<r2img[xyz]) {
-                        r2img[xyz] = r2val;
-                        //s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
-                        s0img[xyz] = (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta );
-                        t2img[xyz] = 1.0f/r2img[xyz];
-                    }
-				    necho = necho-1;
-				}   
-				// test for difference: if below threshold then use full estimate
-				if (r2full-r2img[xyz]<r2max) {
-                    r2img[xyz] = r2full;
-                    t2img[xyz] = 1.0f/r2full;
-                    s0img[xyz] = s0full;
-                }				    
-				/*
-				errimg[xyz] = 0.0f;
-				for (int i=0;i<nimg;i++) {
-					errimg[xyz] += Numerics.square( FastMath.log(image[i][xyz]) 
-													 - FastMath.log(s0img[xyz]) + te[i]*r2img[xyz] )/nimg;
-				}
-				errimg[xyz] = (float)FastMath.sqrt(errimg[xyz]);
-				*/
+                }   
+            }
+            added = 0;
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                if (!mask[xyz] && expand[xyz]) added++;
+                mask[xyz] = (mask[xyz] || expand[xyz]);
+            }
+        }		
+		// find minimum again
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			boolean process=true;
+			for (int i=0;i<nimg;i++) if (image[i][xyz]<=0) process=false;
+			if (process) {
+				if (mask[xyz]) {
+                    // check if over the boundary: if so, reduce the echo train
+                    int necho = nimg-1;
+                    while (necho>1) {
+                        double Sx, Sx2, Sy, Sxy, delta;
+                        Sx = 0.0f; Sx2 = 0.0f; delta = 0.0f;
+                        for (int i=0;i<necho;i++) {
+                            Sx += -te[i];
+                            Sx2 += Numerics.square(-te[i]);
+                        }
+                        delta = necho*Sx2 - Sx*Sx;
+                        Sy = 0.0f;
+                        Sxy = 0.0f;
+                        for (int i=0;i<necho;i++) {
+                            double ydata = FastMath.log(image[i][xyz]);
+                            Sy += ydata;
+                            Sxy += -ydata*te[i];
+                        }
+                        float r2val = Numerics.bounded( (float)( (necho*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+                        if (r2val<r2img[xyz]) {
+                            r2img[xyz] = r2val;
+                            //s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
+                            s0img[xyz] = (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta );
+                            t2img[xyz] = 1.0f/r2img[xyz];
+                        }
+                        necho = necho-1;
+                    }   
+                }
+            }
+        }
+        // map residuals
+		for (int xyz=0;xyz<nxyz;xyz++) {
+			boolean process=true;
+			for (int i=0;i<nimg;i++) if (image[i][xyz]<=0) process=false;
+			if (process) {
 				double residual = 0.0;
                 double mean = 0.0;
                 double variance = 0.0;

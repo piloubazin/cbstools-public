@@ -205,12 +205,10 @@ public class FilterRecursiveRidgeDiffusion2D {
 			BasicInfo.displayMessage("...filter response at scale "+scale+"\n");
 		
 			// Gaussian Kernel
-			float[][] G = ImageFilters.separableGaussianKernel(scale/L2N2,scale/L2N2,0);
-			int gx = (G[0].length-1)/2;
-			int gy = (G[1].length-1)/2;
+			float[][] G = ImageFilters.separableGaussianKernel2D(scale/L2N2,scale/L2N2);
 				
 			// smoothed inputImage
-			smoothed = ImageFilters.separableConvolution(inputImage,nx,ny,nz,G,gx,gy,0); 
+			smoothed = ImageFilters.separableConvolution2D(inputImage,nx,ny,nz,G); 
 
 			byte[] direction = new byte[nxyz];
 			float[] response = new float[nxyz];
@@ -320,7 +318,7 @@ public class FilterRecursiveRidgeDiffusion2D {
 		BasicInfo.displayMessage("...diffusion ("+propagationParam+")\n");
 		
 		float[] propag = new float[nxyz];
-		if (filterParam.equals("0D")) {
+		if (filterParam.equals("0D") || iterParam==0) {
 		     propag = spatialExpansion0D(proba, maxscale, inputImage);
 		} else
 		if (propagationParam.equals("SUR")) {

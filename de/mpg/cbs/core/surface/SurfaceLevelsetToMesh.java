@@ -25,6 +25,7 @@ public class SurfaceLevelsetToMesh {
     private int connectivity;
     private float level = 0.0f;
     private boolean inclusive = true;
+    private float smoothing = 0.0f;
     
     private float[] pointList;
     private int[] triangleList;
@@ -42,6 +43,7 @@ public class SurfaceLevelsetToMesh {
 	}
 	public final void setZeroLevel(float val) { level = val; }
 	public final void setInclusive(boolean val) { inclusive = val; }
+	public final void setSmoothing(float val) { smoothing = val; }
 	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; nxyz=nx*ny*nz; }
@@ -459,8 +461,8 @@ public class SurfaceLevelsetToMesh {
 		for (int xyz=0;xyz<nxyz;xyz++) {
 	        float tmp = lvlImage[xyz] - level;
 	        /* The following is for TGDM purpose */
-            if (tmp > -0.1 && tmp <= 0) tmp = -0.1f;
-            else if (tmp < 0.1 && tmp > 0) tmp = 0.1f;
+            if (tmp > -0.01 && tmp <= 0) tmp = -0.01f;
+            else if (tmp < 0.01 && tmp > 0) tmp = 0.01f;
             //Case where tmp==0 is already handled?
             if (tmp == 0) {
                 if (inclusive) {
@@ -474,6 +476,12 @@ public class SurfaceLevelsetToMesh {
                 lvlImage[xyz] = tmp;
             }
         }
+        // option: smoothing?
+        if (smoothing>0) {
+            float[][] kernel = ImageFilters.separableGaussianKernel(smoothing, smoothing, smoothing);
+            lvlImage = ImageFilters.separableConvolution(lvlImage, nx,ny,nz, kernel);
+        }
+        
         data = lvlImage;
         
 		edgelist = new EdgeIndex[2 * HASHSIZE];

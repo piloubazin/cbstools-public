@@ -91,6 +91,21 @@ public class ImageInterpolation {
 		return image[x0 + nx*y0 + nx*ny*z0 + nx*ny*nz*c];
 	}
 	/**
+	 *	linear interpolation, with given value outside the image
+	 */
+	public static float nearestNeighborInterpolation(float[] image, float zero, float x, float y, int c, int nx, int ny, int nc) {
+		int x0,y0;
+
+        // if out of boundary, replace all with zero
+        if ( (x<0) || (x>nx-1) || (y<0) || (y>ny-1) ) 
+            return zero;
+        
+		x0 = Numerics.round(x);
+		y0 = Numerics.round(y);
+		
+		return image[x0 + nx*y0 + nx*ny*c];
+	}
+	/**
 	 *	linear interpolation, with 0 outside the image
 	 */
 	public static byte nearestNeighborInterpolation(byte[][][] image, float x, float y, float z, int nx, int ny, int nz) {
@@ -334,6 +349,19 @@ public class ImageInterpolation {
 	/**
 	 *	linear interpolation, with 0 outside the image
 	 */
+	public static float nearestNeighborClosestInterpolation(float[] image, float x, float y, int c, int nx, int ny, int nc) {
+		float val;
+		int x0,y0;
+
+        // if out of boundary, use closest point
+		x0 = Numerics.bounded(Numerics.round(x),0,nx-1);
+		y0 = Numerics.bounded(Numerics.round(y),0,ny-1);
+		
+		return image[x0 + nx*y0 + nx*ny*c];
+	}
+	/**
+	 *	linear interpolation, with 0 outside the image
+	 */
 	public static float linearInterpolation(float[][][] image, float x, float y, float z, int nx, int ny, int nz) {
 		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
@@ -462,6 +490,30 @@ public class ImageInterpolation {
 			+ nalpha*beta*gamma*image[x0 + nx*(y0+1) + nx*ny*(z0+1) + nx*ny*nz*c] 
 			+ alpha*nbeta*gamma*image[(x0+1) + nx*y0 + nx*ny*(z0+1) + nx*ny*nz*c] 
 			+ alpha*beta*gamma*image[(x0+1) + nx*(y0+1) + nx*ny*(z0+1) + nx*ny*nz*c];
+
+		return val;
+	}
+	/**
+	 *	linear interpolation, with value outside the image
+	 */
+	public static float linearClosestInterpolation(float[] image, float x, float y, int c, int nx, int ny, int nc) {
+		float alpha,beta,nalpha,nbeta,val;
+		int x0,y0;
+
+        // if out of boundary, use closest point
+		x0 = Numerics.bounded(Numerics.floor(x),0,nx-2);
+		y0 = Numerics.bounded(Numerics.floor(y),0,ny-2);
+		
+		alpha = Numerics.bounded(x - x0, 0.0f, 1.0f);
+		nalpha = 1.0f - alpha;
+
+		beta = Numerics.bounded(y - y0, 0.0f, 1.0f);
+		nbeta = 1.0f - beta;
+
+		val = nalpha*nbeta*image[x0 + nx*y0 + nx*ny*c] 
+			+ alpha*nbeta*image[(x0+1) + nx*y0 + nx*ny*c] 
+			+ nalpha*beta*image[x0 + nx*(y0+1) + nx*ny*c] 
+			+ alpha*beta*image[(x0+1) + nx*(y0+1) + nx*ny*c];
 
 		return val;
 	}

@@ -170,6 +170,40 @@ public class ImageFilters {
 		return result;
 	}
 		
+	/**
+	*	convolution with a separable kernel (the kernel is 3x{kx,ky,kz})
+	 */
+	public static float[] separableConvolution2D(float[] image, int nx, int ny, int nz, float[][] kernel) {
+		float[] result = new float[nx*ny*nz];
+		float[] temp = new float[nx*ny*nz];
+		int xi,yj,zl;
+		
+		//MedicUtilPublic.displayMessage("kernel size: "+kx+"x"+ky+"x"+kz+"\n");
+		
+		int kx = (kernel[X].length-1)/2;
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			result[xyz] = 0.0f;	
+			for (int i=-kx;i<=kx;i++) {
+				if ( (x+i>=0) && (x+i<nx) ) {
+					result[xyz] += image[xyz+i]*kernel[0][kx+i];
+				}
+			}
+		}
+		int ky = (kernel[Y].length-1)/2;
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			temp[xyz] = 0.0f;	
+			for (int i=-ky;i<=ky;i++) {
+				if ( (y+i>=0) && (y+i<ny) ) {
+					temp[xyz] += result[xyz+i*nx]*kernel[1][ky+i];
+				}
+			}
+		}
+
+		return temp;
+	}
+		
 		
 	/**
 	*	convolution with a separable kernel (the kernel is 3x{kx,ky,kz})
@@ -486,6 +520,42 @@ public class ImageFilters {
 			sum += kernel[2][kz+l];
 		}
 		for (int l=-kz;l<=kz;l++) kernel[2][kz+l] /= sum;
+		
+		return kernel;
+	}
+	
+	/**
+	 *	Gaussian kernel for separable convolution
+	 */
+	public static float[][] separableGaussianKernel2D(float sx, float sy) {
+		int kx,ky;
+		float sum;
+		
+		// kernel size
+		kx = Numerics.ceil(Math.max(3.0f*sx-0.5f,0.0f));
+		ky = Numerics.ceil(Math.max(3.0f*sy-0.5f,0.0f));
+		
+		//MedicUtilPublic.displayMessage("kernel size: "+kx+"x"+ky+"x"+kz+"\n");
+		//MedicUtilPublic.displayMessage("scale: "+sx+"x"+sy+"x"+sz+"\n");
+		// create the kernel
+		float[][] kernel = new float[2][];
+		kernel[0] = new float[2*kx+1]; 
+		kernel[1] = new float[2*ky+1]; 
+		
+		sum = 0.0f;
+		for (int i=-kx;i<=kx;i++) {
+			kernel[0][kx+i] = (float)Math.exp( - 0.5f*(i*i)/(sx*sx) );
+			//MedicUtilPublic.displayMessage("exp("+( - 0.5f*(i*i)/(sx*sx) )+") = "+kernel[0][kx+i]+"\n");
+			sum += kernel[0][kx+i];
+		}
+		for (int i=-kx;i<=kx;i++) kernel[0][kx+i] /= sum;
+		
+		sum = 0.0f;
+		for (int j=-ky;j<=ky;j++) {
+			kernel[1][ky+j] = (float)Math.exp( - 0.5f*(j*j)/(sy*sy) );
+			sum += kernel[1][ky+j];
+		}
+		for (int j=-ky;j<=ky;j++) kernel[1][ky+j] /= sum;
 		
 		return kernel;
 	}
