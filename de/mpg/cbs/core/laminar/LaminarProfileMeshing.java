@@ -85,13 +85,24 @@ public class LaminarProfileMeshing {
 		
 		sampledPoints = new float[nlayers+1][3*npt];
 		for (int p=0; p<npt; p++) {
-			profile.computeTrajectory(layers, inputPoints[3*p+X], inputPoints[3*p+Y], inputPoints[3*p+Z]);
-			
-			for (int l=0;l<nlayers+1;l++) {
-				sampledPoints[l][3*p+X] = profile.getPt(l)[X];
-				sampledPoints[l][3*p+Y] = profile.getPt(l)[Y];
-				sampledPoints[l][3*p+Z] = profile.getPt(l)[Z];
-			}
+		    // test for actual variation (to get rid of cutting planes)
+		    float d0 = ImageInterpolation.linearClosestInterpolation(layers[0], inputPoints[3*p+X], inputPoints[3*p+Y], inputPoints[3*p+Z], nx,ny,nz);
+			float dN = ImageInterpolation.linearClosestInterpolation(layers[nlayers], inputPoints[3*p+X], inputPoints[3*p+Y], inputPoints[3*p+Z], nx,ny,nz);
+			if (Numerics.abs(dN-d0)>0.001) {
+                profile.computeTrajectory(layers, inputPoints[3*p+X], inputPoints[3*p+Y], inputPoints[3*p+Z]);
+                
+                for (int l=0;l<nlayers+1;l++) {
+                    sampledPoints[l][3*p+X] = profile.getPt(l)[X];
+                    sampledPoints[l][3*p+Y] = profile.getPt(l)[Y];
+                    sampledPoints[l][3*p+Z] = profile.getPt(l)[Z];
+                }
+            } else {
+                for (int l=0;l<nlayers+1;l++) {
+                    sampledPoints[l][3*p+X] = inputPoints[3*p+X];
+                    sampledPoints[l][3*p+Y] = inputPoints[3*p+Y];
+                    sampledPoints[l][3*p+Z] = inputPoints[3*p+Z];
+                }
+            }                
 		}
 		if (surfaceConvention.equals("mipav")) {
 			for (int p=0; p<npt; p++) {
