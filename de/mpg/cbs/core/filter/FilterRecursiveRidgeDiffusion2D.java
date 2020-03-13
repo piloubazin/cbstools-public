@@ -205,12 +205,10 @@ public class FilterRecursiveRidgeDiffusion2D {
 			BasicInfo.displayMessage("...filter response at scale "+scale+"\n");
 		
 			// Gaussian Kernel
-			float[][] G = ImageFilters.separableGaussianKernel(scale/L2N2,scale/L2N2,0);
-			int gx = (G[0].length-1)/2;
-			int gy = (G[1].length-1)/2;
+			float[][] G = ImageFilters.separableGaussianKernel2D(scale/L2N2,scale/L2N2);
 				
 			// smoothed inputImage
-			smoothed = ImageFilters.separableConvolution(inputImage,nx,ny,nz,G,gx,gy,0); 
+			smoothed = ImageFilters.separableConvolution2D(inputImage,nx,ny,nz,G); 
 
 			byte[] direction = new byte[nxyz];
 			float[] response = new float[nxyz];
@@ -320,7 +318,7 @@ public class FilterRecursiveRidgeDiffusion2D {
 		BasicInfo.displayMessage("...diffusion ("+propagationParam+")\n");
 		
 		float[] propag = new float[nxyz];
-		if (filterParam.equals("0D")) {
+		if (filterParam.equals("0D") || iterParam==0) {
 		     propag = spatialExpansion0D(proba, maxscale, inputImage);
 		} else
 		if (propagationParam.equals("SUR")) {
@@ -423,8 +421,10 @@ public class FilterRecursiveRidgeDiffusion2D {
                 minmaxlineScore(inputImage, linescore, linedir, x,y,z, NC);
                 // now measure along the line
                 byte[] dl = directionNeighbor(linedir[x][y][z]);
-                float pointscore = Numerics.minmag(inputImage[x][y][z]-inputImage[x+dl[X]][y+dl[Y]][z],inputImage[x][y][z]-inputImage[x-dl[X]][y-dl[Y]][z]);
-                if (pointscore*linescore[x][y][z]>0) {
+                float diff1 = inputImage[x][y][z]-inputImage[x+dl[X]][y+dl[Y]][z];
+                float diff2 = inputImage[x][y][z]-inputImage[x-dl[X]][y-dl[Y]][z];
+                float pointscore = Numerics.minmag(diff1,diff2);
+                if (diff1*diff2>0 && pointscore*linescore[x][y][z]>0) {
                     filter[xyz] = (float)FastMath.sqrt(linescore[x][y][z]*pointscore);
                     direction[xyz] = -1;
                 } else {
