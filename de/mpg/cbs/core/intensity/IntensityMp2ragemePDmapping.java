@@ -169,7 +169,7 @@ public class IntensityMp2ragemePDmapping {
 		pd1map = new float[nxyz];
 		pd2map = new float[nxyz];
 		if (s0img!=null) pd0map = new float[nxyz];
- 		float[] pdmap = new float[nxyz];
+ 		pdmap = new float[nxyz];
 		
 		for (int xyz=0;xyz<nxyz;xyz++) {
 		    
@@ -220,20 +220,22 @@ public class IntensityMp2ragemePDmapping {
             
             double prod = inv1[xyz]*inv2[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1-inv2[xyz+nxyz]/phscale2);
             
-            pdmap[xyz] = (float)(prod/(gre1*gre2*expr2s*expr2s));
+            pdmap[xyz] = (float)FastMath.sqrt(Numerics.max(0.0, (prod/(gre1*gre2*expr2s*expr2s)) ) );
             
-            pd1map[xyz] = (float)(inv1[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1)/gre1/expr2s);
-            pd2map[xyz] = (float)(inv2[xyz]*FastMath.cos(inv2[xyz+nxyz]/phscale2)/gre2/expr2s);
+            //pd1map[xyz] = (float)(inv1[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1)/gre1/expr2s);
+            //pd2map[xyz] = (float)(inv2[xyz]*FastMath.cos(inv2[xyz+nxyz]/phscale2)/gre2/expr2s);
+            pd1map[xyz] = (float)(inv1[xyz]/gre1/expr2s);
+            pd2map[xyz] = (float)(inv2[xyz]/gre2/expr2s);
             
             if (s0img!=null) pd0map[xyz] = (float)(s0img[xyz]/gre2);
-            
+            /*
             pdmap[xyz] = pd1map[xyz]+pd2map[xyz];
             if (s0img!=null) {
                 pdmap[xyz] += pd0map[xyz];
                 pdmap[xyz] /= 3.0f;
             } else {
                 pdmap[xyz] /= 2.0f;
-            }
+            }*/
  		}
  			
 		return;
