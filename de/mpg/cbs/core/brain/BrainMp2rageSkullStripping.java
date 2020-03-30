@@ -143,7 +143,7 @@ public class BrainMp2rageSkullStripping {
 		// start from the bg mask
 		MinMaxFiltering minmax = new MinMaxFiltering(proba, nx,ny,nz, rx,ry,rz);
 		
-		float[] brain = minmax.growRegion(new float[]{0.0f}, new float[]{0.9f}, new float[]{0.9f}, 16, 10, false);
+		float[] brain = minmax.growRegion(new float[]{0.0f}, new float[]{0.8f}, new float[]{0.8f}, 16, 10, false);
 		
 		BinaryTopology topo = null;
 		Gdm3d gdm = null;
