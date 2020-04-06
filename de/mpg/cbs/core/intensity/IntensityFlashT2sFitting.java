@@ -314,7 +314,7 @@ public class IntensityFlashT2sFitting {
 				float r2full = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
 				float s0full = (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta );
 				r2img[xyz] = r2full;
-				t2img[xyz] = 1/0f/r2full;
+				t2img[xyz] = 1.0f/r2full;
 				s0img[xyz] = s0full;
 			}
 		}
