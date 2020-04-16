@@ -882,18 +882,26 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("50_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
+				float[] Imin = new float[nlabels];
+				float[] Imax = new float[nlabels];
+				boolean[] set = new boolean[nlabels];
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
+					    if (!set[n]) {
+					        Imax[n] = intensity[xyz];
+					        Imin[n] = intensity[xyz];
+					    } else {
+                            if (intensity[xyz]> Imax[n]) Imax[n] = intensity[xyz];
+                            if (intensity[xyz]< Imin[n]) Imin[n] = intensity[xyz];
+                        }
+                    }
+				}
+				int Nbins = 10000;
+				float[][] hist = new float[nlabels][Nbins+1];
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+						int bin = Numerics.floor((intensity[xyz]-Imin[n])/(Imax[n]-Imin[n])*Nbins);
 						if (bin<0) bin = 0;
 						if (bin>=Nbins) bin = Nbins-1;
 						hist[n][bin]++;
@@ -902,13 +910,21 @@ public class StatisticsSegmentation {
 				}
 				float[] per = new float[nlabels];
 				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int bin = 0;
-					while (count<0.5f*hist[n][Nbins]) {
-						count += hist[n][bin];
-						bin++;
+					float forward = 0.0f;
+					int fbin = 0;
+					while (forward<0.5f*hist[n][Nbins]) {
+					    forward += hist[n][fbin];
+						fbin++;
 					}
-					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+					float backward = hist[n][Nbins];
+					int bbin = Nbins-1;
+					while (backward>0.5f*hist[n][Nbins]) {
+					    backward -= hist[n][bbin];
+						bbin--;
+					}
+					
+					float ratio = (forward-0.5f*hist[n][Nbins])/(forward-backward);
+					per[n] = Imin[n] + (ratio*bbin+(1.0f-ratio)*fbin)/(float)Nbins*(Imax[n]-Imin[n]);
 				}
 				line = "50_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -916,18 +932,26 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("Median_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
+				float[] Imin = new float[nlabels];
+				float[] Imax = new float[nlabels];
+				boolean[] set = new boolean[nlabels];
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
+					    if (!set[n]) {
+					        Imax[n] = intensity[xyz];
+					        Imin[n] = intensity[xyz];
+					    } else {
+                            if (intensity[xyz]> Imax[n]) Imax[n] = intensity[xyz];
+                            if (intensity[xyz]< Imin[n]) Imin[n] = intensity[xyz];
+                        }
+                    }
+				}
+				int Nbins = 10000;
+				float[][] hist = new float[nlabels][Nbins+1];
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+						int bin = Numerics.floor((intensity[xyz]-Imin[n])/(Imax[n]-Imin[n])*Nbins);
 						if (bin<0) bin = 0;
 						if (bin>=Nbins) bin = Nbins-1;
 						hist[n][bin]++;
@@ -936,13 +960,21 @@ public class StatisticsSegmentation {
 				}
 				float[] per = new float[nlabels];
 				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int bin = 0;
-					while (count<0.5f*hist[n][Nbins]) {
-						count += hist[n][bin];
-						bin++;
+					float forward = 0.0f;
+					int fbin = 0;
+					while (forward<0.5f*hist[n][Nbins]) {
+					    forward += hist[n][fbin];
+						fbin++;
 					}
-					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+					float backward = hist[n][Nbins];
+					int bbin = Nbins-1;
+					while (backward>0.5f*hist[n][Nbins]) {
+					    backward -= hist[n][bbin];
+						bbin--;
+					}
+					
+					float ratio = (forward-0.5f*hist[n][Nbins])/(forward-backward);
+					per[n] = Imin[n] + (ratio*bbin+(1.0f-ratio)*fbin)/(float)Nbins*(Imax[n]-Imin[n]);
 				}
 				line = "Median_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -950,18 +982,26 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("90_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
+				float[] Imin = new float[nlabels];
+				float[] Imax = new float[nlabels];
+				boolean[] set = new boolean[nlabels];
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
+					    if (!set[n]) {
+					        Imax[n] = intensity[xyz];
+					        Imin[n] = intensity[xyz];
+					    } else {
+                            if (intensity[xyz]> Imax[n]) Imax[n] = intensity[xyz];
+                            if (intensity[xyz]< Imin[n]) Imin[n] = intensity[xyz];
+                        }
+                    }
+				}
+				int Nbins = 10000;
+				float[][] hist = new float[nlabels][Nbins+1];
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+						int bin = Numerics.floor((intensity[xyz]-Imin[n])/(Imax[n]-Imin[n])*Nbins);
 						if (bin<0) bin = 0;
 						if (bin>=Nbins) bin = Nbins-1;
 						hist[n][bin]++;
@@ -970,13 +1010,21 @@ public class StatisticsSegmentation {
 				}
 				float[] per = new float[nlabels];
 				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int bin = 0;
-					while (count<0.9f*hist[n][Nbins]) {
-						count += hist[n][bin];
-						bin++;
+					float forward = 0.0f;
+					int fbin = 0;
+					while (forward<0.9f*hist[n][Nbins]) {
+					    forward += hist[n][fbin];
+						fbin++;
 					}
-					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+					float backward = hist[n][Nbins];
+					int bbin = Nbins-1;
+					while (backward>0.9f*hist[n][Nbins]) {
+					    backward -= hist[n][bbin];
+						bbin--;
+					}
+					
+					float ratio = (forward-0.9f*hist[n][Nbins])/(forward-backward);
+					per[n] = Imin[n] + (ratio*bbin+(1.0f-ratio)*fbin)/(float)Nbins*(Imax[n]-Imin[n]);
 				}
 				line = "90_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -984,18 +1032,26 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("10_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
+				float[] Imin = new float[nlabels];
+				float[] Imax = new float[nlabels];
+				boolean[] set = new boolean[nlabels];
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
+					    if (!set[n]) {
+					        Imax[n] = intensity[xyz];
+					        Imin[n] = intensity[xyz];
+					    } else {
+                            if (intensity[xyz]> Imax[n]) Imax[n] = intensity[xyz];
+                            if (intensity[xyz]< Imin[n]) Imin[n] = intensity[xyz];
+                        }
+                    }
+				}
+				int Nbins = 10000;
+				float[][] hist = new float[nlabels][Nbins+1];
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+						int bin = Numerics.floor((intensity[xyz]-Imin[n])/(Imax[n]-Imin[n])*Nbins);
 						if (bin<0) bin = 0;
 						if (bin>=Nbins) bin = Nbins-1;
 						hist[n][bin]++;
@@ -1004,13 +1060,21 @@ public class StatisticsSegmentation {
 				}
 				float[] per = new float[nlabels];
 				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int bin = 0;
-					while (count<0.1f*hist[n][Nbins]) {
-						count += hist[n][bin];
-						bin++;
+					float forward = 0.0f;
+					int fbin = 0;
+					while (forward<0.1f*hist[n][Nbins]) {
+					    forward += hist[n][fbin];
+						fbin++;
 					}
-					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+					float backward = hist[n][Nbins];
+					int bbin = Nbins-1;
+					while (backward>0.1f*hist[n][Nbins]) {
+					    backward -= hist[n][bbin];
+						bbin--;
+					}
+					
+					float ratio = (forward-0.1f*hist[n][Nbins])/(forward-backward);
+					per[n] = Imin[n] + (ratio*bbin+(1.0f-ratio)*fbin)/(float)Nbins*(Imax[n]-Imin[n]);
 				}
 				line = "10_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -1018,18 +1082,26 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("75_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
+				float[] Imin = new float[nlabels];
+				float[] Imax = new float[nlabels];
+				boolean[] set = new boolean[nlabels];
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
+					    if (!set[n]) {
+					        Imax[n] = intensity[xyz];
+					        Imin[n] = intensity[xyz];
+					    } else {
+                            if (intensity[xyz]> Imax[n]) Imax[n] = intensity[xyz];
+                            if (intensity[xyz]< Imin[n]) Imin[n] = intensity[xyz];
+                        }
+                    }
+				}
+				int Nbins = 10000;
+				float[][] hist = new float[nlabels][Nbins+1];
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+						int bin = Numerics.floor((intensity[xyz]-Imin[n])/(Imax[n]-Imin[n])*Nbins);
 						if (bin<0) bin = 0;
 						if (bin>=Nbins) bin = Nbins-1;
 						hist[n][bin]++;
@@ -1038,13 +1110,21 @@ public class StatisticsSegmentation {
 				}
 				float[] per = new float[nlabels];
 				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int bin = 0;
-					while (count<0.75f*hist[n][Nbins]) {
-						count += hist[n][bin];
-						bin++;
+					float forward = 0.0f;
+					int fbin = 0;
+					while (forward<0.75f*hist[n][Nbins]) {
+					    forward += hist[n][fbin];
+						fbin++;
 					}
-					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+					float backward = hist[n][Nbins];
+					int bbin = Nbins-1;
+					while (backward>0.75f*hist[n][Nbins]) {
+					    backward -= hist[n][bbin];
+						bbin--;
+					}
+					
+					float ratio = (forward-0.75f*hist[n][Nbins])/(forward-backward);
+					per[n] = Imin[n] + (ratio*bbin+(1.0f-ratio)*fbin)/(float)Nbins*(Imax[n]-Imin[n]);
 				}
 				line = "75_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -1052,18 +1132,26 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("25_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
+				float[] Imin = new float[nlabels];
+				float[] Imax = new float[nlabels];
+				boolean[] set = new boolean[nlabels];
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
+					    if (!set[n]) {
+					        Imax[n] = intensity[xyz];
+					        Imin[n] = intensity[xyz];
+					    } else {
+                            if (intensity[xyz]> Imax[n]) Imax[n] = intensity[xyz];
+                            if (intensity[xyz]< Imin[n]) Imin[n] = intensity[xyz];
+                        }
+                    }
+				}
+				int Nbins = 10000;
+				float[][] hist = new float[nlabels][Nbins+1];
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+						int bin = Numerics.floor((intensity[xyz]-Imin[n])/(Imax[n]-Imin[n])*Nbins);
 						if (bin<0) bin = 0;
 						if (bin>=Nbins) bin = Nbins-1;
 						hist[n][bin]++;
@@ -1072,13 +1160,21 @@ public class StatisticsSegmentation {
 				}
 				float[] per = new float[nlabels];
 				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int bin = 0;
-					while (count<0.25f*hist[n][Nbins]) {
-						count += hist[n][bin];
-						bin++;
+					float forward = 0.0f;
+					int fbin = 0;
+					while (forward<0.25f*hist[n][Nbins]) {
+					    forward += hist[n][fbin];
+						fbin++;
 					}
-					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+					float backward = hist[n][Nbins];
+					int bbin = Nbins-1;
+					while (backward>0.25f*hist[n][Nbins]) {
+					    backward -= hist[n][bbin];
+						bbin--;
+					}
+					
+					float ratio = (forward-0.25f*hist[n][Nbins])/(forward-backward);
+					per[n] = Imin[n] + (ratio*bbin+(1.0f-ratio)*fbin)/(float)Nbins*(Imax[n]-Imin[n]);
 				}
 				line = "25_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -1086,18 +1182,26 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("IQR_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
+				float[] Imin = new float[nlabels];
+				float[] Imax = new float[nlabels];
+				boolean[] set = new boolean[nlabels];
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
+					    if (!set[n]) {
+					        Imax[n] = intensity[xyz];
+					        Imin[n] = intensity[xyz];
+					    } else {
+                            if (intensity[xyz]> Imax[n]) Imax[n] = intensity[xyz];
+                            if (intensity[xyz]< Imin[n]) Imin[n] = intensity[xyz];
+                        }
+                    }
+				}
+				int Nbins = 10000;
+				float[][] hist = new float[nlabels][Nbins+1];
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+						int bin = Numerics.floor((intensity[xyz]-Imin[n])/(Imax[n]-Imin[n])*Nbins);
 						if (bin<0) bin = 0;
 						if (bin>=Nbins) bin = Nbins-1;
 						hist[n][bin]++;
@@ -1106,18 +1210,34 @@ public class StatisticsSegmentation {
 				}
 				float[] per = new float[nlabels];
 				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int binmin = 0;
-					while (count<0.25f*hist[n][Nbins]) {
-						count += hist[n][binmin];
-						binmin++;
+					float forwardmax = 0.0f;
+					int fbinmax = 0;
+					while (forwardmax<0.75f*hist[n][Nbins]) {
+					    forwardmax += hist[n][fbinmax];
+						fbinmax++;
 					}
-					int binmax = binmin;
-					while (count<0.75f*hist[n][Nbins]) {
-						count += hist[n][binmax];
-						binmax++;
+					float backwardmax = hist[n][Nbins];
+					int bbinmax = Nbins-1;
+					while (backwardmax>0.75f*hist[n][Nbins]) {
+					    backwardmax -= hist[n][bbinmax];
+						bbinmax--;
 					}
-					per[n] = (binmax-binmin)/(float)Nbins*(Imax-Imin);
+					float forwardmin = 0.0f;
+					int fbinmin = 0;
+					while (forwardmin<0.75f*hist[n][Nbins]) {
+					    forwardmin += hist[n][fbinmin];
+						fbinmin++;
+					}
+					float backwardmin = hist[n][Nbins];
+					int bbinmin = Nbins-1;
+					while (backwardmin>0.75f*hist[n][Nbins]) {
+					    backwardmin -= hist[n][bbinmin];
+						bbinmin--;
+					}
+					
+					float ratiomax = (forwardmax-0.75f*hist[n][Nbins])/(forwardmax-backwardmax);
+					float ratiomin = (forwardmin-0.75f*hist[n][Nbins])/(forwardmin-backwardmin);
+					per[n] = ((ratiomax*bbinmax+(1.0f-ratiomax)*fbinmax)-(ratiomin*bbinmin+(1.0f-ratiomin)*fbinmin))/(float)Nbins*(Imax[n]-Imin[n]);
 				}
 				line = "IQR_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
