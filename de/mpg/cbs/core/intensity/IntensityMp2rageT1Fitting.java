@@ -32,10 +32,10 @@ public class IntensityMp2rageT1Fitting {
 	
 	private     boolean     scalePhase = true;
 	private		float		intensityScale = 4000.0f;
-	private		float		t1Max = 4.0f;
+	private		float		t1Max = 10.0f;
 	private		float		t1Min = 0.05f;
-	private		int			t1Samples = 3950;
-	private		int			uniSamples = 4000;
+	private		int			t1Samples = 9950;
+	private		int			uniSamples = 10000;
 	
 	private		boolean		useB1correction = true;
 	private		float 		b1Scaling = 1.0f;
@@ -47,7 +47,6 @@ public class IntensityMp2rageT1Fitting {
 	private		float[] uni = null;
 	private		float[] t1map = null;
 	private		float[] r1map = null;
-	private		float[] snr = null;
 	
 	private		double[][] T1lookup = null;
 	private 	double[][] unilookup = null;
@@ -122,7 +121,6 @@ public class IntensityMp2rageT1Fitting {
 	public float[] getUniformT1weightedImage() { return uni; }
 	public float[] getQuantitativeT1mapImage() { return t1map; }
 	public float[] getQuantitativeR1mapImage() { return r1map; }
-	public float[] getRelativeSnrImage() { return snr; }
 	
 	// for debug
 	public float[] generateT1LookupImage() { 
@@ -193,19 +191,12 @@ public class IntensityMp2rageT1Fitting {
             }
             
             uni = new float[nxyz];
-            snr = new float[nxyz];
             for (int xyz=0;xyz<nxyz;xyz++) {
                 double prod = inv1[xyz]*inv2[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1-inv2[xyz+nxyz]/phscale2);
                 double norm = inv1[xyz]*inv1[xyz] + inv2[xyz]*inv2[xyz];
                 
-                double diff2 = (inv1[xyz]*inv1[xyz] - inv2[xyz]*inv2[xyz])*(inv1[xyz]*inv1[xyz] - inv2[xyz]*inv2[xyz]);
-                double norm3 = norm*norm*norm;
-                
                 if (intensityScale*norm>prod) uni[xyz] = (float)(prod/norm);
                 else uni[xyz] = 0.0f;
-                
-                if (intensityScale*intensityScale*norm3>diff2) snr[xyz] = (float)FastMath.sqrt(diff2/norm3);
-                else snr[xyz] = 1.0f;
             }
             inv1 = null;
             inv2 = null;
@@ -372,14 +363,14 @@ public class IntensityMp2rageT1Fitting {
 			uni[xyz] = Numerics.bounded(intensityScale*uni[xyz]+intensityScale/2.0f,0.0f,intensityScale);
 		}
 
-		// rescale the T1 map to milliseconds
+		// keep the scale of T1 map to seconds
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			t1map[xyz] = Numerics.bounded(1000.0f*t1map[xyz],1000.0f*t1Min,1000.0f*t1Max);
+			t1map[xyz] = Numerics.bounded(t1map[xyz],t1Min,t1Max);
 		}
 			
 		// rescale the R1 map to mHz
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			r1map[xyz] = Numerics.bounded(1000.0f*r1map[xyz],1000.0f/t1Max,1000.0f/t1Min);
+			r1map[xyz] = Numerics.bounded(r1map[xyz],1.0f/t1Max,1.0f/t1Min);
 		}
 			
 		return;
