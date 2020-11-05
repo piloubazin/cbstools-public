@@ -32,16 +32,16 @@ public class IntensityMp2rageT1Fitting {
 	
 	private     boolean     scalePhase = true;
 	private		float		intensityScale = 4000.0f;
-	private		float		t1Max = 10.0f;
-	private		float		t1Min = 0.05f;
-	private		int			t1Samples = 9950;
-	private		int			uniSamples = 10000;
+	private		float		t1Max = 20.0f;
+	private		float		t1Min = 0.02f;
+	private		int			t1Samples = 19980;
+	private		int			uniSamples = 20000;
 	
 	private		boolean		useB1correction = true;
 	private		float 		b1Scaling = 1.0f;
-	private		float		b1min = 0.05f;
-	private		float		b1max = 2.0f;
-	private 	int			b1Samples = 1950;
+	private		float		b1min = 0.2f;
+	private		float		b1max = 5.0f;
+	private 	int			b1Samples = 4800;
 	
 	// output parameters
 	private		float[] uni = null;
@@ -230,7 +230,7 @@ public class IntensityMp2rageT1Fitting {
 		double a2rad = angle2/180.0*FastMath.PI;
 		
 		for (int b=0;b<b1Samples;b++) {
-		    System.out.print(".");
+		    //System.out.print(".");
 		
 			double b1 = b1min + b*(b1max-b1min)/(b1Samples-1.0);
 			if (!useB1correction) b1 = 1.0;
@@ -368,7 +368,7 @@ public class IntensityMp2rageT1Fitting {
 			t1map[xyz] = Numerics.bounded(t1map[xyz],t1Min,t1Max);
 		}
 			
-		// rescale the R1 map to mHz
+		// keep the scale of R1 map to Hz
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			r1map[xyz] = Numerics.bounded(r1map[xyz],1.0f/t1Max,1.0f/t1Min);
 		}

@@ -17,6 +17,7 @@ public class IntensityFlashT2sFitting {
 	
 	int nimg = 4;
 	float imax = 10000.0f;
+	float r2min = 0.001f;
 	float r2max = 1000.0f;
 	
 	float[] s0img;
@@ -92,7 +93,7 @@ public class IntensityFlashT2sFitting {
 				}
 				//s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
 				s0img[xyz] = (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta );
-				r2img[xyz] = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+				r2img[xyz] = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), r2min, r2max);
 				t2img[xyz] = 1.0f/r2img[xyz];
 				/*
 				errimg[xyz] = 0.0f;
@@ -155,7 +156,7 @@ public class IntensityFlashT2sFitting {
 				}
 				//s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
 				s0img[xyz] = (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta );
-				r2img[xyz] = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+				r2img[xyz] = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), r2min, r2max);
 				t2img[xyz] = 1.0f/r2img[xyz];
 				
 				// check if over the boundary: if so, reduce the echo train
@@ -174,7 +175,7 @@ public class IntensityFlashT2sFitting {
                         Sy += ydata;
                         Sxy += -ydata*te[i];
                     }
-                    float r2val = Numerics.bounded( (float)( (necho*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+                    float r2val = Numerics.bounded( (float)( (necho*Sxy-Sx*Sy)/delta ), r2min, r2max);
                     if (r2val<r2img[xyz]) {
                         r2img[xyz] = r2val;
                         //s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
@@ -243,7 +244,7 @@ public class IntensityFlashT2sFitting {
 					Sxy += -ydata*te[i];
 				}
 				//s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
-				float r2full = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+				float r2full = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), r2min, r2max);
 				float r2min = r2full;
 				
 				// mask very high values by default
@@ -265,7 +266,7 @@ public class IntensityFlashT2sFitting {
                         Sy += ydata;
                         Sxy += -ydata*te[i];
                     }
-                    float r2val = Numerics.bounded( (float)( (necho*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+                    float r2val = Numerics.bounded( (float)( (necho*Sxy-Sx*Sy)/delta ), r2min, r2max);
                     if (r2val<r2min) r2min = r2val;
 				    necho = necho-1;
 				}
@@ -311,7 +312,7 @@ public class IntensityFlashT2sFitting {
 					Sxy += -ydata*te[i];
 				}
 				//s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
-				float r2full = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+				float r2full = Numerics.bounded( (float)( (nimg*Sxy-Sx*Sy)/delta ), r2min, r2max);
 				float s0full = (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta );
 				r2img[xyz] = r2full;
 				t2img[xyz] = 1.0f/r2full;
@@ -363,7 +364,7 @@ public class IntensityFlashT2sFitting {
                             Sy += ydata;
                             Sxy += -ydata*te[i];
                         }
-                        float r2val = Numerics.bounded( (float)( (necho*Sxy-Sx*Sy)/delta ), 0.001f, 1000.0f);
+                        float r2val = Numerics.bounded( (float)( (necho*Sxy-Sx*Sy)/delta ), r2min, r2max);
                         if (r2val<r2img[xyz]) {
                             r2img[xyz] = r2val;
                             //s0img[xyz] = Numerics.bounded( (float)FastMath.exp( (Sx2*Sy-Sxy*Sx)/delta ), 0, imax);
