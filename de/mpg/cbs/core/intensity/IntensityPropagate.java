@@ -36,9 +36,11 @@ public class IntensityPropagate {
 	public final void setPropogationScalingFactor(float val) { scalingParam = val; }
 	
 	// set generic inputs	
+	public final void setDimensions(int x, int y) { nx=x; ny=y; nz=1; nc=1; nxyz=nx*ny*nz; }
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nc=1; nxyz=nx*ny*nz; }
 	public final void setDimensions(int x, int y, int z, int c) { nx=x; ny=y; nz=z; nc=c; nxyz=nx*ny*nz; }
 	public final void setDimensions(int[] dim) { nx=dim[0]; ny=dim[1]; nz=dim[2]; if (dim.length>3) nc=dim[3]; else nc=1; nxyz=nx*ny*nz; }
+	public final void setResolutions(float x, float y) { rx=x; ry=y; rz=rx; }
 	public final void setResolutions(float x, float y, float z) { rx=x; ry=y; rz=z; }
 	public final void setResolutions(float[] res) { rx=res[0]; ry=res[1]; rz=res[2]; }
 	
@@ -76,6 +78,14 @@ public class IntensityPropagate {
 		if (normParam.equals("mean")) merge = MEAN;
 		if (normParam.equals("min")) merge = MIN;
 
+		// set up for 2D vs 3D
+		int dnx = 1;
+		int dny = 1;
+		int dnz = 1;
+		if (nx==1) dnx = 0;
+		if (ny==1) dny = 0;
+		if (nz==1) dnz = 0;
+		
 		// main algorithm
 		resultImage = new float[nxyz*nc];
 		byte[] count = new byte[nxyz];
@@ -91,7 +101,7 @@ public class IntensityPropagate {
 			for (int xyz=0;xyz<nxyz;xyz++) {
 				count[xyz] = 0;
 			}
-			for (int x=1;x<nx-1;x++) for (int y=1;y<ny-1;y++) for (int z=1;z<nz-1;z++) {
+			for (int x=dnx;x<nx-dnx;x++) for (int y=dny;y<ny-dny;y++) for (int z=dnz;z<nz-dnz;z++) {
 				int xyz = x+nx*y+nx*ny*z;
 				for (int c=0;c<nc;c++) {								
 					// only for places with actual values inside..
@@ -99,7 +109,7 @@ public class IntensityPropagate {
 						|| (target==MASK && maskImage[xyz]!=0)
 						|| target==LOWER || target==HIGHER) {
 						// propagate to neighbors
-						for (int dx=-1;dx<=1;dx++) for (int dy=-1;dy<=1;dy++) for (int dz=-1;dz<=1;dz++) {
+						for (int dx=-dnx;dx<=dnx;dx++) for (int dy=-dny;dy<=dny;dy++) for (int dz=-dnz;dz<=dnz;dz++) {
 							int xyzd = xyz + dx+nx*dy+nx*ny*dz;
 							if ( (target==ZERO && inputImage[xyzd + nxyz*c]==0)
 								|| (target==MASK && maskImage[xyzd]==0)

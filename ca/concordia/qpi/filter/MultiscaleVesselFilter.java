@@ -588,7 +588,7 @@ public class MultiscaleVesselFilter {
 				tan2[Y]=tan1[Z]*finalDir[X]-tan1[X]*finalDir[Z];
 				tan2[Z]=tan1[X]*finalDir[Y]-tan1[Y]*finalDir[X];
 				
-				System.out.print(".");
+				//System.out.print(".");
 		
 				VesselDiameterCostFunction jfct= new VesselDiameterCostFunction();
 				jfct.setImagesData(probaInImg,nx,ny,nz);
