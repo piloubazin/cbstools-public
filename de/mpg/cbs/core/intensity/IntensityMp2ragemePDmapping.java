@@ -35,17 +35,9 @@ public class IntensityMp2ragemePDmapping {
 	private		float		inversionEfficiency = 0.96f;
 	
 	private     boolean     scalePhase = true;
-	private		float		intensityScale = 4000.0f;
-	private		float		t1Max = 4.0f;
-	private		float		t1Min = 0.05f;
-	private		int			t1Samples = 3950;
-	private		int			uniSamples = 4000;
 	
 	private		boolean		useB1correction = true;
 	private		float 		b1Scaling = 1.0f;
-	private		float		b1min = 0.05f;
-	private		float		b1max = 2.0f;
-	private 	int			b1Samples = 1950;
 	
 	// output parameters
 	private		float[] pd1map = null;
@@ -173,10 +165,14 @@ public class IntensityMp2ragemePDmapping {
 		
 		for (int xyz=0;xyz<nxyz;xyz++) {
 		    
-		    double qt1 = t1map[xyz]/1000.0;
+		    // assuming T1 in seconds
+		    //double qt1 = t1map[xyz]/1000.0;
+		    double qt1 = t1map[xyz];
 		    
+		    // assuming R2* in Hz
 		    double expr2s = 1.0;
-		    if (r2smap!=null) expr2s = FastMath.exp(-r2smap[xyz]*TEcho1*1000.0);
+		    //if (r2smap!=null) expr2s = FastMath.exp(-r2smap[xyz]*TEcho1*1000.0);
+		    if (r2smap!=null) expr2s = FastMath.exp(-r2smap[xyz]*TEcho1);
 		
 			double b1 = 1.0;
 			if (useB1correction) b1 = b1map[xyz];

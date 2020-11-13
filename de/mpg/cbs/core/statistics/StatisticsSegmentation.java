@@ -12,6 +12,7 @@ import de.mpg.cbs.libraries.*;
 import de.mpg.cbs.methods.*;
 
 import org.apache.commons.math3.util.FastMath;
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
 
 /*
@@ -882,33 +883,25 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("50_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
-						if (bin<0) bin = 0;
-						if (bin>=Nbins) bin = Nbins-1;
-						hist[n][bin]++;
-						hist[n][Nbins]++;	// total number
-					}
-				}
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int bin = 0;
-					while (count<0.5f*hist[n][Nbins]) {
-						count += hist[n][bin];
-						bin++;
-					}
-					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+				for (int n=0;n<nlabels;n++)  {
+				    int sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            sample++;
+                        }
+                    }
+                    double[] val = new double[sample];
+                    sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            val[sample] = intensity[xyz];
+                            sample++;
+                        }
+                    }
+                    Percentile percent = new Percentile();
+                    per[n] = (float)percent.evaluate(val, 50.0);
 				}
 				line = "50_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -916,33 +909,25 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("Median_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
-						if (bin<0) bin = 0;
-						if (bin>=Nbins) bin = Nbins-1;
-						hist[n][bin]++;
-						hist[n][Nbins]++;	// total number
-					}
-				}
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int bin = 0;
-					while (count<0.5f*hist[n][Nbins]) {
-						count += hist[n][bin];
-						bin++;
-					}
-					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+				for (int n=0;n<nlabels;n++)  {
+				    int sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            sample++;
+                        }
+                    }
+                    double[] val = new double[sample];
+                    sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            val[sample] = intensity[xyz];
+                            sample++;
+                        }
+                    }
+                    Percentile percent = new Percentile();
+                    per[n] = (float)percent.evaluate(val, 50.0);
 				}
 				line = "Median_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -950,33 +935,25 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("90_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
-						if (bin<0) bin = 0;
-						if (bin>=Nbins) bin = Nbins-1;
-						hist[n][bin]++;
-						hist[n][Nbins]++;	// total number
-					}
-				}
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int bin = 0;
-					while (count<0.9f*hist[n][Nbins]) {
-						count += hist[n][bin];
-						bin++;
-					}
-					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+				for (int n=0;n<nlabels;n++)  {
+				    int sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            sample++;
+                        }
+                    }
+                    double[] val = new double[sample];
+                    sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            val[sample] = intensity[xyz];
+                            sample++;
+                        }
+                    }
+                    Percentile percent = new Percentile();
+                    per[n] = (float)percent.evaluate(val, 90.0);
 				}
 				line = "90_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -984,33 +961,25 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("10_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
-						if (bin<0) bin = 0;
-						if (bin>=Nbins) bin = Nbins-1;
-						hist[n][bin]++;
-						hist[n][Nbins]++;	// total number
-					}
-				}
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int bin = 0;
-					while (count<0.1f*hist[n][Nbins]) {
-						count += hist[n][bin];
-						bin++;
-					}
-					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+				for (int n=0;n<nlabels;n++)  {
+				    int sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            sample++;
+                        }
+                    }
+                    double[] val = new double[sample];
+                    sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            val[sample] = intensity[xyz];
+                            sample++;
+                        }
+                    }
+                    Percentile percent = new Percentile();
+                    per[n] = (float)percent.evaluate(val, 10.0);
 				}
 				line = "10_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -1018,33 +987,25 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("75_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
-						if (bin<0) bin = 0;
-						if (bin>=Nbins) bin = Nbins-1;
-						hist[n][bin]++;
-						hist[n][Nbins]++;	// total number
-					}
-				}
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int bin = 0;
-					while (count<0.75f*hist[n][Nbins]) {
-						count += hist[n][bin];
-						bin++;
-					}
-					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+				for (int n=0;n<nlabels;n++)  {
+				    int sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            sample++;
+                        }
+                    }
+                    double[] val = new double[sample];
+                    sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            val[sample] = intensity[xyz];
+                            sample++;
+                        }
+                    }
+                    Percentile percent = new Percentile();
+                    per[n] = (float)percent.evaluate(val, 75.0);
 				}
 				line = "75_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -1052,33 +1013,25 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("25_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
-						if (bin<0) bin = 0;
-						if (bin>=Nbins) bin = Nbins-1;
-						hist[n][bin]++;
-						hist[n][Nbins]++;	// total number
-					}
-				}
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int bin = 0;
-					while (count<0.25f*hist[n][Nbins]) {
-						count += hist[n][bin];
-						bin++;
-					}
-					per[n] = Imin + (bin-1)/(float)Nbins*(Imax-Imin);
+				for (int n=0;n<nlabels;n++)  {
+				    int sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            sample++;
+                        }
+                    }
+                    double[] val = new double[sample];
+                    sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            val[sample] = intensity[xyz];
+                            sample++;
+                        }
+                    }
+                    Percentile percent = new Percentile();
+                    per[n] = (float)percent.evaluate(val, 25.0);
 				}
 				line = "25_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -1086,38 +1039,25 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("IQR_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
-						if (bin<0) bin = 0;
-						if (bin>=Nbins) bin = Nbins-1;
-						hist[n][bin]++;
-						hist[n][Nbins]++;	// total number
-					}
-				}
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int binmin = 0;
-					while (count<0.25f*hist[n][Nbins]) {
-						count += hist[n][binmin];
-						binmin++;
-					}
-					int binmax = binmin;
-					while (count<0.75f*hist[n][Nbins]) {
-						count += hist[n][binmax];
-						binmax++;
-					}
-					per[n] = (binmax-binmin)/(float)Nbins*(Imax-Imin);
+				for (int n=0;n<nlabels;n++)  {
+				    int sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            sample++;
+                        }
+                    }
+                    double[] val = new double[sample];
+                    sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            val[sample] = intensity[xyz];
+                            sample++;
+                        }
+                    }
+                    Percentile percent = new Percentile();
+                    per[n] = (float)(percent.evaluate(val, 75.0)-percent.evaluate(val, 25.0));
 				}
 				line = "IQR_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -1125,43 +1065,29 @@ public class StatisticsSegmentation {
 				output.add(line);
 			}
 			if (statistics.get(s).equals("rSNR_intensity")) {
-				float Imin = intensity[0];
-				float Imax = intensity[0];
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					if (intensity[xyz]> Imax) Imax = intensity[xyz];
-					if (intensity[xyz]< Imin) Imin = intensity[xyz];
-				}
-				int Nbins = 1000;
-				float[][] hist = new float[nlabels][Nbins+1];
 				boolean ignoreZero = ignoreZeroParam;
-				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						int bin = Numerics.floor((intensity[xyz]-Imin)/(Imax-Imin)*Nbins);
-						if (bin<0) bin = 0;
-						if (bin>=Nbins) bin = Nbins-1;
-						hist[n][bin]++;
-						hist[n][Nbins]++;	// total number
-					}
-				}
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++) {
-					float count = 0.0f;
-					int binmin = 0;
-					while (count<0.25f*hist[n][Nbins]) {
-						count += hist[n][binmin];
-						binmin++;
-					}
-					int binmed = binmin;
-					while (count<0.5f*hist[n][Nbins]) {
-						count += hist[n][binmed];
-						binmed++;
-					}
-					int binmax = binmed;
-					while (count<0.75f*hist[n][Nbins]) {
-						count += hist[n][binmax];
-						binmax++;
-					}
-					per[n] = (Imin + (binmed-1)/(float)Nbins*(Imax-Imin)) / ((binmax-binmin)/(float)Nbins*(Imax-Imin));
+				for (int n=0;n<nlabels;n++)  {
+				    int sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            sample++;
+                        }
+                    }
+                    double[] val = new double[sample];
+                    sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
+                            val[sample] = intensity[xyz];
+                            sample++;
+                        }
+                    }
+                    Percentile percent = new Percentile();
+                    double diff = percent.evaluate(val, 75.0)-percent.evaluate(val, 25.0);
+                    if (diff>0)
+                        per[n] = (float)(percent.evaluate(val, 50.0)/diff);
+                    else
+                        per[n] = 0.0f;
 				}
 				line = "rSNR_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);

@@ -35,6 +35,7 @@ public class BrainIntensityBasedSkullStripping {
 	private boolean	slab2dParam = false;
 	private int	dilateParam = 0;
 	private String	lutdir = null;
+	private float    rangeParam = 0.8f;
 	
 	private int[] maskImage;
 	private float[] probaImage;
@@ -53,6 +54,8 @@ public class BrainIntensityBasedSkullStripping {
 
 	public final void setBackgroundNoiseModel(String val) { bgParam = val; }
 	public final void setIterativeEstimation(boolean val) { iterateParam = val; }
+	
+	public final void setDynamicRange(float val) { rangeParam = val; }
 	
 	public final void setSkipZeroValues(boolean val) { skip0Param = val; }
 	public final void set2DSlabData(boolean val) { slab2dParam = val; }
@@ -202,7 +205,7 @@ public class BrainIntensityBasedSkullStripping {
 		
 		MinMaxFiltering minmax = new MinMaxFiltering(proba, nx,ny,nz, rx,ry,rz);
 		
-		float[] brain = minmax.growRegion(new float[]{0.0f}, new float[]{0.9f}, new float[]{0.9f}, 16, 10, is2d);
+		float[] brain = minmax.growRegion(new float[]{0.0f}, new float[]{rangeParam}, new float[]{rangeParam}, 16, 10, is2d);
 		
 		BinaryTopology topo = null;
 		Gdm3d gdm = null;
