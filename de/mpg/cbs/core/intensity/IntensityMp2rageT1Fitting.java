@@ -32,10 +32,10 @@ public class IntensityMp2rageT1Fitting {
 	
 	private     boolean     scalePhase = true;
 	private		float		intensityScale = 4000.0f;
-	private		float		t1Max = 20.0f;
+	private		float		t1Max = 5.0f;
 	private		float		t1Min = 0.02f;
-	private		int			t1Samples = 19980;
-	private		int			uniSamples = 20000;
+	private		int			t1Samples = 4980;
+	private		int			uniSamples = 5000;
 	
 	private		boolean		useB1correction = true;
 	private		float 		b1Scaling = 1.0f;
