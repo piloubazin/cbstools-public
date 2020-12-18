@@ -469,7 +469,7 @@ public class BrainMgdmMultiSegmentation2 {
 			membershipImage = mgdm.exportBestGainFunctions1D(0, 0, !computePosteriors);
 			BasicInfo.displayMessage(".. best membership");
 			
-			labelImage = mgdm.exportBestGainsLabelsByte1D(0, 0);
+			labelImage = mgdm.exportBestGainLabelsByte1D(0, 0);
 			BasicInfo.displayMessage(".. best label");
 		} else if (outputParam.equals("debug")) {			
 			output4Dlength = 3;
