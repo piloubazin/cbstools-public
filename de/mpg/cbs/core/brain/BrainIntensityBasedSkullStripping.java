@@ -228,7 +228,75 @@ public class BrainIntensityBasedSkullStripping {
 			float[] balloon = new float[nxyz];
 			for (int xyz=0;xyz<nxyz;xyz++) {
 				float force = -0.1f;
-				if (extra>-1) force = Numerics.max(force, Numerics.bounded( (image[extra][xyz]/extramax-0.5f)/0.5f, -1.0f, 1.0f));
+				//force = Numerics.max(force, Numerics.bounded( (mask[xyz]-0.5f)/0.5f, -1.0f, 1.0f));
+				force = Numerics.max(force, Numerics.bounded( brain[xyz]-0.1f, -1.0f, 1.0f));
+				force = Numerics.max(force, Numerics.bounded( (image[extra][xyz]/extramax-0.5f)/0.5f, -1.0f, 1.0f));
+				balloon[xyz] = force;
+			}
+			
+			
+			if (is2d) {
+				// cheap option: just add mirrored values and an extra boundary in the slab direction...
+				int[] maskb = new int[nx*ny*(nz+12)];
+				float[] balloonb = new float[nx*ny*(nz+12)];
+				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+					maskb[x+nx*y+nx*ny*(z+6)] = mask[x+nx*y+nx*ny*z];
+					balloonb[x+nx*y+nx*ny*(z+6)] = balloon[x+nx*y+nx*ny*z];
+				}
+				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<6;z++) {
+					maskb[x+nx*y+nx*ny*z] = mask[x+nx*y+nx*ny*0];
+					balloonb[x+nx*y+nx*ny*z] = balloon[x+nx*y+nx*ny*0];
+				}
+				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=nz+6;z<nz+12;z++) {
+					maskb[x+nx*y+nx*ny*z] = mask[x+nx*y+nx*ny*(nz-1)];
+					balloonb[x+nx*y+nx*ny*z] = balloon[x+nx*y+nx*ny*(nz-1)];
+				}
+
+				// topology correction for the mask?
+				topo = new BinaryTopology(maskb, nx, ny, nz+12, rx, ry, rz, "wcs", lutdir);
+			
+				topo.outsideSphericalTopology();
+			
+				int[] toposeg = topo.exportIntSegmentation();
+
+				gdm = new Gdm3d(toposeg, nx, ny, nz+12, rx, ry, rz, null, balloonb, 0.0f, 0.1f, 0.9f, "wcs", lutdir);
+						
+				gdm.evolveNarrowBand(1000, 0.0005f);
+				
+				float[] brainb = gdm.exportSegmentation();
+				for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+					brain[x+nx*y+nx*ny*z] = brainb[x+nx*y+nx*ny*(z+6)];
+				}
+			} else {
+				// topology correction for the mask?
+				topo = new BinaryTopology(mask, nx, ny, nz, rx, ry, rz, "wcs", lutdir);
+				
+				topo.outsideSphericalTopology();
+				
+				int[] toposeg = topo.exportIntSegmentation();
+				
+				gdm = new Gdm3d(toposeg, nx, ny, nz, rx, ry, rz, null, balloon, 0.0f, 0.1f, 0.9f, "wcs", lutdir);
+						
+				gdm.evolveNarrowBand(1000, 0.0005f);
+
+				brain = gdm.exportSegmentation();
+			}
+		} else {
+			// keep CSF inside + regions away from boundary (=> limit number of iterations)
+			int[] mask = new int[nxyz];
+			for (int xyz=0;xyz<nxyz;xyz++) {
+				if (brain[xyz]>0) {
+					mask[xyz] = 1;
+				} else {
+					mask[xyz] = 0;
+				}
+			}
+			
+			float[] balloon = new float[nxyz];
+			for (int xyz=0;xyz<nxyz;xyz++) {
+				float force = -0.1f;
+				//force = Numerics.max(force, Numerics.bounded( (mask[xyz]-0.5f)/0.5f, -1.0f, 1.0f));
+				force = Numerics.max(force, Numerics.bounded( brain[xyz]-0.1f, -1.0f, 1.0f));
 				balloon[xyz] = force;
 			}
 			
