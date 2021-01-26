@@ -134,7 +134,18 @@ public class IntensityMp2ragemePDmapping {
 		// we assume 4D images: dim 0 magnitude, dim 1 phase, if used
 		if (uni!=null) {
 		    usePhase = false;
-		}
+		    // rescale the uni into [-0.5,+0.5]
+            float umin = uni[0];
+            float umax = uni[0];
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                if (uni[xyz]<umin) umin = uni[xyz];
+                if (uni[xyz]>umax) umax = uni[xyz];
+            }
+            for (int xyz=0;xyz<nxyz;xyz++) {
+                uni[xyz] = (uni[xyz]-0.5f*(umax+umin))/(umax-umin);
+            }
+        }
+
 		
 		// estimate angular scale (range should be [-PI +PI]
 		double phscale1 = 1.0;
@@ -181,7 +192,7 @@ public class IntensityMp2ragemePDmapping {
 		    if (r2smap!=null) expr2s = FastMath.exp(-r2smap[xyz]*TEcho1);
 		
 			double b1 = 1.0;
-			if (useB1correction) b1 = b1map[xyz];
+			if (useB1correction) b1 = b1map[xyz]/b1Scaling;
 			
 			double cosA1cosA2n = FastMath.pow( FastMath.cos(b1*a1rad)*FastMath.cos(b1*a2rad), Nexcitations );
 		
