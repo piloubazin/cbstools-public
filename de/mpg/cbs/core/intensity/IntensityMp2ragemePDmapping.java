@@ -16,6 +16,7 @@ public class IntensityMp2ragemePDmapping {
 	// input parameters
 	private		float[] 	inv1 = null;
 	private		float[] 	inv2 = null;
+	private		float[] 	uni = null;
 	private		float[]		b1map = null;
 	private		float[] 	t1map = null;
 	private		float[] 	r2smap = null;
@@ -34,6 +35,7 @@ public class IntensityMp2ragemePDmapping {
 	private 	int			Nexcitations = 160;
 	private		float		inversionEfficiency = 0.96f;
 	
+	private     boolean     usePhase = true;
 	private     boolean     scalePhase = true;
 	
 	private		boolean		useB1correction = true;
@@ -82,6 +84,7 @@ public class IntensityMp2ragemePDmapping {
 	public final void setT1mapImage(float[] in) { t1map = in; }
 	public final void setR2smapImage(float[] in) { r2smap = in; }
 	public final void setS0Image(float[] in) { s0img = in; }
+	public final void setUniformImage(float[] in) { uni = in; }
 		
 	public final void setInversionRepetitionTime(float in) { TRinversion = in; }
 	public final void setFirstEchoTime(float in) { TEcho1 = in; }
@@ -128,12 +131,15 @@ public class IntensityMp2ragemePDmapping {
 		// main algorithm
 		System.out.print("Loading data\n");
 				
-		// we assume 4D images: dim 0 magnitude, dim 1 phase
+		// we assume 4D images: dim 0 magnitude, dim 1 phase, if used
+		if (uni!=null) {
+		    usePhase = false;
+		}
 		
 		// estimate angular scale (range should be [-PI +PI]
 		double phscale1 = 1.0;
 		double phscale2 = 1.0;
-		if (scalePhase) {
+		if (usePhase && scalePhase) {
             float phsmin1 = inv1[nxyz];
             float phsmax1 = inv1[nxyz];
             float phsmin2 = inv1[nxyz];
@@ -214,7 +220,11 @@ public class IntensityMp2ragemePDmapping {
             double gre1 = FastMath.sin(b1*a1rad)*factora;
             double gre2 = FastMath.sin(b1*a2rad)*factorc;
             
-            double prod = inv1[xyz]*inv2[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1-inv2[xyz+nxyz]/phscale2);
+            double prod;
+            if (usePhase)
+                prod = inv1[xyz]*inv2[xyz]*FastMath.cos(inv1[xyz+nxyz]/phscale1-inv2[xyz+nxyz]/phscale2);
+            else
+                prod = uni[xyz]*(inv1[xyz]*inv1[xyz]+inv2[xyz]*inv2[xyz]);
             
             pdmap[xyz] = (float)FastMath.sqrt(Numerics.max(0.0, (prod/(gre1*gre2*expr2s*expr2s)) ) );
             
