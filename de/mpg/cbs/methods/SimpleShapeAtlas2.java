@@ -973,6 +973,15 @@ public class SimpleShapeAtlas2 {
 			|| intensityName[id].startsWith("mpm")
 			|| intensityName[id].startsWith("bf")
 			|| intensityName[id].startsWith("DWI")
+			|| intensityName[id].startsWith("R1")
+			|| intensityName[id].startsWith("R2")
+			|| intensityName[id].startsWith("MT")
+			|| intensityName[id].startsWith("PD")
+			|| intensityName[id].startsWith("qR1")
+			|| intensityName[id].startsWith("qR2")
+			|| intensityName[id].startsWith("qMT")
+			|| intensityName[id].startsWith("qPD")
+			|| intensityName[id].startsWith("QSM")
 			|| intensityName[id].equalsIgnoreCase("QSM7T") ) return true;
 		else return false;
 	}					

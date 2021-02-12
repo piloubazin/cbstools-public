@@ -46,6 +46,7 @@ public class BrainMgdmMultiSegmentation2 {
 													"-- 7T --", "T1MAP7T", "MP2RAGE7T", "T2SW7T", "QSM7T", 
 													"-- 9.4T --", "T1MAP9T", "MP2RAGE9T",
 													"-- MPM --", "mpmPD3T", "mpmMT3T", "mpmR13T", "mpmR2s3T",
+													"-- Normalized --", "R1FCM",
 													"-- Priors --", "PriorDura", "PriorCSF", "PriorGM", "PriorWM",
 													"-- misc --", "Filters", "WMLesions", "PVDURA", "Labeling", "none"};
 	
@@ -63,9 +64,10 @@ public class BrainMgdmMultiSegmentation2 {
 			+"HCPT2w: a T2-weighted image using the HCP sequence, \n"
 			+"NormMPRAGE: a 3T MPRAGE normalised for B1 shading, \n"
 			+"FLAIR3T: a 3T FLAIR image, \n"
-			+"dwiFA: a DWI fractional anisotropy image, \n"
-			+"dwiMD: a DWI mean diffusivity image, \n"
+			+"DWIFA3T: a DWI fractional anisotropy image, \n"
+			+"DWIMD3T: a DWI mean diffusivity image, \n"
 			+"MPM: maps from the multi parameter mapping (MPM) sequence, \n"
+			+"R1FCM: a normalized tissue map image from T1w or R1 map tissue classication, \n"
 			+"Filters: a composite image of outputs from dura, pv and arteries pre-processing, \n"
 			+"WMLesions: a (probabilistic or binary) mask of detected white matter lesions, \n"
 			+"PVDURA: a composite image of outputs from dura and pv (obsolete).\n";												
