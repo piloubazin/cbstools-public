@@ -40,7 +40,8 @@ public class StatisticsSegmentation {
 	
 	private int nstat = 3;
 	private String[] 	statParam = new String[nstat];
-	private static final String[] statTypes = {"none", "Voxels", "Volume", "--- intensity ---", "Mean_intensity", "Std_intensity",
+	private static final String[] statTypes = {"none", "Voxels", "Volume", 
+	                                            "--- intensity ---", "Mean_intensity", "Std_intensity", "Sum_intensity",
 												"10_intensity","25_intensity","50_intensity","75_intensity","90_intensity",
 												"Median_intensity","IQR_intensity","SNR_intensity","rSNR_intensity",
 												"Boundary_gradient","Boundary_magnitude","Center_of_mass",
@@ -847,6 +848,22 @@ public class StatisticsSegmentation {
 				}
 				line = "Std_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+std[n]);
+				line+=("\n");
+				output.add(line);
+			}
+			if (statistics.get(s).equals("Sum_intensity")) {
+				float[] sum = new float[nlabels];
+				boolean ignoreZero = ignoreZeroParam;
+				for (int n=0;n<nlabels;n++) {
+					sum[n] = 0.0f;
+				}
+				for (int xyz=0;xyz<nxyz;xyz++) {
+					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n]) {
+						sum[n] += intensity[xyz];
+					}
+				}
+				line = "Sum_intensity"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+sum[n]);
 				line+=("\n");
 				output.add(line);
 			}
