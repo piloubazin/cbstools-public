@@ -45,6 +45,8 @@ public class FilterRecursiveRidgeDiffusion {
 	
 	private float detectionThreshold = 0.5f;
 	
+	private boolean useRatio = false;
+	
 	private float[] pvImage;
 	private float[] filterImage;
 	private float[] probaImage;
@@ -121,6 +123,8 @@ public class FilterRecursiveRidgeDiffusion {
 	public final void setMaxDifference(float val) { maxdiffParam = val; }
 		
 	public final void setDetectionThreshold(float val) { detectionThreshold = val; }
+		
+	public final void setUseRatio(boolean val) { useRatio = val; }
 		
 	// set generic inputs	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
@@ -457,7 +461,8 @@ public class FilterRecursiveRidgeDiffusion {
 				filter[xyz] = 0.0f;
 				if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
 					// check for zero-valued neighbors as well
-					minmaxplaneScore(inputImage, planescore, planedir, x,y,z, 13);
+					if (useRatio) minmaxplaneRatio(inputImage, planescore, planedir, x,y,z, 13);
+					else minmaxplaneScore(inputImage, planescore, planedir, x,y,z, 13);
 					// sign issue: remove all that have different sign, keep global sign
 					float linescore = minmaxlineScore(inputImage, planedir, linedir, x,y,z, 4);
 					if (planescore[x][y][z]*linescore>0) {
@@ -501,7 +506,8 @@ public class FilterRecursiveRidgeDiffusion {
 				filter[xyz] = 0.0f;
 				if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
 					// check for zero-valued neighbors as well
-					minmaxplaneScore(inputImage, planescore, planedir, x,y,z, 13);
+					if (useRatio) minmaxplaneRatio(inputImage, planescore, planedir, x,y,z, 13);
+					else minmaxplaneScore(inputImage, planescore, planedir, x,y,z, 13);
 					// sign issue: remove all that have different sign, keep global sign
 					float linescore = minmaxlineScore(inputImage, planedir, linedir, x,y,z, 4);
 					if (planescore[x][y][z]*linescore>0) {
@@ -536,7 +542,8 @@ public class FilterRecursiveRidgeDiffusion {
 				filter[xyz] = 0.0f;
 				if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
 					// check for zero-valued neighbors as well
-					minmaxplaneScore(inputImage, planescore, planedir, x,y,z, 13);
+					if (useRatio) minmaxplaneRatio(inputImage, planescore, planedir, x,y,z, 13);
+					else minmaxplaneScore(inputImage, planescore, planedir, x,y,z, 13);
 					filter[xyz] = planescore[x][y][z];
 					direction[xyz] = planedir[x][y][z];
 					if (filter[xyz]<0) if (unidirectional) { filter[xyz]=0; direction[xyz] = -1; } else filter[xyz]*=-1.0f;
@@ -1326,6 +1333,378 @@ public class FilterRecursiveRidgeDiffusion {
 		if (sign>0) return minval;
 		else return 0.0f;
 	}
+	void minmaxplaneRatio(float[][][] inputImage, float[][][] plane, byte[][][] dir, int x, int y, int z, int dmax) {
+		float maxgrad = 0.0f; 
+		float minval = 0.0f; 
+		float sign = 0.0f;
+		byte direction = -1;
+		for (byte d=0;d<dmax;d++) {
+			float val0 = 0.0f, val1 = 0.0f, val2 = 0.0f;
+			if (d==0) {		
+				val0=(inputImage[x][y][z]
+					 +inputImage[x][y-1][z]
+					 +inputImage[x][y+1][z]
+					 +inputImage[x][y][z-1]
+					 +inputImage[x][y][z+1]
+					 +inputImage[x][y-1][z-1]
+					 +inputImage[x][y-1][z+1]
+					 +inputImage[x][y+1][z-1]
+					 +inputImage[x][y+1][z+1])/9.0f;
+				val1=(inputImage[x-1][y][z]
+					 +inputImage[x-1][y-1][z]
+					 +inputImage[x-1][y+1][z]
+					 +inputImage[x-1][y][z-1]
+					 +inputImage[x-1][y][z+1]
+					 +inputImage[x-1][y-1][z-1]
+					 +inputImage[x-1][y-1][z+1]
+					 +inputImage[x-1][y+1][z-1]
+					 +inputImage[x-1][y+1][z+1])/9.0f;
+				val2=(inputImage[x+1][y][z]
+					 +inputImage[x+1][y-1][z]
+					 +inputImage[x+1][y+1][z]
+					 +inputImage[x+1][y][z-1]
+					 +inputImage[x+1][y][z+1]
+					 +inputImage[x+1][y-1][z-1]
+					 +inputImage[x+1][y-1][z+1]
+					 +inputImage[x+1][y+1][z-1]
+					 +inputImage[x+1][y+1][z+1])/9.0f;
+			} else if (d==1) {
+				val0=(inputImage[x][y][z]
+					 +inputImage[x-1][y][z]
+					 +inputImage[x+1][y][z]
+					 +inputImage[x][y][z-1]
+					 +inputImage[x][y][z+1]
+					 +inputImage[x-1][y][z-1]
+					 +inputImage[x-1][y][z+1]
+					 +inputImage[x+1][y][z-1]
+					 +inputImage[x+1][y][z+1])/9.0f;
+				val1=(inputImage[x][y-1][z]
+					 +inputImage[x-1][y-1][z]
+					 +inputImage[x+1][y-1][z]	
+					 +inputImage[x][y-1][z-1]	
+					 +inputImage[x][y-1][z+1]
+					 +inputImage[x-1][y-1][z-1]
+					 +inputImage[x-1][y-1][z+1]
+					 +inputImage[x+1][y-1][z-1]
+					 +inputImage[x+1][y-1][z+1])/9.0f;
+				val2=(inputImage[x][y+1][z]
+					 +inputImage[x-1][y+1][z]
+					 +inputImage[x+1][y+1][z]
+					 +inputImage[x][y+1][z-1]
+					 +inputImage[x][y+1][z+1]
+					 +inputImage[x-1][y+1][z-1]
+					 +inputImage[x-1][y+1][z+1]
+					 +inputImage[x+1][y+1][z-1]
+					 +inputImage[x+1][y+1][z+1])/9.0f;
+			} else if (d==2) { 			
+				val0=(inputImage[x][y][z]
+					 +inputImage[x-1][y][z]
+					 +inputImage[x+1][y][z]	
+					 +inputImage[x][y-1][z]
+					 +inputImage[x][y+1][z]
+					 +inputImage[x-1][y-1][z]
+					 +inputImage[x-1][y+1][z]
+					 +inputImage[x+1][y-1][z]
+					 +inputImage[x+1][y+1][z])/9.0f;
+				val1=(inputImage[x][y][z-1]
+					 +inputImage[x-1][y][z-1]
+					 +inputImage[x+1][y][z-1]
+					 +inputImage[x][y-1][z-1]
+					 +inputImage[x][y+1][z-1]	
+					 +inputImage[x-1][y-1][z-1]
+					 +inputImage[x-1][y+1][z-1]
+					 +inputImage[x+1][y-1][z-1]
+					 +inputImage[x+1][y+1][z-1])/9.0f;
+				val2=(inputImage[x][y][z+1]
+					 +inputImage[x-1][y][z+1]
+					 +inputImage[x+1][y][z+1]
+					 +inputImage[x][y-1][z+1]
+					 +inputImage[x][y+1][z+1]
+					 +inputImage[x-1][y-1][z+1]
+					 +inputImage[x-1][y+1][z+1]
+					 +inputImage[x+1][y-1][z+1]
+					 +inputImage[x+1][y+1][z+1])/9.0f;
+			} else if (d==3) { 			
+				val0=(inputImage[x][y][z]
+					 +inputImage[x-1][y+1][z]
+					 +inputImage[x+1][y-1][z]
+					 +inputImage[x][y][z-1]
+					 +inputImage[x-1][y+1][z-1]
+					 +inputImage[x+1][y-1][z-1]
+					 +inputImage[x][y][z+1]	
+					 +inputImage[x-1][y+1][z+1]
+					 +inputImage[x+1][y-1][z+1])/9.0f;
+				val1=(inputImage[x-1][y-1][z]
+					 +inputImage[x-2][y][z]
+					 +inputImage[x][y-2][z]
+					 +inputImage[x-1][y-1][z-1]
+					 +inputImage[x-2][y][z-1]
+					 +inputImage[x][y-2][z-1]
+					 +inputImage[x-1][y-1][z+1]
+					 +inputImage[x-2][y][z+1]
+					 +inputImage[x][y-2][z+1])/9.0f;
+				val2=(inputImage[x+1][y+1][z]
+					 +inputImage[x][y+2][z]
+					 +inputImage[x+2][y][z]
+					 +inputImage[x+1][y+1][z-1]
+					 +inputImage[x][y+2][z-1]
+					 +inputImage[x+2][y][z-1]
+					 +inputImage[x+1][y+1][z+1]
+					 +inputImage[x][y+2][z+1]
+					 +inputImage[x+2][y][z+1])/9.0f;
+			} else if (d==4) { 			
+				val0=(inputImage[x][y][z]
+					 +inputImage[x][y+1][z-1]
+					 +inputImage[x][y-1][z+1]
+					 +inputImage[x-1][y][z]	
+					 +inputImage[x-1][y+1][z-1]
+					 +inputImage[x-1][y-1][z+1]
+					 +inputImage[x+1][y][z]		
+					 +inputImage[x+1][y+1][z-1]
+					 +inputImage[x+1][y-1][z+1])/9.0f;
+				val1=(inputImage[x][y-1][z-1]
+					 +inputImage[x][y][z-2]
+					 +inputImage[x][y-2][z]
+					 +inputImage[x-1][y-1][z-1]
+					 +inputImage[x-1][y][z-2]
+					 +inputImage[x-1][y-2][z]
+					 +inputImage[x+1][y-1][z-1]
+					 +inputImage[x+1][y][z-2]
+					 +inputImage[x+1][y-2][z])/9.0f;
+				val2=(inputImage[x][y+1][z+1]
+					 +inputImage[x][y+2][z]
+					 +inputImage[x][y][z+2]
+					 +inputImage[x-1][y+1][z+1]
+					 +inputImage[x-1][y+2][z]
+					 +inputImage[x-1][y][z+2]
+					 +inputImage[x+1][y+1][z+1]
+					 +inputImage[x+1][y+2][z]
+					 +inputImage[x+1][y][z+2])/9.0f;
+			} else if (d==5) { 			
+				val0=(inputImage[x][y][z]
+					 +inputImage[x+1][y][z-1]
+					 +inputImage[x-1][y][z+1]
+					 +inputImage[x][y-1][z]
+					 +inputImage[x+1][y-1][z-1]
+					 +inputImage[x-1][y-1][z+1]
+					 +inputImage[x][y+1][z]
+					 +inputImage[x+1][y+1][z-1]
+					 +inputImage[x-1][y+1][z+1])/9.0f;
+				val1=(inputImage[x-1][y][z-1]
+					 +inputImage[x][y][z-2]
+					 +inputImage[x-2][y][z]
+					 +inputImage[x-1][y-1][z-1]
+					 +inputImage[x][y-1][z-2]
+					 +inputImage[x-2][y-1][z]
+					 +inputImage[x-1][y+1][z-1]
+					 +inputImage[x][y+1][z-2]
+					 +inputImage[x-2][y+1][z])/9.0f;
+				val2=(inputImage[x+1][y][z+1]
+					 +inputImage[x+2][y][z]
+					 +inputImage[x][y][z+2]
+					 +inputImage[x+1][y-1][z+1]
+					 +inputImage[x+2][y-1][z]
+					 +inputImage[x][y-1][z+2]
+					 +inputImage[x+1][y+1][z+1]
+					 +inputImage[x+2][y+1][z]
+					 +inputImage[x][y+1][z+2])/9.0f;
+			} else if (d==6) { 			
+				val0=(inputImage[x][y][z]
+					 +inputImage[x-1][y-1][z]
+					 +inputImage[x+1][y+1][z]
+					 +inputImage[x][y][z-1]
+					 +inputImage[x-1][y-1][z-1]
+					 +inputImage[x+1][y+1][z-1]
+					 +inputImage[x][y][z+1]
+					 +inputImage[x-1][y-1][z+1]
+					 +inputImage[x+1][y+1][z+1])/9.0f;
+				val1=(inputImage[x-1][y+1][z]
+					 +inputImage[x-2][y][z]
+					 +inputImage[x][y-2][z]
+					 +inputImage[x-1][y+1][z-1]
+					 +inputImage[x-2][y][z-1]
+					 +inputImage[x][y-2][z-1]
+					 +inputImage[x-1][y+1][z+1]
+					 +inputImage[x-2][y][z+1]
+					 +inputImage[x][y-2][z+1])/9.0f;
+				val2=(inputImage[x+1][y-1][z]
+					 +inputImage[x][y-2][z]
+					 +inputImage[x+2][y][z]
+					 +inputImage[x+1][y-1][z-1]
+					 +inputImage[x][y-2][z-1]
+					 +inputImage[x+2][y][z-1]
+					 +inputImage[x+1][y-1][z+1]
+					 +inputImage[x][y-2][z+1]
+					 +inputImage[x+2][y][z+1])/9.0f;
+			} else if (d==7) { 			
+				val0=(inputImage[x][y][z]
+					 +inputImage[x][y-1][z-1]
+					 +inputImage[x][y+1][z+1]
+					 +inputImage[x-1][y][z]	
+					 +inputImage[x-1][y-1][z-1]
+					 +inputImage[x-1][y+1][z+1]
+					 +inputImage[x+1][y][z]
+					 +inputImage[x+1][y-1][z-1]
+					 +inputImage[x+1][y+1][z+1])/9.0f;
+				val1=(inputImage[x][y-1][z+1]
+					 +inputImage[x][y-2][z]
+					 +inputImage[x][y][z+2]
+					 +inputImage[x-1][y-1][z+1]
+					 +inputImage[x-1][y-2][z]
+					 +inputImage[x-1][y][z+2]
+					 +inputImage[x+1][y-1][z+1]
+					 +inputImage[x+1][y-2][z]
+					 +inputImage[x+1][y][z+2])/9.0f;
+				val2=(inputImage[x][y+1][z-1]
+					 +inputImage[x][y][z-2]
+					 +inputImage[x][y+2][z]
+					 +inputImage[x-1][y+1][z-1]
+					 +inputImage[x-1][y][z-2]
+					 +inputImage[x-1][y+2][z]
+					 +inputImage[x+1][y+1][z-1]
+					 +inputImage[x+1][y][z-2]
+					 +inputImage[x+1][y+2][z])/9.0f;
+			} else if (d==8) { 			
+				val0=(inputImage[x][y][z]
+					 +inputImage[x-1][y][z-1]
+					 +inputImage[x+1][y][z+1]
+					 +inputImage[x][y-1][z]
+					 +inputImage[x-1][y-1][z-1]
+					 +inputImage[x+1][y-1][z+1]
+					 +inputImage[x][y+1][z]	
+					 +inputImage[x-1][y+1][z-1]
+					 +inputImage[x+1][y+1][z+1])/9.0f;
+				val1=(inputImage[x-1][y][z+1]
+					 +inputImage[x-2][y][z]
+					 +inputImage[x][y][z+2]
+					 +inputImage[x-1][y-1][z+1]
+					 +inputImage[x-2][y-1][z]
+					 +inputImage[x][y-1][z+2]
+					 +inputImage[x-1][y+1][z+1]
+					 +inputImage[x-2][y+1][z]
+					 +inputImage[x][y+1][z+2])/9.0f;
+				val2=(inputImage[x+1][y][z-1]
+					 +inputImage[x][y][z-2]
+					 +inputImage[x+2][y][z]
+					 +inputImage[x+1][y-1][z-1]
+					 +inputImage[x][y-1][z-2]
+					 +inputImage[x+2][y-1][z]
+					 +inputImage[x+1][y+1][z-1]
+					 +inputImage[x][y+1][z-2]
+					 +inputImage[x+2][y+1][z])/9.0f;
+			} else if (d==9) { 			
+				val0=(inputImage[x][y][z]
+					 +inputImage[x-1][y-1][z+1]
+					 +inputImage[x-1][y+1][z-1]
+					 +inputImage[x+1][y-1][z-1]
+					 +inputImage[x+1][y+1][z-1]
+					 +inputImage[x-1][y+1][z+1]
+					 +inputImage[x+1][y-1][z+1])/7.0f;
+				val1=(inputImage[x-1][y-1][z-1]
+					 +inputImage[x-2][y-2][z]
+					 +inputImage[x-2][y][z-2]
+					 +inputImage[x][y-2][z-2]
+					 +inputImage[x][y][z-2]
+					 +inputImage[x-2][y][z]
+					 +inputImage[x][y-2][z])/7.0f;
+				val2=(inputImage[x+1][y+1][z+1]
+					 +inputImage[x][y][z+2]
+					 +inputImage[x][y+2][z]
+					 +inputImage[x+2][y][z]
+					 +inputImage[x+2][y+2][z]
+					 +inputImage[x][y+2][z+2]
+					 +inputImage[x+2][y][z+2])/7.0f;
+			} else if (d==10) { 			
+				val0=(inputImage[x][y][z]
+					 +inputImage[x+1][y-1][z+1]
+					 +inputImage[x+1][y+1][z-1]
+					 +inputImage[x-1][y-1][z-1]
+					 +inputImage[x-1][y+1][z-1]
+					 +inputImage[x-1][y-1][z+1]
+					 +inputImage[x+1][y+1][z+1])/7.0f;
+				val1=(inputImage[x+1][y-1][z-1]
+					 +inputImage[x+2][y-2][z]
+					 +inputImage[x+2][y][z-2]
+					 +inputImage[x][y-2][z-2]
+					 +inputImage[x][y][z-2]
+					 +inputImage[x][y-2][z]
+					 +inputImage[x+2][y][z])/7.0f;
+				val2=(inputImage[x-1][y+1][z+1]
+					 +inputImage[x][y][z+2]
+					 +inputImage[x][y+2][z]
+					 +inputImage[x-2][y][z]
+					 +inputImage[x-2][y+2][z]
+					 +inputImage[x-2][y][z+2]
+					 +inputImage[x][y+2][z+2])/7.0f;
+			} else if (d==11) { 			
+				val0=(inputImage[x][y][z]
+					 +inputImage[x-1][y+1][z+1]
+					 +inputImage[x+1][y+1][z-1]
+					 +inputImage[x-1][y-1][z-1]
+					 +inputImage[x+1][y-1][z-1]
+					 +inputImage[x-1][y-1][z+1]
+					 +inputImage[x+1][y+1][z+1])/7.0f;
+				val1=(inputImage[x-1][y+1][z-1]
+					 +inputImage[x-2][y+2][z]
+					 +inputImage[x][y+2][z-2]
+					 +inputImage[x-2][y][z-2]
+					 +inputImage[x][y][z-2]
+					 +inputImage[x-2][y][z]
+					 +inputImage[x][y+2][z])/7.0f;
+				val2=(inputImage[x+1][y-1][z+1]
+					 +inputImage[x][y][z+2]
+					 +inputImage[x+2][y][z]
+					 +inputImage[x][y-2][z]
+					 +inputImage[x+2][y-2][z]
+					 +inputImage[x][y-2][z+2]
+					 +inputImage[x+2][y][z+2])/7.0f;
+			} else if (d==12) { 			
+				val0=(inputImage[x][y][z]
+					 +inputImage[x-1][y+1][z+1]
+					 +inputImage[x+1][y-1][z+1]
+					 +inputImage[x-1][y-1][z-1]
+					 +inputImage[x+1][y-1][z-1]
+					 +inputImage[x-1][y+1][z-1]
+					 +inputImage[x+1][y+1][z+1])/7.0f;
+				val1=(inputImage[x-1][y-1][z+1]
+					 +inputImage[x-2][y][z+2]
+					 +inputImage[x][y-2][z+2]
+					 +inputImage[x-2][y-2][z]
+					 +inputImage[x][y-2][z]
+					 +inputImage[x-2][y][z]
+					 +inputImage[x][y][z+2])/7.0f;
+				val2=(inputImage[x+1][y+1][z-1]
+					 +inputImage[x][y+2][z]
+					 +inputImage[x+2][y][z]
+					 +inputImage[x][y][z-2]
+					 +inputImage[x+2][y][z-2]
+					 +inputImage[x][y+2][z-2]
+					 +inputImage[x+2][y+2][z])/7.0f;
+			}
+			// find the strongest gradient direction, then estimate the corresponding filter response
+			if ((val0-val1)*(val0-val1)+(val0-val2)*(val0-val2)>maxgrad) {
+				maxgrad = (val0-val1)*(val0-val1)+(val0-val2)*(val0-val2);
+				if ((val0-val1)*(val0-val1)<(val0-val2)*(val0-val2)) 
+				    //minval = Numerics.sign(val0-val1)*Numerics.max(0.0f, Numerics.abs(val0-val1)-Numerics.abs(val1-val2))/(Numerics.abs(val0-val2)+Numerics.abs(val1-val2));
+				    minval = Numerics.sign(val0-val1)*Numerics.max(0.0f, Numerics.abs(val0-val1)-Numerics.abs(val1-val2));
+				else
+				    //minval = Numerics.sign(val0-val2)*Numerics.max(0.0f, Numerics.abs(val0-val2)-Numerics.abs(val1-val2))/(Numerics.abs(val0-val1)+Numerics.abs(val1-val2));
+				    minval = Numerics.sign(val0-val2)*Numerics.max(0.0f, Numerics.abs(val0-val2)-Numerics.abs(val1-val2));
+				sign = (val0-val1)*(val0-val2);
+				direction = d;
+			}
+		}
+		if (sign>0) {
+			plane[x][y][z] = minval;
+			dir[x][y][z] = direction;
+		} else {
+			plane[x][y][z] = 0.0f;
+			dir[x][y][z] = -1;
+		}
+		return;
+		
+	}
+	
 	private final float[] directionVector(int d) {
 		if (d==X) return new float[]{1.0f, 0.0f, 0.0f};
 		else if (d==Y) return new float[]{0.0f, 1.0f, 0.0f};
