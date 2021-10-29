@@ -18,7 +18,7 @@ import java.util.*;
  * levels of geometric complexity, although cusp formation is common with this
  * inflation procedure.
  * 
- * adapted from the surface infaltion code
+ * adapted from the surface inflation code
  * from Duygu Tosun and Blake Lucas
  * 
  */
@@ -34,6 +34,15 @@ public class SurfaceInflation {
     private float   max_curv = 10.0f;       // EPS curvature threshold for termintion
     private int     max_iter = 2000;          // imax maximum number of iterations
     //private boolean useLorentzian = true;   // if Lorentzian scaling should be used
+   
+    public static final int AREA=1;       // use area to weight neighbor contributions
+    public static final int DIST=2;       // use distance to weight neighbor contributions
+    public static final int NUMV=3;       // don't weight neighbor contributions
+    private int    weighting = AREA;
+    private float   regularization = 0.0f;
+    
+    public final void setWeightingMethod(int val) { weighting = val; }
+    public final void setRegularization(float val) { regularization = val; }
     
 	public final void setSurfacePoints(float[] val) { pointList = val; }
 	public final void setSurfaceTriangles(int[] val) { triangleList = val; }
@@ -196,12 +205,20 @@ public class SurfaceInflation {
 					int face = ngbFaces[i][k];
 					// Calculate center of surrounding region
 					float[] C = getTriangleCenter(face, pointList, triangleList);
-					float area = getTriangleArea(face, pointList, triangleList);
-					totalA += area;
+					float weight = 1.0f;
+					if (weighting==AREA)
+                        weight = regularization+getTriangleArea(face, pointList, triangleList);
+                    else if (weighting==DIST)
+                        weight = regularization+
+                                    (float)FastMath.sqrt( (pointList[3*i+0]-C[0])*(pointList[3*i+0]-C[0])
+                                                         +(pointList[3*i+1]-C[1])*(pointList[3*i+1]-C[1])
+                                                         +(pointList[3*i+2]-C[2])*(pointList[3*i+2]-C[2]) );
+                                               
+					totalA += weight;
 
-					ptx += area * C[0];
-					pty += area * C[1];
-					ptz += area * C[2];
+					ptx += weight * C[0];
+					pty += weight * C[1];
+					ptz += weight * C[2];
 				}
 				if (totalA > 0) {
 					ptx /= totalA;
@@ -239,7 +256,7 @@ public class SurfaceInflation {
 				hCurvOld = hCurv;
 
 				//System.out.println("Completed: "+(1 - (hCurv - EPS) / (hCurvFirst - EPS)));
-				System.out.println("Mean Curvature " + hCurv);
+				System.out.println(iter+". Mean Curvature " + hCurv);
 			}
 			iter++;
 		} while ((hCurv > EPS) && (iter <= imax));
