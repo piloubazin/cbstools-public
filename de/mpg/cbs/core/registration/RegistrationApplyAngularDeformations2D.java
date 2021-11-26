@@ -10,7 +10,7 @@ import org.apache.commons.math3.util.FastMath;
 /*
  * @author Pierre-Louis Bazin
  */
-public class RegistrationApplyDeformations2D {
+public class RegistrationApplyAngularDeformations2D {
 
 	// jist containers
 	private float[] sourceImage;
@@ -425,24 +425,29 @@ public class RegistrationApplyDeformations2D {
             }
         }
         deformedImage = new float[nrx*nry*nst];
-        if (interpOption.equals("nearest")) {
-            for (int x=0;x<nrx;x++) for (int y=0;y<nry;y++) {
-                int xy = x + nrx*y;
-                for (int t=0;t<nst;t++) {
+        for (int x=0;x<nrx;x++) for (int y=0;y<nry;y++) {
+            int xy = x + nrx*y;
+            
+            double dx;
+            if (x==0) dx = deformation[xy+1+X*nrxy] - deformation[xy+X*nrxy];
+            else if (x==nrx-1) dx = deformation[xy+X*nrxy] - deformation[xy-1+X*nrxy];
+            else dx = 0.5*(deformation[xy+1+X*nrxy] - deformation[xy-1+X*nrxy]);
+            double dy;
+            if (y==0) dy = deformation[xy+nrx+Y*nrxy] - deformation[xy+Y*nrxy];
+            else if (y==nry-1) dy = deformation[xy+Y*nrxy] - deformation[xy-nrx+Y*nrxy];
+            else dy = 0.5*(deformation[xy+nrx+Y*nrxy] - deformation[xy-nrx+Y*nrxy]);
+                
+            for (int t=0;t<nst;t++) {
+                if (interpOption.equals("nearest")) {
                     if (padOption.equals("closest"))
-                        deformedImage[xy + nrxy*t] = ImageInterpolation.nearestNeighborClosestInterpolation(sourceImage, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
+                        deformedImage[xy + nrxy*t] = ImageInterpolation.linearClosestInterpolation2D(sourceImage, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
                     else if (padOption.equals("zero"))
-                        deformedImage[xy + nrxy*t] = ImageInterpolation.nearestNeighborInterpolation(sourceImage, 0.0f, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
+                        deformedImage[xy + nrxy*t] = ImageInterpolation.linearInterpolation2D(sourceImage, 0.0f, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
                     else if (padOption.equals("min"))
-                        deformedImage[xy + nrxy*t] = ImageInterpolation.nearestNeighborInterpolation(sourceImage, min, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
+                        deformedImage[xy + nrxy*t] = ImageInterpolation.linearInterpolation2D(sourceImage, min, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
                     else if (padOption.equals("max"))
-                        deformedImage[xy + nrxy*t] = ImageInterpolation.nearestNeighborInterpolation(sourceImage, max, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst); 
-                }
-            }
-        } else if (interpOption.equals("linear")) {
-            for (int x=0;x<nrx;x++) for (int y=0;y<nry;y++) {
-                int xy = x + nrx*y;
-                for (int t=0;t<nst;t++) {
+                        deformedImage[xy + nrxy*t] = ImageInterpolation.linearInterpolation2D(sourceImage, max, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);  
+                } else if (interpOption.equals("linear")) {
                     if (padOption.equals("closest"))
                         deformedImage[xy + nrxy*t] = ImageInterpolation.linearClosestInterpolation2D(sourceImage, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
                     else if (padOption.equals("zero"))
@@ -452,6 +457,8 @@ public class RegistrationApplyDeformations2D {
                     else if (padOption.equals("max"))
                         deformedImage[xy + nrxy*t] = ImageInterpolation.linearInterpolation2D(sourceImage, max, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
                 }
+                double angle = FastMath.atan2(dy*FastMath.sin(deformedImage[xy + nrxy*t]),dx*FastMath.cos(deformedImage[xy + nrxy*t]));
+                deformedImage[xy + nrxy*t] = (float)angle;
             }
         }
         sourceImage = null;
