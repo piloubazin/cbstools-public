@@ -17,7 +17,7 @@ public class IntensityPropagate {
 	
 	// variables
 	private float[] inputImage = null;
-	private byte[] maskImage = null;
+	private int[] maskImage = null;
 	private float[] resultImage;
 	private	String	 normParam = "max";
 	private float distParam = 5;
@@ -29,7 +29,7 @@ public class IntensityPropagate {
 
 	// set inputs
 	public final void setInputImage(float[] val) { inputImage = val; }
-	public final void setMaskImage(byte[] val) { maskImage = val; }
+	public final void setMaskImage(int[] val) { maskImage = val; }
 	public final void setCombinationMethod(String val) { normParam = val; }
 	public final void setPropagationDistance(float val) { distParam = val; }
 	public final void setTargetVoxels(String val) { targetParam = val; }
@@ -64,8 +64,8 @@ public class IntensityPropagate {
 	public void execute() {
 	
 		// different settings
-		byte ZERO = 1, MASK = 2, LOWER = 3, HIGHER = 4;
-		byte target = ZERO;
+		int ZERO = 1, MASK = 2, LOWER = 3, HIGHER = 4;
+		int target = ZERO;
 		if (targetParam.equals("mask")) target = MASK;
 		if (targetParam.equals("lower")) target = LOWER;
 		if (targetParam.equals("higher")) target = HIGHER;
@@ -73,8 +73,8 @@ public class IntensityPropagate {
 		// main algorithm
 		int nd = Numerics.ceil(distParam/Numerics.min(rx,ry,rz));
 		
-		byte MIN = 1, MAX = 2, MEAN = 3;
-		byte merge = MAX;
+		int MIN = 1, MAX = 2, MEAN = 3;
+		int merge = MAX;
 		if (normParam.equals("mean")) merge = MEAN;
 		if (normParam.equals("min")) merge = MIN;
 
@@ -88,7 +88,7 @@ public class IntensityPropagate {
 		
 		// main algorithm
 		resultImage = new float[nxyz*nc];
-		byte[] count = new byte[nxyz];
+		int[] count = new int[nxyz];
 		for (int xyz=0;xyz<nxyz;xyz++) {
 			if (target==MASK && maskImage[xyz]==0) {
 				for (int c=0;c<nc;c++) resultImage[xyz+nxyz*c] = 0.0f;
@@ -138,7 +138,7 @@ public class IntensityPropagate {
 					for (int c=0;c<nc;c++) resultImage[xyz+nxyz*c] /= (1.0f+count[xyz]);
 				}
 				for (int c=0;c<nc;c++) inputImage[xyz+nxyz*c] = resultImage[xyz+nxyz*c];
-				if (target==MASK && inputImage[xyz]!=0) maskImage[xyz] = (byte)1;
+				if (target==MASK && inputImage[xyz]!=0) maskImage[xyz] = (int)1;
 			}
 		}
 	}
