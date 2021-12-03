@@ -18,6 +18,7 @@ public class IntensityPropagate {
 	// variables
 	private float[] inputImage = null;
 	private int[] maskImage = null;
+	private int[] domainImage = null;
 	private float[] resultImage;
 	private	String	 normParam = "max";
 	private float distParam = 5;
@@ -30,6 +31,7 @@ public class IntensityPropagate {
 	// set inputs
 	public final void setInputImage(float[] val) { inputImage = val; }
 	public final void setMaskImage(int[] val) { maskImage = val; }
+	public final void setDomainImage(int[] val) { domainImage = val; }
 	public final void setCombinationMethod(String val) { normParam = val; }
 	public final void setPropagationDistance(float val) { distParam = val; }
 	public final void setTargetVoxels(String val) { targetParam = val; }
@@ -69,6 +71,11 @@ public class IntensityPropagate {
 		if (targetParam.equals("mask")) target = MASK;
 		if (targetParam.equals("lower")) target = LOWER;
 		if (targetParam.equals("higher")) target = HIGHER;
+		
+		// restricted domain
+		int RESTRICTED = 1, UNRESTRICTED = 2;
+		int domain = UNRESTRICTED;
+		if (domainImage != null) domain=RESTRICTED;
 		
 		// main algorithm
 		int nd = Numerics.ceil(distParam/Numerics.min(rx,ry,rz));
@@ -111,22 +118,24 @@ public class IntensityPropagate {
 						// propagate to neighbors
 						for (int dx=-dnx;dx<=dnx;dx++) for (int dy=-dny;dy<=dny;dy++) for (int dz=-dnz;dz<=dnz;dz++) {
 							int xyzd = xyz + dx+nx*dy+nx*ny*dz;
-							if ( (target==ZERO && inputImage[xyzd + nxyz*c]==0)
-								|| (target==MASK && maskImage[xyzd]==0)
-								|| (target==LOWER && inputImage[xyzd + nxyz*c] < scalingParam*inputImage[xyz + nxyz*c])
-								|| (target==HIGHER && inputImage[xyzd + nxyz*c] > scalingParam*inputImage[xyz + nxyz*c]) ) {
-								//System.out.print(".");
-								if (merge==MIN) {
-									if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
-									else resultImage[xyzd+nxyz*c] = Numerics.min(resultImage[xyzd+nxyz*c], scalingParam*inputImage[xyz+nxyz*c]);
-								} else if (merge==MAX) {
-									if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
-									else resultImage[xyzd+nxyz*c] = Numerics.max(resultImage[xyzd+nxyz*c], scalingParam*inputImage[xyz+nxyz*c]);
-								} else if (merge==MEAN) {
-									resultImage[xyzd+nxyz*c] += scalingParam*inputImage[xyz+nxyz*c];
-								}
-								if (c==nc-1) count[xyzd]++;
-							}
+							if ( (domain==UNRESTRICTED) || (domain==RESTRICTED && domainImage[xyzd]>0) ) {
+                                if ( (target==ZERO && inputImage[xyzd + nxyz*c]==0)
+                                    || (target==MASK && maskImage[xyzd]==0)
+                                    || (target==LOWER && inputImage[xyzd + nxyz*c] < scalingParam*inputImage[xyz + nxyz*c])
+                                    || (target==HIGHER && inputImage[xyzd + nxyz*c] > scalingParam*inputImage[xyz + nxyz*c]) ) {
+                                    //System.out.print(".");
+                                    if (merge==MIN) {
+                                        if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
+                                        else resultImage[xyzd+nxyz*c] = Numerics.min(resultImage[xyzd+nxyz*c], scalingParam*inputImage[xyz+nxyz*c]);
+                                    } else if (merge==MAX) {
+                                        if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
+                                        else resultImage[xyzd+nxyz*c] = Numerics.max(resultImage[xyzd+nxyz*c], scalingParam*inputImage[xyz+nxyz*c]);
+                                    } else if (merge==MEAN) {
+                                        resultImage[xyzd+nxyz*c] += scalingParam*inputImage[xyz+nxyz*c];
+                                    }
+                                    if (c==nc-1) count[xyzd]++;
+                                }
+                            }
 						}
 					}
 				}
