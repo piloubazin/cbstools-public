@@ -67,7 +67,14 @@ public class SurfaceLevelsetToMesh {
 	public final float[] getPointList() { return pointList; }
     public final int[] getTriangleList() { return triangleList; }
     
-
+    public final void rescalePointList() {
+        for (int n=0;n<pointList.length;n+=3) {
+            pointList[n+0] *= rx;
+            pointList[n+1] *= ry;
+            pointList[n+2] *= rz;
+        }
+    }
+    
     // local data types
 	private static final int[][] Perms = { { 0, 1, 2, 3, 4, 5, 6, 7 },
 			{ 2, 0, 3, 1, 6, 4, 7, 5 }, { 3, 2, 1, 0, 7, 6, 5, 4 },
