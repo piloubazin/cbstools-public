@@ -45,6 +45,7 @@ public class StatisticsSegmentation {
 												"10_intensity","25_intensity","50_intensity","75_intensity","90_intensity",
 												"Median_intensity","IQR_intensity","SNR_intensity","rSNR_intensity",
 												"Boundary_gradient","Boundary_magnitude","Center_of_mass",
+												"Direction_tensor",
 												"--- overlap ---", 
 												"Volumes", "Dice_overlap", "Jaccard_overlap", "Volume_difference",
 												"False_positives","False_negatives",
@@ -1108,6 +1109,55 @@ public class StatisticsSegmentation {
 				}
 				line = "rSNR_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
+				line+=("\n");
+				output.add(line);
+			}
+			if (statistics.get(s).equals("Direction_tensor")) {
+			    byte xx=0;
+			    byte yy=1;
+			    byte zz=2;
+			    byte xy=3;
+			    byte xz=4;
+			    byte yz=5;
+				boolean ignoreZero = ignoreZeroParam;
+				double[][] tensor = new double[nlabels][6];
+				for (int n=0;n<nlabels;n++)  {
+				    int sample=0;
+                    for (int xyz=0;xyz<nxyz;xyz++) {
+                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0 || intensity[xyz+nxyz]!=0 || intensity[xyz+2*nxyz]!=0) ) {
+                            tensor[n][xx] += intensity[xyz]*intensity[xyz];
+                            tensor[n][yy] += intensity[xyz+nxyz]*intensity[xyz+nxyz];
+                            tensor[n][zz] += intensity[xyz+2*nxyz]*intensity[xyz+2*nxyz];
+                            tensor[n][xy] += intensity[xyz]*intensity[xyz+nxyz];
+                            tensor[n][xz] += intensity[xyz]*intensity[xyz+2*nxyz];
+                            tensor[n][yz] += intensity[xyz+nxyz]*intensity[xyz+2*nxyz];
+                            sample++;
+                        }
+                    }
+                    if (sample>0) for (int t=0;t<6;t++) tensor[n][t] /= sample;
+				}
+				line = "Direction_tensor_xx"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+(float)tensor[n][xx]);
+				line+=("\n");
+				output.add(line);
+				line = "Direction_tensor_yy"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+(float)tensor[n][yy]);
+				line+=("\n");
+				output.add(line);
+				line = "Direction_tensor_zz"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+(float)tensor[n][zz]);
+				line+=("\n");
+				output.add(line);
+				line = "Direction_tensor_xy"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+(float)tensor[n][xy]);
+				line+=("\n");
+				output.add(line);
+				line = "Direction_tensor_xz"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+(float)tensor[n][xz]);
+				line+=("\n");
+				output.add(line);
+				line = "Direction_tensor_yz"+imgtag+notag+inttag;
+				for (int n=0;n<nlabels;n++) line+=(delim+(float)tensor[n][yz]);
 				line+=("\n");
 				output.add(line);
 			}

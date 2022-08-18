@@ -469,6 +469,86 @@ public class RegistrationApplyDeformations {
                         deformedImage[xyz + nrxyz*t] = ImageInterpolation.linearInterpolation(sourceImage, max, deformation[xyz+X*nrxyz], deformation[xyz+Y*nrxyz], deformation[xyz+Z*nrxyz], t, nsx, nsy, nsz, nst);
                 }
             }
+        } else if (interpOption.equals("average")) {
+            for (int x=1;x<nrx-1;x++) for (int y=1;y<nry-1;y++) for (int z=1;z<nrz-1;z++) {
+                int xyz = x + nrx*y + nrx*nry*z;
+                // find the finest scale needed along the axes
+                float xmin = 1e9f,xmax = -1e9f;
+                float ymin = 1e9f,ymax = -1e9f;
+                float zmin = 1e9f,zmax = -1e9f;
+                for (int dx=-1;dx<=1;dx++) for (int dy=-1;dy<=1;dy++) for (int dz=-1;dz<=1;dz++) {
+                    xmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmin);
+                    xmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmax);
+                    ymin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymin);
+                    ymax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymax);
+                    zmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmin);
+                    zmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmax);
+                }
+                int sx = Numerics.ceil(xmax-xmin);
+                int sy = Numerics.ceil(ymax-ymin);
+                int sz = Numerics.ceil(zmax-zmin);
+                for (int t=0;t<nst;t++) {
+                    deformedImage[xyz + nrxyz*t] = 0.0f;
+                }
+                for (float dx=0;dx<=sx;dx++) for (float dy=0;dy<=sy;dy++) for (float dz=0;dz<=sz;dz++) {
+                    float px = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, X, nrx, nry, nrz, 3);
+                    float py = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Y, nrx, nry, nrz, 3);
+                    float pz = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Z, nrx, nry, nrz, 3);
+                            
+                    for (int t=0;t<nst;t++) {
+                        if (padOption.equals("closest"))
+                            deformedImage[xyz + nrxyz*t] += ImageInterpolation.linearClosestInterpolation(sourceImage, px, py, pz, t, nsx, nsy, nsz, nst);
+                        else if (padOption.equals("zero"))
+                            deformedImage[xyz + nrxyz*t] += ImageInterpolation.linearInterpolation(sourceImage, 0.0f, px, py, pz, t, nsx, nsy, nsz, nst);
+                        else if (padOption.equals("min"))
+                            deformedImage[xyz + nrxyz*t] += ImageInterpolation.linearInterpolation(sourceImage, min, px, py, pz, t, nsx, nsy, nsz, nst);
+                        else if (padOption.equals("max"))
+                            deformedImage[xyz + nrxyz*t] += ImageInterpolation.linearInterpolation(sourceImage, max, px, py, pz, t, nsx, nsy, nsz, nst);
+                    }
+                }
+                for (int t=0;t<nst;t++) {
+                    deformedImage[xyz + nrxyz*t] /= (1.0f+sx)*(1.0f+sy)*(1.0f+sz);
+                }
+                
+            }
+        } else if (interpOption.equals("maximum")) {
+            for (int x=1;x<nrx-1;x++) for (int y=1;y<nry-1;y++) for (int z=1;z<nrz-1;z++) {
+                int xyz = x + nrx*y + nrx*nry*z;
+                // find the finest scale needed along the axes
+                float xmin = 1e9f,xmax = -1e9f;
+                float ymin = 1e9f,ymax = -1e9f;
+                float zmin = 1e9f,zmax = -1e9f;
+                for (int dx=-1;dx<=1;dx++) for (int dy=-1;dy<=1;dy++) for (int dz=-1;dz<=1;dz++) {
+                    xmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmin);
+                    xmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmax);
+                    ymin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymin);
+                    ymax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymax);
+                    zmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmin);
+                    zmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmax);
+                }
+                int sx = Numerics.ceil(xmax-xmin);
+                int sy = Numerics.ceil(ymax-ymin);
+                int sz = Numerics.ceil(zmax-zmin);
+                for (int t=0;t<nst;t++) {
+                    deformedImage[xyz + nrxyz*t] = -1e9f;
+                }
+                for (float dx=0;dx<=sx;dx++) for (float dy=0;dy<=sy;dy++) for (float dz=0;dz<=sz;dz++) {
+                    float px = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, X, nrx, nry, nrz, 3);
+                    float py = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Y, nrx, nry, nrz, 3);
+                    float pz = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Z, nrx, nry, nrz, 3);
+                            
+                    for (int t=0;t<nst;t++) {
+                        if (padOption.equals("closest"))
+                            deformedImage[xyz + nrxyz*t] = Numerics.max(deformedImage[xyz + nrxyz*t], ImageInterpolation.maximumInterpolation(sourceImage, 0.0f, px, py, pz, t, nsx, nsy, nsz, nst));
+                        else if (padOption.equals("zero"))
+                            deformedImage[xyz + nrxyz*t] = Numerics.max(deformedImage[xyz + nrxyz*t], ImageInterpolation.maximumInterpolation(sourceImage, 0.0f, px, py, pz, t, nsx, nsy, nsz, nst));
+                        else if (padOption.equals("min"))
+                            deformedImage[xyz + nrxyz*t] = Numerics.max(deformedImage[xyz + nrxyz*t], ImageInterpolation.maximumInterpolation(sourceImage, min, px, py, pz, t, nsx, nsy, nsz, nst));
+                        else if (padOption.equals("max"))
+                            deformedImage[xyz + nrxyz*t] = Numerics.max(deformedImage[xyz + nrxyz*t], ImageInterpolation.maximumInterpolation(sourceImage, max, px, py, pz, t, nsx, nsy, nsz, nst));
+                    }
+                }
+            }
         }
         sourceImage = null;
         deformation = null;

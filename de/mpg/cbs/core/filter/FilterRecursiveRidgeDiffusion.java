@@ -46,6 +46,7 @@ public class FilterRecursiveRidgeDiffusion {
 	private float detectionThreshold = 0.5f;
 	
 	private boolean useRatio = false;
+	private boolean useScale = false;
 	
 	private float[] pvImage;
 	private float[] filterImage;
@@ -125,6 +126,7 @@ public class FilterRecursiveRidgeDiffusion {
 	public final void setDetectionThreshold(float val) { detectionThreshold = val; }
 		
 	public final void setUseRatio(boolean val) { useRatio = val; }
+	public final void setUseScale(boolean val) { useScale = val; }
 		
 	// set generic inputs	
 	public final void setDimensions(int x, int y, int z) { nx=x; ny=y; nz=z; nxyz=nx*ny*nz; }
@@ -205,6 +207,7 @@ public class FilterRecursiveRidgeDiffusion {
 		float[] maxresponse = new float[nxyz];
 		byte[] maxdirection = new byte[nxyz];
 		int[] maxscale = new int[nxyz];
+		float[] medscale = null;
 		
 		if (minscaleParam==0) {
             BasicInfo.displayMessage("...first filter response\n");
@@ -212,11 +215,18 @@ public class FilterRecursiveRidgeDiffusion {
             if (filterParam.equals("0D")) directionFromRecursiveRidgeFilter0D(inputImage, mask, maxresponse, maxdirection, unidirectional);
             else if (filterParam.equals("1D")) directionFromRecursiveRidgeFilter1D(inputImage, mask, maxresponse, maxdirection, unidirectional);
             else if (filterParam.equals("2D")) directionFromRecursiveRidgeFilter2D(inputImage, mask, maxresponse, maxdirection, unidirectional);
+            
+            if (useScale) {
+                BasicInfo.displayMessage("...scaling\n");
+                medscale = pairwiseMedianDifferenceScale(inputImage, mask);
+            }
+        
         }
         
 		for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
 			if (maxresponse[xyz]>0) {
 				maxscale[xyz] = 0;
+				if (useScale) maxresponse[xyz] /= medscale[xyz];
 			} else {
 				maxscale[xyz] = -1;
 			}
@@ -241,6 +251,14 @@ public class FilterRecursiveRidgeDiffusion {
 			if (filterParam.equals("0D")) directionFromRecursiveRidgeFilter0D(smoothed, mask, response, direction, unidirectional);
 			else if (filterParam.equals("1D")) directionFromRecursiveRidgeFilter1D(smoothed, mask, response, direction, unidirectional);
 			else if (filterParam.equals("2D")) directionFromRecursiveRidgeFilter2D(smoothed, mask, response, direction, unidirectional);
+            
+            if (useScale) {
+                BasicInfo.displayMessage("...scaling\n");
+                medscale = pairwiseMedianDifferenceScale(smoothed, mask);
+                for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
+                    response[xyz] /= medscale[xyz];
+                }
+            }
 			
 			//Combine scales: keep maximum response
 			for (int xyz=0;xyz<nxyz;xyz++) if (mask[xyz]) {
@@ -2850,6 +2868,45 @@ public class FilterRecursiveRidgeDiffusion {
 			belief[xyz] = belief[xyz]/(belief[xyz]+bgbelief);
 		}
 		return belief;
+	}
+	
+    private final float[] pairwiseMedianDifferenceScale(float[] img, boolean[] mask) {
+        float[] scale = new float[nxyz];
+		// compute all pairwise differences within a 3x3 neighborhood
+		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+			int xyz = x+nx*y+nx*ny*z;
+			if (mask[xyz]) {
+			    double[] diff = new double[26*27/2];
+			    int nd=0;
+			    for (int i1=-1;i1<=1;i1++) for (int j1=-1;j1<=1;j1++) for (int k1=-1;k1<=1;k1++) {
+			        if (x+i1>=0 && x+i1<nx && y+j1>=0 && y+j1<ny && z+k1>=0 && z+k1<nz) {
+                        int ngb1 = xyz + i1*nx*j1+nx*ny*k1;
+                        if (mask[ngb1]) {
+                            for (int i2=-1;i2<=1;i2++) for (int j2=-1;j2<=1;j2++) for (int k2=-1;k2<=1;k2++) {
+                                if (x+i1>=0 && x+i1<nx && y+j1>=0 && y+j1<ny && z+k1>=0 && z+k1<nz) {
+                                    int ngb2 = xyz + i2*nx*j2+nx*ny*k2;
+                                    if (mask[ngb2]) {
+                                        if (ngb2<ngb1) {
+                                            diff[nd] = Numerics.abs(img[ngb1]-img[ngb2]);
+                                            nd++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                double[] kept = new double[nd];
+                for (int n=0;n<nd;n++) kept[n] = diff[n];
+                Percentile measure = new Percentile();
+                scale[xyz] = (float)measure.evaluate(kept, 50.0);
+                if (scale[xyz]==0.0f) scale[xyz] = 1.0f;
+            } else {
+                scale[xyz] = 1.0f;
+            }
+		}
+		
+		return scale;
 	}
 	
 

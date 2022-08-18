@@ -1090,7 +1090,7 @@ public class ImageInterpolation {
 	}
 	
 	/**
-	 *	linear interpolation, with value outside the image and mask
+	 *	minimum interpolation, with value outside the image and mask
 	 */
 	public static float minimumInterpolation(float[] image, boolean[] mask, float value, float x, float y, float z, int nx, int ny, int nz) {
 		int x0,y0,z0;
@@ -1118,6 +1118,74 @@ public class ImageInterpolation {
 	
 		if (mask[xyz0+1+nx*ny] && image[xyz0+1+nx*ny]<val) val = image[xyz0+1+nx*ny];
 		if (mask[xyz0+1+nx+nx*ny] && image[xyz0+1+nx+nx*ny]<val) val = image[xyz0+1+nx+nx*ny];
+		
+		if (val!=UNSET) return val;
+		else return value;
+	}
+	
+	/**
+	 *	maximum interpolation with masking
+	 */
+	public static float maximumInterpolation(float[] image, boolean[] mask, float value, float x, float y, float z, int nx, int ny, int nz) {
+		int x0,y0,z0;
+		int xyz0;
+		float UNSET = -1e12f;
+		
+        // if out of boundary, replace all with zero
+        if ( (x<0) || (x>nx-2) || (y<0) || (y>ny-2) || (z<0) || (z>nz-2) ) 
+            return value;
+        
+		x0 = Numerics.floor(x);
+		y0 = Numerics.floor(y);
+		z0 = Numerics.floor(z);
+		xyz0 = x0 + nx*y0 + nx*ny*z0;
+		
+		float val = UNSET;
+		if (mask[xyz0] && image[xyz0]>val) val = image[xyz0];
+		if (mask[xyz0+1] && image[xyz0+1]>val) val = image[xyz0+1];
+		
+		if (mask[xyz0+nx] && image[xyz0+nx]>val) val = image[xyz0+nx];
+		if (mask[xyz0+nx*ny] && image[xyz0+nx*ny]>val) val = image[xyz0+nx*ny];
+		
+		if (mask[xyz0+1+nx] && image[xyz0+1+nx]>val) val = image[xyz0+1+nx];
+		if (mask[xyz0+nx+nx*ny] && image[xyz0+nx+nx*ny]>val) val = image[xyz0+nx+nx*ny];
+	
+		if (mask[xyz0+1+nx*ny] && image[xyz0+1+nx*ny]>val) val = image[xyz0+1+nx*ny];
+		if (mask[xyz0+1+nx+nx*ny] && image[xyz0+1+nx+nx*ny]>val) val = image[xyz0+1+nx+nx*ny];
+		
+		if (val!=UNSET) return val;
+		else return value;
+	}
+	
+	/**
+	 *	maximum interpolation without masking
+	 */
+	public static float maximumInterpolation(float[] image, float value, float x, float y, float z, int t, int nx, int ny, int nz, int nt) {
+		int x0,y0,z0;
+		int xyz0;
+		float UNSET = -1e12f;
+		
+        // if out of boundary, replace all with zero
+        if ( (x<0) || (x>nx-2) || (y<0) || (y>ny-2) || (z<0) || (z>nz-2) ) 
+            return value;
+        
+		x0 = Numerics.floor(x);
+		y0 = Numerics.floor(y);
+		z0 = Numerics.floor(z);
+		xyz0 = x0 + nx*y0 + nx*ny*z0 + nx*ny*nz*t;
+		
+		float val = UNSET;
+		if (image[xyz0]>val) val = image[xyz0];
+		if (image[xyz0+1]>val) val = image[xyz0+1];
+		
+		if (image[xyz0+nx]>val) val = image[xyz0+nx];
+		if (image[xyz0+nx*ny]>val) val = image[xyz0+nx*ny];
+		
+		if (image[xyz0+1+nx]>val) val = image[xyz0+1+nx];
+		if (image[xyz0+nx+nx*ny]>val) val = image[xyz0+nx+nx*ny];
+	
+		if (image[xyz0+1+nx*ny]>val) val = image[xyz0+1+nx*ny];
+		if (image[xyz0+1+nx+nx*ny]>val) val = image[xyz0+1+nx+nx*ny];
 		
 		if (val!=UNSET) return val;
 		else return value;
