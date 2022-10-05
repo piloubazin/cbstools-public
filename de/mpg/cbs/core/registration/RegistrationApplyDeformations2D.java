@@ -27,7 +27,7 @@ public class RegistrationApplyDeformations2D {
 	private String padOption = "closest";
 	
 	public static final String[] types = {"none", "deformation(voxels)", "mapping(voxels)", "deformation(mm)", "mapping(mm)"};
-	public static final String[] interp = {"nearest", "linear"};
+	public static final String[] interp = {"nearest", "linear", "non-zero"};
 	public static final String[] pads = {"closest", "zero", "min", "max"};
 	
 	private float[] deformedImage;
@@ -451,6 +451,20 @@ public class RegistrationApplyDeformations2D {
                         deformedImage[xy + nrxy*t] = ImageInterpolation.linearInterpolation2D(sourceImage, min, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
                     else if (padOption.equals("max"))
                         deformedImage[xy + nrxy*t] = ImageInterpolation.linearInterpolation2D(sourceImage, max, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
+                }
+            }
+        } else if (interpOption.equals("non-zero")) {
+            for (int x=0;x<nrx;x++) for (int y=0;y<nry;y++) {
+                int xy = x + nrx*y;
+                for (int t=0;t<nst;t++) {
+                    if (padOption.equals("closest"))
+                        deformedImage[xy + nrxy*t] = ImageInterpolation.linearClosestNonzeroInterpolation2D(sourceImage, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
+                    else if (padOption.equals("zero"))
+                        deformedImage[xy + nrxy*t] = ImageInterpolation.linearNonzeroInterpolation2D(sourceImage, 0.0f, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
+                    else if (padOption.equals("min"))
+                        deformedImage[xy + nrxy*t] = ImageInterpolation.linearNonzeroInterpolation2D(sourceImage, min, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
+                    else if (padOption.equals("max"))
+                        deformedImage[xy + nrxy*t] = ImageInterpolation.linearNonzeroInterpolation2D(sourceImage, max, deformation[xy+X*nrxy], deformation[xy+Y*nrxy], t, nsx, nsy, nst);
                 }
             }
         }

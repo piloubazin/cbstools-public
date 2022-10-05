@@ -764,6 +764,50 @@ public class ImageInterpolation {
 	/**
 	 *	linear interpolation, with value outside the image
 	 */
+	public static float linearNonzeroInterpolation2D(float[] image, float value, double x, double y, int t, int nx, int ny, int nt) {
+		double alpha,beta,nalpha,nbeta,val,den;
+		int x0,y0;
+
+		x0 = Numerics.floor(x);
+		y0 = Numerics.floor(y);
+
+        // if out of boundary, replace all with zero
+        if ( (x0<0) || (x0>nx-2) || (y0<0) || (y0>ny-2) ) 
+            return value;
+        
+		alpha = x - x0;
+		nalpha = 1.0f - alpha;
+
+		beta = y - y0;
+		nbeta = 1.0f - beta;
+
+		int xyz0 = x0 + y0*nx + t*nx*ny;
+		
+		val = 0.0f;
+		den = 0.0f;
+		if (image[xyz0]!=0) {
+		    val += nalpha*nbeta*image[xyz0];
+		    den += nalpha*nbeta;
+		}
+		if (image[xyz0+1]!=0) {
+			val += alpha*nbeta*image[xyz0+1];
+			den += alpha*nbeta;
+		}
+		if (image[xyz0+nx]!=0) {
+			val += nalpha*beta*image[xyz0+nx];
+			den += nalpha*beta;
+		}
+		if (image[xyz0+1+nx]!=0) {
+			val += alpha*beta*image[xyz0+1+nx];
+			den += alpha*beta;
+		}
+		if (den>0) val /= den;
+		
+		return (float)val;
+	}
+	/**
+	 *	linear interpolation, with value outside the image
+	 */
 	public static float linearClosestInterpolation(float[] image, float x, float y, float z, int nx, int ny, int nz) {
 		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
@@ -817,6 +861,46 @@ public class ImageInterpolation {
 			+ nalpha*beta*image[xyz0+nx] 
 			+ alpha*beta*image[xyz0+1+nx];
 
+		return val;
+	}
+	/**
+	 *	linear interpolation, with value outside the image
+	 */
+	public static float linearClosestNonzeroInterpolation2D(float[] image, float x, float y, int t, int nx, int ny, int nt) {
+		float alpha,beta,nalpha,nbeta,val,den;
+		int x0,y0;
+
+		x0 = Numerics.bounded(Numerics.floor(x),0,nx-2);
+		y0 = Numerics.bounded(Numerics.floor(y),0,ny-2);
+		
+		alpha = Numerics.bounded(x - x0, 0.0f, 1.0f);
+		nalpha = 1.0f - alpha;
+
+		beta = Numerics.bounded(y - y0, 0.0f, 1.0f);
+		nbeta = 1.0f - beta;
+
+		int xyz0 = x0 + y0*nx + t*nx*ny;
+		
+		val = 0.0f;
+		den = 0.0f;
+		if (image[xyz0]!=0) {
+		    val += nalpha*nbeta*image[xyz0];
+		    den += nalpha*nbeta;
+		}
+		if (image[xyz0+1]!=0) {
+			val += alpha*nbeta*image[xyz0+1];
+			den += alpha*nbeta;
+		}
+		if (image[xyz0+nx]!=0) {
+			val += nalpha*beta*image[xyz0+nx];
+			den += nalpha*beta;
+		}
+		if (image[xyz0+1+nx]!=0) {
+			val += alpha*beta*image[xyz0+1+nx];
+			den += alpha*beta;
+		}
+		if (den>0) val /= den;
+		
 		return val;
 	}
 	/**
