@@ -661,6 +661,131 @@ public class ImageInterpolation {
 	/**
 	 *	linear interpolation, with value outside the image
 	 */
+	public static float linearNonzeroInterpolation(float[] image, float value, float x, float y, float z, int c, int nx, int ny, int nz, int nc) {
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val,den;
+		int x0,y0,z0;
+
+		x0 = Numerics.floor(x);
+		y0 = Numerics.floor(y);
+		z0 = Numerics.floor(z);
+
+        // if out of boundary, replace all with zero
+        if ( (x0<0) || (x0>nx-2) || (y0<0) || (y0>ny-2) || (z0<0) || (z0>nz-2) ) 
+            return value;
+        
+		alpha = x - x0;
+		nalpha = 1.0 - alpha;
+
+		beta = y - y0;
+		nbeta = 1.0 - beta;
+
+		gamma = z - z0;
+		ngamma = 1.0 - gamma;
+
+		int xyz0 = x0 + y0*nx + z0*nx*ny + c*nx*ny*nz;
+		
+		val = 0.0;
+		den = 0.0;
+		if (image[xyz0]!=0) {
+		    val += nalpha*nbeta*ngamma*image[xyz0];
+		    den += nalpha*nbeta*ngamma;
+		}
+		if (image[xyz0+1]!=0) {
+		    val += alpha*nbeta*ngamma*image[xyz0+1];
+		    den += alpha*nbeta*ngamma;
+		}
+		if (image[xyz0+nx]!=0) {
+			val += nalpha*beta*ngamma*image[xyz0+nx];
+			den += nalpha*beta*ngamma;
+		}
+		if (image[xyz0+nx*ny]!=0) {
+			val += nalpha*nbeta*gamma*image[xyz0+nx*ny];
+			den += nalpha*nbeta*gamma;
+		}
+		if (image[xyz0+1+nx]!=0) {
+		    val += alpha*beta*ngamma*image[xyz0+1+nx];
+		    den += alpha*beta*ngamma;
+		}
+		if (image[xyz0+nx+nx*ny]!=0) {
+			val += nalpha*beta*gamma*image[xyz0+nx+nx*ny];
+			den += nalpha*beta*gamma;
+		}
+		if (image[xyz0+1+nx*ny]!=0) {
+			val += alpha*nbeta*gamma*image[xyz0+1+nx*ny];
+			den += alpha*nbeta*gamma;
+		}
+		if (image[xyz0+1+nx+nx*ny]!=0) {
+			val += alpha*beta*gamma*image[xyz0+1+nx+nx*ny];
+			den += alpha*beta*gamma;
+		}
+		if (den>0) val /= den;
+		
+		return (float)val;
+	}
+	/**
+	 *	linear interpolation, with value outside the image
+	 */
+	public static float linearClosestNonzeroInterpolation(float[] image, float x, float y, float z, int c, int nx, int ny, int nz, int nc) {
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val,den;
+		int x0,y0,z0;
+
+        // if out of boundary, use closest point
+		x0 = Numerics.bounded(Numerics.floor(x),0,nx-2);
+		y0 = Numerics.bounded(Numerics.floor(y),0,ny-2);
+		z0 = Numerics.bounded(Numerics.floor(z),0,nz-2);
+		
+		alpha = Numerics.bounded(x - x0, 0.0, 1.0);
+		nalpha = 1.0 - alpha;
+
+		beta = Numerics.bounded(y - y0, 0.0, 1.0);
+		nbeta = 1.0 - beta;
+
+		gamma = Numerics.bounded(z - z0, 0.0, 1.0);
+		ngamma = 1.0 - gamma;
+
+		int xyz0 = x0 + y0*nx + z0*nx*ny + c*nx*ny*nz;
+		
+		val = 0.0;
+		den = 0.0;
+		if (image[xyz0]!=0) {
+		    val += nalpha*nbeta*ngamma*image[xyz0];
+		    den += nalpha*nbeta*ngamma;
+		}
+		if (image[xyz0+1]!=0) {
+		    val += alpha*nbeta*ngamma*image[xyz0+1];
+		    den += alpha*nbeta*ngamma;
+		}
+		if (image[xyz0+nx]!=0) {
+			val += nalpha*beta*ngamma*image[xyz0+nx];
+			den += nalpha*beta*ngamma;
+		}
+		if (image[xyz0+nx*ny]!=0) {
+			val += nalpha*nbeta*gamma*image[xyz0+nx*ny];
+			den += nalpha*nbeta*gamma;
+		}
+		if (image[xyz0+1+nx]!=0) {
+		    val += alpha*beta*ngamma*image[xyz0+1+nx];
+		    den += alpha*beta*ngamma;
+		}
+		if (image[xyz0+nx+nx*ny]!=0) {
+			val += nalpha*beta*gamma*image[xyz0+nx+nx*ny];
+			den += nalpha*beta*gamma;
+		}
+		if (image[xyz0+1+nx*ny]!=0) {
+			val += alpha*nbeta*gamma*image[xyz0+1+nx*ny];
+			den += alpha*nbeta*gamma;
+		}
+		if (image[xyz0+1+nx+nx*ny]!=0) {
+			val += alpha*beta*gamma*image[xyz0+1+nx+nx*ny];
+			den += alpha*beta*gamma;
+		}
+		if (den>0) val /= den;
+		
+		return (float)val;
+	}
+	/**
+	 *	linear interpolation, with value outside the image
+	 */
 	public static float linearInterpolation(float[] image, int offset, float value, float x, float y, float z, int nx, int ny, int nz) {
 		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
