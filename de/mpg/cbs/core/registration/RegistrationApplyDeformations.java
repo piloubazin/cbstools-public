@@ -532,24 +532,31 @@ public class RegistrationApplyDeformations {
                 for (int t=0;t<nst;t++) {
                     deformedImage[xyz + nrxyz*t] = 0.0f;
                 }
+                float[] sden = new float[nst];
                 for (float dx=0;dx<=sx;dx++) for (float dy=0;dy<=sy;dy++) for (float dz=0;dz<=sz;dz++) {
                     float px = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, X, nrx, nry, nrz, 3);
                     float py = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Y, nrx, nry, nrz, 3);
                     float pz = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Z, nrx, nry, nrz, 3);
                             
                     for (int t=0;t<nst;t++) {
+                        float interp = 0.0f;
                         if (padOption.equals("closest"))
-                            deformedImage[xyz + nrxyz*t] += ImageInterpolation.linearClosestNonzeroInterpolation(sourceImage, px, py, pz, t, nsx, nsy, nsz, nst);
+                             interp = ImageInterpolation.linearClosestNonzeroInterpolation(sourceImage, px, py, pz, t, nsx, nsy, nsz, nst);
                         else if (padOption.equals("zero"))
-                            deformedImage[xyz + nrxyz*t] += ImageInterpolation.linearNonzeroInterpolation(sourceImage, 0.0f, px, py, pz, t, nsx, nsy, nsz, nst);
+                            interp = ImageInterpolation.linearNonzeroInterpolation(sourceImage, 0.0f, px, py, pz, t, nsx, nsy, nsz, nst);
                         else if (padOption.equals("min"))
-                            deformedImage[xyz + nrxyz*t] += ImageInterpolation.linearNonzeroInterpolation(sourceImage, min, px, py, pz, t, nsx, nsy, nsz, nst);
+                            interp = ImageInterpolation.linearNonzeroInterpolation(sourceImage, min, px, py, pz, t, nsx, nsy, nsz, nst);
                         else if (padOption.equals("max"))
-                            deformedImage[xyz + nrxyz*t] += ImageInterpolation.linearNonzeroInterpolation(sourceImage, max, px, py, pz, t, nsx, nsy, nsz, nst);
+                            interp = ImageInterpolation.linearNonzeroInterpolation(sourceImage, max, px, py, pz, t, nsx, nsy, nsz, nst);
+                        
+                        if (interp!=0) {
+                            deformedImage[xyz + nrxyz*t] += interp;
+                            sden[t]++;
+                        }
                     }
                 }
-                for (int t=0;t<nst;t++) {
-                    deformedImage[xyz + nrxyz*t] /= (1.0f+sx)*(1.0f+sy)*(1.0f+sz);
+                for (int t=0;t<nst;t++) if (sden[t]>0) {
+                    deformedImage[xyz + nrxyz*t] /= sden[t];
                 }
                 
             }
