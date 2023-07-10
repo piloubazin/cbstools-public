@@ -116,11 +116,6 @@ public class BasicRigidRegistration {
 		rotation = transformModel.computeRotation(transform);
 	}
 	
-	public final void finalize() {
-		source = null;
-		target = null;
-	}
-	
 	public final float[] getSource() { return source; }
 	
 	public final float[] getTarget() { return target; }

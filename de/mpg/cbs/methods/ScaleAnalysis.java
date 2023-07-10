@@ -68,11 +68,6 @@ public class ScaleAnalysis {
 		range = Imax-Imin;
 	}
 
-	final public void finalize() {
-		image = null;
-		System.gc();
-	}
-	
 	final public byte[] getMap() { return map; }
 
 	/** 

@@ -99,13 +99,6 @@ public class CorticalSurfaceDilation {
 	}
 	
 		
-	public void finalize() {
-		data = null;
-		mask = null;
-		lvlset = null;
-		
-	}
-
 	
 	public final float[][][] exportDilatedData() {
 		float[][][] res = new float[nx][ny][nz];

@@ -251,7 +251,6 @@ public class JistBrainSegmentationPriors extends ProcessingAlgorithm {
 		atlas.refreshShapeMapping();
 
 		// clean-up
-		rigid.finalize();
 		rigid = null;
 		
 		classif.computeMemberships();
@@ -287,7 +286,6 @@ public class JistBrainSegmentationPriors extends ProcessingAlgorithm {
 		atlas.updateNonRigidTransform(warp1);
 		
 		// clean-up
-		warp1.finalize();
 		warp1 = null;
 		
 		int nobj = atlas.getNumber();

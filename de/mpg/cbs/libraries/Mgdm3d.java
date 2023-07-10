@@ -102,13 +102,6 @@ public class Mgdm3d {
 			functions = new float[nmgdm][capacity];
 		}
 		
-		public void finalize() {
-			capacity = -1;
-			id = null;
-			labels = null;
-			functions = null;
-		}
-		
 		public final void addPoint(int xyz, int[][] mgdmlb, float[][] mgdmfn) {
 			// check for size
 			if (currentsize>=capacity-1) {
@@ -231,7 +224,6 @@ public class Mgdm3d {
 			}
 			if (checkTopology) {
 				if (!lut.loadCompressedPattern()) {
-					finalize();
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
@@ -239,7 +231,6 @@ public class Mgdm3d {
 				}
 			}
 		} catch (OutOfMemoryError e){
-			 finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -271,23 +262,12 @@ public class Mgdm3d {
 		init(tmp, nx_, ny_, nz_, nobj_, nmgdm_, rx_, ry_, rz_, field_, balloon_,  fw_, bw_, sw_, pw_, connectivityType_, lutdir_);
 	}
 		
-	public void finalize() {
-		mgdmfunctions = null;
-		mgdmlabels = null;
-		segmentation = null;
-		fieldforce = null;
-		balloonforces = null;
-		heap.finalize();
-		heap = null;
-	}
-	
 	/**
 	 *	clean up the computation arrays
 	 */
 	public final void cleanUp() {
 		mgdmfunctions = null;
 		mgdmlabels = null;
-		heap.finalize();
 		heap = null;
 		System.gc();
 	}

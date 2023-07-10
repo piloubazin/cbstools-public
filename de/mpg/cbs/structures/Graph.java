@@ -36,12 +36,6 @@ public class Graph {
 		Nn = N;
 	}
 	
-	public void finalize() {
-		nodes.clear();
-		nodes = null;
-		Nn = 0;
-	}
-	
 	/**
 	 *  add a new node into the graph
 	 */

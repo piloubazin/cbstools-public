@@ -60,11 +60,6 @@ public class BinaryTree {
 		index = new int[Nmax][Ncoord];
 	}
 	
-	public void finalize() {
-		tree = null;
-		index = null;
-	}
-	
 	/**
 	 *  to reset the binary tree
 	 */

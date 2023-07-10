@@ -182,7 +182,6 @@ public class DemonsScaledConsistentRegistration {
 			preprocessInputImages(image_, target_);
 		} catch (OutOfMemoryError e){
 			isWorking = false;
-            finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -190,14 +189,6 @@ public class DemonsScaledConsistentRegistration {
 		if (debug) BasicInfo.displayMessage("Demons:initialisation\n");
 	}
 
-	final public void finalize() {
-		image = null;
-		target = null;
-		s = null; u = null; c = null;
-		is = null; iu = null; ic = null;
-		System.gc();
-	}
-    
    public final float[][] getCurrentTransform() {
 	   return s;
    }

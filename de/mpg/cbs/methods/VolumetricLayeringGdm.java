@@ -141,13 +141,6 @@ public class VolumetricLayeringGdm {
 			levels = new float[capacity];
 		}
 		
-		public void finalize() {
-			capacity = -1;
-			id = null;
-			seg = null;
-			levels = null;
-		}
-		
 		public final void addPoint(int xyz, byte[] lb, float[] lvl) {
 			// check for size
 			if (currentsize>=capacity-1) {
@@ -278,7 +271,6 @@ public class VolumetricLayeringGdm {
 			}
 			if (checkTopology) {
 				if (!lut.loadCompressedPattern()) {
-					finalize();
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
@@ -286,7 +278,6 @@ public class VolumetricLayeringGdm {
 				}
 			}
 		} catch (OutOfMemoryError e){
-			 finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -318,33 +309,10 @@ public class VolumetricLayeringGdm {
 		if (debug) BasicInfo.displayMessage("initialization\n");
 	}
 		
-	public void finalize() {
-		levelset = null;
-		segmentation = null;
-		inlevelset = null;
-		outlevelset = null;
-		heap.finalize();
-		heap = null;
-		
-		volumein = null;
-		volumeout = null; 
-		lvlratio = null;
-		
-		array_Ain = null;
-		array_Aout = null;
-		array_fBisektLastIt = null;
-		array_ratioLastIt = null;
-		array_ratio = null;
-		array_fraction  = null;
-		array_fBisekt  = null;
-	}
-	
 	/**
 	 *	clean up the computation arrays
 	 */
 	public final void cleanUp() {
-		
-		heap.finalize();
 		heap = null;
 		System.gc();
 	}

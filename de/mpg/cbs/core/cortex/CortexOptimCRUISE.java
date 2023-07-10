@@ -279,7 +279,7 @@ public class CortexOptimCRUISE {
 			seg[xyz] = (byte)(gdm.getSegmentation()[xyz]+seg[xyz]);
 			cgb[xyz] = gdm.getLevelSet()[xyz];
 		}
-		gdm.finalize(); gdm = null;
+		gdm = null;
 		
 		// estimate simple cortical thickness
 		float[] thick = new float[nxyz];
@@ -317,7 +317,7 @@ public class CortexOptimCRUISE {
 			int xyz = x+nx*y+nx*ny*z;
 			avg[xyz] = gdm2.getLevelSet()[xyz];
 		}
-		gdm2.finalize(); gdm2 = null;
+		gdm2 = null;
 		
 		// outputs
 		cortexImage = seg;

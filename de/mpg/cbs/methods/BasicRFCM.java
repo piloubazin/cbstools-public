@@ -65,7 +65,6 @@ public class BasicRFCM {
 			centroids = new float[classes];
 			prev = new float[classes];
 		} catch (OutOfMemoryError e){
-			finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -90,14 +89,6 @@ public class BasicRFCM {
 		if (debug) BasicInfo.displayMessage("FCM:initialisation\n");
 	}
 
-	/** clean-up: destroy membership and centroid arrays */
-	public final void finalize() {
-		mems = null;
-		centroids = null;
-		prev = null;
-		System.gc();
-	}
-	
     /** accessor for computed data */ 
     public final float[][][][] getMemberships() { return mems; }
     /** accessor for computed data */ 

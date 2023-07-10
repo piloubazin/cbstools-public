@@ -159,7 +159,7 @@ public class ObjectTransforms {
 			}
 		}
 		// clean up
-		tree.finalize(); tree = null;
+		tree = null;
 		
 		return skeleton;
 	}//simpleSkeleton

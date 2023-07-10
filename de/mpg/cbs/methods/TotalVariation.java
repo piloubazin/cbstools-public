@@ -68,7 +68,6 @@ public class TotalVariation {
 			proj = new float[3][nx][ny][nz];
 			field = new float[nx][ny][nz];
 		} catch (OutOfMemoryError e){
-			finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -129,7 +128,6 @@ public class TotalVariation {
 			proj = new float[3][nx][ny][nz];
 			field = new float[nx][ny][nz];
 		} catch (OutOfMemoryError e){
-			finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -181,13 +179,6 @@ public class TotalVariation {
 		if (debug) BasicInfo.displayMessage("TV:initialisation\n");
 	}
 
-	/** clean-up: destroy membership and centroid arrays */
-	public final void finalize() {
-		proj = null;
-		field = null;
-		System.gc();
-	}
-	
     /** accessor for computed data */ 
     public final float[][][][] getProjection() { return proj; }
     

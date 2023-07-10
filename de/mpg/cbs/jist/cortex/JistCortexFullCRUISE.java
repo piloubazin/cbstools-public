@@ -464,7 +464,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 			seg[x][y][z] = (byte)(gdm.getSegmentation()[xyz]+seg[x][y][z]);
 			cgb[x][y][z] = gdm.getLevelSet()[xyz];
 		}
-		gdm.finalize(); gdm = null;
+		gdm = null;
 		
 		// estimate simple cortical thickness
 		float[][][] thick = new float[nx][ny][nz];
@@ -501,7 +501,7 @@ public class JistCortexFullCRUISE extends ProcessingAlgorithm {
 			int xyz = x+nx*y+nx*ny*z;
 			avg[x][y][z] = gdm2.getLevelSet()[xyz];
 		}
-		gdm2.finalize(); gdm2 = null;
+		gdm2 = null;
 		
 		
 		ImageDataUByte cortexData = new ImageDataUByte(seg);		

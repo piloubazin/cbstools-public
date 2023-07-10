@@ -106,7 +106,6 @@ public class AnatomicallyConsistentEnhancement {
 			
 		smoothgdm.evolveNarrowBand(100, 0.001f);
 		phi = smoothgdm.exportLevelset();
-		smoothgdm.finalize();
 		smoothgdm = null;
 			
 		// 2. Fast marching with CSF speeds

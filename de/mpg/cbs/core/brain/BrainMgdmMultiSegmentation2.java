@@ -270,7 +270,6 @@ public class BrainMgdmMultiSegmentation2 {
 		BasicInfo.displayMessage("transform: "+atlas.displayTransform(atlas.getTransform()));
 
 		// clean-up
-		rigid.finalize();
 		rigid = null;
 		
 		classif.computeMemberships();
@@ -310,7 +309,6 @@ public class BrainMgdmMultiSegmentation2 {
 		 byte[] target = atlas.generateTransformedClassification();
 		
 		// clean-up
-		warp1.finalize();
 		warp1 = null;
 		
 		BasicInfo.displayMessage("level set segmentation\n");
@@ -413,7 +411,6 @@ public class BrainMgdmMultiSegmentation2 {
 																topologyParam, lutdir);
 		
 		// clean-up
-		classif.finalize();
 		classif = null;
 		
 		BasicInfo.displayMessage("gain...\n");

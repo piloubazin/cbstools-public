@@ -87,11 +87,6 @@ public class RobustVarianceEstimation {
 		return;		
 	}
 
-	final public void finalize() {
-		image = null;
-		System.gc();
-	}
-	
 	// variance estimates
 	public final float spatialMeanStdev() {
 		

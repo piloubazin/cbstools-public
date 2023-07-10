@@ -116,11 +116,6 @@ public class ShapeAtlasGain {
 		sigmaS = p2_;
 	}
 
-	final public void finalize() {
-		images = null;
-		System.gc();
-	}
-
 	public final float[][] getGain() { return gain; }
 	
 	/** 

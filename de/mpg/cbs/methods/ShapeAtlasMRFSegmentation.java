@@ -126,11 +126,6 @@ public class ShapeAtlasMRFSegmentation {
 		sigmaR = p4_;
 	}
 
-	final public void finalize() {
-		images = null;
-		System.gc();
-	}
-
 	public final float[][] getGain() { return gain; }
 	
 	/** 

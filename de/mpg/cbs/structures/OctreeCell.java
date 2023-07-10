@@ -31,9 +31,5 @@ public class OctreeCell {
 		parent = null;
 		children = null;
 	}
-	
-	public void finalize() {
-		children = null;
-	}
-	
+		
 }

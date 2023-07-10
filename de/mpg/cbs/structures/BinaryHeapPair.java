@@ -61,12 +61,6 @@ public class BinaryHeapPair {
 		capacity = Nincrease;
 	}
 	
-	public void finalize() {
-		val = null;
-		id1 = null;
-		id2 = null;
-	}
-	
 	/**
 	 *  to reset the binary tree
 	 */

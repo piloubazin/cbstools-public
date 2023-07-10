@@ -61,7 +61,6 @@ public class SpatialImageDiffusion {
 			//segmentation = new byte[nx*ny*nz];	
 			mask = new boolean[nx*ny*nz];	
 		} catch (OutOfMemoryError e){
-			 finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -79,10 +78,6 @@ public class SpatialImageDiffusion {
 				}
 			}
 		}
-	}
-	
-	public void finalize() {
-		//segmentation = null;
 	}
 	
 	public final float[][] getImage() { return image; }

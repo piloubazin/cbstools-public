@@ -458,7 +458,7 @@ public class JistFmriCorticalSmoothing extends ProcessingAlgorithm {
 		// clean up
 		sdataImg = null;
 		sdata = null;
-		regionSmoothing.finalize();
+		regionSmoothing = null;
 		
 	}
 

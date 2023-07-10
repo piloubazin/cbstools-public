@@ -145,7 +145,6 @@ public class MgdmRepresentation {
 			// initalize the heap too so we don't have to do it multiple times
 			heap = new BinaryHeap2D(nx*ny+ny*nz+nz*nx, BinaryHeap2D.MINTREE);
 		} catch (OutOfMemoryError e){
-			 finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -222,7 +221,6 @@ public class MgdmRepresentation {
 			// initalize the heap too so we don't have to do it multiple times
 			heap = new BinaryHeap2D(nx*ny+ny*nz+nz*nx, BinaryHeap2D.MINTREE);
 		} catch (OutOfMemoryError e){
-			 finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -299,7 +297,6 @@ public class MgdmRepresentation {
 			// initalize the heap too so we don't have to do it multiple times
 			heap = new BinaryHeap2D(nx*ny+ny*nz+nz*nx, BinaryHeap2D.MINTREE);
 		} catch (OutOfMemoryError e){
-			 finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -336,20 +333,12 @@ public class MgdmRepresentation {
 		if (debug) BasicInfo.displayMessage("initialization\n");
 	}
 		
-	public void finalize() {
-		mgdmfunctions = null;
-		mgdmlabels = null;
-		segmentation = null;
-		heap = null;
-	}
-	
 	/**
 	 *	clean up the computation arrays
 	 */
 	public final void cleanUp() {
 		mgdmfunctions = null;
 		mgdmlabels = null;
-		heap.finalize();
 		heap = null;
 		System.gc();
 	}

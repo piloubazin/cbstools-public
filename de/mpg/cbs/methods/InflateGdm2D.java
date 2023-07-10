@@ -107,13 +107,6 @@ public class InflateGdm2D {
 			levels = new float[capacity];
 		}
 		
-		public void finalize() {
-			capacity = -1;
-			id = null;
-			seg = null;
-			levels = null;
-		}
-		
 		public final void addPoint(int xyz, byte[] lb, float[] lvl) {
 			// check for size
 			if (currentsize>=capacity-1) {
@@ -213,7 +206,6 @@ public class InflateGdm2D {
 			}
 			if (checkTopology) {
 				if (!lut.loadCompressedPattern()) {
-					finalize();
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
@@ -221,7 +213,6 @@ public class InflateGdm2D {
 				}
 			}
 		} catch (OutOfMemoryError e){
-			 finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -247,20 +238,10 @@ public class InflateGdm2D {
 		if (debug) BasicInfo.displayMessage("initialization\n");
 	}
 		
-	public void finalize() {
-		levelset = null;
-		segmentation = null;
-		inlevelset = null;
-		heap.finalize();
-		heap = null;
-	}
-	
 	/**
 	 *	clean up the computation arrays
 	 */
 	public final void cleanUp() {
-		
-		heap.finalize();
 		heap = null;
 		System.gc();
 	}

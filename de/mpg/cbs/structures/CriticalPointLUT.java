@@ -66,10 +66,6 @@ public class CriticalPointLUT {
 		filename = filename_;
 	}
 	
-	public void finalize() {
-		isRegular = null;
-	}
-	
 	/**
 	 *  add a new value
 	 */

@@ -85,11 +85,6 @@ public class MinMaxFiltering {
 		if (debug) System.out.println("image: ["+Imin[0]+", "+Imax[0]+"]");
 	}
 
-	final public void finalize() {
-		images = null;
-		System.gc();
-	}
-	
 	/** 
 	 *	compute a scaled map of the image with (min, max)
 	 */

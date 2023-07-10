@@ -129,12 +129,6 @@ public class CorticalFmriSmoothing {
 		labeling = label_;	
 	}
 		
-	public void finalize() {
-		data = null;
-		mask = null;
-		
-	}
-	
 	/**
 	 *	clean up the computation arrays
 	 */

@@ -61,12 +61,6 @@ public class BinaryHeap2D {
 		capacity = Nincrease;
 	}
 	
-	public void finalize() {
-		val = null;
-		id = null;
-		state = null;
-	}
-	
 	/**
 	 *  to reset the binary tree
 	 */

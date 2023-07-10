@@ -147,7 +147,6 @@ public class CorticalRegionGrowing {
 			}
 			if (checkTopology) {
 				if (!lut.loadCompressedPattern()) {
-					finalize();
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
@@ -155,7 +154,6 @@ public class CorticalRegionGrowing {
 				}
 			}
 		} catch (OutOfMemoryError e){
-			 finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -170,21 +168,11 @@ public class CorticalRegionGrowing {
 		if (debug) BasicInfo.displayMessage("initialization\n");
 	}
 		
-	public void finalize() {
-		inner = null;
-		outer = null;
-		region = null;
-		distance = null;
-		heap.finalize();
-		heap = null;
-	}
-	
 	/**
 	 *	clean up the computation arrays
 	 */
 	public final void cleanUp() {
 		
-		heap.finalize();
 		heap = null;
 		System.gc();
 	}

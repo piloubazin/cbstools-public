@@ -348,9 +348,7 @@ public class ShapeTopologyCorrection {
 				algorithm.propagateDownwardExactSmoothing();
 			
 			result = extendImageSize(algorithm.exportDistance());
-		
-			algorithm.finalize();
-			
+					
 		} else if (inputType.equals("binary_object")) {
 			// extract the distance function or the object
 			obj = ObjectExtraction.objectFromImage(image,mx,my,mz,lowestLevel,highestLevel,ObjectLabeling.SUPERIOR,ObjectLabeling.INFEQUAL);
@@ -369,7 +367,6 @@ public class ShapeTopologyCorrection {
 				// compute distance function
 				algorithm.propagateDownwardUnconstrainedGeometricDistance();
 				image = algorithm.exportDistance();
-				algorithm.finalize();			
 			} else if (propagType.equals("object->background")) {
 				algorithm = new TopologyPropagation(ext, objectMask, mx, my, mz, 
 											0.5f, 1.0f, 0.0f, 0.0f,
@@ -379,7 +376,6 @@ public class ShapeTopologyCorrection {
 				// compute distance function
 				algorithm.propagateUpwardUnconstrainedGeometricDistance();
 				image = algorithm.exportDistance();
-				algorithm.finalize();
 			}
 			// reset highest and lowest to fit the distance function
 			highestLevel = 0.0f;
@@ -468,7 +464,6 @@ public class ShapeTopologyCorrection {
 			
 			result = extendImageSize(algorithm.exportDistance());
 		
-			algorithm.finalize();	
 		}					
 
 		// debug

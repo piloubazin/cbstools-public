@@ -87,11 +87,6 @@ public class ShapeAtlasClassification {
 		raz = atlas.getShapeRes()[2];		
 	}
 
-	final public void finalize() {
-		images = null;
-		System.gc();
-	}
-
 	public final int getNclass() { return nclass; }
 	
 	public final float[][] getMemberships() { return mems; }

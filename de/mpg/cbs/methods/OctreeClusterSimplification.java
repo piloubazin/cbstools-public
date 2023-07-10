@@ -354,7 +354,6 @@ public class OctreeClusterSimplification {
 				}
 			}
 		}
-		tree.finalize();
 		tree = null;
 		
 		// update data

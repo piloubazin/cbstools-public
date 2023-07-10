@@ -48,13 +48,6 @@ public class BinaryHeap3D {
 			val[0] = 1e12f;
 	}
 	
-	public void finalize() {
-		val = null;
-		x = null;
-		y = null;
-		z = null;
-	}
-	
 	/**
 	 *  to reset the binary tree
 	 */

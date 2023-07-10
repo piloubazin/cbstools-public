@@ -151,7 +151,6 @@ public class LaminarVolumetricLayering {
 			
 			gdmin.evolveNarrowBand(iterationParamNarrowBand, minimumParamNarrowBand);
 			inner = gdmin.exportLevelset();
-			gdmin.finalize();
 			gdmin = null;
 			
 			SmoothGdm gdmout = new SmoothGdm(outer, nx, ny, nz, rx, ry, rz,
@@ -159,7 +158,6 @@ public class LaminarVolumetricLayering {
 			
 			gdmout.evolveNarrowBand(iterationParamNarrowBand, minimumParamNarrowBand);
 			outer = gdmout.exportLevelset();
-			gdmout.finalize();
 			gdmout = null;
 		}
 		

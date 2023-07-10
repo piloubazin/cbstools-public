@@ -201,11 +201,6 @@ public class ShapeAtlasWarping {
 		if (debug) BasicInfo.displayMessage("Demons:initialisation\n");
 	}
 
-	final public void finalize() {
-		s = null; u = null; c = null;
-		System.gc();
-	}
-    
    public final float[][] getCurrentTransform() {
 	   return s;
    }

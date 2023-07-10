@@ -78,7 +78,6 @@ public class StatisticalUncertaintyReduction {
 			//segmentation = new byte[nix*niy*niz];	
 			mask = new boolean[nix*niy*niz];	
 		} catch (OutOfMemoryError e){
-			 finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -96,10 +95,6 @@ public class StatisticalUncertaintyReduction {
 				}
 			}
 		}
-	}
-	
-	public void finalize() {
-		//segmentation = null;
 	}
 	
 	public final void setBestProbabilities(float[][] bestpb, byte[][] bestlb, int[] objlb) {

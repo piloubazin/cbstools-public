@@ -459,7 +459,6 @@ public class OctreeMultiClusterSimplification {
 				}
 			}
 		}
-		tree.finalize();
 		tree = null;
 		
 		if (verbose) System.out.println("remap labels");

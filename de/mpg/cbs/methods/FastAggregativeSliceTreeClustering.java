@@ -182,12 +182,6 @@ public class FastAggregativeSliceTreeClustering {
 		slicecount = countAndRelabel(slicedir);
 	}
 
-	final public void finalize() {
-		image = null;
-		assoc = null;
-		System.gc();
-	}
-	
    public final int[] countAndRelabel(String dir) {
         int x,y,z;
         int Nlb;

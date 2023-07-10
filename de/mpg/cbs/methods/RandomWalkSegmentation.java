@@ -80,12 +80,6 @@ public class RandomWalkSegmentation {
 		if (debug) System.out.println("image: ["+Imin+", "+Imax+"]");
 	}
 
-	final public void finalize() {
-		image = null;
-		labels = null;
-		System.gc();
-	}
-	
 	public final float[][] getIntensity() { return intens; }
 	
 	public final void computeEdgeWeights() {

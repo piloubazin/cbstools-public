@@ -310,7 +310,6 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 		atlas.refreshShapeMapping();
 
 		// clean-up
-		rigid.finalize();
 		rigid = null;
 		
 		classif.computeMemberships();
@@ -348,7 +347,6 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 		 byte[] target = atlas.generateTransformedClassification();
 		
 		// clean-up
-		warp1.finalize();
 		warp1 = null;
 		
 		BasicInfo.displayMessage("level set segmentation\n");
@@ -450,7 +448,6 @@ public class JistBrainMgdmMultiSegmentation extends ProcessingAlgorithm {
 																topologyParam.getValue());
 		
 		// clean-up
-		classif.finalize();
 		classif = null;
 		
 		BasicInfo.displayMessage("gain...\n");

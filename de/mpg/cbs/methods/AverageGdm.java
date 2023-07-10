@@ -141,7 +141,6 @@ public class AverageGdm {
 			}
 			if (checkTopology) {
 				if (!lut.loadCompressedPattern()) {
-					finalize();
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
@@ -149,7 +148,6 @@ public class AverageGdm {
 				}
 			}
 		} catch (OutOfMemoryError e){
-			 finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -163,21 +161,11 @@ public class AverageGdm {
 		if (debug) BasicInfo.displayMessage("initialization\n");
 	}
 		
-	public void finalize() {
-		levelsets = null;
-		avglevelset = null;
-		stdlevelset = null;
-		minlevelset = null;
-		heap.finalize();
-		heap = null;
-	}
-	
 	/**
 	 *	clean up the computation arrays
 	 */
 	public final void cleanUp() {
 		
-		heap.finalize();
 		heap = null;
 		System.gc();
 	}

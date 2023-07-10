@@ -292,7 +292,6 @@ public class MgdmFastAtlasSegmentation2 {
 			}
 			if (checkTopology) {
 				if (!lut.loadCompressedPattern()) {
-					finalize();
 					System.out.println("Problem loading the algorithm's LUT from: "+lut.getFilename());
 					BasicInfo.displayMessage("Problem loading the algorithm's LUT from: "+lut.getFilename()+"\n");
 				} else {
@@ -300,7 +299,6 @@ public class MgdmFastAtlasSegmentation2 {
 				}
 			}
 		} catch (OutOfMemoryError e){
-			 finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -332,24 +330,13 @@ public class MgdmFastAtlasSegmentation2 {
 		if (debug) BasicInfo.displayMessage("initialization\n");
 	}
 		
-	public void finalize() {
-		mgdmfunctions = null;
-		mgdmlabels = null;
-		segmentation = null;
-		segobjlabels = null;
-		lut = null;
-		heap = null;
-	}
-	
 	/**
 	 *	clean up the computation arrays
 	 */
 	public final void cleanUp() {
 		mgdmfunctions = null;
 		mgdmlabels = null;
-		heap.finalize();
 		heap = null;
-		lut.finalize();
 		lut = null;
 		System.gc();
 	}
@@ -2655,13 +2642,6 @@ public class MgdmFastAtlasSegmentation2 {
 			id = new int[capacity];
 			labels = new byte[nmgdm+1][capacity];
 			functions = new float[nmgdm][capacity];
-		}
-		
-		public void finalize() {
-			capacity = -1;
-			id = null;
-			labels = null;
-			functions = null;
 		}
 		
 		public final void addPoint(int xyz, byte[][] mgdmlabels, float[][] mgdmfn) {

@@ -168,13 +168,6 @@ public class SimpleShapeAtlas {
 		intensity = new float[INTENSITY][nobj];
 	}
 	
-	/** clean-up: destroy membership and centroid arrays */
-	public final void finalize() {
-		shape = null;
-		template = null;
-		System.gc();
-	}
-	
 	/** link the variables */
 	final public int 		getNumber() { return nobj; }
 	final public String[] 	getNames() { return objName; }

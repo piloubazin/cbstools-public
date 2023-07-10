@@ -74,12 +74,6 @@ public class CorticalRegionSmoothing4D {
 	}
 	
 		
-	public void finalize() {
-		data = null;
-		mask = null;
-		
-	}
-	
 	/**
 	 *	clean up the computation arrays
 	 */

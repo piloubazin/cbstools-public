@@ -79,7 +79,6 @@ public class TotalVariation1D {
 			proj = new float[3][nxyz];
 			field = new float[nxyz];
 		} catch (OutOfMemoryError e){
-			finalize();
 			System.out.println(e.getMessage());
 			return;
 		}
@@ -112,13 +111,6 @@ public class TotalVariation1D {
 		if (debug) BasicInfo.displayMessage("TV:initialisation\n");
 	}
 
-	/** clean-up: destroy membership and centroid arrays */
-	public final void finalize() {
-		proj = null;
-		field = null;
-		System.gc();
-	}
-	
 	public final void setScaling(float val) {
 	    // change scaling parameters to fit the new values
 	    //lambdaScale *= val/(Imax-Imin);

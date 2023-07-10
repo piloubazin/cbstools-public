@@ -141,13 +141,6 @@ public class FastAggregativeOctreeAcceleratedClustering {
 		
 	}
 
-	final public void finalize() {
-		octree = null;
-		labeling = null;
-		assoc = null;
-		System.gc();
-	}
-	
 	public final int getInitClusterNumber() { return nlb; }
 	
 	// initial lists: create all the links, thus the images are not needed anymore ?

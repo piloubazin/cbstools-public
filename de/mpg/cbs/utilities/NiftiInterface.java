@@ -379,32 +379,6 @@ public class NiftiInterface extends FileBase
         System.arraycopy(resultBuffer, 0, buffer, 0, buffer.length);
     }
     
-    public void finalize() {
-        this.axisOrientation = null;
-        this.axisOrientation2 = null;
-        this.bufferByte = null;
-        this.LPSOrigin = null;
-        this.LPSOrigin2 = null;
-        this.matrix = null;
-        this.matrixTwoDim = null;
-        this.matrix2 = null;
-        this.origin = null;
-        this.pixdim = null;
-        this.resolutions = null;
-        this.srow_x = null;
-        this.srow_y = null;
-        this.srow_z = null;
-        this.intentName = null;
-        this.fileDir = null;
-        this.fileName = null;
-        this.fileInfo = null;
-        this.image = null;
-        try {
-            super.finalize();
-        }
-        catch (Throwable t) {}
-    }
-    
     public FileInfoNIFTI getFileInfo() {
         return this.fileInfo;
     }
@@ -2558,7 +2532,6 @@ public class NiftiInterface extends FileBase
                 if (doChangeType) {
                     AlgorithmChangeType changeTypeAlgo = new AlgorithmChangeType(this.image, newType, this.imageMin, this.imageMax, this.imageMin, this.imageMax, false);
                     changeTypeAlgo.run();
-                    changeTypeAlgo.finalize();
                     changeTypeAlgo = null;
                 }
                 this.scale(this.image);

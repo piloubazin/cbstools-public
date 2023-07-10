@@ -50,14 +50,6 @@ public class BinaryHeap4D {
 			val[0] = 1e12f;
 	}
 	
-	public void finalize() {
-		val = null;
-		x = null;
-		y = null;
-		z = null;
-		k = null;
-	}
-	
 	/**
 	 *  to reset the binary tree
 	 */

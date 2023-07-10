@@ -221,7 +221,7 @@ public class JistCortexSmoothData extends ProcessingAlgorithm {
 		
 		// clean up
 		sdataImg = null;
-		regionSmoothing.finalize();
+		regionSmoothing = null;
 		
 	}
 

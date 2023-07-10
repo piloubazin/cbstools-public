@@ -48,12 +48,6 @@ public class GraphNode {
 	}
 		
 	
-	public void finalize() {
-		connected = null;
-		Nc = 0;
-		Nmax = 0;
-	}
-	
 	/**
 	 *  set the value of the node
 	 */

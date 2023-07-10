@@ -156,11 +156,6 @@ public class FastMarchingSkullStripping {
 		ngbsize = n1_;
 	}
 
-	final public void finalize() {
-		image = null;
-		System.gc();
-	}
-
 	public final float[][] getGain() { return gain; }
 	
 	/** 

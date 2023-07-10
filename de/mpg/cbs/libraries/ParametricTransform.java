@@ -69,9 +69,6 @@ public class ParametricTransform {
 		Iscale = (float)Math.sqrt(Iscale2);	
 	}
 	
-	public final void finalize() {
-	}
-	
 	public final int getDimension() { return Nt; }
 	
 	public final String getTransformType() {

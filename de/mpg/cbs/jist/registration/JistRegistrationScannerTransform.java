@@ -111,7 +111,7 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
 		osrc[0] = niftisrc.qoffset_x;
 		osrc[1] = niftisrc.qoffset_y;
 		osrc[2] = niftisrc.qoffset_z;
-		niftisrc.finalize(); niftisrc = null;
+		niftisrc = null;
 		
 		ImageDataMipavWrapper trg = (ImageDataMipavWrapper)trgVol.getImageData();
 		TransMatrix trg2scan = trg.getModelImageDirect().getMatrixHolder().getNIFTICompositeMatrices()[0];
@@ -129,7 +129,7 @@ public class JistRegistrationScannerTransform extends ProcessingAlgorithm{
 		otrg[0] = niftitrg.qoffset_x;
 		otrg[1] = niftitrg.qoffset_y;
 		otrg[2] = niftitrg.qoffset_z;
-		niftitrg.finalize(); niftitrg = null;
+		niftitrg = null;
 		
 		// build the two transform matrices
 		Matrix srcmat = Matrix.identity(4,4);

@@ -235,13 +235,6 @@ public class FastAggregativeClusteringND {
 		
 	}
 
-	final public void finalize() {
-		image = null;
-		labeling = null;
-		assoc = null;
-		System.gc();
-	}
-	
 	// initial lists: create all the links, thus the images are not needed anymore ?
 	public final void initClusters() {
 		
