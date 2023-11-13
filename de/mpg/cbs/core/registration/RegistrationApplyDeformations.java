@@ -257,9 +257,9 @@ public class RegistrationApplyDeformations {
             float[] composed12 = new float[nd2x*nd2y*nd2z*3];
             for (int x=0;x<nd2x;x++) for (int y=0;y<nd2y;y++) for (int z=0;z<nd2z;z++) {
                 int xyz = x + nd2x*y + nd2x*nd2y*z;
-                composed12[xyz+X*nd2xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation2Image[xyz+X*nd2xyz], deformation2Image[xyz+Y*nd2xyz], deformation2Image[xyz+Z*nd2xyz], X, nd1x, nd1y, nd1z, 3);
-                composed12[xyz+Y*nd2xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation2Image[xyz+X*nd2xyz], deformation2Image[xyz+Y*nd2xyz], deformation2Image[xyz+Z*nd2xyz], Y, nd1x, nd1y, nd1z, 3);
-                composed12[xyz+Z*nd2xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation2Image[xyz+X*nd2xyz], deformation2Image[xyz+Y*nd2xyz], deformation2Image[xyz+Z*nd2xyz], Z, nd1x, nd1y, nd1z, 3);
+                composed12[xyz+X*nd2xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation2Image[xyz+X*nd2xyz], deformation2Image[xyz+Y*nd2xyz], deformation2Image[xyz+Z*nd2xyz], X, nd1x, nd1y, nd1z, 3);
+                composed12[xyz+Y*nd2xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation2Image[xyz+X*nd2xyz], deformation2Image[xyz+Y*nd2xyz], deformation2Image[xyz+Z*nd2xyz], Y, nd1x, nd1y, nd1z, 3);
+                composed12[xyz+Z*nd2xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation2Image[xyz+X*nd2xyz], deformation2Image[xyz+Y*nd2xyz], deformation2Image[xyz+Z*nd2xyz], Z, nd1x, nd1y, nd1z, 3);
             }
             deformation = composed12;
             deformation1Image = null;
@@ -336,9 +336,9 @@ public class RegistrationApplyDeformations {
                 float[] composed123 = new float[nd3x*nd3y*nd3z*3];
                 for (int x=0;x<nd3x;x++) for (int y=0;y<nd3y;y++) for (int z=0;z<nd3z;z++) {
                     int xyz = x + nd3x*y + nd3x*nd3y*z;
-                    composed123[xyz+X*nd3xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation3Image[xyz+X*nd3xyz], deformation3Image[xyz+Y*nd3xyz], deformation3Image[xyz+Z*nd3xyz], X, nd2x, nd2y, nd2z, 3);
-                    composed123[xyz+Y*nd3xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation3Image[xyz+X*nd3xyz], deformation3Image[xyz+Y*nd3xyz], deformation3Image[xyz+Z*nd3xyz], Y, nd2x, nd2y, nd2z, 3);
-                    composed123[xyz+Z*nd3xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation3Image[xyz+X*nd3xyz], deformation3Image[xyz+Y*nd3xyz], deformation3Image[xyz+Z*nd3xyz], Z, nd2x, nd2y, nd2z, 3);
+                    composed123[xyz+X*nd3xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation3Image[xyz+X*nd3xyz], deformation3Image[xyz+Y*nd3xyz], deformation3Image[xyz+Z*nd3xyz], X, nd2x, nd2y, nd2z, 3);
+                    composed123[xyz+Y*nd3xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation3Image[xyz+X*nd3xyz], deformation3Image[xyz+Y*nd3xyz], deformation3Image[xyz+Z*nd3xyz], Y, nd2x, nd2y, nd2z, 3);
+                    composed123[xyz+Z*nd3xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation3Image[xyz+X*nd3xyz], deformation3Image[xyz+Y*nd3xyz], deformation3Image[xyz+Z*nd3xyz], Z, nd2x, nd2y, nd2z, 3);
                 }
                 deformation = composed123;
                 deformation3Image = null;
@@ -413,9 +413,9 @@ public class RegistrationApplyDeformations {
                     float[] composed1234 = new float[nd4x*nd4y*nd4z*3];
                     for (int x=0;x<nd4x;x++) for (int y=0;y<nd4y;y++) for (int z=0;z<nd4z;z++) {
                         int xyz = x + nd4x*y + nd4x*nd4y*z;
-                        composed1234[xyz+X*nd4xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation4Image[xyz+X*nd4xyz], deformation4Image[xyz+Y*nd4xyz], deformation4Image[xyz+Z*nd4xyz], X, nd3x, nd3y, nd3z, 3);
-                        composed1234[xyz+Y*nd4xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation4Image[xyz+X*nd4xyz], deformation4Image[xyz+Y*nd4xyz], deformation4Image[xyz+Z*nd4xyz], Y, nd3x, nd3y, nd3z, 3);
-                        composed1234[xyz+Z*nd4xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation4Image[xyz+X*nd4xyz], deformation4Image[xyz+Y*nd4xyz], deformation4Image[xyz+Z*nd4xyz], Z, nd3x, nd3y, nd3z, 3);
+                        composed1234[xyz+X*nd4xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation4Image[xyz+X*nd4xyz], deformation4Image[xyz+Y*nd4xyz], deformation4Image[xyz+Z*nd4xyz], X, nd3x, nd3y, nd3z, 3);
+                        composed1234[xyz+Y*nd4xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation4Image[xyz+X*nd4xyz], deformation4Image[xyz+Y*nd4xyz], deformation4Image[xyz+Z*nd4xyz], Y, nd3x, nd3y, nd3z, 3);
+                        composed1234[xyz+Z*nd4xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation4Image[xyz+X*nd4xyz], deformation4Image[xyz+Y*nd4xyz], deformation4Image[xyz+Z*nd4xyz], Z, nd3x, nd3y, nd3z, 3);
                     }
                     deformation = composed1234;
                     deformation4Image = null;
@@ -477,13 +477,27 @@ public class RegistrationApplyDeformations {
                 float ymin = 1e9f,ymax = -1e9f;
                 float zmin = 1e9f,zmax = -1e9f;
                 for (int dx=-1;dx<=1;dx++) for (int dy=-1;dy<=1;dy++) for (int dz=-1;dz<=1;dz++) {
-                    xmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmin);
-                    xmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmax);
-                    ymin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymin);
-                    ymax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymax);
-                    zmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmin);
-                    zmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmax);
-                }
+                    if (deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz]!=0) {
+                        xmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmin);
+                        xmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmax);
+                    }
+                    if (deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz]!=0) {
+                        ymin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymin);
+                        ymax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymax);
+                    }
+                    if (deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz]!=0) {
+                        zmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmin);
+                        zmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmax);
+                    }
+                }/*
+                // cap size in case of border effects
+                xmin = Numerics.max(xmin,deformation[xyz]-3.0f*nsx/nrx);
+                xmax = Numerics.min(xmax,deformation[xyz]+3.0f*nsx/nrx);
+                ymin = Numerics.max(ymin,deformation[xyz]-3.0f*nsy/nry);
+                ymax = Numerics.min(ymax,deformation[xyz]+3.0f*nsy/nry);
+                zmin = Numerics.max(zmin,deformation[xyz]-3.0f*nsz/nrz);
+                zmax = Numerics.min(zmax,deformation[xyz]+3.0f*nsz/nrz);
+                */
                 int sx = Numerics.ceil(xmax-xmin);
                 int sy = Numerics.ceil(ymax-ymin);
                 int sz = Numerics.ceil(zmax-zmin);
@@ -491,9 +505,9 @@ public class RegistrationApplyDeformations {
                     deformedImage[xyz + nrxyz*t] = 0.0f;
                 }
                 for (float dx=0;dx<=sx;dx++) for (float dy=0;dy<=sy;dy++) for (float dz=0;dz<=sz;dz++) {
-                    float px = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, X, nrx, nry, nrz, 3);
-                    float py = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Y, nrx, nry, nrz, 3);
-                    float pz = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Z, nrx, nry, nrz, 3);
+                    float px = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, X, nrx, nry, nrz, 3);
+                    float py = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Y, nrx, nry, nrz, 3);
+                    float pz = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Z, nrx, nry, nrz, 3);
                             
                     for (int t=0;t<nst;t++) {
                         if (padOption.equals("closest"))
@@ -519,13 +533,27 @@ public class RegistrationApplyDeformations {
                 float ymin = 1e9f,ymax = -1e9f;
                 float zmin = 1e9f,zmax = -1e9f;
                 for (int dx=-1;dx<=1;dx++) for (int dy=-1;dy<=1;dy++) for (int dz=-1;dz<=1;dz++) {
-                    xmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmin);
-                    xmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmax);
-                    ymin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymin);
-                    ymax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymax);
-                    zmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmin);
-                    zmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmax);
-                }
+                    if (deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz]!=0) {
+                        xmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmin);
+                        xmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmax);
+                    }
+                    if (deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz]!=0) {
+                        ymin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymin);
+                        ymax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymax);
+                    }
+                    if (deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz]!=0) {
+                        zmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmin);
+                        zmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmax);
+                    }
+                }/*
+                // cap size in case of border effects
+                xmin = Numerics.max(xmin,deformation[xyz]-3.0f*nsx/nrx);
+                xmax = Numerics.min(xmax,deformation[xyz]+3.0f*nsx/nrx);
+                ymin = Numerics.max(ymin,deformation[xyz]-3.0f*nsy/nry);
+                ymax = Numerics.min(ymax,deformation[xyz]+3.0f*nsy/nry);
+                zmin = Numerics.max(zmin,deformation[xyz]-3.0f*nsz/nrz);
+                zmax = Numerics.min(zmax,deformation[xyz]+3.0f*nsz/nrz);
+                */
                 int sx = Numerics.ceil(xmax-xmin);
                 int sy = Numerics.ceil(ymax-ymin);
                 int sz = Numerics.ceil(zmax-zmin);
@@ -534,9 +562,9 @@ public class RegistrationApplyDeformations {
                 }
                 float[] sden = new float[nst];
                 for (float dx=0;dx<=sx;dx++) for (float dy=0;dy<=sy;dy++) for (float dz=0;dz<=sz;dz++) {
-                    float px = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, X, nrx, nry, nrz, 3);
-                    float py = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Y, nrx, nry, nrz, 3);
-                    float pz = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Z, nrx, nry, nrz, 3);
+                    float px = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, X, nrx, nry, nrz, 3);
+                    float py = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Y, nrx, nry, nrz, 3);
+                    float pz = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Z, nrx, nry, nrz, 3);
                             
                     for (int t=0;t<nst;t++) {
                         float interp = 0.0f;
@@ -568,13 +596,27 @@ public class RegistrationApplyDeformations {
                 float ymin = 1e9f,ymax = -1e9f;
                 float zmin = 1e9f,zmax = -1e9f;
                 for (int dx=-1;dx<=1;dx++) for (int dy=-1;dy<=1;dy++) for (int dz=-1;dz<=1;dz++) {
-                    xmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmin);
-                    xmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmax);
-                    ymin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymin);
-                    ymax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymax);
-                    zmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmin);
-                    zmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmax);
-                }
+                    if (deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz]!=0) {
+                        xmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmin);
+                        xmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+X*nrxyz],xmax);
+                    }
+                    if (deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz]!=0) {
+                        ymin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymin);
+                        ymax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Y*nrxyz],ymax);
+                    }
+                    if (deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz]!=0) {
+                        zmin = Numerics.min(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmin);
+                        zmax = Numerics.max(deformation[xyz+dx+nrx*dy+nrx*nry*dz+Z*nrxyz],zmax);
+                    }
+                }/*
+                // cap size in case of border effects
+                xmin = Numerics.max(xmin,deformation[xyz]-3.0f*nsx/nrx);
+                xmax = Numerics.min(xmax,deformation[xyz]+3.0f*nsx/nrx);
+                ymin = Numerics.max(ymin,deformation[xyz]-3.0f*nsy/nry);
+                ymax = Numerics.min(ymax,deformation[xyz]+3.0f*nsy/nry);
+                zmin = Numerics.max(zmin,deformation[xyz]-3.0f*nsz/nrz);
+                zmax = Numerics.min(zmax,deformation[xyz]+3.0f*nsz/nrz);
+                */
                 int sx = Numerics.ceil(xmax-xmin);
                 int sy = Numerics.ceil(ymax-ymin);
                 int sz = Numerics.ceil(zmax-zmin);
@@ -582,9 +624,9 @@ public class RegistrationApplyDeformations {
                     deformedImage[xyz + nrxyz*t] = -1e9f;
                 }
                 for (float dx=0;dx<=sx;dx++) for (float dy=0;dy<=sy;dy++) for (float dz=0;dz<=sz;dz++) {
-                    float px = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, X, nrx, nry, nrz, 3);
-                    float py = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Y, nrx, nry, nrz, 3);
-                    float pz = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Z, nrx, nry, nrz, 3);
+                    float px = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, X, nrx, nry, nrz, 3);
+                    float py = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Y, nrx, nry, nrz, 3);
+                    float pz = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+dx/sx, y-0.5f+dy/sy, z-0.5f+dz/sz, Z, nrx, nry, nrz, 3);
                             
                     for (int t=0;t<nst;t++) {
                         if (padOption.equals("closest"))

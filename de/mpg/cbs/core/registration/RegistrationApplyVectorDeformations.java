@@ -53,6 +53,7 @@ public class RegistrationApplyVectorDeformations {
 	private static final byte Y = 1;
 	private static final byte Z = 2;
 	private static final byte T = 3;
+	
 	private static final byte XY = 3;
 	private static final byte YZ = 4;
 	private static final byte ZX = 5;
@@ -266,9 +267,9 @@ public class RegistrationApplyVectorDeformations {
             float[] composed12 = new float[nd2x*nd2y*nd2z*3];
             for (int x=0;x<nd2x;x++) for (int y=0;y<nd2y;y++) for (int z=0;z<nd2z;z++) {
                 int xyz = x + nd2x*y + nd2x*nd2y*z;
-                composed12[xyz+X*nd2xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation2Image[xyz+X*nd2xyz], deformation2Image[xyz+Y*nd2xyz], deformation2Image[xyz+Z*nd2xyz], X, nd1x, nd1y, nd1z, 3);
-                composed12[xyz+Y*nd2xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation2Image[xyz+X*nd2xyz], deformation2Image[xyz+Y*nd2xyz], deformation2Image[xyz+Z*nd2xyz], Y, nd1x, nd1y, nd1z, 3);
-                composed12[xyz+Z*nd2xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation2Image[xyz+X*nd2xyz], deformation2Image[xyz+Y*nd2xyz], deformation2Image[xyz+Z*nd2xyz], Z, nd1x, nd1y, nd1z, 3);
+                composed12[xyz+X*nd2xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation2Image[xyz+X*nd2xyz], deformation2Image[xyz+Y*nd2xyz], deformation2Image[xyz+Z*nd2xyz], X, nd1x, nd1y, nd1z, 3);
+                composed12[xyz+Y*nd2xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation2Image[xyz+X*nd2xyz], deformation2Image[xyz+Y*nd2xyz], deformation2Image[xyz+Z*nd2xyz], Y, nd1x, nd1y, nd1z, 3);
+                composed12[xyz+Z*nd2xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation2Image[xyz+X*nd2xyz], deformation2Image[xyz+Y*nd2xyz], deformation2Image[xyz+Z*nd2xyz], Z, nd1x, nd1y, nd1z, 3);
             }
             deformation = composed12;
             deformation1Image = null;
@@ -348,9 +349,9 @@ public class RegistrationApplyVectorDeformations {
                 float[] composed123 = new float[nd3x*nd3y*nd3z*3];
                 for (int x=0;x<nd3x;x++) for (int y=0;y<nd3y;y++) for (int z=0;z<nd3z;z++) {
                     int xyz = x + nd3x*y + nd3x*nd3y*z;
-                    composed123[xyz+X*nd3xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation3Image[xyz+X*nd3xyz], deformation3Image[xyz+Y*nd3xyz], deformation3Image[xyz+Z*nd3xyz], X, nd2x, nd2y, nd2z, 3);
-                    composed123[xyz+Y*nd3xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation3Image[xyz+X*nd3xyz], deformation3Image[xyz+Y*nd3xyz], deformation3Image[xyz+Z*nd3xyz], Y, nd2x, nd2y, nd2z, 3);
-                    composed123[xyz+Z*nd3xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation3Image[xyz+X*nd3xyz], deformation3Image[xyz+Y*nd3xyz], deformation3Image[xyz+Z*nd3xyz], Z, nd2x, nd2y, nd2z, 3);
+                    composed123[xyz+X*nd3xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation3Image[xyz+X*nd3xyz], deformation3Image[xyz+Y*nd3xyz], deformation3Image[xyz+Z*nd3xyz], X, nd2x, nd2y, nd2z, 3);
+                    composed123[xyz+Y*nd3xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation3Image[xyz+X*nd3xyz], deformation3Image[xyz+Y*nd3xyz], deformation3Image[xyz+Z*nd3xyz], Y, nd2x, nd2y, nd2z, 3);
+                    composed123[xyz+Z*nd3xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation3Image[xyz+X*nd3xyz], deformation3Image[xyz+Y*nd3xyz], deformation3Image[xyz+Z*nd3xyz], Z, nd2x, nd2y, nd2z, 3);
                 }
                 deformation = composed123;
                 deformation3Image = null;
@@ -429,12 +430,12 @@ public class RegistrationApplyVectorDeformations {
                     float[] composed1234 = new float[nd4x*nd4y*nd4z*3];
                     for (int x=0;x<nd4x;x++) for (int y=0;y<nd4y;y++) for (int z=0;z<nd4z;z++) {
                         int xyz = x + nd4x*y + nd4x*nd4y*z;
-                        composed1234[xyz+X*nd4xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation4Image[xyz+X*nd4xyz], deformation4Image[xyz+Y*nd4xyz], deformation4Image[xyz+Z*nd4xyz], X, nd3x, nd3y, nd3z, 3);
-                        composed1234[xyz+Y*nd4xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation4Image[xyz+X*nd4xyz], deformation4Image[xyz+Y*nd4xyz], deformation4Image[xyz+Z*nd4xyz], Y, nd3x, nd3y, nd3z, 3);
-                        composed1234[xyz+Z*nd4xyz] = ImageInterpolation.linearClosestInterpolation(deformation, deformation4Image[xyz+X*nd4xyz], deformation4Image[xyz+Y*nd4xyz], deformation4Image[xyz+Z*nd4xyz], Z, nd3x, nd3y, nd3z, 3);
+                        composed1234[xyz+X*nd4xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation4Image[xyz+X*nd4xyz], deformation4Image[xyz+Y*nd4xyz], deformation4Image[xyz+Z*nd4xyz], X, nd3x, nd3y, nd3z, 3);
+                        composed1234[xyz+Y*nd4xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation4Image[xyz+X*nd4xyz], deformation4Image[xyz+Y*nd4xyz], deformation4Image[xyz+Z*nd4xyz], Y, nd3x, nd3y, nd3z, 3);
+                        composed1234[xyz+Z*nd4xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation4Image[xyz+X*nd4xyz], deformation4Image[xyz+Y*nd4xyz], deformation4Image[xyz+Z*nd4xyz], Z, nd3x, nd3y, nd3z, 3);
                     }
                     deformation = composed1234;
-                    deformation4Image = null;
+                    deformation4Image = null;                                                                                                       
                     composed123 = null;
                     
                     nrx = nd4x; nry = nd4y; nrz = nd4z;
@@ -456,10 +457,14 @@ public class RegistrationApplyVectorDeformations {
                 if (sourceImage[xyzt]>max) max = sourceImage[xyzt];
             }
         }
+        int counter=0;
         double[] avgtensor = new double[2*nst];
         deformedImage = new float[nrx*nry*nrz*nst];
         for (int x=1;x<nrx-1;x++) for (int y=1;y<nry-1;y++) for (int z=1;z<nrz-1;z++) {
             int xyz = x + nrx*y + nrx*nry*z;
+            
+            counter++;
+            if (counter>=1000) { System.out.print("."); counter=0; }
             
             double[] dx = new double[3];
             if (x==0) {
@@ -530,14 +535,28 @@ public class RegistrationApplyVectorDeformations {
                 float xmin = 1e9f,xmax = -1e9f;
                 float ymin = 1e9f,ymax = -1e9f;
                 float zmin = 1e9f,zmax = -1e9f;
-                for (int ax=-1;ax<=1;ax++) for (int ay=-1;ay<=1;ay++) for (int az=-1;az<=1;az++) {
-                    xmin = Numerics.min(deformation[xyz+ax+nrx*ay+nrx*nry*az+X*nrxyz],xmin);
-                    xmax = Numerics.max(deformation[xyz+ax+nrx*ay+nrx*nry*az+X*nrxyz],xmax);
-                    ymin = Numerics.min(deformation[xyz+ax+nrx*ay+nrx*nry*az+Y*nrxyz],ymin);
-                    ymax = Numerics.max(deformation[xyz+ax+nrx*ay+nrx*nry*az+Y*nrxyz],ymax);
-                    zmin = Numerics.min(deformation[xyz+ax+nrx*ay+nrx*nry*az+Z*nrxyz],zmin);
-                    zmax = Numerics.max(deformation[xyz+ax+nrx*ay+nrx*nry*az+Z*nrxyz],zmax);
+                for (int dax=-1;dax<=1;dax++) for (int day=-1;day<=1;day++) for (int daz=-1;daz<=1;daz++) {
+                    if (deformation[xyz+dax+nrx*day+nrx*nry*daz+X*nrxyz]!=0) {
+                        xmin = Numerics.min(deformation[xyz+dax+nrx*day+nrx*nry*daz+X*nrxyz],xmin);
+                        xmax = Numerics.max(deformation[xyz+dax+nrx*day+nrx*nry*daz+X*nrxyz],xmax);
+                    }
+                    if (deformation[xyz+dax+nrx*day+nrx*nry*daz+Y*nrxyz]!=0) {
+                        ymin = Numerics.min(deformation[xyz+dax+nrx*day+nrx*nry*daz+Y*nrxyz],ymin);
+                        ymax = Numerics.max(deformation[xyz+dax+nrx*day+nrx*nry*daz+Y*nrxyz],ymax);
+                    }
+                    if (deformation[xyz+dax+nrx*day+nrx*nry*daz+Z*nrxyz]!=0) {
+                        zmin = Numerics.min(deformation[xyz+dax+nrx*day+nrx*nry*daz+Z*nrxyz],zmin);
+                        zmax = Numerics.max(deformation[xyz+dax+nrx*day+nrx*nry*daz+Z*nrxyz],zmax);
+                    }
                 }
+                // cap size in case of border effects
+                xmin = Numerics.max(xmin,deformation[xyz]-3.0f*nsx/nrx);
+                xmax = Numerics.min(xmax,deformation[xyz]+3.0f*nsx/nrx);
+                ymin = Numerics.max(ymin,deformation[xyz]-3.0f*nsy/nry);
+                ymax = Numerics.min(ymax,deformation[xyz]+3.0f*nsy/nry);
+                zmin = Numerics.max(zmin,deformation[xyz]-3.0f*nsz/nrz);
+                zmax = Numerics.min(zmax,deformation[xyz]+3.0f*nsz/nrz);
+
                 int sx = Numerics.ceil(xmax-xmin);
                 int sy = Numerics.ceil(ymax-ymin);
                 int sz = Numerics.ceil(zmax-zmin);
@@ -545,9 +564,9 @@ public class RegistrationApplyVectorDeformations {
                     avgtensor[t] = 0.0;
                 }
                 for (float ax=0;ax<=sx;ax++) for (float ay=0;ay<=sy;ay++) for (float az=0;az<=sz;az++) {
-                    float px = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+ax/sx, y-0.5f+ay/sy, z-0.5f+az/sz, X, nrx, nry, nrz, 3);
-                    float py = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+ax/sx, y-0.5f+ay/sy, z-0.5f+az/sz, Y, nrx, nry, nrz, 3);
-                    float pz = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+ax/sx, y-0.5f+ay/sy, z-0.5f+az/sz, Z, nrx, nry, nrz, 3);
+                    float px = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+ax/sx, y-0.5f+ay/sy, z-0.5f+az/sz, X, nrx, nry, nrz, 3);
+                    float py = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+ax/sx, y-0.5f+ay/sy, z-0.5f+az/sz, Y, nrx, nry, nrz, 3);
+                    float pz = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+ax/sx, y-0.5f+ay/sy, z-0.5f+az/sz, Z, nrx, nry, nrz, 3);
                             
                     for (int t=0;t<nst;t+=3) {
                         float vx=0.0f,vy=0.0f,vz=0.0f;
@@ -573,7 +592,7 @@ public class RegistrationApplyVectorDeformations {
                     avgtensor[t] /= (1.0f+sx)*(1.0f+sy)*(1.0f+sz);
                 }
                 // extract main direction
-                for (int t=0;t<nst;t+=3) {
+                for (int t=0;t<nst;t+=3) if (avgtensor[2*t]!=0) {
                     double[][] mtx = new double[3][3];
                     mtx[X][X] = avgtensor[2*t+X];
                     mtx[Y][Y] = avgtensor[2*t+Y];
@@ -599,107 +618,139 @@ public class RegistrationApplyVectorDeformations {
                 float xmin = 1e9f,xmax = -1e9f;
                 float ymin = 1e9f,ymax = -1e9f;
                 float zmin = 1e9f,zmax = -1e9f;
-                for (int ax=-1;ax<=1;ax++) for (int ay=-1;ay<=1;ay++) for (int az=-1;az<=1;az++) {
-                    xmin = Numerics.min(deformation[xyz+ax+nrx*ay+nrx*nry*az+X*nrxyz],xmin);
-                    xmax = Numerics.max(deformation[xyz+ax+nrx*ay+nrx*nry*az+X*nrxyz],xmax);
-                    ymin = Numerics.min(deformation[xyz+ax+nrx*ay+nrx*nry*az+Y*nrxyz],ymin);
-                    ymax = Numerics.max(deformation[xyz+ax+nrx*ay+nrx*nry*az+Y*nrxyz],ymax);
-                    zmin = Numerics.min(deformation[xyz+ax+nrx*ay+nrx*nry*az+Z*nrxyz],zmin);
-                    zmax = Numerics.max(deformation[xyz+ax+nrx*ay+nrx*nry*az+Z*nrxyz],zmax);
-                }
-                int sx = Numerics.ceil(xmax-xmin);
-                int sy = Numerics.ceil(ymax-ymin);
-                int sz = Numerics.ceil(zmax-zmin);
-                for (int t=0;t<2*nst;t++) {
-                    avgtensor[t] = 0.0;
-                }
-                float[] avgden = new float[nst];
-                for (float ax=0;ax<=sx;ax++) for (float ay=0;ay<=sy;ay++) for (float az=0;az<=sz;az++) {
-                    float px = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+ax/sx, y-0.5f+ay/sy, z-0.5f+az/sz, X, nrx, nry, nrz, 3);
-                    float py = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+ax/sx, y-0.5f+ay/sy, z-0.5f+az/sz, Y, nrx, nry, nrz, 3);
-                    float pz = ImageInterpolation.linearClosestInterpolation(deformation, x-0.5f+ax/sx, y-0.5f+ay/sy, z-0.5f+az/sz, Z, nrx, nry, nrz, 3);
-                            
-                    for (int t=0;t<nst;t+=3) {
-                        float vx=0.0f,vy=0.0f,vz=0.0f;
-                        if (padOption.equals("closest")) {
-                            vx = ImageInterpolation.linearClosestNonzeroInterpolation(sourceImage, px, py, pz, t+X, nsx, nsy, nsz, nst);
-                            vy = ImageInterpolation.linearClosestNonzeroInterpolation(sourceImage, px, py, pz, t+Y, nsx, nsy, nsz, nst);
-                            vz = ImageInterpolation.linearClosestNonzeroInterpolation(sourceImage, px, py, pz, t+Z, nsx, nsy, nsz, nst);
-                        } else if (padOption.equals("zero")) {
-                            vx = ImageInterpolation.linearNonzeroInterpolation(sourceImage, 0.0f, px, py, pz, t+X, nsx, nsy, nsz, nst);
-                            vy = ImageInterpolation.linearNonzeroInterpolation(sourceImage, 0.0f, px, py, pz, t+Y, nsx, nsy, nsz, nst);
-                            vz = ImageInterpolation.linearNonzeroInterpolation(sourceImage, 0.0f, px, py, pz, t+Z, nsx, nsy, nsz, nst);
-                        }
-                        if (vx!=0 || vy!=0 || vz!=0) {
-                            // average in tensor form    
-                            avgtensor[2*t+X] += vx*vx;    
-                            avgtensor[2*t+Y] += vy*vy;    
-                            avgtensor[2*t+Z] += vz*vz;    
-                            avgtensor[2*t+XY] += vx*vy;    
-                            avgtensor[2*t+YZ] += vy*vz;    
-                            avgtensor[2*t+ZX] += vz*vx;    
-                            avgden[t]++;
-                        }
+                boolean found=false;
+                for (int dax=-1;dax<=1;dax++) for (int day=-1;day<=1;day++) for (int daz=-1;daz<=1;daz++) {
+                    if (deformation[xyz+dax+nrx*day+nrx*nry*daz+X*nrxyz]!=0) {
+                        xmin = Numerics.min(deformation[xyz+dax+nrx*day+nrx*nry*daz+X*nrxyz],xmin);
+                        xmax = Numerics.max(deformation[xyz+dax+nrx*day+nrx*nry*daz+X*nrxyz],xmax);
+                        found=true;
+                    }
+                    if (deformation[xyz+dax+nrx*day+nrx*nry*daz+Y*nrxyz]!=0) {
+                        ymin = Numerics.min(deformation[xyz+dax+nrx*day+nrx*nry*daz+Y*nrxyz],ymin);
+                        ymax = Numerics.max(deformation[xyz+dax+nrx*day+nrx*nry*daz+Y*nrxyz],ymax);
+                        found=true;
+                    }
+                    if (deformation[xyz+dax+nrx*day+nrx*nry*daz+Z*nrxyz]!=0) {
+                        zmin = Numerics.min(deformation[xyz+dax+nrx*day+nrx*nry*daz+Z*nrxyz],zmin);
+                        zmax = Numerics.max(deformation[xyz+dax+nrx*day+nrx*nry*daz+Z*nrxyz],zmax);
+                        found=true;
                     }
                 }
-                for (int t=0;t<nst;t+=3) if (avgden[t]>0) {
-                    avgtensor[2*t+X] /= avgden[t];
-                    avgtensor[2*t+Y] /= avgden[t];
-                    avgtensor[2*t+Z] /= avgden[t];
-                    avgtensor[2*t+XY] /= avgden[t];
-                    avgtensor[2*t+YZ] /= avgden[t];
-                    avgtensor[2*t+ZX] /= avgden[t];
-                }
-                // extract main direction
-                for (int t=0;t<nst;t+=3) {
-                    double[][] mtx = new double[3][3];
-                    mtx[X][X] = avgtensor[2*t+X];
-                    mtx[Y][Y] = avgtensor[2*t+Y];
-                    mtx[Z][Z] = avgtensor[2*t+Z];
-                    
-                    mtx[X][Y] = avgtensor[2*t+XY];
-                    mtx[Y][Z] = avgtensor[2*t+YZ];
-                    mtx[Z][X] = avgtensor[2*t+ZX];
-                    
-                    mtx[Y][X] = avgtensor[2*t+XY];
-                    mtx[Z][Y] = avgtensor[2*t+YZ];
-                    mtx[X][Z] = avgtensor[2*t+ZX];
-                    
-                    double[] eval = Matrix3D.eigenvalues(mtx);
-                    double[][] evect = Matrix3D.eigenvectors(mtx,eval);
-                    
-                    deformedImage[xyz + nrxyz*t + nrxyz*X] = (float)evect[X][0];
-                    deformedImage[xyz + nrxyz*t + nrxyz*Y] = (float)evect[Y][0];
-                    deformedImage[xyz + nrxyz*t + nrxyz*Z] = (float)evect[Z][0];
-                }
-            }
-            
-            for (int t=0;t<nst;t+=3) {
-                double norm = deformedImage[xyz + X*nrxyz + nrxyz*t]*deformedImage[xyz + X*nrxyz + nrxyz*t]
-                             +deformedImage[xyz + Y*nrxyz + nrxyz*t]*deformedImage[xyz + Y*nrxyz + nrxyz*t]
-                             +deformedImage[xyz + Z*nrxyz + nrxyz*t]*deformedImage[xyz + Z*nrxyz + nrxyz*t];
-                             
-                double vx = dx[X]*deformedImage[xyz + X*nrxyz + nrxyz*t] 
-                           +dx[Y]*deformedImage[xyz + X*nrxyz + nrxyz*t]          
-                           +dx[Z]*deformedImage[xyz + X*nrxyz + nrxyz*t];          
-                             
-                double vy = dx[X]*deformedImage[xyz + Y*nrxyz + nrxyz*t] 
-                           +dx[Y]*deformedImage[xyz + Y*nrxyz + nrxyz*t]          
-                           +dx[Z]*deformedImage[xyz + Y*nrxyz + nrxyz*t];          
-                             
-                double vz = dx[X]*deformedImage[xyz + Z*nrxyz + nrxyz*t] 
-                           +dx[Y]*deformedImage[xyz + Z*nrxyz + nrxyz*t]          
-                           +dx[Z]*deformedImage[xyz + Z*nrxyz + nrxyz*t];   
-                           
-                double vnorm = vx*vx+vy*vy+vz*vz;
-                if (vnorm>0) {
-                    deformedImage[xyz + X*nrxyz + nrxyz*t] = (float)(vx*FastMath.sqrt(norm/vnorm));
-                    deformedImage[xyz + Y*nrxyz + nrxyz*t] = (float)(vy*FastMath.sqrt(norm/vnorm));
-                    deformedImage[xyz + Z*nrxyz + nrxyz*t] = (float)(vz*FastMath.sqrt(norm/vnorm));
+                if (!found) {
+                    for (int t=0;t<nst;t+=3) {
+                        deformedImage[xyz + X*nrxyz + nrxyz*t] = 0.0f;
+                        deformedImage[xyz + Y*nrxyz + nrxyz*t] = 0.0f;
+                        deformedImage[xyz + Z*nrxyz + nrxyz*t] = 0.0f;
+                    }
                 } else {
-                    deformedImage[xyz + X*nrxyz + nrxyz*t] = 0.0f;
-                    deformedImage[xyz + Y*nrxyz + nrxyz*t] = 0.0f;
-                    deformedImage[xyz + Z*nrxyz + nrxyz*t] = 0.0f;
+                    /*
+                    // cap size in case of border effects
+                    xmin = Numerics.max(xmin,deformation[xyz]-3.0f*nsx/nrx);
+                    xmax = Numerics.min(xmax,deformation[xyz]+3.0f*nsx/nrx);
+                    ymin = Numerics.max(ymin,deformation[xyz]-3.0f*nsy/nry);
+                    ymax = Numerics.min(ymax,deformation[xyz]+3.0f*nsy/nry);
+                    zmin = Numerics.max(zmin,deformation[xyz]-3.0f*nsz/nrz);
+                    zmax = Numerics.min(zmax,deformation[xyz]+3.0f*nsz/nrz);
+                    */
+                    int sx = Numerics.ceil(xmax-xmin);
+                    int sy = Numerics.ceil(ymax-ymin);
+                    int sz = Numerics.ceil(zmax-zmin);
+                    for (int t=0;t<2*nst;t++) {
+                        avgtensor[t] = 0.0;
+                    }
+                    float[] avgden = new float[nst];
+                    for (float ax=0;ax<=sx;ax++) for (float ay=0;ay<=sy;ay++) for (float az=0;az<=sz;az++) {
+                        float px = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+ax/sx, y-0.5f+ay/sy, z-0.5f+az/sz, X, nrx, nry, nrz, 3);
+                        float py = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+ax/sx, y-0.5f+ay/sy, z-0.5f+az/sz, Y, nrx, nry, nrz, 3);
+                        float pz = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, x-0.5f+ax/sx, y-0.5f+ay/sy, z-0.5f+az/sz, Z, nrx, nry, nrz, 3);
+                                
+                        for (int t=0;t<nst;t+=3) {
+                            float vx=0.0f,vy=0.0f,vz=0.0f;
+                            if (padOption.equals("closest")) {
+                                vx = ImageInterpolation.linearClosestNonzeroInterpolation(sourceImage, px, py, pz, t+X, nsx, nsy, nsz, nst);
+                                vy = ImageInterpolation.linearClosestNonzeroInterpolation(sourceImage, px, py, pz, t+Y, nsx, nsy, nsz, nst);
+                                vz = ImageInterpolation.linearClosestNonzeroInterpolation(sourceImage, px, py, pz, t+Z, nsx, nsy, nsz, nst);
+                            } else if (padOption.equals("zero")) {
+                                vx = ImageInterpolation.linearNonzeroInterpolation(sourceImage, 0.0f, px, py, pz, t+X, nsx, nsy, nsz, nst);
+                                vy = ImageInterpolation.linearNonzeroInterpolation(sourceImage, 0.0f, px, py, pz, t+Y, nsx, nsy, nsz, nst);
+                                vz = ImageInterpolation.linearNonzeroInterpolation(sourceImage, 0.0f, px, py, pz, t+Z, nsx, nsy, nsz, nst);
+                            }
+                            if (vx!=0 || vy!=0 || vz!=0) {
+                                // average in tensor form    
+                                avgtensor[2*t+X] += vx*vx;    
+                                avgtensor[2*t+Y] += vy*vy;    
+                                avgtensor[2*t+Z] += vz*vz;    
+                                avgtensor[2*t+XY] += vx*vy;    
+                                avgtensor[2*t+YZ] += vy*vz;    
+                                avgtensor[2*t+ZX] += vz*vx;    
+                                avgden[t]++;
+                            }
+                        }
+                    }
+                    for (int t=0;t<nst;t+=3) {
+                        if (avgden[t]>0) {
+                            avgtensor[2*t+X] /= avgden[t];
+                            avgtensor[2*t+Y] /= avgden[t];
+                            avgtensor[2*t+Z] /= avgden[t];
+                            avgtensor[2*t+XY] /= avgden[t];
+                            avgtensor[2*t+YZ] /= avgden[t];
+                            avgtensor[2*t+ZX] /= avgden[t];
+                            
+                            // extract main direction
+                            double[][] mtx = new double[3][3];
+                            mtx[X][X] = avgtensor[2*t+X];
+                            mtx[Y][Y] = avgtensor[2*t+Y];
+                            mtx[Z][Z] = avgtensor[2*t+Z];
+                            
+                            mtx[X][Y] = avgtensor[2*t+XY];
+                            mtx[Y][Z] = avgtensor[2*t+YZ];
+                            mtx[Z][X] = avgtensor[2*t+ZX];
+                            
+                            mtx[Y][X] = avgtensor[2*t+XY];
+                            mtx[Z][Y] = avgtensor[2*t+YZ];
+                            mtx[X][Z] = avgtensor[2*t+ZX];
+                            
+                            double[] eval = Matrix3D.eigenvalues(mtx);
+                            double[][] evect = Matrix3D.eigenvectors(mtx,eval);
+                            
+                            deformedImage[xyz + nrxyz*t + nrxyz*X] = (float)evect[X][0];
+                            deformedImage[xyz + nrxyz*t + nrxyz*Y] = (float)evect[Y][0];
+                            deformedImage[xyz + nrxyz*t + nrxyz*Z] = (float)evect[Z][0];
+                        } else {
+                            deformedImage[xyz + nrxyz*t + nrxyz*X] = 0.0f;
+                            deformedImage[xyz + nrxyz*t + nrxyz*Y] = 0.0f;
+                            deformedImage[xyz + nrxyz*t + nrxyz*Z] = 0.0f;
+                        }            
+                    }
+                }
+                // combine with deformation field rotation
+                for (int t=0;t<nst;t+=3) {
+                    double norm = deformedImage[xyz + X*nrxyz + nrxyz*t]*deformedImage[xyz + X*nrxyz + nrxyz*t]
+                                 +deformedImage[xyz + Y*nrxyz + nrxyz*t]*deformedImage[xyz + Y*nrxyz + nrxyz*t]
+                                 +deformedImage[xyz + Z*nrxyz + nrxyz*t]*deformedImage[xyz + Z*nrxyz + nrxyz*t];
+                                 
+                    double vx = dx[X]*deformedImage[xyz + X*nrxyz + nrxyz*t] 
+                               +dx[Y]*deformedImage[xyz + X*nrxyz + nrxyz*t]          
+                               +dx[Z]*deformedImage[xyz + X*nrxyz + nrxyz*t];          
+                                 
+                    double vy = dx[X]*deformedImage[xyz + Y*nrxyz + nrxyz*t] 
+                               +dx[Y]*deformedImage[xyz + Y*nrxyz + nrxyz*t]          
+                               +dx[Z]*deformedImage[xyz + Y*nrxyz + nrxyz*t];          
+                                 
+                    double vz = dx[X]*deformedImage[xyz + Z*nrxyz + nrxyz*t] 
+                               +dx[Y]*deformedImage[xyz + Z*nrxyz + nrxyz*t]          
+                               +dx[Z]*deformedImage[xyz + Z*nrxyz + nrxyz*t];   
+                               
+                    double vnorm = vx*vx+vy*vy+vz*vz;
+                    if (vnorm>0) {
+                        deformedImage[xyz + X*nrxyz + nrxyz*t] = (float)(vx*FastMath.sqrt(norm/vnorm));
+                        deformedImage[xyz + Y*nrxyz + nrxyz*t] = (float)(vy*FastMath.sqrt(norm/vnorm));
+                        deformedImage[xyz + Z*nrxyz + nrxyz*t] = (float)(vz*FastMath.sqrt(norm/vnorm));
+                    } else {
+                        deformedImage[xyz + X*nrxyz + nrxyz*t] = 0.0f;
+                        deformedImage[xyz + Y*nrxyz + nrxyz*t] = 0.0f;
+                        deformedImage[xyz + Z*nrxyz + nrxyz*t] = 0.0f;
+                    }
                 }
             }
         }
