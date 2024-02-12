@@ -134,6 +134,36 @@ public class SurfaceInflation {
         return center;
     }
     
+    private float[] getTriangleIncenter(int id, float[] pts, int[] faces) {
+        float[] length = new float[3];
+        float[] incenter = new float[3];
+        length[0] = (float)FastMath.sqrt(Numerics.square(pts[3*faces[3*id+1]+0]-pts[3*faces[3*id+2]+0])
+                                        +Numerics.square(pts[3*faces[3*id+1]+1]-pts[3*faces[3*id+2]+1])
+                                        +Numerics.square(pts[3*faces[3*id+1]+2]-pts[3*faces[3*id+2]+2]));
+
+        length[1] = (float)FastMath.sqrt(Numerics.square(pts[3*faces[3*id+2]+0]-pts[3*faces[3*id+0]+0])
+                                        +Numerics.square(pts[3*faces[3*id+2]+1]-pts[3*faces[3*id+0]+1])
+                                        +Numerics.square(pts[3*faces[3*id+2]+2]-pts[3*faces[3*id+0]+2]));
+
+        length[2] = (float)FastMath.sqrt(Numerics.square(pts[3*faces[3*id+0]+0]-pts[3*faces[3*id+1]+0])
+                                        +Numerics.square(pts[3*faces[3*id+0]+1]-pts[3*faces[3*id+1]+1])
+                                        +Numerics.square(pts[3*faces[3*id+0]+2]-pts[3*faces[3*id+1]+2]));
+
+        incenter[0] += length[0]*pts[3*faces[3*id+0]+0]/(length[0]+length[1]+length[2]);
+        incenter[1] += length[0]*pts[3*faces[3*id+0]+1]/(length[0]+length[1]+length[2]);
+        incenter[2] += length[0]*pts[3*faces[3*id+0]+2]/(length[0]+length[1]+length[2]);
+        
+        incenter[0] += length[1]*pts[3*faces[3*id+1]+0]/(length[0]+length[1]+length[2]);
+        incenter[1] += length[1]*pts[3*faces[3*id+1]+1]/(length[0]+length[1]+length[2]);
+        incenter[2] += length[1]*pts[3*faces[3*id+1]+2]/(length[0]+length[1]+length[2]);
+        
+        incenter[0] += length[2]*pts[3*faces[3*id+2]+0]/(length[0]+length[1]+length[2]);
+        incenter[1] += length[2]*pts[3*faces[3*id+2]+1]/(length[0]+length[1]+length[2]);
+        incenter[2] += length[2]*pts[3*faces[3*id+2]+2]/(length[0]+length[1]+length[2]);
+        
+        return incenter;
+    }
+    
     private float[] getCenterOfMass(float[] pts) {
         float[] center = new float[3];
         float npt = pts.length/3.0f;
@@ -204,7 +234,8 @@ public class SurfaceInflation {
 				for (int k = 0; k < ngbFaces[i].length; k++) {
 					int face = ngbFaces[i][k];
 					// Calculate center of surrounding region
-					float[] C = getTriangleCenter(face, pointList, triangleList);
+					//float[] C = getTriangleCenter(face, pointList, triangleList);
+					float[] C = getTriangleIncenter(face, pointList, triangleList);
 					float weight = 1.0f;
 					if (weighting==AREA)
                         weight = regularization+getTriangleArea(face, pointList, triangleList);
