@@ -39,10 +39,12 @@ public class SurfaceInflation {
     public static final int DIST=2;       // use distance to weight neighbor contributions
     public static final int NUMV=3;       // don't weight neighbor contributions
     private int    weighting = AREA;
-    private float   regularization = 0.0f;
+    private float   regularization = 1e-3f;
+    private float   centering = 1e-3f;
     
     public final void setWeightingMethod(int val) { weighting = val; }
     public final void setRegularization(float val) { regularization = val; }
+    public final void setCentering(float val) { centering = val; }
     
 	public final void setSurfacePoints(float[] val) { pointList = val; }
 	public final void setSurfaceTriangles(int[] val) { triangleList = val; }
@@ -137,29 +139,31 @@ public class SurfaceInflation {
     private float[] getTriangleIncenter(int id, float[] pts, int[] faces) {
         float[] length = new float[3];
         float[] incenter = new float[3];
-        length[0] = (float)FastMath.sqrt(Numerics.square(pts[3*faces[3*id+1]+0]-pts[3*faces[3*id+2]+0])
-                                        +Numerics.square(pts[3*faces[3*id+1]+1]-pts[3*faces[3*id+2]+1])
-                                        +Numerics.square(pts[3*faces[3*id+1]+2]-pts[3*faces[3*id+2]+2]));
+        length[0] = centering+(float)FastMath.sqrt(Numerics.square(pts[3*faces[3*id+1]+0]-pts[3*faces[3*id+2]+0])
+                                                       +Numerics.square(pts[3*faces[3*id+1]+1]-pts[3*faces[3*id+2]+1])
+                                                       +Numerics.square(pts[3*faces[3*id+1]+2]-pts[3*faces[3*id+2]+2]));
 
-        length[1] = (float)FastMath.sqrt(Numerics.square(pts[3*faces[3*id+2]+0]-pts[3*faces[3*id+0]+0])
-                                        +Numerics.square(pts[3*faces[3*id+2]+1]-pts[3*faces[3*id+0]+1])
-                                        +Numerics.square(pts[3*faces[3*id+2]+2]-pts[3*faces[3*id+0]+2]));
+        length[1] = centering+(float)FastMath.sqrt(Numerics.square(pts[3*faces[3*id+2]+0]-pts[3*faces[3*id+0]+0])
+                                                       +Numerics.square(pts[3*faces[3*id+2]+1]-pts[3*faces[3*id+0]+1])
+                                                       +Numerics.square(pts[3*faces[3*id+2]+2]-pts[3*faces[3*id+0]+2]));
 
-        length[2] = (float)FastMath.sqrt(Numerics.square(pts[3*faces[3*id+0]+0]-pts[3*faces[3*id+1]+0])
-                                        +Numerics.square(pts[3*faces[3*id+0]+1]-pts[3*faces[3*id+1]+1])
-                                        +Numerics.square(pts[3*faces[3*id+0]+2]-pts[3*faces[3*id+1]+2]));
-
-        incenter[0] += length[0]*pts[3*faces[3*id+0]+0]/(length[0]+length[1]+length[2]);
-        incenter[1] += length[0]*pts[3*faces[3*id+0]+1]/(length[0]+length[1]+length[2]);
-        incenter[2] += length[0]*pts[3*faces[3*id+0]+2]/(length[0]+length[1]+length[2]);
+        length[2] = centering+(float)FastMath.sqrt(Numerics.square(pts[3*faces[3*id+0]+0]-pts[3*faces[3*id+1]+0])
+                                                       +Numerics.square(pts[3*faces[3*id+0]+1]-pts[3*faces[3*id+1]+1])
+                                                       +Numerics.square(pts[3*faces[3*id+0]+2]-pts[3*faces[3*id+1]+2]));
         
-        incenter[0] += length[1]*pts[3*faces[3*id+1]+0]/(length[0]+length[1]+length[2]);
-        incenter[1] += length[1]*pts[3*faces[3*id+1]+1]/(length[0]+length[1]+length[2]);
-        incenter[2] += length[1]*pts[3*faces[3*id+1]+2]/(length[0]+length[1]+length[2]);
+        float sum = length[0]+length[1]+length[2];
+
+        incenter[0] += length[0]*pts[3*faces[3*id+0]+0]/sum;
+        incenter[1] += length[0]*pts[3*faces[3*id+0]+1]/sum;
+        incenter[2] += length[0]*pts[3*faces[3*id+0]+2]/sum;
         
-        incenter[0] += length[2]*pts[3*faces[3*id+2]+0]/(length[0]+length[1]+length[2]);
-        incenter[1] += length[2]*pts[3*faces[3*id+2]+1]/(length[0]+length[1]+length[2]);
-        incenter[2] += length[2]*pts[3*faces[3*id+2]+2]/(length[0]+length[1]+length[2]);
+        incenter[0] += length[1]*pts[3*faces[3*id+1]+0]/sum;
+        incenter[1] += length[1]*pts[3*faces[3*id+1]+1]/sum;
+        incenter[2] += length[1]*pts[3*faces[3*id+1]+2]/sum;
+        
+        incenter[0] += length[2]*pts[3*faces[3*id+2]+0]/sum;
+        incenter[1] += length[2]*pts[3*faces[3*id+2]+1]/sum;
+        incenter[2] += length[2]*pts[3*faces[3*id+2]+2]/sum;
         
         return incenter;
     }

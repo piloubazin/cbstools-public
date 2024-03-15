@@ -19,10 +19,12 @@ public class RegistrationApplyDeformations {
 	private float[] deformation2Image = null;
 	private float[] deformation3Image = null;
 	private float[] deformation4Image = null;
+	private float[] deformation5Image = null;
 	private String type1Option;
 	private String type2Option = "none";
 	private String type3Option = "none";
 	private String type4Option = "none";
+	private String type5Option = "none";
 	private String interpOption = "nearest";
 	private String padOption = "closest";
 	
@@ -45,6 +47,8 @@ public class RegistrationApplyDeformations {
 	private float rd3x, rd3y, rd3z;
 	private int nd4x, nd4y, nd4z, nd4xyz;
 	private float rd4x, rd4y, rd4z;
+	private int nd5x, nd5y, nd5z, nd5xyz;
+	private float rd5x, rd5y, rd5z;
 	
 	// global variables
 	private static final byte X = 0;
@@ -63,6 +67,8 @@ public class RegistrationApplyDeformations {
 	public final void setDeformationType3(String val) { type3Option = val; }
 	public final void setDeformationMapping4(float[] val) { deformation4Image = val; }
 	public final void setDeformationType4(String val) { type4Option = val; }
+	public final void setDeformationMapping5(float[] val) { deformation5Image = val; }
+	public final void setDeformationType5(String val) { type5Option = val; }
 	public final void setInterpolationType(String val) { interpOption = val; }
 	public final void setImagePadding(String val) { padOption = val; }
 		
@@ -103,6 +109,12 @@ public class RegistrationApplyDeformations {
 	
 	public final void setDeformation4Resolutions(float x, float y, float z) { rd4x=x; rd4y=y; rd4z=z; }
 	public final void setDeformation4Resolutions(float[] res) { rd4x=res[0]; rd4y=res[1]; rd4z=res[2]; }
+
+	public final void setDeformation5Dimensions(int x, int y, int z) { nd5x=x; nd5y=y; nd5z=z; nd5xyz=nd5x*nd5y*nd5z; }
+	public final void setDeformation5Dimensions(int[] dim) { nd5x=dim[0]; nd5y=dim[1]; nd5z=dim[2]; nd5xyz=nd5x*nd5y*nd5z; }
+	
+	public final void setDeformation5Resolutions(float x, float y, float z) { rd5x=x; rd5y=y; rd5z=z; }
+	public final void setDeformation5Resolutions(float[] res) { rd5x=res[0]; rd5y=res[1]; rd5z=res[2]; }
 
 	// to be used for JIST definitions, generic info / help
 	public final String getPackage() { return "CBS Tools"; }
@@ -423,6 +435,84 @@ public class RegistrationApplyDeformations {
                     
                     nrx = nd4x; nry = nd4y; nrz = nd4z;
                     rrx = rd4x; rry = rd4y; rrz = rd4z;
+                    
+                    if (!type5Option.equals("none") && deformation5Image!=null) {
+                        System.out.println("load deformation 5");
+                        // scale to voxels if needed
+                        if (type5Option.endsWith("(mm)")) {
+                            System.out.println("normalize to resolution ("+rd5x+", "+rd5y+", "+rd5z+")");
+                            for (int x=0;x<nd5x;x++) for (int y=0;y<nd5y;y++) for (int z=0;z<nd5z;z++) {
+                                int xyz = x + nd5x*y + nd5x*nd5y*z;
+                                deformation5Image[xyz + X*nd5xyz] /= rd5x; 	
+                                deformation5Image[xyz + Y*nd5xyz] /= rd5y; 	
+                                deformation5Image[xyz + Z*nd5xyz] /= rd5z; 	
+                            }
+                        }
+                        // turn into a mapping if needed
+                        if (type5Option.startsWith("deformation")) {
+                            for (int x=0;x<nd5x;x++) for (int y=0;y<nd5y;y++) for (int z=0;z<nd5z;z++) {
+                                int xyz = x + nd5x*y + nd5x*nd5y*z;
+                                deformation5Image[xyz + X*nd5xyz] += x;
+                                deformation5Image[xyz + Y*nd5xyz] += y;
+                                deformation5Image[xyz + Z*nd5xyz] += z;
+                            }
+                        }
+                        // check for bad borders
+                        boundary = new boolean[nd5x*nd5y*nd5z];
+                        growBoundaries = false;
+                        for (int x=0;x<nd5x;x++) for (int y=0;y<nd5y;y++) for (int z=0;z<nd5z;z++) {
+                            int xyz = x + nd5x*y + nd5x*nd5y*z;
+                            if (deformation5Image[xyz + X*nd5xyz]==0 && deformation5Image[xyz + Y*nd5xyz]==0 && deformation5Image[xyz + Z*nd5xyz]==0) {
+                                for (byte k=0;k<6;k++) {
+                                    if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd5x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd5y && z+Ngb.z[k]>=0 && z+Ngb.z[k]<nd5z) {
+                                        int ngb = Ngb.neighborIndex(k, xyz,nd5x,nd5y,nd5z);
+                                        if (deformation5Image[ngb + X*nd5xyz]!=0 || deformation5Image[ngb + Y*nd5xyz]!=0 || deformation5Image[ngb + Z*nd5xyz]!=0) {
+                                            growBoundaries = true;
+                                            boundary[ngb] = true;
+                                            k=6;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        while (growBoundaries) {
+                            boolean[] changed = new boolean[nd5x*nd5y*nd5z];
+                            growBoundaries = false;
+                            for (int x=0;x<nd5x;x++) for (int y=0;y<nd5y;y++) for (int z=0;z<nd5z;z++) {
+                                int xyz = x + nd5x*y + nd5x*nd5y*z;
+                                if (boundary[xyz]) {
+                                    for (byte k=0;k<6;k++) {
+                                        if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd5x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd5y && z+Ngb.z[k]>=0 && z+Ngb.z[k]<nd5z) {
+                                            int ngb = Ngb.neighborIndex(k, xyz,nd5x,nd5y,nd5z);
+                                            if (deformation5Image[ngb + X*nd5xyz]==0 && deformation5Image[ngb + Y*nd5xyz]==0 && deformation5Image[ngb + Z*nd5xyz]==0) {
+                                                deformation5Image[ngb + X*nd5xyz] = deformation5Image[xyz + X*nd5xyz];
+                                                deformation5Image[ngb + Y*nd5xyz] = deformation5Image[xyz + Y*nd5xyz];
+                                                deformation5Image[ngb + Z*nd5xyz] = deformation5Image[xyz + Z*nd5xyz];
+                                                growBoundaries = true;
+                                                changed[ngb] = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            boundary = changed;
+                        }
+                        // compose the deformations: X' = def1(def2(def3(X)))
+                        System.out.println("compose deformations");
+                        float[] composed12345 = new float[nd5x*nd5y*nd5z*3];
+                        for (int x=0;x<nd5x;x++) for (int y=0;y<nd5y;y++) for (int z=0;z<nd5z;z++) {
+                            int xyz = x + nd5x*y + nd5x*nd5y*z;
+                            composed12345[xyz+X*nd5xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation5Image[xyz+X*nd5xyz], deformation5Image[xyz+Y*nd5xyz], deformation5Image[xyz+Z*nd5xyz], X, nd4x, nd4y, nd4z, 3);
+                            composed12345[xyz+Y*nd5xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation5Image[xyz+X*nd5xyz], deformation5Image[xyz+Y*nd5xyz], deformation5Image[xyz+Z*nd5xyz], Y, nd4x, nd4y, nd4z, 3);
+                            composed12345[xyz+Z*nd5xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation5Image[xyz+X*nd5xyz], deformation5Image[xyz+Y*nd5xyz], deformation5Image[xyz+Z*nd5xyz], Z, nd4x, nd4y, nd4z, 3);
+                        }
+                        deformation = composed12345;
+                        deformation5Image = null;
+                        composed1234 = null;
+                        
+                        nrx = nd5x; nry = nd5y; nrz = nd5z;
+                        rrx = rd5x; rry = rd5y; rrz = rd5z;
+                    }
                 }
             }
         }
