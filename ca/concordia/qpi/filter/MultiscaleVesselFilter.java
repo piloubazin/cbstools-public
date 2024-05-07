@@ -186,9 +186,18 @@ public class MultiscaleVesselFilter {
 			if (image[id]<minI) minI = image[id];
 		}
 		
+		// normalize, invert inputImage if looking for dark features
+		BasicInfo.displayMessage("...normalize intensities (detection: "+brightParam+")\n");
 		for (int xyz=0;xyz<nxyz;xyz++) {
-			image[xyz] = (image[xyz]-minI)/(maxI-minI);
+			if (brightParam.equals("bright"))
+				image[xyz] = (image[xyz]-minI)/(maxI-minI);
+			else if (brightParam.equals("dark"))
+				image[xyz] = (maxI-image[xyz])/(maxI-minI);
+			else 
+				image[xyz] = (image[xyz]-minI)/(maxI-minI);
 		}
+		boolean unidirectional = true;
+		if (brightParam.equals("both")) unidirectional = false;		
 		
 		// Compute filter at different scales
 		// new filter response: empty
@@ -242,10 +251,10 @@ public class MultiscaleVesselFilter {
 			
 			if (filterType.equals("Hessian")) {
 				System.out.println("estimate diffusion tensor from Hessian\n");
-				directionFromHessian(smoothed, mask, filter, direction);
+				directionFromHessian(smoothed, mask, filter, direction, unidirectional);
 			} else {		
 				System.out.println("estimate diffusion tensor from RRF\n");
-				directionFromRecursiveRidgeFilter(smoothed, mask, filter,direction);
+				directionFromRecursiveRidgeFilter(smoothed, mask, filter,direction, unidirectional);
 			}
 			response[i]=filter;	
 			scaleDirection[i]=direction;
@@ -739,7 +748,7 @@ public class MultiscaleVesselFilter {
 //		return;
 	}
 	
-	private final void directionFromRecursiveRidgeFilter(float[] img, boolean[] mask, float[] filter,byte[] direction) {
+	private final void directionFromRecursiveRidgeFilter(float[] img, boolean[] mask, float[] filter,byte[] direction, boolean unidirectional) {
 			
 			// get the tubular filter response
 			float[][][] planescore = new float[nx][ny][nz];
@@ -762,7 +771,7 @@ public class MultiscaleVesselFilter {
 					if (planescore[x][y][z]*linescore>0) {
 						filter[xyz] = Numerics.sign(linescore)*Numerics.sqrt(planescore[x][y][z]*linescore);
 						direction[xyz] = linedir[x][y][z];
-						if(filter[xyz]<0) { filter[xyz]=0; direction[xyz] = -1; }
+						if(filter[xyz]<0) if (unidirectional) { filter[xyz]=0; direction[xyz] = -1; } else filter[xyz]*=-1.0f;
 					} else {
 						filter[xyz] = 0.0f;
 						direction[xyz] = -1;
@@ -1963,7 +1972,7 @@ public class MultiscaleVesselFilter {
 		return dv;
 	}	
 	
-	private final void directionFromHessian(float[] img, boolean[] mask, float[] shape, byte[] direction) {
+	private final void directionFromHessian(float[] img, boolean[] mask, float[] shape, byte[] direction, boolean unidirectional) {
 		double[][] hessian = new double[3][3];
 			   
 		for (int x=2;x<nx-2;x++) for (int y=2;y<ny-2;y++) for (int z=2;z<nz-2;z++) {
@@ -1998,7 +2007,7 @@ public class MultiscaleVesselFilter {
 			int xyz = x + nx*y + nx*ny*z;
 			if (mask[xyz] && !zeroNeighbor(img, mask, x,y,z,2)) {
 				// keep only the proper sign
-				if (shape[xyz]<0) shape[xyz] = 0.0f;
+				if (shape[xyz]<0) if (unidirectional) { shape[xyz] = 0.0f;direction[xyz] = -1; } else  shape[xyz]*=-1.0f; 
 			}
 		}
 
