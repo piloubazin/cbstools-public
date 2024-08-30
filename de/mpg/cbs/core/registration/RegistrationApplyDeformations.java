@@ -20,11 +20,13 @@ public class RegistrationApplyDeformations {
 	private float[] deformation3Image = null;
 	private float[] deformation4Image = null;
 	private float[] deformation5Image = null;
+	private float[] deformation6Image = null;
 	private String type1Option;
 	private String type2Option = "none";
 	private String type3Option = "none";
 	private String type4Option = "none";
 	private String type5Option = "none";
+	private String type6Option = "none";
 	private String interpOption = "nearest";
 	private String padOption = "closest";
 	
@@ -64,6 +66,8 @@ public class RegistrationApplyDeformations {
 	private float rd4x, rd4y, rd4z;
 	private int nd5x, nd5y, nd5z, nd5xyz;
 	private float rd5x, rd5y, rd5z;
+	private int nd6x, nd6y, nd6z, nd6xyz;
+	private float rd6x, rd6y, rd6z;
 	
 	// global variables
 	private static final byte X = 0;
@@ -84,6 +88,8 @@ public class RegistrationApplyDeformations {
 	public final void setDeformationType4(String val) { type4Option = val; }
 	public final void setDeformationMapping5(float[] val) { deformation5Image = val; }
 	public final void setDeformationType5(String val) { type5Option = val; }
+	public final void setDeformationMapping6(float[] val) { deformation6Image = val; }
+	public final void setDeformationType6(String val) { type6Option = val; }
 	public final void setInterpolationType(String val) { 
 	    interpOption = val; 
 	    if (interpOption.equals("nearest")) interpCode = NEAREST;
@@ -143,6 +149,12 @@ public class RegistrationApplyDeformations {
 	
 	public final void setDeformation5Resolutions(float x, float y, float z) { rd5x=x; rd5y=y; rd5z=z; }
 	public final void setDeformation5Resolutions(float[] res) { rd5x=res[0]; rd5y=res[1]; rd5z=res[2]; }
+
+	public final void setDeformation6Dimensions(int x, int y, int z) { nd6x=x; nd6y=y; nd6z=z; nd6xyz=nd6x*nd6y*nd6z; }
+	public final void setDeformation6Dimensions(int[] dim) { nd6x=dim[0]; nd6y=dim[1]; nd6z=dim[2]; nd6xyz=nd6x*nd6y*nd6z; }
+	
+	public final void setDeformation6Resolutions(float x, float y, float z) { rd6x=x; rd6y=y; rd6z=z; }
+	public final void setDeformation6Resolutions(float[] res) { rd6x=res[0]; rd6y=res[1]; rd6z=res[2]; }
 
 	// to be used for JIST definitions, generic info / help
 	public final String getPackage() { return "CBS Tools"; }
@@ -547,6 +559,86 @@ public class RegistrationApplyDeformations {
                         
                         nrx = nd5x; nry = nd5y; nrz = nd5z;
                         rrx = rd5x; rry = rd5y; rrz = rd5z;
+                        
+                        if (!type6Option.equals("none") && deformation6Image!=null) {
+                            System.out.println("load deformation 6");
+                            // scale to voxels if needed
+                            if (type6Option.endsWith("(mm)")) {
+                                System.out.println("normalize to resolution ("+rd6x+", "+rd6y+", "+rd6z+")");
+                                for (int x=0;x<nd6x;x++) for (int y=0;y<nd6y;y++) for (int z=0;z<nd6z;z++) {
+                                    int xyz = x + nd6x*y + nd6x*nd6y*z;
+                                    deformation6Image[xyz + X*nd6xyz] /= rd6x; 	
+                                    deformation6Image[xyz + Y*nd6xyz] /= rd6y; 	
+                                    deformation6Image[xyz + Z*nd6xyz] /= rd6z; 	
+                                }
+                            }
+                            // turn into a mapping if needed
+                            if (type6Option.startsWith("deformation")) {
+                                for (int x=0;x<nd6x;x++) for (int y=0;y<nd6y;y++) for (int z=0;z<nd6z;z++) {
+                                    int xyz = x + nd6x*y + nd6x*nd6y*z;
+                                    deformation6Image[xyz + X*nd6xyz] += x;
+                                    deformation6Image[xyz + Y*nd6xyz] += y;
+                                    deformation6Image[xyz + Z*nd6xyz] += z;
+                                }
+                            }
+                            if (checkBoundaries) {
+                                // check for bad borders
+                                boolean[] boundary = new boolean[nd6x*nd6y*nd6z];
+                                boolean growBoundaries = false;
+                                for (int x=0;x<nd6x;x++) for (int y=0;y<nd6y;y++) for (int z=0;z<nd6z;z++) {
+                                    int xyz = x + nd6x*y + nd6x*nd6y*z;
+                                    if (deformation6Image[xyz + X*nd6xyz]==0 && deformation6Image[xyz + Y*nd6xyz]==0 && deformation6Image[xyz + Z*nd6xyz]==0) {
+                                        for (byte k=0;k<6;k++) {
+                                            if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd6x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd6y && z+Ngb.z[k]>=0 && z+Ngb.z[k]<nd6z) {
+                                                int ngb = Ngb.neighborIndex(k, xyz,nd6x,nd6y,nd6z);
+                                                if (deformation6Image[ngb + X*nd6xyz]!=0 || deformation6Image[ngb + Y*nd6xyz]!=0 || deformation6Image[ngb + Z*nd6xyz]!=0) {
+                                                    growBoundaries = true;
+                                                    boundary[ngb] = true;
+                                                    k=6;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                while (growBoundaries) {
+                                    boolean[] changed = new boolean[nd6x*nd6y*nd6z];
+                                    growBoundaries = false;
+                                    for (int x=0;x<nd6x;x++) for (int y=0;y<nd6y;y++) for (int z=0;z<nd6z;z++) {
+                                        int xyz = x + nd6x*y + nd6x*nd6y*z;
+                                        if (boundary[xyz]) {
+                                            for (byte k=0;k<6;k++) {
+                                                if (x+Ngb.x[k]>=0 && x+Ngb.x[k]<nd6x && y+Ngb.y[k]>=0 && y+Ngb.y[k]<nd6y && z+Ngb.z[k]>=0 && z+Ngb.z[k]<nd6z) {
+                                                    int ngb = Ngb.neighborIndex(k, xyz,nd6x,nd6y,nd6z);
+                                                    if (deformation6Image[ngb + X*nd6xyz]==0 && deformation6Image[ngb + Y*nd6xyz]==0 && deformation6Image[ngb + Z*nd6xyz]==0) {
+                                                        deformation6Image[ngb + X*nd6xyz] = deformation6Image[xyz + X*nd6xyz];
+                                                        deformation6Image[ngb + Y*nd6xyz] = deformation6Image[xyz + Y*nd6xyz];
+                                                        deformation6Image[ngb + Z*nd6xyz] = deformation6Image[xyz + Z*nd6xyz];
+                                                        growBoundaries = true;
+                                                        changed[ngb] = true;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    boundary = changed;
+                                }
+                            }
+                            // compose the deformations: X' = def1(def2(def3(X)))
+                            System.out.println("compose deformations");
+                            float[] composed123456 = new float[nd6x*nd6y*nd6z*3];
+                            for (int x=0;x<nd6x;x++) for (int y=0;y<nd6y;y++) for (int z=0;z<nd6z;z++) {
+                                int xyz = x + nd6x*y + nd6x*nd6y*z;
+                                composed123456[xyz+X*nd6xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation6Image[xyz+X*nd6xyz], deformation6Image[xyz+Y*nd6xyz], deformation6Image[xyz+Z*nd6xyz], X, nd5x, nd5y, nd5z, 3);
+                                composed123456[xyz+Y*nd6xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation6Image[xyz+X*nd6xyz], deformation6Image[xyz+Y*nd6xyz], deformation6Image[xyz+Z*nd6xyz], Y, nd5x, nd5y, nd5z, 3);
+                                composed123456[xyz+Z*nd6xyz] = ImageInterpolation.linearClosestNonzeroInterpolation(deformation, deformation6Image[xyz+X*nd6xyz], deformation6Image[xyz+Y*nd6xyz], deformation6Image[xyz+Z*nd6xyz], Z, nd5x, nd5y, nd5z, 3);
+                            }
+                            deformation = composed123456;
+                            deformation6Image = null;
+                            composed12345 = null;
+                            
+                            nrx = nd6x; nry = nd6y; nrz = nd6z;
+                            rrx = rd6x; rry = rd6y; rrz = rd6z;
+                        }
                     }
                 }
             }
