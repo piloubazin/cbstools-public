@@ -416,24 +416,24 @@ public class MultiscaleVesselFilter {
 							rOut*=2;
 						}
 						while(dist<=rOut){	
-							if(x+s*orthVector[X]>=0 && x+s*orthVector[X]<nx && (y+s*orthVector[Y])>=0 && (y+s*orthVector[Y])<ny && (z+s*orthVector[X])>=0 && (z+s*orthVector[X])<nz){
+							if(x+s*orthVector[X]>=0 && x+s*orthVector[X]<nx && (y+s*orthVector[Y])>=0 && (y+s*orthVector[Y])<ny && (z+s*orthVector[Z])>=0 && (z+s*orthVector[Z])<nz){
 								if(dist>rIn){
 									//if(!objinit[x+s*orthVector[X]+nx*(y+s*orthVector[Y])+nx*ny*(z+s*orthVector[X])])	maskOut[x+s*orthVector[X]+nx*(y+s*orthVector[Y])+nx*ny*(z+s*orthVector[X])]=true;
-									if(!objdiff[x+s*orthVector[X]+nx*(y+s*orthVector[Y])+nx*ny*(z+s*orthVector[X])])	maskOut[x+s*orthVector[X]+nx*(y+s*orthVector[Y])+nx*ny*(z+s*orthVector[X])]=true;
+									if(!objdiff[x+s*orthVector[X]+nx*(y+s*orthVector[Y])+nx*ny*(z+s*orthVector[Z])])	maskOut[x+s*orthVector[X]+nx*(y+s*orthVector[Y])+nx*ny*(z+s*orthVector[Z])]=true;
 								}
 								else {
 									//if(!objinit[x+s*orthVector[X]+nx*(y+s*orthVector[Y])+nx*ny*(z+s*orthVector[X])])	maskVote[x+s*orthVector[X]+nx*(y+s*orthVector[Y])+nx*ny*(z+s*orthVector[X])]=true;
-									if(!objdiff[x+s*orthVector[X]+nx*(y+s*orthVector[Y])+nx*ny*(z+s*orthVector[X])])	maskVote[x+s*orthVector[X]+nx*(y+s*orthVector[Y])+nx*ny*(z+s*orthVector[X])]=true;
+									if(!objdiff[x+s*orthVector[X]+nx*(y+s*orthVector[Y])+nx*ny*(z+s*orthVector[Z])])	maskVote[x+s*orthVector[X]+nx*(y+s*orthVector[Y])+nx*ny*(z+s*orthVector[Z])]=true;
 								}
 							}
-							if(x-s*orthVector[X]>=0 && x+s*orthVector[X]<nx && (y-s*orthVector[Y])>=0 && (y-s*orthVector[Y])<ny && (z-s*orthVector[X])>=0 && (z-s*orthVector[X])<nz){
+							if(x-s*orthVector[X]>=0 && x+s*orthVector[X]<nx && (y-s*orthVector[Y])>=0 && (y-s*orthVector[Y])<ny && (z-s*orthVector[Z])>=0 && (z-s*orthVector[Z])<nz){
 								if(dist>rIn){
 									//if(!objinit[x-s*orthVector[X]+nx*(y-s*orthVector[Y])+nx*ny*(z-s*orthVector[X])])	maskOut[x-s*orthVector[X]+nx*(y-s*orthVector[Y])+nx*ny*(z-s*orthVector[X])]=true;
-									if(!objdiff[x-s*orthVector[X]+nx*(y-s*orthVector[Y])+nx*ny*(z-s*orthVector[X])])	maskOut[x-s*orthVector[X]+nx*(y-s*orthVector[Y])+nx*ny*(z-s*orthVector[X])]=true;
+									if(!objdiff[x-s*orthVector[X]+nx*(y-s*orthVector[Y])+nx*ny*(z-s*orthVector[Z])])	maskOut[x-s*orthVector[X]+nx*(y-s*orthVector[Y])+nx*ny*(z-s*orthVector[Z])]=true;
 								}
 								else {
 									//if(!objinit[x-s*orthVector[X]+nx*(y-s*orthVector[Y])+nx*ny*(z-s*orthVector[X])])	maskVote[x-s*orthVector[X]+nx*(y-s*orthVector[Y])+nx*ny*(z-s*orthVector[X])]=true;
-									if(!objdiff[x-s*orthVector[X]+nx*(y-s*orthVector[Y])+nx*ny*(z-s*orthVector[X])])	maskVote[x-s*orthVector[X]+nx*(y-s*orthVector[Y])+nx*ny*(z-s*orthVector[X])]=true;
+									if(!objdiff[x-s*orthVector[X]+nx*(y-s*orthVector[Y])+nx*ny*(z-s*orthVector[Z])])	maskVote[x-s*orthVector[X]+nx*(y-s*orthVector[Y])+nx*ny*(z-s*orthVector[Z])]=true;
 								}
 							}
 							s++;
