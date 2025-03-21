@@ -29,7 +29,6 @@ public class ImageInterpolation {
 	 *	linear interpolation, with 0 outside the image
 	 */
 	public static float nearestNeighborInterpolation(float[][][] image, float x, float y, float z, int nx, int ny, int nz) {
-		float val;
 		int x0,y0,z0;
 
         // if out of boundary, replace all with zero
@@ -308,7 +307,6 @@ public class ImageInterpolation {
 	 *	linear interpolation, with 0 outside the image
 	 */
 	public static float nearestNeighborClosestInterpolation(float[][][] image, float x, float y, float z, int nx, int ny, int nz) {
-		float val;
 		int x0,y0,z0;
 
         // if out of boundary, use closest point
@@ -322,7 +320,6 @@ public class ImageInterpolation {
 	 *	linear interpolation, with 0 outside the image
 	 */
 	public static float nearestNeighborClosestInterpolation(float[][][][] image, float x, float y, float z, int c, int nx, int ny, int nz, int nc) {
-		float val;
 		int x0,y0,z0;
 
         // if out of boundary, use closest point
@@ -336,7 +333,6 @@ public class ImageInterpolation {
 	 *	linear interpolation, with 0 outside the image
 	 */
 	public static float nearestNeighborClosestInterpolation(float[] image, float x, float y, float z, int c, int nx, int ny, int nz, int nc) {
-		float val;
 		int x0,y0,z0;
 
         // if out of boundary, use closest point
@@ -350,7 +346,6 @@ public class ImageInterpolation {
 	 *	linear interpolation, with 0 outside the image
 	 */
 	public static float nearestNeighborClosestInterpolation(float[] image, float x, float y, int c, int nx, int ny, int nc) {
-		float val;
 		int x0,y0;
 
         // if out of boundary, use closest point
@@ -363,7 +358,7 @@ public class ImageInterpolation {
 	 *	linear interpolation, with 0 outside the image
 	 */
 	public static float linearInterpolation(float[][][] image, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
 
         // if out of boundary, replace all with zero
@@ -392,13 +387,13 @@ public class ImageInterpolation {
 			+ alpha*nbeta*gamma*image[x0+1][y0][z0+1] 
 			+ alpha*beta*gamma*image[x0+1][y0+1][z0+1];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image
 	 */
 	public static float linearInterpolation(float[][][] image, float value, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
 
         // if out of boundary, replace all with zero
@@ -427,13 +422,13 @@ public class ImageInterpolation {
 			+ alpha*nbeta*gamma*image[x0+1][y0][z0+1] 
 			+ alpha*beta*gamma*image[x0+1][y0+1][z0+1];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image
 	 */
 	public static float linearClosestInterpolation(float[][][] image, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
 
         // if out of boundary, use closest point
@@ -459,13 +454,13 @@ public class ImageInterpolation {
 			+ alpha*nbeta*gamma*image[x0+1][y0][z0+1] 
 			+ alpha*beta*gamma*image[x0+1][y0+1][z0+1];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image
 	 */
 	public static float linearClosestInterpolation(float[] image, float x, float y, float z, int c, int nx, int ny, int nz, int nc) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
 
         // if out of boundary, use closest point
@@ -491,13 +486,13 @@ public class ImageInterpolation {
 			+ alpha*nbeta*gamma*image[(x0+1) + nx*y0 + nx*ny*(z0+1) + nx*ny*nz*c] 
 			+ alpha*beta*gamma*image[(x0+1) + nx*(y0+1) + nx*ny*(z0+1) + nx*ny*nz*c];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image
 	 */
 	public static float linearClosestInterpolation(float[] image, float x, float y, int c, int nx, int ny, int nc) {
-		float alpha,beta,nalpha,nbeta,val;
+		double alpha,beta,nalpha,nbeta,val;
 		int x0,y0;
 
         // if out of boundary, use closest point
@@ -515,13 +510,13 @@ public class ImageInterpolation {
 			+ nalpha*beta*image[x0 + nx*(y0+1) + nx*ny*c] 
 			+ alpha*beta*image[(x0+1) + nx*(y0+1) + nx*ny*c];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image
 	 */
 	public static float linearClosestInterpolation(float[][][][] image, float x, float y, float z, int c, int nx, int ny, int nz, int nc) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
 
         // if out of boundary, use closest point
@@ -547,13 +542,13 @@ public class ImageInterpolation {
 			+ alpha*nbeta*gamma*image[x0+1][y0][z0+1][c] 
 			+ alpha*beta*gamma*image[x0+1][y0+1][z0+1][c];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image
 	 */
 	public static float linearInterpolation(float[][][][] image, float value, float x, float y, float z, int c, int nx, int ny, int nz, int nc) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
 
         // if out of boundary, replace all with zero
@@ -582,13 +577,13 @@ public class ImageInterpolation {
 			+ alpha*nbeta*gamma*image[x0+1][y0][z0+1][c] 
 			+ alpha*beta*gamma*image[x0+1][y0+1][z0+1][c];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image
 	 */
 	public static float linearInterpolation(float[] image, float value, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
 
 		x0 = Numerics.floor(x);
@@ -619,13 +614,13 @@ public class ImageInterpolation {
 			+ alpha*nbeta*gamma*image[xyz0+1+nx*ny] 
 			+ alpha*beta*gamma*image[xyz0+1+nx+nx*ny];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image
 	 */
 	public static float linearInterpolation(float[] image, float value, float x, float y, float z, int c, int nx, int ny, int nz, int nc) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
 
 		x0 = Numerics.floor(x);
@@ -656,7 +651,7 @@ public class ImageInterpolation {
 			+ alpha*nbeta*gamma*image[xyz0+1+nx*ny] 
 			+ alpha*beta*gamma*image[xyz0+1+nx+nx*ny];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image
@@ -787,7 +782,7 @@ public class ImageInterpolation {
 	 *	linear interpolation, with value outside the image
 	 */
 	public static float linearInterpolation(float[] image, int offset, float value, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
 
 		x0 = Numerics.floor(x);
@@ -818,7 +813,7 @@ public class ImageInterpolation {
 			+ alpha*nbeta*gamma*image[offset+xyz0+1+nx*ny] 
 			+ alpha*beta*gamma*image[offset+xyz0+1+nx+nx*ny];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image
@@ -908,8 +903,8 @@ public class ImageInterpolation {
 
 		int xyz0 = x0 + y0*nx + t*nx*ny;
 		
-		val = 0.0f;
-		den = 0.0f;
+		val = 0.0;
+		den = 0.0;
 		if (image[xyz0]!=0) {
 		    val += nalpha*nbeta*image[xyz0];
 		    den += nalpha*nbeta;
@@ -927,6 +922,7 @@ public class ImageInterpolation {
 			den += alpha*beta;
 		}
 		if (den>0) val /= den;
+		else val = value;
 		
 		return (float)val;
 	}
@@ -934,7 +930,7 @@ public class ImageInterpolation {
 	 *	linear interpolation, with value outside the image
 	 */
 	public static float linearClosestInterpolation(float[] image, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
 
 		x0 = Numerics.bounded(Numerics.floor(x),0,nx-2);
@@ -961,13 +957,13 @@ public class ImageInterpolation {
 			+ alpha*nbeta*gamma*image[xyz0+1+nx*ny] 
 			+ alpha*beta*gamma*image[xyz0+1+nx+nx*ny];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image
 	 */
 	public static float linearClosestInterpolation2D(float[] image, float x, float y, int t, int nx, int ny, int nt) {
-		float alpha,beta,nalpha,nbeta,val;
+		double alpha,beta,nalpha,nbeta,val;
 		int x0,y0;
 
 		x0 = Numerics.bounded(Numerics.floor(x),0,nx-2);
@@ -986,13 +982,13 @@ public class ImageInterpolation {
 			+ nalpha*beta*image[xyz0+nx] 
 			+ alpha*beta*image[xyz0+1+nx];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image
 	 */
 	public static float linearClosestNonzeroInterpolation2D(float[] image, float x, float y, int t, int nx, int ny, int nt) {
-		float alpha,beta,nalpha,nbeta,val,den;
+		double alpha,beta,nalpha,nbeta,val,den;
 		int x0,y0;
 
 		x0 = Numerics.bounded(Numerics.floor(x),0,nx-2);
@@ -1006,8 +1002,8 @@ public class ImageInterpolation {
 
 		int xyz0 = x0 + y0*nx + t*nx*ny;
 		
-		val = 0.0f;
-		den = 0.0f;
+		val = 0.0;
+		den = 0.0;
 		if (image[xyz0]!=0) {
 		    val += nalpha*nbeta*image[xyz0];
 		    den += nalpha*nbeta;
@@ -1026,13 +1022,13 @@ public class ImageInterpolation {
 		}
 		if (den>0) val /= den;
 		
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with value outside the image and mask
 	 */
 	public static float linearInterpolation(float[][][] image, boolean[][][] mask, float value, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val,den;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val,den;
 		int x0,y0,z0;
 
         // if out of boundary, replace all with zero
@@ -1088,9 +1084,9 @@ public class ImageInterpolation {
 			den += alpha*beta*gamma;
 		}
 		if (den>0) {
-			return val/den;
+			return (float) (val/den);
 		} else {
-			return value;
+			return (float) value;
 		}
 	}
 	
@@ -1098,7 +1094,7 @@ public class ImageInterpolation {
 	 *	linear interpolation, with value outside the image and mask
 	 */
 	public static float linearInterpolation(float[] image, boolean[] mask, float value, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val,den;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val,den;
 		int x0,y0,z0;
 		int xyz0;
 
@@ -1156,9 +1152,9 @@ public class ImageInterpolation {
 			den += alpha*beta*gamma;
 		}
 		if (den>0) {
-			return val/den;
+			return (float) (val/den);
 		} else {
-			return value;
+			return (float) value;
 		}
 	}
 	
@@ -1406,7 +1402,7 @@ public class ImageInterpolation {
 	 *	useful for interpolating gradients (suppose the gradient is +value away from the image)
 	 */
 	public static float linearGradientInterpolation(float[][][] image, float value, int dim, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
 
         // if out of boundary, replace all with consistent value
@@ -1442,13 +1438,13 @@ public class ImageInterpolation {
 			+ alpha*nbeta*gamma*image[x0+1][y0][z0+1] 
 			+ alpha*beta*gamma*image[x0+1][y0+1][z0+1];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	linear interpolation, with distance to boundary outside image
 	 */
 	public static float linearDistanceInterpolation(float[][][] image, float value, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		int x0,y0,z0;
 		float dist = 0.0f;
 
@@ -1485,7 +1481,7 @@ public class ImageInterpolation {
 			+ alpha*nbeta*gamma*image[x0+1][y0][z0+1] 
 			+ alpha*beta*gamma*image[x0+1][y0+1][z0+1];
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 * interpolate a computation mask:
@@ -1610,7 +1606,7 @@ public class ImageInterpolation {
 	 */
 	public static float linearMaskInterpolationValue(boolean[][][] mask, float x, float y, float z, int nx, int ny, int nz) {
 		int x0,y0,z0;
-		float alpha,beta,gamma,nalpha,nbeta,ngamma,val;
+		double alpha,beta,gamma,nalpha,nbeta,ngamma,val;
 		
         // if out of boundary, replace all with zero
         if ( (x<0) || (x>nx-2) || (y<0) || (y>ny-2) || (z<0) || (z>nz-2) ) 
@@ -1639,7 +1635,7 @@ public class ImageInterpolation {
 		if (mask[x0+1][y0][z0+1])   val +=alpha*nbeta*gamma;
 		if (mask[x0+1][y0+1][z0+1]) val +=alpha*beta*gamma;
 
-		return val;
+		return (float)val;
 	}
 
 	/**
@@ -1701,7 +1697,7 @@ public class ImageInterpolation {
 	 *	exact derivatives of linear interpolation
 	 */
 	public static float linearInterpolationXderivative(float[][][] image, float x, float y, float z, int nx, int ny, int nz) {
-		float beta,gamma,nbeta,ngamma,val;
+		double beta,gamma,nbeta,ngamma,val;
 		int x0,y0,z0;
 
         // if out of boundary, replace all with zero
@@ -1723,13 +1719,13 @@ public class ImageInterpolation {
 			+ nbeta*gamma*(image[x0+1][y0][z0+1]-image[x0][y0][z0+1])
 			+ beta*gamma*(image[x0+1][y0+1][z0+1]-image[x0][y0+1][z0+1]);
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	exact derivatives of linear interpolation
 	 */
 	public static float linearInterpolationYderivative(float[][][] image, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,gamma,nalpha,ngamma,val;
+		double alpha,gamma,nalpha,ngamma,val;
 		int x0,y0,z0;
 
         // if out of boundary, replace all with zero
@@ -1751,13 +1747,13 @@ public class ImageInterpolation {
 			+ nalpha*gamma*(image[x0][y0+1][z0+1]-image[x0][y0][z0+1])
 			+ alpha*gamma*(image[x0+1][y0+1][z0+1]-image[x0+1][y0][z0+1]);
 		
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	exact derivatives of linear interpolation
 	 */
 	public static float linearInterpolationZderivative(float[][][] image, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,beta,nalpha,nbeta,val;
+		double alpha,beta,nalpha,nbeta,val;
 		int x0,y0,z0;
 
         // if out of boundary, replace all with zero
@@ -1779,14 +1775,14 @@ public class ImageInterpolation {
 			+ nalpha*beta*(image[x0][y0+1][z0+1]-image[x0][y0+1][z0])
 			+ alpha*beta*(image[x0+1][y0+1][z0+1]-image[x0+1][y0+1][z0]);
 		
-		return val;
+		return (float)val;
 	}
     
 	/**
 	 *	exact derivatives of linear interpolation
 	 */
 	public static float linearInterpolationXderivative(float[] image, float x, float y, float z, int nx, int ny, int nz) {
-		float beta,gamma,nbeta,ngamma,val;
+		double beta,gamma,nbeta,ngamma,val;
 		int x0,y0,z0,xyz0;
 
         // if out of boundary, replace all with zero
@@ -1810,13 +1806,13 @@ public class ImageInterpolation {
 			+ nbeta*gamma*(image[xyz0+1+nx*ny]-image[xyz0+nx*ny])
 			+ beta*gamma*(image[xyz0+1+nx+nx*ny]-image[xyz0+nx+nx*ny]);
 
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	exact derivatives of linear interpolation
 	 */
 	public static float linearInterpolationYderivative(float[] image, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,gamma,nalpha,ngamma,val;
+		double alpha,gamma,nalpha,ngamma,val;
 		int x0,y0,z0,xyz0;
 
         // if out of boundary, replace all with zero
@@ -1840,13 +1836,13 @@ public class ImageInterpolation {
 			+ nalpha*gamma*(image[xyz0+nx+nx*ny]-image[xyz0+nx*ny])
 			+ alpha*gamma*(image[xyz0+1+nx+nx*ny]-image[xyz0+1+nx*ny]);
 		
-		return val;
+		return (float)val;
 	}
 	/**
 	 *	exact derivatives of linear interpolation
 	 */
 	public static float linearInterpolationZderivative(float[] image, float x, float y, float z, int nx, int ny, int nz) {
-		float alpha,beta,nalpha,nbeta,val;
+		double alpha,beta,nalpha,nbeta,val;
 		int x0,y0,z0,xyz0;
 
         // if out of boundary, replace all with zero
@@ -1870,7 +1866,7 @@ public class ImageInterpolation {
 			+ nalpha*beta*(image[xyz0+nx+nx*ny]-image[xyz0+nx])
 			+ alpha*beta*(image[xyz0+1+nx+nx*ny]-image[xyz0+1+nx]);
 		
-		return val;
+		return (float)val;
 	}
     
     /**
