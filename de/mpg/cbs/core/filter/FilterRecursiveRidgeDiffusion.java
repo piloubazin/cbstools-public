@@ -430,7 +430,7 @@ public class FilterRecursiveRidgeDiffusion {
                 }
             }
             filterImage = maxresponse;
-            propagImage = propag;
+            probaImage = proba;
             scaleImage = maxscale;
             pvImage = pvol;
             
@@ -449,8 +449,8 @@ public class FilterRecursiveRidgeDiffusion {
 		
 		// Output
 		BasicInfo.displayMessage("...output inputImages\n");
-		probaImage = proba;
-		
+		propagImage = propag;
+            
 		return;
 	}
 	
