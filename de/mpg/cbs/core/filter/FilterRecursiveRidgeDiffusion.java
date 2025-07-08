@@ -158,7 +158,7 @@ public class FilterRecursiveRidgeDiffusion {
 	public final float[] getDirectionalCorrectionImage() { return correctImage;}
 	public final float[] getRidgeSizeImage() { return sizeImage;}
 
-	public void execute(){
+	public void execute(boolean output_all){
 		BasicInfo.displayMessage("recursive ridge diffusion:\n");
 		
 		// import the inputImage data into 1D arrays: already done
@@ -358,15 +358,6 @@ public class FilterRecursiveRidgeDiffusion {
 		float pmax = ImageStatistics.robustMaximum(proba, 0.000001f, 6, nx, ny, nz);
 		if (pmax>0) for (int xyz=0;xyz<nxyz;xyz++) proba[xyz] = Numerics.min(proba[xyz]/pmax,1.0f);
 		
-		// generate a direction vector
-		float[][] direction = new float[3][nxyz];
-		for (int xyz=0;xyz<nxyz;xyz++){
-			float[] vec = directionVector(maxdirection[xyz]);
-			direction[X][xyz] = vec[X];
-			direction[Y][xyz] = vec[Y];
-			direction[Z][xyz] = vec[Z];
-		}
-		
 		// 3. diffuse the data to neighboring structures with SUR
 		BasicInfo.displayMessage("...diffusion ("+propagationParam+")\n");
 		
@@ -404,60 +395,61 @@ public class FilterRecursiveRidgeDiffusion {
 		if (pmax>0) for (int xyz=0;xyz<nxyz;xyz++) proba[xyz] = Numerics.min(proba[xyz]/pmax,1.0f);
 		*/
 		
-		
-		// 4. Measure size of connected region
-		boolean[] detected = ObjectExtraction.objectFromImage(propag, nx, ny, nz, detectionThreshold, ObjectExtraction.SUPEQUAL);
-		int[] components = ObjectLabeling.connected26Object3D(detected, nx, ny, nz);
-		int Ncomp = ObjectLabeling.countLabels(components, nx, ny, nz);
-		float[] length = new float[Ncomp];
-		for (int xyz=0;xyz<nxyz;xyz++) if (components[xyz]>0) {
-			length[components[xyz]-1] += propag[xyz];
-		}
-		float[] lengthmap = new float[nxyz];
-		for (int xyz=0;xyz<nxyz;xyz++) if (components[xyz]>0) {
-			lengthmap[xyz] = length[components[xyz]-1];
-		}
-		
-		// 5. Get the partial volume estimates : note they may be incorrect after propagation
-		float[] pvol = new float[nxyz];
-		for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
-			int xyz = x + nx*y + nx*ny*z;
-			if (propag[xyz]>detectionThreshold) {
-				// when the diameter is smaller than the voxel, linear approx
-				pvol[xyz] = Numerics.bounded(propag[xyz], 0.0f, 1.0f);
-				float radius = Numerics.max(0.0f, maxscale[xyz]/2.0f); // scale is diameter
-				int nsc = Numerics.ceil(radius); 
-				for (int i=-nsc;i<=nsc;i++) for (int j=-nsc;j<=nsc;j++) for (int k=-nsc;k<=nsc;k++) {
-					if (x+i>=0 && x+i<nx && y+j>=0 && y+j<ny && z+k>=0 && z+k<nz) {
-						float dist = (float)FastMath.sqrt(i*i+j*j+k*k);
-						// update the neighbor value for diameters above the voxel size
-						float ratio = Numerics.bounded(radius+0.5f-dist, 0.0f, 1.0f);
-						//pvol[xyz+i+j*nx+k*nx*ny] = Numerics.max(pvol[xyz+i+j*nx+k*nx*ny], Numerics.bounded(scaleMax[xyz]/2.0f+0.5f-dist, 0.0f, 1.0f));
-						pvol[xyz+i+j*nx+k*nx*ny] = Numerics.max(pvol[xyz+i+j*nx+k*nx*ny], ratio*pvol[xyz]);
-					}
-				}
-			}
-		}
+		if (output_all) {
+            // 4. Measure size of connected region
+            boolean[] detected = ObjectExtraction.objectFromImage(propag, nx, ny, nz, detectionThreshold, ObjectExtraction.SUPEQUAL);
+            int[] components = ObjectLabeling.connected26Object3D(detected, nx, ny, nz);
+            int Ncomp = ObjectLabeling.countLabels(components, nx, ny, nz);
+            float[] length = new float[Ncomp];
+            for (int xyz=0;xyz<nxyz;xyz++) if (components[xyz]>0) {
+                length[components[xyz]-1] += propag[xyz];
+            }
+            float[] lengthmap = new float[nxyz];
+            for (int xyz=0;xyz<nxyz;xyz++) if (components[xyz]>0) {
+                lengthmap[xyz] = length[components[xyz]-1];
+            }
+            
+            // 5. Get the partial volume estimates : note they may be incorrect after propagation
+            float[] pvol = new float[nxyz];
+            for (int x=0;x<nx;x++) for (int y=0;y<ny;y++) for (int z=0;z<nz;z++) {
+                int xyz = x + nx*y + nx*ny*z;
+                if (propag[xyz]>detectionThreshold) {
+                    // when the diameter is smaller than the voxel, linear approx
+                    pvol[xyz] = Numerics.bounded(propag[xyz], 0.0f, 1.0f);
+                    float radius = Numerics.max(0.0f, maxscale[xyz]/2.0f); // scale is diameter
+                    int nsc = Numerics.ceil(radius); 
+                    for (int i=-nsc;i<=nsc;i++) for (int j=-nsc;j<=nsc;j++) for (int k=-nsc;k<=nsc;k++) {
+                        if (x+i>=0 && x+i<nx && y+j>=0 && y+j<ny && z+k>=0 && z+k<nz) {
+                            float dist = (float)FastMath.sqrt(i*i+j*j+k*k);
+                            // update the neighbor value for diameters above the voxel size
+                            float ratio = Numerics.bounded(radius+0.5f-dist, 0.0f, 1.0f);
+                            //pvol[xyz+i+j*nx+k*nx*ny] = Numerics.max(pvol[xyz+i+j*nx+k*nx*ny], Numerics.bounded(scaleMax[xyz]/2.0f+0.5f-dist, 0.0f, 1.0f));
+                            pvol[xyz+i+j*nx+k*nx*ny] = Numerics.max(pvol[xyz+i+j*nx+k*nx*ny], ratio*pvol[xyz]);
+                        }
+                    }
+                }
+            }
+            filterImage = maxresponse;
+            propagImage = propag;
+            scaleImage = maxscale;
+            pvImage = pvol;
+            
+            // generate a direction vector
+            directionImage = new float[3*nxyz];
+            for (int xyz=0;xyz<nxyz;xyz++){
+                float[] vec = directionVector(maxdirection[xyz]);
+                directionImage[xyz+X*nxyz] = vec[X];
+                directionImage[xyz+Y*nxyz] = vec[Y];
+                directionImage[xyz+Z*nxyz] = vec[Z];
+            }
+            
+            correctImage = correction;
+            sizeImage = lengthmap;
+        }
 		
 		// Output
 		BasicInfo.displayMessage("...output inputImages\n");
-		filterImage = maxresponse;
 		probaImage = proba;
-		propagImage = propag;
-		scaleImage = maxscale;
-		pvImage = pvol;
-		
-		float[] result4 = new float[nxyz*3];
-		for (int xyz=0;xyz<nxyz;xyz++) {
-			result4[xyz+X*nxyz] = direction[X][xyz];
-			result4[xyz+Y*nxyz] = direction[Y][xyz];
-			result4[xyz+Z*nxyz] = direction[Z][xyz];
-		}					
-		directionImage = result4;
-		direction = null;
-		
-		correctImage = correction;
-		sizeImage = lengthmap;
 		
 		return;
 	}
