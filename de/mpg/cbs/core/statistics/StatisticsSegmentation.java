@@ -139,7 +139,7 @@ public class StatisticsSegmentation {
 			lbname = new String[nlabels];
 			for (int n=0;n<nlabels;n++) lbname[n] = new String("Label_"+lbid[n]);
 		}
-		
+				
 		float[] intensity = intensImage;
 		int[] template = tempImage;
 		
@@ -170,6 +170,14 @@ public class StatisticsSegmentation {
 			lbid = tmp;
 			lbname = txt;
 		}
+		
+		// create an inverse mapping to speed things up
+		int lbmax=0;
+		for (int n=0;n<nlabels;n++) if (lbid[n]>lbmax) lbmax = lbid[n];
+		int[] lbinv = new int[lbmax+1];
+		for (int n=0;n<lbmax+1;n++) lbinv[n] = -1;
+		for (int n=0;n<nlabels;n++) lbinv[lbid[n]] = n;
+
 		
 		// create label name list
 		//String lbline = "labels"+notag+notag+notag;
@@ -807,9 +815,12 @@ public class StatisticsSegmentation {
 					den[n] = 0.0f;
 				}
 				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						mean[n] += intensity[xyz];
-						den[n] += 1.0f;
+				    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            mean[n] += intensity[xyz];
+                            den[n] += 1.0f;
+                        }
 					}
 				}
 				for (int n=0;n<nlabels;n++) {
@@ -831,17 +842,23 @@ public class StatisticsSegmentation {
 					den[n] = 0.0f;
 				}
 				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						mean[n] += intensity[xyz];
-						den[n] += 1.0f;
+					if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            mean[n] += intensity[xyz];
+                            den[n] += 1.0f;
+                        }
 					}
 				}
 				for (int n=0;n<nlabels;n++) {
 					if (den[n]>0) mean[n] = mean[n]/den[n];
 				}
 				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						std[n] += (intensity[xyz]-mean[n])*(intensity[xyz]-mean[n]);
+					if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            std[n] += (intensity[xyz]-mean[n])*(intensity[xyz]-mean[n]);
+                        }
 					}
 				}
 				for (int n=0;n<nlabels;n++) {
@@ -859,8 +876,11 @@ public class StatisticsSegmentation {
 					sum[n] = 0.0f;
 				}
 				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n]) {
-						sum[n] += intensity[xyz];
+					if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            sum[n] += intensity[xyz];
+                        }
 					}
 				}
 				line = "Sum_intensity"+imgtag+notag+inttag;
@@ -879,17 +899,23 @@ public class StatisticsSegmentation {
 					den[n] = 0.0f;
 				}
 				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						mean[n] += intensity[xyz];
-						den[n] += 1.0f;
+					if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            mean[n] += intensity[xyz];
+                            den[n] += 1.0f;
+                        }
 					}
 				}
 				for (int n=0;n<nlabels;n++) {
 					if (den[n]>0) mean[n] = mean[n]/den[n];
 				}
 				for (int xyz=0;xyz<nxyz;xyz++) {
-					for (int n=0;n<nlabels;n++) if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-						std[n] += (intensity[xyz]-mean[n])*(intensity[xyz]-mean[n]);
+					if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            std[n] += (intensity[xyz]-mean[n])*(intensity[xyz]-mean[n]);
+                        }
 					}
 				}
 				for (int n=0;n<nlabels;n++) {
@@ -903,23 +929,32 @@ public class StatisticsSegmentation {
 			if (statistics.get(s).equals("50_intensity")) {
 				boolean ignoreZero = ignoreZeroParam;
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++)  {
-				    int sample=0;
-                    for (int xyz=0;xyz<nxyz;xyz++) {
-                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-                            sample++;
+				int[] sample=new int[nlabels];
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            sample[n]++;
                         }
                     }
-                    double[] val = new double[sample];
-                    sample=0;
-                    for (int xyz=0;xyz<nxyz;xyz++) {
-                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-                            val[sample] = intensity[xyz];
-                            sample++;
+                }
+                double[][] val = new double[nlabels][];
+                for (int n=0;n<nlabels;n++) {
+                    val[n] = new double[sample[n]];
+                    sample[n]=0;
+                }
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            val[n][sample[n]] = intensity[xyz];
+                            sample[n]++;
                         }
                     }
-                    Percentile percent = new Percentile();
-                    per[n] = (float)percent.evaluate(val, 50.0);
+                }
+                Percentile percent = new Percentile();
+                for (int n=0;n<nlabels;n++) {
+                    per[n] = (float)percent.evaluate(val[n], 50.0);
 				}
 				line = "50_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -929,6 +964,7 @@ public class StatisticsSegmentation {
 			if (statistics.get(s).equals("Median_intensity")) {
 				boolean ignoreZero = ignoreZeroParam;
 				float[] per = new float[nlabels];
+				/*
 				for (int n=0;n<nlabels;n++)  {
 				    int sample=0;
                     for (int xyz=0;xyz<nxyz;xyz++) {
@@ -946,7 +982,35 @@ public class StatisticsSegmentation {
                     }
                     Percentile percent = new Percentile();
                     per[n] = (float)percent.evaluate(val, 50.0);
-				}
+				}*/
+				int[] sample=new int[nlabels];
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            sample[n]++;
+                        }
+                    }
+                }
+                double[][] val = new double[nlabels][];
+                for (int n=0;n<nlabels;n++) {
+                    val[n] = new double[sample[n]];
+                    sample[n]=0;
+                }
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            val[n][sample[n]] = intensity[xyz];
+                            sample[n]++;
+                        }
+                    }
+                }
+                Percentile percent = new Percentile();
+                for (int n=0;n<nlabels;n++) {
+                    per[n] = (float)percent.evaluate(val[n], 50.0);
+                }
+				
 				line = "Median_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
 				line+=("\n");
@@ -955,23 +1019,32 @@ public class StatisticsSegmentation {
 			if (statistics.get(s).equals("90_intensity")) {
 				boolean ignoreZero = ignoreZeroParam;
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++)  {
-				    int sample=0;
-                    for (int xyz=0;xyz<nxyz;xyz++) {
-                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-                            sample++;
+				int[] sample=new int[nlabels];
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            sample[n]++;
                         }
                     }
-                    double[] val = new double[sample];
-                    sample=0;
-                    for (int xyz=0;xyz<nxyz;xyz++) {
-                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-                            val[sample] = intensity[xyz];
-                            sample++;
+                }
+                double[][] val = new double[nlabels][];
+                for (int n=0;n<nlabels;n++) {
+                    val[n] = new double[sample[n]];
+                    sample[n]=0;
+                }
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            val[n][sample[n]] = intensity[xyz];
+                            sample[n]++;
                         }
                     }
-                    Percentile percent = new Percentile();
-                    per[n] = (float)percent.evaluate(val, 90.0);
+                }
+                Percentile percent = new Percentile();
+                for (int n=0;n<nlabels;n++) {
+                    per[n] = (float)percent.evaluate(val[n], 90.0);
 				}
 				line = "90_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -981,23 +1054,32 @@ public class StatisticsSegmentation {
 			if (statistics.get(s).equals("10_intensity")) {
 				boolean ignoreZero = ignoreZeroParam;
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++)  {
-				    int sample=0;
-                    for (int xyz=0;xyz<nxyz;xyz++) {
-                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-                            sample++;
+				int[] sample=new int[nlabels];
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            sample[n]++;
                         }
                     }
-                    double[] val = new double[sample];
-                    sample=0;
-                    for (int xyz=0;xyz<nxyz;xyz++) {
-                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-                            val[sample] = intensity[xyz];
-                            sample++;
+                }
+                double[][] val = new double[nlabels][];
+                for (int n=0;n<nlabels;n++) {
+                    val[n] = new double[sample[n]];
+                    sample[n]=0;
+                }
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            val[n][sample[n]] = intensity[xyz];
+                            sample[n]++;
                         }
                     }
-                    Percentile percent = new Percentile();
-                    per[n] = (float)percent.evaluate(val, 10.0);
+                }
+                Percentile percent = new Percentile();
+                for (int n=0;n<nlabels;n++) {
+                    per[n] = (float)percent.evaluate(val[n], 10.0);
 				}
 				line = "10_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -1007,23 +1089,32 @@ public class StatisticsSegmentation {
 			if (statistics.get(s).equals("75_intensity")) {
 				boolean ignoreZero = ignoreZeroParam;
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++)  {
-				    int sample=0;
-                    for (int xyz=0;xyz<nxyz;xyz++) {
-                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-                            sample++;
+				int[] sample=new int[nlabels];
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            sample[n]++;
                         }
                     }
-                    double[] val = new double[sample];
-                    sample=0;
-                    for (int xyz=0;xyz<nxyz;xyz++) {
-                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-                            val[sample] = intensity[xyz];
-                            sample++;
+                }
+                double[][] val = new double[nlabels][];
+                for (int n=0;n<nlabels;n++) {
+                    val[n] = new double[sample[n]];
+                    sample[n]=0;
+                }
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            val[n][sample[n]] = intensity[xyz];
+                            sample[n]++;
                         }
                     }
-                    Percentile percent = new Percentile();
-                    per[n] = (float)percent.evaluate(val, 75.0);
+                }
+                Percentile percent = new Percentile();
+                for (int n=0;n<nlabels;n++) {
+                    per[n] = (float)percent.evaluate(val[n], 75.0);
 				}
 				line = "75_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -1033,23 +1124,32 @@ public class StatisticsSegmentation {
 			if (statistics.get(s).equals("25_intensity")) {
 				boolean ignoreZero = ignoreZeroParam;
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++)  {
-				    int sample=0;
-                    for (int xyz=0;xyz<nxyz;xyz++) {
-                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-                            sample++;
+				int[] sample=new int[nlabels];
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            sample[n]++;
                         }
                     }
-                    double[] val = new double[sample];
-                    sample=0;
-                    for (int xyz=0;xyz<nxyz;xyz++) {
-                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-                            val[sample] = intensity[xyz];
-                            sample++;
+                }
+                double[][] val = new double[nlabels][];
+                for (int n=0;n<nlabels;n++) {
+                    val[n] = new double[sample[n]];
+                    sample[n]=0;
+                }
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            val[n][sample[n]] = intensity[xyz];
+                            sample[n]++;
                         }
                     }
-                    Percentile percent = new Percentile();
-                    per[n] = (float)percent.evaluate(val, 25.0);
+                }
+                Percentile percent = new Percentile();
+                for (int n=0;n<nlabels;n++) {
+                    per[n] = (float)percent.evaluate(val[n], 25.0);
 				}
 				line = "25_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
@@ -1059,6 +1159,7 @@ public class StatisticsSegmentation {
 			if (statistics.get(s).equals("IQR_intensity")) {
 				boolean ignoreZero = ignoreZeroParam;
 				float[] per = new float[nlabels];
+				/*
 				for (int n=0;n<nlabels;n++)  {
 				    int sample=0;
                     for (int xyz=0;xyz<nxyz;xyz++) {
@@ -1076,7 +1177,35 @@ public class StatisticsSegmentation {
                     }
                     Percentile percent = new Percentile();
                     per[n] = (float)(percent.evaluate(val, 75.0)-percent.evaluate(val, 25.0));
-				}
+				}*/
+				int[] sample=new int[nlabels];
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            sample[n]++;
+                        }
+                    }
+                }
+                double[][] val = new double[nlabels][];
+                for (int n=0;n<nlabels;n++) {
+                    val[n] = new double[sample[n]];
+                    sample[n]=0;
+                }
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            val[n][sample[n]] = intensity[xyz];
+                            sample[n]++;
+                        }
+                    }
+                }
+                Percentile percent = new Percentile();
+                for (int n=0;n<nlabels;n++) {
+                    per[n] = (float)(percent.evaluate(val[n], 75.0)-percent.evaluate(val[n], 25.0));
+                }
+
 				line = "IQR_intensity"+imgtag+notag+inttag;
 				for (int n=0;n<nlabels;n++) line+=(delim+per[n]);
 				line+=("\n");
@@ -1085,25 +1214,34 @@ public class StatisticsSegmentation {
 			if (statistics.get(s).equals("rSNR_intensity")) {
 				boolean ignoreZero = ignoreZeroParam;
 				float[] per = new float[nlabels];
-				for (int n=0;n<nlabels;n++)  {
-				    int sample=0;
-                    for (int xyz=0;xyz<nxyz;xyz++) {
-                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-                            sample++;
+				int[] sample=new int[nlabels];
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            sample[n]++;
                         }
                     }
-                    double[] val = new double[sample];
-                    sample=0;
-                    for (int xyz=0;xyz<nxyz;xyz++) {
-                        if (segmentation[xyz]==lbid[n] && (!ignoreZero || intensity[xyz]!=0) ) {
-                            val[sample] = intensity[xyz];
-                            sample++;
+                }
+                double[][] val = new double[nlabels][];
+                for (int n=0;n<nlabels;n++) {
+                    val[n] = new double[sample[n]];
+                    sample[n]=0;
+                }
+                for (int xyz=0;xyz<nxyz;xyz++) {
+                    if (segmentation[xyz]>=0) {
+                        int n = lbinv[segmentation[xyz]];
+                        if (!ignoreZero || intensity[xyz]!=0) {
+                            val[n][sample[n]] = intensity[xyz];
+                            sample[n]++;
                         }
                     }
-                    Percentile percent = new Percentile();
-                    double diff = percent.evaluate(val, 75.0)-percent.evaluate(val, 25.0);
+                }
+                Percentile percent = new Percentile();
+                for (int n=0;n<nlabels;n++) {
+                    double diff = percent.evaluate(val[n], 75.0)-percent.evaluate(val[n], 25.0);
                     if (diff>0)
-                        per[n] = (float)(percent.evaluate(val, 50.0)/diff);
+                        per[n] = (float)(percent.evaluate(val[n], 50.0)/diff);
                     else
                         per[n] = 0.0f;
 				}
