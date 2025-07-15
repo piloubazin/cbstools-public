@@ -817,7 +817,7 @@ public class StatisticsSegmentation {
 				for (int xyz=0;xyz<nxyz;xyz++) {
 				    if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             mean[n] += intensity[xyz];
                             den[n] += 1.0f;
                         }
@@ -844,7 +844,7 @@ public class StatisticsSegmentation {
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             mean[n] += intensity[xyz];
                             den[n] += 1.0f;
                         }
@@ -856,7 +856,7 @@ public class StatisticsSegmentation {
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             std[n] += (intensity[xyz]-mean[n])*(intensity[xyz]-mean[n]);
                         }
 					}
@@ -878,7 +878,7 @@ public class StatisticsSegmentation {
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             sum[n] += intensity[xyz];
                         }
 					}
@@ -901,7 +901,7 @@ public class StatisticsSegmentation {
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             mean[n] += intensity[xyz];
                             den[n] += 1.0f;
                         }
@@ -913,7 +913,7 @@ public class StatisticsSegmentation {
 				for (int xyz=0;xyz<nxyz;xyz++) {
 					if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             std[n] += (intensity[xyz]-mean[n])*(intensity[xyz]-mean[n]);
                         }
 					}
@@ -933,7 +933,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             sample[n]++;
                         }
                     }
@@ -946,7 +946,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             val[n][sample[n]] = intensity[xyz];
                             sample[n]++;
                         }
@@ -987,7 +987,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             sample[n]++;
                         }
                     }
@@ -1000,7 +1000,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             val[n][sample[n]] = intensity[xyz];
                             sample[n]++;
                         }
@@ -1023,7 +1023,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             sample[n]++;
                         }
                     }
@@ -1036,7 +1036,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             val[n][sample[n]] = intensity[xyz];
                             sample[n]++;
                         }
@@ -1058,7 +1058,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             sample[n]++;
                         }
                     }
@@ -1071,7 +1071,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             val[n][sample[n]] = intensity[xyz];
                             sample[n]++;
                         }
@@ -1093,7 +1093,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             sample[n]++;
                         }
                     }
@@ -1106,7 +1106,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             val[n][sample[n]] = intensity[xyz];
                             sample[n]++;
                         }
@@ -1128,7 +1128,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             sample[n]++;
                         }
                     }
@@ -1141,7 +1141,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             val[n][sample[n]] = intensity[xyz];
                             sample[n]++;
                         }
@@ -1182,7 +1182,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             sample[n]++;
                         }
                     }
@@ -1195,7 +1195,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             val[n][sample[n]] = intensity[xyz];
                             sample[n]++;
                         }
@@ -1218,7 +1218,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             sample[n]++;
                         }
                     }
@@ -1231,7 +1231,7 @@ public class StatisticsSegmentation {
                 for (int xyz=0;xyz<nxyz;xyz++) {
                     if (segmentation[xyz]>=0) {
                         int n = lbinv[segmentation[xyz]];
-                        if (!ignoreZero || intensity[xyz]!=0) {
+                        if (n>=0 && (!ignoreZero || intensity[xyz]!=0) ) {
                             val[n][sample[n]] = intensity[xyz];
                             sample[n]++;
                         }
