@@ -12,8 +12,8 @@ import de.mpg.cbs.utilities.*;
 public class IntensityPropagate {
 
 	// parameters
-	public		static final String[]	normtypes = {"max","mean","min"};
-	public		static final String[]	targettypes = {"zero","mask","lower","higher"};
+	public		static final String[]	normtypes = {"max","mean","min","maxmag"};
+	public		static final String[]	targettypes = {"zero","mask","lower","higher","lowermag"};
 	
 	// variables
 	private float[] inputImage = null;
@@ -66,11 +66,12 @@ public class IntensityPropagate {
 	public void execute() {
 	
 		// different settings
-		int ZERO = 1, MASK = 2, LOWER = 3, HIGHER = 4;
+		int ZERO = 1, MASK = 2, LOWER = 3, HIGHER = 4, LOWERMAG = 5;
 		int target = ZERO;
 		if (targetParam.equals("mask")) target = MASK;
 		if (targetParam.equals("lower")) target = LOWER;
 		if (targetParam.equals("higher")) target = HIGHER;
+		if (targetParam.equals("lowermag")) target = LOWERMAG;
 		
 		// restricted domain
 		int RESTRICTED = 1, UNRESTRICTED = 2;
@@ -80,11 +81,12 @@ public class IntensityPropagate {
 		// main algorithm
 		int nd = Numerics.ceil(distParam/Numerics.min(rx,ry,rz));
 		
-		int MIN = 1, MAX = 2, MEAN = 3;
+		int MIN = 1, MAX = 2, MEAN = 3, MAXMAG = 4;
 		int merge = MAX;
 		if (normParam.equals("mean")) merge = MEAN;
 		if (normParam.equals("min")) merge = MIN;
-
+		if (normParam.equals("maxmag")) merge = MAXMAG;
+		
 		// set up for 2D vs 3D
 		int dnx = 1;
 		int dny = 1;
@@ -114,15 +116,16 @@ public class IntensityPropagate {
 					// only for places with actual values inside..
 					if ( (target==ZERO && inputImage[xyz+nxyz*c]!=0)
 						|| (target==MASK && maskImage[xyz]!=0)
-						|| target==LOWER || target==HIGHER) {
+						|| target==LOWER || target==HIGHER || target==LOWERMAG) {
 						// propagate to neighbors
 						for (int dx=-dnx;dx<=dnx;dx++) for (int dy=-dny;dy<=dny;dy++) for (int dz=-dnz;dz<=dnz;dz++) {
 							int xyzd = xyz + dx+nx*dy+nx*ny*dz;
-							if ( (domain==UNRESTRICTED) || (domain==RESTRICTED && domainImage[xyzd]>0) ) {
+							if ( (domain==UNRESTRICTED) || (domain==RESTRICTED && domainImage[xyzd]!=0) ) {
                                 if ( (target==ZERO && inputImage[xyzd + nxyz*c]==0)
                                     || (target==MASK && maskImage[xyzd]==0)
                                     || (target==LOWER && inputImage[xyzd + nxyz*c] < scalingParam*inputImage[xyz + nxyz*c])
-                                    || (target==HIGHER && inputImage[xyzd + nxyz*c] > scalingParam*inputImage[xyz + nxyz*c]) ) {
+                                    || (target==HIGHER && inputImage[xyzd + nxyz*c] > scalingParam*inputImage[xyz + nxyz*c])
+                                    || (target==LOWERMAG && Numerics.abs(inputImage[xyzd + nxyz*c]) > scalingParam*Numerics.abs(inputImage[xyz + nxyz*c]) ) ) {
                                     //System.out.print(".");
                                     if (merge==MIN) {
                                         if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
@@ -132,7 +135,10 @@ public class IntensityPropagate {
                                         else resultImage[xyzd+nxyz*c] = Numerics.max(resultImage[xyzd+nxyz*c], scalingParam*inputImage[xyz+nxyz*c]);
                                     } else if (merge==MEAN) {
                                         resultImage[xyzd+nxyz*c] += scalingParam*inputImage[xyz+nxyz*c];
-                                    }
+                                    } else if (merge==MAXMAG) {
+                                        if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
+                                        else resultImage[xyzd+nxyz*c] = Numerics.maxmag(resultImage[xyzd+nxyz*c], scalingParam*inputImage[xyz+nxyz*c]);
+                                    } 
                                     if (c==nc-1) count[xyzd]++;
                                 }
                             }

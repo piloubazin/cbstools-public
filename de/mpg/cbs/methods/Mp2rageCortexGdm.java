@@ -84,6 +84,7 @@ public class Mp2rageCortexGdm {
 	
 	// secondary functions
 	private float[]		edgemap;
+	private float edgecomp = 0.0f;
 	private float[][]		edgegrad;
 	private	double		Iwm, Igm, Icsf;
 	private double		Swm, Sgm, Scsf;	
@@ -295,6 +296,10 @@ public class Mp2rageCortexGdm {
 		curvweight = cw_;
 		divweight = dw_;
 	}
+	
+	public final void setEdgeMap(float[] val) { edgemap = val; }
+	
+	public final void setSignedEdgeCompetition(float val) { edgecomp = val; }
 	
 	public final void fastMarchingInitializationFromSegmentation(boolean narrowBandOnly) {
          // initialize the quantities
@@ -1183,11 +1188,18 @@ public class Mp2rageCortexGdm {
 		// balloon force is used: 1) close to boundary in regions of low gradient, 
 		//   and 2) if assigned label is wrong (away from boundary)
 		//forces += -balloonweight*stepsize*( (1.0-delta)*incorrect + edgemap[xyz]*delta)
-		
+
+        if (edgecomp!=0) {
+		    // use signed edge map as extra balloon force where defined
+		    float edge = Numerics.bounded(edgecomp*edgemap[xyz],-1.0f,1.0f);
+		    
+		    balloonforce = (1.0f-Numerics.abs(edge))*balloonforce + edge;
+		}
+
 		forces += balloonweight*stepsize
 								*(Numerics.max(balloonforce, 0.0)*DeltaP + Numerics.min(balloonforce, 0.0)*DeltaM);
-		
-		if (edgeweight>0) {
+
+        if (edgeweight>0) {
 			// disable the edge force away from current boundaries
 			if (Numerics.abs(levelset[xyz])<=3.0f) delta = 1.0;
 			else delta = 0.0;

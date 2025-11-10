@@ -17,11 +17,13 @@ public class CortexOptimCRUISE {
 	private float[] gmImage;
 	private float[] csfImage;
 	private float[] vdImage;
+	private float[] edgeImage;
 	
 	private int nx, ny, nz, nxyz;
 	private float rx, ry, rz;
 
 	private	float 		balloonParam = 0.4f;
+	private	float 		edgeParam = 0.0f;
 	private float 		curvParam = 0.1f;
 	private int 		iterationParam = 500;
 	private String 		topologyParam = "wcs";
@@ -50,8 +52,10 @@ public class CortexOptimCRUISE {
 	public final void setGMProbabilityImage(float[] val) { gmImage = val; }
 	public final void setCSFandBGProbabilityImage(float[] val) { csfImage = val; }
 	public final void setVeinsAndDuraProbabilityImage(float[] val) { vdImage = val; }
+	public final void setSignedEdgemapImage(float[] val) { edgeImage = val; }
 	
 	public final void setDataWeight(float val) { balloonParam = val; }
+	public final void setEdgeWeight(float val) { edgeParam = val; }
 	public final void setRegularizationWeight(float val) { curvParam = val; }
 	public final void setMaxIterations(int val) { iterationParam = val; }
 	public final void setNormalizeProbabilities(boolean val) { normalizeParam = val; }
@@ -228,6 +232,13 @@ public class CortexOptimCRUISE {
 														curvParam, 0.0f,
 														topologyParam,lutdir,useProbas, gwbflag);
 		
+		// new options to follow edges rather than probabilities
+		if (edgeParam!=0) {
+		    gdm.setEdgeMap(edgeImage);
+		    gdm.setSignedEdgeCompetition(edgeParam);
+		}
+		
+		// run narrow band
 		if (iterationParam>0) {
 			BasicInfo.displayMessage("level set segmentation...\n");
 			
@@ -267,6 +278,13 @@ public class CortexOptimCRUISE {
 									curvParam, 0.0f,
 									topologyParam,lutdir,useProbas, cgbflag);
 		
+		// new options to follow edges rather than probabilities
+		if (edgeParam!=0) {
+		    gdm.setEdgeMap(edgeImage);
+		    gdm.setSignedEdgeCompetition(edgeParam);
+		}
+		
+		// run narrow band
 		if (iterationParam>0) {
 			BasicInfo.displayMessage("level set segmentation...\n");
 			
