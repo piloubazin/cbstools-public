@@ -13,7 +13,7 @@ public class IntensityPropagate {
 
 	// parameters
 	public		static final String[]	normtypes = {"max","mean","min","maxmag"};
-	public		static final String[]	targettypes = {"zero","mask","lower","higher","lowermag"};
+	public		static final String[]	targettypes = {"zero","mask","lower","higher","lowermag","maxmask"};
 	
 	// variables
 	private float[] inputImage = null;
@@ -66,12 +66,13 @@ public class IntensityPropagate {
 	public void execute() {
 	
 		// different settings
-		int ZERO = 1, MASK = 2, LOWER = 3, HIGHER = 4, LOWERMAG = 5;
+		int ZERO = 1, MASK = 2, LOWER = 3, HIGHER = 4, LOWERMAG = 5, MAXMASK=6;
 		int target = ZERO;
 		if (targetParam.equals("mask")) target = MASK;
 		if (targetParam.equals("lower")) target = LOWER;
 		if (targetParam.equals("higher")) target = HIGHER;
 		if (targetParam.equals("lowermag")) target = LOWERMAG;
+		if (targetParam.equals("maxmask")) target = MAXMASK;
 		
 		// restricted domain
 		int RESTRICTED = 1, UNRESTRICTED = 2;
@@ -116,7 +117,7 @@ public class IntensityPropagate {
 					// only for places with actual values inside..
 					if ( (target==ZERO && inputImage[xyz+nxyz*c]!=0)
 						|| (target==MASK && maskImage[xyz]!=0)
-						|| target==LOWER || target==HIGHER || target==LOWERMAG) {
+						|| target==LOWER || target==HIGHER || target==LOWERMAG || target==MAXMASK) {
 						// propagate to neighbors
 						for (int dx=-dnx;dx<=dnx;dx++) for (int dy=-dny;dy<=dny;dy++) for (int dz=-dnz;dz<=dnz;dz++) {
 							int xyzd = xyz + dx+nx*dy+nx*ny*dz;
@@ -125,7 +126,8 @@ public class IntensityPropagate {
                                     || (target==MASK && maskImage[xyzd]==0)
                                     || (target==LOWER && inputImage[xyzd + nxyz*c] < scalingParam*inputImage[xyz + nxyz*c])
                                     || (target==HIGHER && inputImage[xyzd + nxyz*c] > scalingParam*inputImage[xyz + nxyz*c])
-                                    || (target==LOWERMAG && Numerics.abs(inputImage[xyzd + nxyz*c]) > scalingParam*Numerics.abs(inputImage[xyz + nxyz*c]) ) ) {
+                                    || (target==LOWERMAG && Numerics.abs(inputImage[xyzd + nxyz*c]) > scalingParam*Numerics.abs(inputImage[xyz + nxyz*c]) )
+                                    || (target==MAXMASK && maskImage[xyzd]>maskImage[xyz]) ) {
                                     //System.out.print(".");
                                     if (merge==MIN) {
                                         if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
