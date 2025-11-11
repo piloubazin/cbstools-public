@@ -127,7 +127,7 @@ public class IntensityPropagate {
                                     || (target==LOWER && inputImage[xyzd + nxyz*c] < scalingParam*inputImage[xyz + nxyz*c])
                                     || (target==HIGHER && inputImage[xyzd + nxyz*c] > scalingParam*inputImage[xyz + nxyz*c])
                                     || (target==LOWERMAG && Numerics.abs(inputImage[xyzd + nxyz*c]) < scalingParam*Numerics.abs(inputImage[xyz + nxyz*c]) )
-                                    || (target==MAXMASK && maskImage[xyzd]<maskImage[xyz]) ) {
+                                    || (target==MAXMASK && maskImage[xyzd]>maskImage[xyz]) ) {
                                     //System.out.print(".");
                                     if (merge==MIN) {
                                         if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
