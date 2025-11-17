@@ -1189,16 +1189,13 @@ public class Mp2rageCortexGdm {
 		//   and 2) if assigned label is wrong (away from boundary)
 		//forces += -balloonweight*stepsize*( (1.0-delta)*incorrect + edgemap[xyz]*delta)
 
-        if (edgecomp!=0) {
-		    // use signed edge map as extra balloon force where defined
-		    float edge = Numerics.bounded(edgecomp*edgemap[xyz],-1.0f,1.0f);
-		    
-		    balloonforce = (1.0f-Numerics.abs(edge))*balloonforce + edge;
-		}
-
 		forces += balloonweight*stepsize
 								*(Numerics.max(balloonforce, 0.0)*DeltaP + Numerics.min(balloonforce, 0.0)*DeltaM);
 
+        if (edgecomp!=0) {
+            forces += stepsize*(Numerics.max(edgecomp*edgemap[xyz], 0.0)*DeltaP + Numerics.min(edgecomp*edgemap[xyz], 0.0)*DeltaM);
+        }
+        
         if (edgeweight>0) {
 			// disable the edge force away from current boundaries
 			if (Numerics.abs(levelset[xyz])<=3.0f) delta = 1.0;
