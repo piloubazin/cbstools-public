@@ -454,6 +454,10 @@ public class FilterRecursiveRidgeDiffusion {
 		return;
 	}
 	
+	public void execute() {
+	    execute(true);
+	}
+	
 	private final void directionFromRecursiveRidgeFilter0D(float[] img, boolean[] mask, float[] filter, byte[] direction, boolean unidirectional) {
 			
 			// get the tubular filter response
