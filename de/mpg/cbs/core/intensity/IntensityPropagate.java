@@ -82,10 +82,11 @@ public class IntensityPropagate {
 		// main algorithm
 		int nd = Numerics.ceil(distParam/Numerics.min(rx,ry,rz));
 		
-		int MIN = 1, MAX = 2, MEAN = 3, MAXMAG = 4;
-		int merge = MAX;
+		int MIN = 1, MAX = 2, MEAN = 3, MAXMAG = 4, FIRST = 5;
+		int merge = FIRST;
 		if (normParam.equals("mean")) merge = MEAN;
 		if (normParam.equals("min")) merge = MIN;
+		if (normParam.equals("max")) merge = MAX;
 		if (normParam.equals("maxmag")) merge = MAXMAG;
 		
 		// set up for 2D vs 3D
@@ -132,7 +133,9 @@ public class IntensityPropagate {
                                             ) )
                                     || (target==MAXMASK && maskImage[xyzd]>maskImage[xyz]) ) {
                                     //System.out.print(".");
-                                    if (merge==MIN) {
+                                    if (merge==FIRST) {
+                                        if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
+                                    } else if (merge==MIN) {
                                         if (count[xyzd]==0) resultImage[xyzd+nxyz*c] = scalingParam*inputImage[xyz+nxyz*c];
                                         else resultImage[xyzd+nxyz*c] = Numerics.min(resultImage[xyzd+nxyz*c], scalingParam*inputImage[xyz+nxyz*c]);
                                     } else if (merge==MAX) {
@@ -162,4 +165,5 @@ public class IntensityPropagate {
 			}
 		}
 	}
+	
 }
